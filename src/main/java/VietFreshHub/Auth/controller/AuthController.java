@@ -12,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.stereotype.Controller;
@@ -31,6 +32,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final SecurityContextRepository securityContextRepository;
+    private final PasswordEncoder passwordEncoder;
     @GetMapping("/register")
     public String showRegisterForm(Model model, CsrfToken csrfToken) {
         csrfToken.getToken();
@@ -88,6 +90,8 @@ public class AuthController {
     @GetMapping("/login")
     public String showLoginPage(CsrfToken csrfToken) {
         csrfToken.getToken();
+        String demoPassword = "Demo@123";
+        System.out.println(passwordEncoder.encode(demoPassword));
         return "auth/login";
     }
     @PostMapping("/login")
