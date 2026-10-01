@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{"colors":{"tertiary-fixed":"#ffdbce","on-primary-fixed":"#002109","secondary-fixed-dim":"#4edea3","surface-container":"#e5eeff","on-tertiary-fixed":"#370e00","on-tertiary-container":"#fffbff","secondary-fixed":"#6ffbbe","secondary-container":"#6cf8bb","surface":"#f8f9ff","on-primary-container":"#f7fff2","error":"#ba1a1a","surface-dim":"#cbdbf5","surface-variant":"#d3e4fe","tertiary":"#a33900","on-primary":"#ffffff","error-container":"#ffdad6","surface-bright":"#f8f9ff","surface-container-highest":"#d3e4fe","tertiary-container":"#cc4900","primary-container":"#00873a","on-secondary-fixed":"#002113","primary":"#006b2c","on-secondary-container":"#00714d","surface-container-low":"#eff4ff","on-tertiary-fixed-variant":"#7f2b00","on-error":"#ffffff","on-tertiary":"#ffffff","tertiary-fixed-dim":"#ffb599","surface-container-high":"#dce9ff","secondary":"#006c49","surface-container-lowest":"#ffffff","on-primary-fixed-variant":"#005320","on-surface":"#0b1c30","inverse-surface":"#213145","inverse-primary":"#62df7d","surface-tint":"#006e2d","on-surface-variant":"#3e4a3d","inverse-on-surface":"#eaf1ff","on-background":"#0b1c30","outline":"#6e7b6c","on-secondary-fixed-variant":"#005236","on-secondary":"#ffffff","primary-fixed":"#7ffc97","background":"#f8f9ff","on-error-container":"#93000a","primary-fixed-dim":"#62df7d","outline-variant":"#bdcaba"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-xs":"0.25rem","space-lg":"1.5rem","space-sm":"0.5rem","margin-mobile":"1rem","margin":"2rem","gutter-mobile":"0.75rem","space-md":"1rem","space-xl":"2.5rem","gutter":"1.5rem"},"fontFamily":{"label-md":["Be Vietnam Pro"],"headline-lg-mobile":["Be Vietnam Pro"],"headline-md":["Be Vietnam Pro"],"display":["Be Vietnam Pro"],"display-mobile":["Be Vietnam Pro"],"title-md":["Be Vietnam Pro"],"headline-lg":["Be Vietnam Pro"],"body-lg":["Be Vietnam Pro"],"headline-sm":["Be Vietnam Pro"],"body-md":["Be Vietnam Pro"],"label-sm":["Be Vietnam Pro"]},"fontSize":{"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.02em","fontWeight":"600"}],"headline-lg-mobile":["24px",{"lineHeight":"32px","letterSpacing":"-0.01em","fontWeight":"600"}],"headline-md":["24px",{"lineHeight":"32px","fontWeight":"600"}],"display":["48px",{"lineHeight":"56px","letterSpacing":"-0.02em","fontWeight":"700"}],"display-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.01em","fontWeight":"700"}],"title-md":["16px",{"lineHeight":"24px","fontWeight":"600"}],"headline-lg":["32px",{"lineHeight":"40px","letterSpacing":"-0.015em","fontWeight":"600"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"headline-sm":["20px",{"lineHeight":"28px","fontWeight":"600"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"label-sm":["11px",{"lineHeight":"14px","fontWeight":"500"}]}}}}</script>
+
+</head>
+<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col"><header class="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="bg-primary text-on-primary py-1 px-margin text-center text-label-sm font-label-md"><div class="max-w-[1280px] mx-auto flex items-center justify-between"><span>Giao nhanh trong 2h tại Hà Nội &amp; TP. HCM • Cam kết 100% tươi sạch đạt chuẩn VietGAP</span><div class="flex items-center gap-space-md"><span class="hidden md:inline">Hotline: 1900 8868</span><a class="hover:underline" data-path="tracking" href="#">Tra cứu đơn hàng</a></div></div></div><div class="h-20 max-w-[1280px] mx-auto px-margin flex items-center justify-between gap-space-lg"><div class="flex items-center gap-space-md shrink-0"><img alt="VietFresh Hub Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCoee1aQxiSWv--WD0wwWrihEh5Q7BqMermSiCv4RPI9UClurYSjjlcSO0o3qWnCVwtn86xWqMBhy9UlCebehpUbdSjGL-DdOYPTIDxyJy0vw5FsudiEnBNufXggJ8sZhbN1EmrlXp482O626r6K-_SwIRR4MUrHtiErUZ_SVIhiF4tlgAqFpHPgHXieHK3hnG1xhZAi5YV_gsvAznVdoSNgMRVzR2JPdvvz4nU7FN9JbvKauJVIoz7"/><a class="flex flex-col" data-path="home" href="#"><span class="font-title-md text-title-md text-primary tracking-tight">VIETFRESH HUB</span><span class="font-label-sm text-label-sm text-on-surface-variant tracking-wider uppercase">Nông Sản Sạch Việt Nam</span></a></div><div class="hidden lg:flex flex-1 max-w-xl mx-space-md"><div class="relative w-full flex items-center bg-surface-container-lowest rounded-lg shadow-[0_1px_3px_0_rgba(15,23,42,0.04)] p-1"><span class="material-symbols-outlined text-outline ml-space-sm">search</span><input class="w-full bg-transparent px-space-sm py-1.5 text-body-md font-body-md text-on-surface focus:outline-none placeholder:text-outline" placeholder="Tìm kiếm trái cây tươi, bưởi da xanh, xoài cát..." type="text"/><button class="bg-primary text-on-primary font-label-md text-label-md px-space-md py-2 rounded-lg hover:bg-primary-container hover:text-on-primary-container transition-colors">Tìm kiếm</button></div></div><nav class="hidden xl:flex items-center gap-space-md shrink-0" data-active-classes="text-primary font-title-md"><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors py-2" data-path="noi-dia" href="#">Trái Cây Nội Địa</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors py-2" data-path="nhap-khau" href="#">Trái Cây Nhập Khẩu</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors py-2" data-path="hop-qua-bieu" href="#">Hộp Quà Biếu</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors py-2" data-path="combo-tiet-kiem" href="#">Combo Tiết Kiệm</a><a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors py-2" data-path="he-thong-cua-hang" href="#">Hệ Thống Cửa Hàng</a></nav><div class="flex items-center gap-space-md shrink-0"><a class="relative flex items-center justify-center p-2 rounded-full hover:bg-surface-container hover:text-on-surface text-on-surface-variant transition-colors" data-path="gio-hang" href="#" title="Giỏ hàng"><span class="material-symbols-outlined text-2xl">shopping_cart</span><span class="absolute 0 top-0.5 right-0.5 min-w-[20px] h-[20px] px-1 bg-tertiary text-on-tertiary text-label-sm font-label-md rounded-full flex items-center justify-center">3</span></a><div class="h-6 w-px bg-outline-variant hidden sm:block"></div><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="hidden md:flex flex-col text-left"><a class="font-label-md text-label-md text-on-surface hover:text-primary transition-colors" data-path="tai-khoan" href="#">Tài khoản</a><a class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="dang-nhap" href="#">Đăng nhập / Đăng ký</a></div></div></div></div></header><main class="w-full pt-20 bg-surface flex-1"><div class="max-w-[1280px] mx-auto px-margin py-space-lg"><div class="flex flex-col w-full">
+    <div class="relative w-full py-space-md lg:py-space-xl">
+        <div class="absolute -top-12 -left-12 w-96 h-96 bg-primary-fixed/20 rounded-full blur-3xl pointer-events-none -z-10"></div>
+        <div class="absolute top-1/2 -right-16 w-80 h-80 bg-secondary-container/30 rounded-full blur-3xl pointer-events-none -z-10"></div>
+        <div class="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-gutter items-stretch">
+            <div class="lg:col-span-5 bg-gradient-to-br from-primary via-primary-container to-secondary text-on-primary rounded-xl p-space-lg lg:p-space-xl flex flex-col justify-between relative overflow-hidden shadow-xl">
+                <div class="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                <div class="relative z-10 flex flex-col gap-space-md">
+                    <div class="inline-flex items-center gap-space-xs bg-surface-container-lowest/15 backdrop-blur-md px-space-md py-1.5 rounded-full w-fit">
+                        <span class="material-symbols-outlined text-[18px] text-primary-fixed">verified</span>
+                        <span class="font-label-md text-label-md tracking-wide text-primary-fixed">Hội viên VietFresh Club</span>
+                    </div>
+                    <div class="flex flex-col gap-space-xs">
+                        <h2 class="font-headline-lg text-headline-lg font-bold leading-tight">Nông Sản Tươi Lành Cho Mọi Gia Đình</h2>
+                        <p class="font-body-md text-body-md text-primary-fixed-dim">Tham gia cộng đồng hơn 45.000 khách hàng tin dùng thực phẩm an toàn, chuẩn VietGAP &amp; GlobalGAP.</p>
+                    </div>
+                    <div class="space-y-space-sm pt-space-xs">
+                        <div class="flex items-start gap-space-sm bg-surface-container-lowest/10 p-space-sm rounded-lg backdrop-blur-sm">
+                            <span class="material-symbols-outlined text-secondary-fixed shrink-0">local_activity</span>
+                            <div>
+                                <span class="font-title-md text-title-md block">Giảm ngay 10% đơn đầu tiên</span>
+                                <span class="font-body-md text-body-md text-surface-container-low opacity-90">Áp dụng cho mọi giỏ hàng nông sản tươi và giỏ quà cao cấp.</span>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-space-sm bg-surface-container-lowest/10 p-space-sm rounded-lg backdrop-blur-sm">
+                            <span class="material-symbols-outlined text-secondary-fixed shrink-0">bolt</span>
+                            <div>
+                                <span class="font-title-md text-title-md block">Giao hỏa tốc trong 2 giờ</span>
+                                <span class="font-body-md text-body-md text-surface-container-low opacity-90">Bảo quản nhiệt độ chuẩn từ kho mát tới tận tay khách hàng.</span>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-space-sm bg-surface-container-lowest/10 p-space-sm rounded-lg backdrop-blur-sm">
+                            <span class="material-symbols-outlined text-secondary-fixed shrink-0">assignment_turned_in</span>
+                            <div>
+                                <span class="font-title-md text-title-md block">Bảo hành 1 đổi 1 trong 24h</span>
+                                <span class="font-body-md text-body-md text-surface-container-low opacity-90">Cam kết đền bù nếu trái cây giập hỏng, không đúng độ tươi ngon.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative z-10 pt-space-lg mt-space-md bg-on-primary-fixed/20 rounded-xl p-space-md backdrop-blur-sm">
+                    <div class="flex items-center gap-space-sm">
+                        <span class="material-symbols-outlined text-secondary-fixed text-[24px]">security</span>
+                        <div class="flex flex-col">
+                            <span class="font-label-md text-label-md uppercase tracking-wider text-secondary-fixed">Chính sách bảo mật người dùng</span>
+                            <span class="font-body-md text-body-md text-surface-container-low">Mọi tài khoản mặc định gán quyền Khách hàng tiêu chuẩn (ROLE_CUSTOMER). Dữ liệu được mã hóa đa tầng.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="lg:col-span-7 bg-surface-container-lowest rounded-xl p-space-lg lg:p-space-xl shadow-xl flex flex-col justify-center">
+                <div th:if="${errorMessage}"
+                     class="mb-4 rounded-lg border border-red-200 border-l-4 border-l-red-600 bg-red-50 px-4 py-3 text-sm text-red-800 shadow-sm"
+                     th:text="${errorMessage}"
+                     role="alert">
+                </div>
+                <div class="mb-space-lg">
+                    <span class="font-label-sm text-label-sm text-primary uppercase font-bold tracking-widest block mb-1">Khởi tạo hành trình sống xanh</span>
+                    <h1 class="font-headline-lg text-headline-lg font-bold text-on-surface">Tạo tài khoản VietFresh Hub</h1>
+                    <p class="font-body-md text-body-md text-on-surface-variant mt-1">Đăng ký thành viên nhận ngay ưu đãi 10% đơn hàng đầu tiên.</p>
+                </div>
+                <form th:action="@{/register}"
+                      th:object="${registerRequest}"
+                      class="space-y-space-md"
+                      id="registrationForm"
+                      method="post">
+<!--                    <input name="_csrf" type="hidden" value="d2a1b94e-7b76-4dc5-8f6a-1299c8bf4890"/>-->
+<!--                    <input name="role" type="hidden" value="ROLE_CUSTOMER"/>-->
+                    <div class="space-y-1.5">
+                        <label class="block font-title-md text-title-md text-on-surface" for="fullName">
+                            Họ và tên <span class="text-tertiary">*</span>
+                        </label>
+                        <div class="relative flex items-center">
+                            <span class="material-symbols-outlined absolute left-3 text-outline text-[20px] pointer-events-none">person</span>
+                            <input class="w-full pl-10 pr-4 py-2.5 bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg outline-none transition-shadow shadow-[0_1px_3px_0_rgba(15,23,42,0.06)] focus:shadow-[0_0_0_2px_#006b2c] placeholder:text-outline"
+                                   id="fullName"
+                                   th:field="*{fullName}"
+                                   placeholder="Ví dụ: Nguyễn Văn An"
+                                   required
+                                   type="text"/>
+                            <p th:if="${#fields.hasErrors('fullName')}"
+                               th:errors="*{fullName}"
+                               class="mt-1 text-sm text-red-600">
+                                Lỗi họ tên
+                            </p>
+                        </div>
+                        <p class="hidden font-label-sm text-label-sm text-error items-center gap-1" id="error-fullName">
+                            <span class="material-symbols-outlined text-[14px]">error</span>
+                            Họ và tên không được để trống và tối thiểu 2 ký tự.
+                        </p>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block font-title-md text-title-md text-on-surface" for="email">
+                            Địa chỉ Email <span class="text-tertiary">*</span>
+                        </label>
+                        <div class="relative flex items-center">
+                            <span class="material-symbols-outlined absolute left-3 text-outline text-[20px] pointer-events-none">mail</span>
+                            <input class="w-full pl-10 pr-4 py-2.5 bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg outline-none transition-shadow shadow-[0_1px_3px_0_rgba(15,23,42,0.06)] focus:shadow-[0_0_0_2px_#006b2c] placeholder:text-outline"
+                                   id="email"
+                                   th:field="*{email}"
+                                   placeholder="nguyenvanan@example.com"
+                                   required
+                                   type="email"/>
+                            <p th:if="${#fields.hasErrors('email')}"
+                               th:errors="*{email}"
+                               class="mt-1 text-sm text-red-600">
+                                Lỗi email
+                            </p>
+                        </div>
+                        <p class="hidden font-label-sm text-label-sm text-error items-center gap-1" id="error-email">
+                            <span class="material-symbols-outlined text-[14px]">error</span>
+                            <span id="error-email-text">Email không đúng định dạng hoặc đã được sử dụng trong hệ thống.</span>
+                        </p>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block font-title-md text-title-md text-on-surface" for="phone">
+                            Số điện thoại <span class="text-tertiary">*</span>
+                        </label>
+                        <div class="relative flex items-center">
+                            <span class="material-symbols-outlined absolute left-3 text-outline text-[20px] pointer-events-none">call</span>
+                            <input class="w-full pl-10 pr-4 py-2.5 bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg outline-none transition-shadow shadow-[0_1px_3px_0_rgba(15,23,42,0.06)] focus:shadow-[0_0_0_2px_#006b2c] placeholder:text-outline"
+                                   id="phone"
+                                   th:field="*{phone}"
+                                   maxlength="10"
+                                   placeholder="0912345678"
+                                   required
+                                   type="tel"/>
+                            <p th:if="${#fields.hasErrors('phone')}"
+                               th:errors="*{phone}"
+                               class="mt-1 text-sm text-red-600">
+                                Lỗi số điện thoại
+                            </p>
+                        </div>
+                        <p class="hidden font-label-sm text-label-sm text-error items-center gap-1" id="error-phone">
+                            <span class="material-symbols-outlined text-[14px]">error</span>
+                            Số điện thoại phải là định dạng 10 số hợp lệ tại Việt Nam (đầu số 03, 05, 07, 08, 09).
+                        </p>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block font-title-md text-title-md text-on-surface" for="password">
+                            Mật khẩu <span class="text-tertiary">*</span>
+                        </label>
+                        <div class="relative flex items-center">
+                            <span class="material-symbols-outlined absolute left-3 text-outline text-[20px] pointer-events-none">lock</span>
+                            <input class="w-full pl-10 pr-12 py-2.5 bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg outline-none transition-shadow shadow-[0_1px_3px_0_rgba(15,23,42,0.06)] focus:shadow-[0_0_0_2px_#006b2c] placeholder:text-outline"
+                                   id="password"
+                                   th:field="*{password}"
+                                   minlength="8"
+                                   placeholder="Tối thiểu 8 ký tự"
+                                   required
+                                   type="password"/>
+                            <p th:if="${#fields.hasErrors('password')}"
+                               th:errors="*{password}"
+                               class="mt-1 text-sm text-red-600">
+                                Lỗi mật khẩu
+                            </p>
+                            <button class="absolute right-3 text-outline hover:text-on-surface p-1 rounded transition-colors" id="togglePassword" title="Hiện mật khẩu" type="button">
+                                <span class="material-symbols-outlined text-[20px]" id="passwordIcon">visibility</span>
+                            </button>
+                        </div>
+                        <div class="pt-1 space-y-1">
+                            <div class="flex items-center justify-between">
+                                <span class="font-label-sm text-label-sm text-on-surface-variant">Độ bảo mật mật khẩu:</span>
+                                <span class="font-label-sm text-label-sm font-semibold" id="strengthText">Chưa nhập</span>
+                            </div>
+                            <div class="w-full h-1.5 bg-surface-container rounded-full overflow-hidden flex gap-1">
+                                <div class="h-full w-1/4 rounded-full transition-colors duration-300 bg-surface-dim" id="bar1"></div>
+                                <div class="h-full w-1/4 rounded-full transition-colors duration-300 bg-surface-dim" id="bar2"></div>
+                                <div class="h-full w-1/4 rounded-full transition-colors duration-300 bg-surface-dim" id="bar3"></div>
+                                <div class="h-full w-1/4 rounded-full transition-colors duration-300 bg-surface-dim" id="bar4"></div>
+                            </div>
+                        </div>
+                        <p class="hidden font-label-sm text-label-sm text-error items-center gap-1" id="error-password">
+                            <span class="material-symbols-outlined text-[14px]">error</span>
+                            Mật khẩu phải có độ dài tối thiểu 8 ký tự.
+                        </p>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block font-title-md text-title-md text-on-surface" for="confirmPassword">
+                            Xác nhận mật khẩu <span class="text-tertiary">*</span>
+                        </label>
+                        <div class="relative flex items-center">
+                            <span class="material-symbols-outlined absolute left-3 text-outline text-[20px] pointer-events-none">lock_reset</span>
+                            <input class="w-full pl-10 pr-12 py-2.5 bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg outline-none transition-shadow shadow-[0_1px_3px_0_rgba(15,23,42,0.06)] focus:shadow-[0_0_0_2px_#006b2c] placeholder:text-outline"
+                                   id="confirmPassword"
+                                   th:field="*{confirmPassword}"
+                                   placeholder="Nhập lại mật khẩu vừa đặt"
+                                   required
+                                   type="password"/>
+                            <p th:if="${#fields.hasErrors('confirmPassword')}"
+                               th:errors="*{confirmPassword}"
+                               class="mt-1 text-sm text-red-600">
+                                Lỗi xác nhận mật khẩu
+                            </p>
+                            <button class="absolute right-3 text-outline hover:text-on-surface p-1 rounded transition-colors" id="toggleConfirmPassword" title="Hiện xác nhận mật khẩu" type="button">
+                                <span class="material-symbols-outlined text-[20px]" id="confirmPasswordIcon">visibility</span>
+                            </button>
+                        </div>
+                        <div class="hidden items-center gap-1 font-label-sm text-label-sm" id="passwordMatchFeedback">
+                            <span class="material-symbols-outlined text-[16px]" id="matchIcon">check_circle</span>
+                            <span id="matchText">Mật khẩu xác nhận hoàn toàn khớp.</span>
+                        </div>
+                    </div>
+                    <div class="pt-2">
+                        <label class="flex items-start gap-space-sm cursor-pointer select-none">
+                            <input class="mt-1 h-4 w-4 rounded accent-primary cursor-pointer text-primary"
+                                   id="terms"
+                                   th:field="*{terms}"
+                                   required
+                                   type="checkbox"/>
+                            <p th:if="${#fields.hasErrors('terms')}"
+                               th:errors="*{terms}"
+                               class="mt-1 text-sm text-red-600">
+                                Bạn cần đồng ý với điều khoản
+                            </p>
+                            <span class="font-body-md text-body-md text-on-surface-variant leading-tight">
+                Tôi đồng ý với
+                <a class="text-primary hover:underline font-label-md text-label-md" href="#">Điều khoản dịch vụ</a>
+                và
+                <a class="text-primary hover:underline font-label-md text-label-md" href="#">Chính sách quyền riêng tư</a>
+                của hệ thống VietFresh Hub.
+              </span>
+                        </label>
+                        <p class="hidden font-label-sm text-label-sm text-error items-center gap-1 mt-1" id="error-terms">
+                            <span class="material-symbols-outlined text-[14px]">error</span>
+                            Vui lòng tích chọn đồng ý với điều khoản để tiếp tục.
+                        </p>
+                    </div>
+                    <div class="bg-surface-container-low p-space-sm rounded-lg flex items-center gap-space-sm">
+                        <span class="material-symbols-outlined text-primary text-[20px]">badge</span>
+                        <div class="text-on-surface-variant font-label-sm text-label-sm">
+                            Phân quyền gán tự động: <span class="font-semibold text-primary">ROLE_CUSTOMER</span> (Bảo vệ phân quyền, không hỗ trợ tự chỉ định quyền Quản trị viên/Cửa hàng trưởng).
+                        </div>
+                    </div>
+                    <button class="w-full bg-[#16a34a] hover:bg-primary-container text-on-primary font-title-md text-title-md py-3 px-space-md rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-space-sm active:scale-[0.99]" id="submitBtn" type="submit">
+                        <span class="material-symbols-outlined text-[20px]">how_to_reg</span>
+                        <span>Đăng Ký Tài Khoản</span>
+                    </button>
+                </form>
+                <div class="mt-space-lg text-center pt-space-md bg-surface-container-lowest">
+                    <p class="font-body-md text-body-md text-on-surface-variant">
+                        Đã có tài khoản?
+                        <a class="text-primary hover:text-primary-container font-title-md text-title-md ml-1 hover:underline" href="/login">
+                            Đăng nhập ngay
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    <script>
+        (function () {
+          const passwordInput = document.getElementById('password');
+          const confirmPasswordInput = document.getElementById('confirmPassword');
+          const togglePasswordBtn = document.getElementById('togglePassword');
+          const toggleConfirmBtn = document.getElementById('toggleConfirmPassword');
+          const passwordIcon = document.getElementById('passwordIcon');
+          const confirmPasswordIcon = document.getElementById('confirmPasswordIcon');
+          const strengthText = document.getElementById('strengthText');
+          const bar1 = document.getElementById('bar1');
+          const bar2 = document.getElementById('bar2');
+          const bar3 = document.getElementById('bar3');
+          const bar4 = document.getElementById('bar4');
+          const matchFeedback = document.getElementById('passwordMatchFeedback');
+          const matchIcon = document.getElementById('matchIcon');
+          const matchText = document.getElementById('matchText');
+          const regForm = document.getElementById('registrationForm');
+
+          function toggleVisibility(inputEl, iconEl) {
+            if (inputEl.type === 'password') {
+              inputEl.type = 'text';
+              iconEl.textContent = 'visibility_off';
+            } else {
+              inputEl.type = 'password';
+              iconEl.textContent = 'visibility';
+            }
+          }
+
+          if (togglePasswordBtn) {
+            togglePasswordBtn.addEventListener('click', () => toggleVisibility(passwordInput, passwordIcon));
+          }
+          if (toggleConfirmBtn) {
+            toggleConfirmBtn.addEventListener('click', () => toggleVisibility(confirmPasswordInput, confirmPasswordIcon));
+          }
+
+          function checkStrength(pass) {
+            let score = 0;
+            if (!pass) return 0;
+            if (pass.length >= 8) score++;
+            if (/[A-Z]/.test(pass)) score++;
+            if (/[0-9]/.test(pass)) score++;
+            if (/[^A-Za-z0-9]/.test(pass)) score++;
+            return score;
+          }
+
+          function updateStrengthIndicator() {
+            const val = passwordInput.value;
+            const score = checkStrength(val);
+            const bars = [bar1, bar2, bar3, bar4];
+
+            bars.forEach(b => {
+              b.className = 'h-full w-1/4 rounded-full transition-colors duration-300 bg-surface-dim';
+            });
+
+            if (!val) {
+              strengthText.textContent = 'Chưa nhập';
+              strengthText.className = 'font-label-sm text-label-sm text-outline font-semibold';
+              return;
+            }
+
+            if (score === 1) {
+              strengthText.textContent = 'Yếu';
+              strengthText.className = 'font-label-sm text-label-sm text-error font-semibold';
+              bar1.classList.remove('bg-surface-dim');
+              bar1.classList.add('bg-error');
+            } else if (score === 2) {
+              strengthText.textContent = 'Trung bình';
+              strengthText.className = 'font-label-sm text-label-sm text-tertiary-container font-semibold';
+              bar1.classList.remove('bg-surface-dim');
+              bar2.classList.remove('bg-surface-dim');
+              bar1.classList.add('bg-tertiary-container');
+              bar2.classList.add('bg-tertiary-container');
+            } else if (score === 3) {
+              strengthText.textContent = 'Khá mạnh';
+              strengthText.className = 'font-label-sm text-label-sm text-secondary font-semibold';
+              bar1.classList.remove('bg-surface-dim');
+              bar2.classList.remove('bg-surface-dim');
+              bar3.classList.remove('bg-surface-dim');
+              bar1.classList.add('bg-secondary');
+              bar2.classList.add('bg-secondary');
+              bar3.classList.add('bg-secondary');
+            } else {
+              strengthText.textContent = 'Rất an toàn';
+              strengthText.className = 'font-label-sm text-label-sm text-primary font-semibold';
+              bars.forEach(b => {
+                b.classList.remove('bg-surface-dim');
+                b.classList.add('bg-primary');
+              });
+            }
+          }
+
+          function checkConfirmMatch() {
+            const p = passwordInput.value;
+            const cp = confirmPasswordInput.value;
+
+            if (!cp) {
+              matchFeedback.classList.add('hidden');
+              return;
+            }
+
+            matchFeedback.classList.remove('hidden', 'flex');
+            matchFeedback.classList.add('flex');
+
+            if (p === cp) {
+              matchFeedback.classList.remove('text-error');
+              matchFeedback.classList.add('text-primary');
+              matchIcon.textContent = 'check_circle';
+              matchText.textContent = 'Mật khẩu xác nhận hoàn toàn khớp.';
+            } else {
+              matchFeedback.classList.remove('text-primary');
+              matchFeedback.classList.add('text-error');
+              matchIcon.textContent = 'cancel';
+              matchText.textContent = 'Mật khẩu xác nhận chưa khớp với mật khẩu đã tạo.';
+            }
+          }
+
+          passwordInput.addEventListener('input', () => {
+            updateStrengthIndicator();
+            if (confirmPasswordInput.value) checkConfirmMatch();
+          });
+
+          confirmPasswordInput.addEventListener('input', checkConfirmMatch);
+
+          regForm.addEventListener('submit', (e) => {
+            let isValid = true;
+            const fullName = document.getElementById('fullName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const pass = passwordInput.value;
+            const confirmPass = confirmPasswordInput.value;
+            const terms = document.getElementById('terms').checked;
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const phoneRegex = /^(03|05|07|08|09)[0-9]{8}$/;
+
+            if (fullName.length < 2) {
+              document.getElementById('error-fullName').classList.remove('hidden');
+              document.getElementById('error-fullName').classList.add('flex');
+              isValid = false;
+            } else {
+              document.getElementById('error-fullName').classList.add('hidden');
+            }
+
+            if (!emailRegex.test(email)) {
+              document.getElementById('error-email').classList.remove('hidden');
+              document.getElementById('error-email').classList.add('flex');
+              isValid = false;
+            } else {
+              document.getElementById('error-email').classList.add('hidden');
+            }
+
+            if (!phoneRegex.test(phone)) {
+              document.getElementById('error-phone').classList.remove('hidden');
+              document.getElementById('error-phone').classList.add('flex');
+              isValid = false;
+            } else {
+              document.getElementById('error-phone').classList.add('hidden');
+            }
+
+            if (pass.length < 8) {
+              document.getElementById('error-password').classList.remove('hidden');
+              document.getElementById('error-password').classList.add('flex');
+              isValid = false;
+            } else {
+              document.getElementById('error-password').classList.add('hidden');
+            }
+
+            if (pass !== confirmPass) {
+              isValid = false;
+            }
+
+            if (!terms) {
+              document.getElementById('error-terms').classList.remove('hidden');
+              document.getElementById('error-terms').classList.add('flex');
+              isValid = false;
+            } else {
+              document.getElementById('error-terms').classList.add('hidden');
+            }
+
+            if (!isValid) {
+              e.preventDefault();
+            }
+          });
+        })();
+    </script></div></main><footer class="w-full bg-surface-container-low text-on-surface mt-space-xl"><div class="max-w-[1280px] mx-auto px-margin py-space-xl"><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-xl pb-space-lg"><div class="flex flex-col gap-space-md"><div class="flex items-center gap-space-sm"><span class="font-headline-sm text-headline-sm text-primary">VietFresh Hub</span></div><p class="font-body-md text-body-md text-on-surface-variant">Hệ thống phân phối trái cây sạch và nông sản an toàn hàng đầu Việt Nam. Nguồn gốc minh bạch, tiêu chuẩn kiểm định nghiêm ngặt từ nông trại tới bàn ăn.</p><div class="flex items-center gap-space-sm mt-space-xs"><span class="bg-secondary-container text-on-secondary-container px-space-sm py-1 rounded-full font-label-md text-label-sm">VietGAP Certified</span><span class="bg-surface-container-high text-on-surface px-space-sm py-1 rounded-full font-label-md text-label-sm">GlobalGAP</span></div></div><div class="flex flex-col gap-space-sm"><h3 class="font-title-md text-title-md text-on-surface mb-space-xs">Danh Mục Sản Phẩm</h3><ul class="space-y-2"><li class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors"><a data-path="noi-dia" href="#">Trái cây đặc sản nội địa</a></li><li class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors"><a data-path="nhap-khau" href="#">Trái cây nhập khẩu cao cấp</a></li><li class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors"><a data-path="hop-qua-bieu" href="#">Giỏ &amp; Hộp quà trái cây biếu</a></li><li class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors"><a data-path="combo-tiet-kiem" href="#">Combo dinh dưỡng gia đình</a></li><li class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors"><a data-path="chinh-sach-si" href="#">Cung ứng sỉ cho doanh nghiệp</a></li></ul></div><div class="flex flex-col gap-space-sm"><h3 class="font-title-md text-title-md text-on-surface mb-space-xs">Hỗ Trợ Khách Hàng</h3><ul class="space-y-2"><li class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors"><a data-path="chinh-sach-giao-hang" href="#">Chính sách vận chuyển 2h</a></li><li class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors"><a data-path="chinh-sach-doi-tra" href="#">Chính sách 1 đổi 1 trong 24h</a></li><li class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors"><a data-path="kiem-dinh-chat-luong" href="#">Tiêu chuẩn nguồn gốc xuất xứ</a></li><li class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors"><a data-path="he-thong-cua-hang" href="#">Tìm kiếm 28 chi nhánh gần nhất</a></li><li class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors"><a data-path="bao-mat" href="#">Điều khoản &amp; Bảo mật</a></li></ul></div><div class="flex flex-col gap-space-sm"><h3 class="font-title-md text-title-md text-on-surface mb-space-xs">Thông Tin Liên Hệ</h3><p class="font-body-md text-body-md text-on-surface-variant"><strong class="text-on-surface">Hotline tư vấn:</strong> 1900 8868 (8:00 - 21:30)</p><p class="font-body-md text-body-md text-on-surface-variant"><strong class="text-on-surface">Bán hàng B2B / Dự án:</strong> 0988 123 456</p><p class="font-body-md text-body-md text-on-surface-variant"><strong class="text-on-surface">Trụ sở:</strong> 142 Nguyễn Thị Minh Khai, Quận 3, TP. Hồ Chí Minh</p><p class="font-body-md text-body-md text-on-surface-variant"><strong class="text-on-surface">Email:</strong> cskh@vietfreshhub.vn</p></div></div><div class="pt-space-lg text-center font-body-md text-body-md text-on-surface-variant">© 2024 VietFresh Hub - Nông Sản Tươi Lành Cho Mọi Nhà. Tất cả các quyền được bảo lưu.</div></div></footer></body></html>
