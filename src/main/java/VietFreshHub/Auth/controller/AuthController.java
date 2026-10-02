@@ -34,8 +34,8 @@ public class AuthController {
     private final SecurityContextRepository securityContextRepository;
     private final PasswordEncoder passwordEncoder;
     @GetMapping("/register")
-    public String showRegisterForm(Model model, CsrfToken csrfToken) {
-        csrfToken.getToken();
+    public String showRegisterForm(Model model) {
+//        csrfToken.getToken();
         model.addAttribute("registerRequest", new RegisterRequest());
         return "auth/register";
     }
@@ -88,8 +88,9 @@ public class AuthController {
 //        return "customer/home";
     }
     @GetMapping("/login")
-    public String showLoginPage(CsrfToken csrfToken) {
-        csrfToken.getToken();
+    public String showLoginPage() {
+//        csrfToken.getToken();
+//        System.out.println("csrfToken: " + csrfToken.getToken());
         String demoPassword = "Demo@123";
         System.out.println(passwordEncoder.encode(demoPassword));
         return "auth/login";
