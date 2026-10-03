@@ -68,7 +68,7 @@ public class SellerApplicationService {
         );
         newApplication.setStatus(SellerApplicationStatus.PENDING);
 
-// Gán application một lần duy nhất để dùng được trong lambda bên dưới.
+
         final SellerApplication application =
                 applicationRepository.save(newApplication);
 
@@ -135,6 +135,8 @@ public class SellerApplicationService {
                     document.setApplication(application);
                     document.setDocumentType(item.documentType());
                     document.setCloudinaryPublicId(item.asset().publicId());
+                    document.setCloudinaryResourceType(item.asset().resourceType());
+                    document.setCloudinaryFormat(item.asset().format());
                     document.setVerificationStatus(
                             DocumentVerificationStatus.PENDING
                     );

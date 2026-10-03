@@ -8,6 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,7 +26,11 @@ public class CloudinaryStorageService {
 
     private final Cloudinary cloudinary;
 
-    public record UploadedAsset(String publicId, String resourceType) {}
+    public record UploadedAsset(
+            String publicId,
+            String resourceType,
+            String format
+    ) {}
 
     public UploadedAsset uploadPrivate(
             MultipartFile file,
@@ -50,14 +55,37 @@ public class CloudinaryStorageService {
 
         String publicId = (String) result.get("public_id");
         String resourceType = (String) result.get("resource_type");
+        String format = (String) result.get("format");
 
-        if (publicId == null || resourceType == null) {
-            throw new IOException("Cloudinary không trả về thông tin file hợp lệ");
+        if (publicId == null || resourceType == null || format == null) {
+            throw new IOException("Cloudinary không trả về đủ thông tin file");
         }
 
-        return new UploadedAsset(publicId, resourceType);
+        return new UploadedAsset(publicId, resourceType, format);
     }
+    public String createPrivateDownloadUrl(
+            String publicId,
+            String resourceType,
+            String format
+    ) {
+        try {
+            long expiresAt = Instant.now().plusSeconds(600).getEpochSecond();
 
+            return cloudinary.privateDownload(
+                    publicId,
+                    format,
+                    ObjectUtils.asMap(
+                            "resource_type", resourceType,
+                            "type", "authenticated",
+                            "expires_at", expiresAt
+                    )
+            );
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "Không tạo được link xem giấy tờ trên Cloudinary", e
+            );
+        }
+    }
     public void deletePrivate(UploadedAsset asset) throws IOException {
         cloudinary.uploader().destroy(
                 asset.publicId(),

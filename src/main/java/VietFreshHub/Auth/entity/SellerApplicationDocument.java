@@ -43,6 +43,11 @@ public class SellerApplicationDocument {
     @Column(name = "file_url", nullable = false, length = 1000)
     private String cloudinaryPublicId;
 
+    @Column(name = "cloudinary_resource_type", length = 20)
+    private String cloudinaryResourceType;
+
+    @Column(name = "cloudinary_format", length = 20)
+    private String cloudinaryFormat;
     @Enumerated(EnumType.STRING)
     @Column(name = "verification_status", nullable = false, length = 30)
     private DocumentVerificationStatus verificationStatus =
