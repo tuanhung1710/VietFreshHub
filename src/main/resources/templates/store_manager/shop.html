@@ -1,10 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
 </head>
 <body>
 <h1>Shop</h1>
+<h2>QUẢN LÝ ĐƠN HÀNG</h2>
+<nav aria-label="Quản lý đơn hàng">
+    <ul>
+        <li><a th:href="@{/seller/orders}" th:text="${'Tất cả đơn (' + orderCounts.totalOrders + ')'}">Tất cả đơn</a></li>
+        <li><a th:href="@{/seller/incoming-orders}" th:text="${'Đơn mới (' + orderCounts.incomingOrders + ')'}">Đơn mới</a></li>
+        <li><a th:href="@{/seller/confirmed-orders}" th:text="${'Đã xác nhận (' + orderCounts.confirmedOrders + ')'}">Đã xác nhận</a></li>
+        <li><a th:href="@{/seller/preparing-orders}" th:text="${'Đang chuẩn bị (' + orderCounts.preparingOrders + ')'}">Đang chuẩn bị</a></li>
+        <li><a th:href="@{/seller/ready-orders}" th:text="${'Sẵn sàng giao (' + orderCounts.readyOrders + ')'}">Sẵn sàng giao</a></li>
+        <li><a th:href="@{/seller/processed-orders}" th:text="${'Lịch sử đơn đã xử lý (' + orderCounts.processedOrders + ')'}">Lịch sử đơn đã xử lý</a></li>
+    </ul>
+</nav>
 </body>
 </html>

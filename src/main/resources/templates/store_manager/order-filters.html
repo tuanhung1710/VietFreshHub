@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <style th:fragment="styles">
+        .order-filter-toolbar {
+            display: flex;
+            gap: 12px;
+            max-width: 760px;
+            margin: 20px 0;
+        }
+
+        .order-search-form {
+            display: flex;
+            flex: 1;
+            min-width: 0;
+            gap: 8px;
+        }
+
+        .order-search-form input {
+            width: 100%;
+            min-width: 0;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font: inherit;
+        }
+
+        .order-search-button, .order-filter-button, .order-filter-clear, .order-filter-apply {
+            padding: 10px 16px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: white;
+            color: #1e293b;
+            font: inherit;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .order-filter-dialog {
+            box-sizing: border-box;
+            width: min(640px, calc(100% - 32px));
+            max-height: calc(100vh - 48px);
+            padding: 24px;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            background: white;
+            color: #1e293b;
+            box-shadow: 0 12px 40px #0003;
+            overflow: auto;
+        }
+
+        .order-filter-dialog::backdrop {
+            background: #0f172a80;
+        }
+
+        .order-filter-header, .order-filter-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .order-filter-header {
+            margin-bottom: 24px;
+        }
+
+        .order-filter-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .order-filter-close {
+            border: 0;
+            background: transparent;
+            font-size: 28px;
+            cursor: pointer;
+        }
+
+        .order-filter-dialog fieldset {
+            margin: 0 0 24px;
+            padding: 0;
+            border: 0;
+        }
+
+        .order-filter-dialog legend {
+            margin-bottom: 10px;
+            padding: 0;
+            font-weight: bold;
+        }
+
+        .order-filter-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .order-filter-dates {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+            gap: 6px 8px;
+        }
+
+        .order-filter-dates label {
+            grid-row: 1;
+        }
+
+        .order-filter-dates [for="fromDate"], #fromDate, #fromDate-error {
+            grid-column: 1;
+        }
+
+        .order-filter-dates [for="toDate"], #toDate, #toDate-error {
+            grid-column: 3;
+        }
+
+        .order-filter-dates input {
+            grid-row: 2;
+            min-width: 0;
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font: inherit;
+        }
+
+        .order-filter-dates input[aria-invalid="true"] {
+            border-color: #b91c1c;
+        }
+
+        .order-filter-date-separator {
+            grid-column: 2;
+            grid-row: 2;
+            align-self: center;
+        }
+
+        .order-filter-date-error {
+            grid-row: 3;
+            min-height: 1.25em;
+            margin: 0;
+            color: #b91c1c;
+            font-size: 0.875em;
+        }
+
+        .order-filter-options label {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .order-filter-options input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+        }
+
+        .order-filter-options span {
+            display: block;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+        }
+
+        .order-filter-options input:checked + span {
+            border-color: #2563eb;
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .order-filter-options input:focus-visible + span {
+            outline: 2px solid #2563eb;
+            outline-offset: 2px;
+        }
+
+        .order-filter-actions {
+            padding-top: 16px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .order-filter-apply {
+            border-color: #2563eb;
+            background: #2563eb;
+            color: white;
+        }
+
+        .order-filter-apply:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .order-filter-error {
+            color: #b91c1c;
+        }
+    </style>
+</head>
+<body>
+<div th:fragment="filters(orderView, filterAction, showStatusFilter, showPaymentFilter, resultCount)">
+    <div class="order-filter-toolbar">
+        <form class="order-search-form" method="get" role="search" th:action="@{${filterAction}}">
+            <input type="search" name="keyword" th:value="${filter.keyword}"
+                   aria-label="Tìm theo mã đơn hàng hoặc khách hàng"
+                   placeholder="Tìm theo mã đơn hàng hoặc khách hàng">
+            <button class="order-search-button" type="submit">TÌM</button>
+            <input type="hidden" name="fromDate" th:value="${filter.fromDate}">
+            <input type="hidden" name="toDate" th:value="${filter.toDate}">
+            <input type="hidden" name="priceRange" th:value="${filter.priceRange}">
+            <input th:if="${showStatusFilter}" type="hidden" name="status" th:value="${filter.status}">
+            <input th:if="${showPaymentFilter}" type="hidden" name="paymentStatus" th:value="${filter.paymentStatus}">
+        </form>
+        <button id="open-order-filter" class="order-filter-button" type="button"
+                aria-haspopup="dialog" aria-controls="order-filter-dialog">Bộ lọc</button>
+    </div>
+    <dialog id="order-filter-dialog" class="order-filter-dialog" aria-labelledby="order-filter-title">
+        <div class="order-filter-header">
+            <h2 id="order-filter-title">BỘ LỌC</h2>
+            <button id="close-order-filter" class="order-filter-close" type="button" aria-label="Đóng bộ lọc">×</button>
+        </div>
+        <form id="order-filter-form" method="get" novalidate th:action="@{${filterAction}}" th:object="${filter}"
+              th:attr="data-count-url=@{/seller/orders/filter-count},data-view=${orderView}">
+            <input type="hidden" name="keyword" th:value="${filter.keyword}">
+            <fieldset>
+                <legend>Ngày đặt hàng</legend>
+                <div class="order-filter-dates">
+                    <label for="fromDate">Từ ngày</label>
+                    <input type="date" th:field="*{fromDate}" aria-describedby="fromDate-error">
+                    <p id="fromDate-error" class="order-filter-date-error" aria-live="polite"></p>
+                    <span class="order-filter-date-separator" aria-hidden="true">-</span>
+                    <label for="toDate">Đến ngày</label>
+                    <input type="date" th:field="*{toDate}" aria-describedby="toDate-error">
+                    <p id="toDate-error" class="order-filter-date-error" aria-live="polite"></p>
+                </div>
+            </fieldset>
+            <fieldset>
+                <legend>Khoảng giá</legend>
+                <div class="order-filter-options">
+                    <label><input type="radio" name="priceRange" value="UNDER_100K"
+                                  th:checked="${filter.priceRange == 'UNDER_100K'}"><span>Dưới 100.000 VND</span></label>
+                    <label><input type="radio" name="priceRange" value="FROM_100K_TO_300K"
+                                  th:checked="${filter.priceRange == 'FROM_100K_TO_300K'}"><span>100.000 - 300.000 VND</span></label>
+                    <label><input type="radio" name="priceRange" value="FROM_300K_TO_500K"
+                                  th:checked="${filter.priceRange == 'FROM_300K_TO_500K'}"><span>300.000 - 500.000 VND</span></label>
+                    <label><input type="radio" name="priceRange" value="FROM_500K_TO_1M"
+                                  th:checked="${filter.priceRange == 'FROM_500K_TO_1M'}"><span>500.000 - 1.000.000 VND</span></label>
+                    <label><input type="radio" name="priceRange" value="FROM_1M_TO_2M"
+                                  th:checked="${filter.priceRange == 'FROM_1M_TO_2M'}"><span>1.000.000 - 2.000.000 VND</span></label>
+                    <label><input type="radio" name="priceRange" value="OVER_2M"
+                                  th:checked="${filter.priceRange == 'OVER_2M'}"><span>Trên 2.000.000 VND</span></label>
+                </div>
+            </fieldset>
+            <fieldset th:if="${showStatusFilter}">
+                <legend>Trạng thái đơn hàng</legend>
+                <div class="order-filter-options">
+                    <label><input type="radio" name="status" value=""
+                                  th:checked="${#strings.isEmpty(filter.status)}"><span>Tất cả</span></label>
+                    <th:block th:if="${orderView == 'all'}">
+                        <label><input type="radio" name="status" value="PENDING"
+                                      th:checked="${filter.status == 'PENDING'}"><span>Chờ xác nhận</span></label>
+                        <label><input type="radio" name="status" value="CONFIRMED"
+                                      th:checked="${filter.status == 'CONFIRMED'}"><span>Đã xác nhận</span></label>
+                        <label><input type="radio" name="status" value="PREPARING"
+                                      th:checked="${filter.status == 'PREPARING'}"><span>Đang chuẩn bị</span></label>
+                        <label><input type="radio" name="status" value="READY_FOR_DELIVERY"
+                                      th:checked="${filter.status == 'READY_FOR_DELIVERY'}"><span>Sẵn sàng giao hàng</span></label>
+                        <label><input type="radio" name="status" value="OUT_FOR_DELIVERY"
+                                      th:checked="${filter.status == 'OUT_FOR_DELIVERY'}"><span>Đang giao hàng</span></label>
+                    </th:block>
+                    <label><input type="radio" name="status" value="COMPLETED"
+                                  th:checked="${filter.status == 'COMPLETED'}"><span>Hoàn thành</span></label>
+                    <label><input type="radio" name="status" value="CANCELLED"
+                                  th:checked="${filter.status == 'CANCELLED'}"><span>Đã hủy</span></label>
+                </div>
+            </fieldset>
+            <fieldset th:if="${showPaymentFilter}">
+                <legend>Trạng thái thanh toán</legend>
+                <div class="order-filter-options">
+                    <label><input type="radio" name="paymentStatus" value=""
+                                  th:checked="${#strings.isEmpty(filter.paymentStatus)}"><span>Tất cả</span></label>
+                    <label><input type="radio" name="paymentStatus" value="UNPAID"
+                                  th:checked="${filter.paymentStatus == 'UNPAID'}"><span>Chưa thanh toán</span></label>
+                    <label><input type="radio" name="paymentStatus" value="PAID"
+                                  th:checked="${filter.paymentStatus == 'PAID'}"><span>Đã thanh toán</span></label>
+                </div>
+            </fieldset>
+            <p id="order-filter-error" class="order-filter-error" role="alert" hidden></p>
+            <div class="order-filter-actions">
+                <a class="order-filter-clear" th:href="@{${filterAction}(keyword=${filter.keyword})}">BỎ CHỌN</a>
+                <button id="apply-order-filter" class="order-filter-apply" type="submit" aria-live="polite"
+                        th:text="${resultCount + ' KẾT QUẢ'}">KẾT QUẢ</button>
+            </div>
+        </form>
+    </dialog>
+    <script>
+        const orderFilterDialog = document.getElementById('order-filter-dialog');
+        const orderFilterForm = document.getElementById('order-filter-form');
+        const openOrderFilter = document.getElementById('open-order-filter');
+        const applyOrderFilter = document.getElementById('apply-order-filter');
+        const orderFilterError = document.getElementById('order-filter-error');
+        const fromDateInput = document.getElementById('fromDate');
+        const toDateInput = document.getElementById('toDate');
+        const fromDateError = document.getElementById('fromDate-error');
+        const toDateError = document.getElementById('toDate-error');
+        const appliedOrderFilters = new FormData(orderFilterForm);
+        let activeOrderFilterCount = appliedOrderFilters.get('fromDate') || appliedOrderFilters.get('toDate') ? 1 : 0;
+        for (const field of ['priceRange', 'status', 'paymentStatus']) {
+            if (appliedOrderFilters.get(field)) {
+                activeOrderFilterCount++;
+            }
+        }
+        openOrderFilter.textContent = activeOrderFilterCount ? 'Bộ lọc ' + activeOrderFilterCount : 'Bộ lọc';
+
+        let orderCountRequest;
+        let orderCountReady = false;
+
+        function isOrderDateAfter(date, limit) {
+            if (!date || !limit) {
+                return false;
+            }
+            if (date.length !== limit.length) {
+                return date.length > limit.length;
+            }
+            return date > limit;
+        }
+
+        function validateOrderDateRange() {
+            const now = new Date();
+            const today = now.getFullYear() + '-'
+                + String(now.getMonth() + 1).padStart(2, '0') + '-'
+                + String(now.getDate()).padStart(2, '0');
+            const fromDate = fromDateInput.value;
+            const toDate = toDateInput.value;
+            let fromMessage = fromDateInput.validity.badInput ? 'Vui lòng nhập Từ ngày hợp lệ.' : '';
+            let toMessage = toDateInput.validity.badInput ? 'Vui lòng nhập Đến ngày hợp lệ.' : '';
+
+            if (isOrderDateAfter(fromDate, today)) {
+                fromMessage = 'Từ ngày không được lớn hơn ngày hiện tại.';
+            }
+            if (isOrderDateAfter(toDate, today)) {
+                toMessage = 'Đến ngày không được lớn hơn ngày hiện tại.';
+            }
+            if (isOrderDateAfter(fromDate, toDate)) {
+                fromMessage += (fromMessage ? ' ' : '') + 'Từ ngày không được sau Đến ngày.';
+            }
+
+            toDateInput.max = today;
+            fromDateInput.max = toDate && !isOrderDateAfter(toDate, today) ? toDate : today;
+            if (fromDate) {
+                toDateInput.min = fromDate;
+            } else {
+                toDateInput.removeAttribute('min');
+            }
+
+            fromDateError.textContent = fromMessage;
+            toDateError.textContent = toMessage;
+            fromDateInput.setAttribute('aria-invalid', String(Boolean(fromMessage)));
+            toDateInput.setAttribute('aria-invalid', String(Boolean(toMessage)));
+            const valid = !fromMessage && !toMessage;
+            if (!valid) {
+                if (orderCountRequest) {
+                    orderCountRequest.abort();
+                }
+                orderCountReady = false;
+                applyOrderFilter.disabled = true;
+                applyOrderFilter.textContent = 'KIỂM TRA NGÀY';
+            }
+            return valid;
+        }
+
+        async function refreshOrderFilterCount() {
+            if (orderCountRequest) {
+                orderCountRequest.abort();
+            }
+            orderCountReady = false;
+            orderFilterError.hidden = true;
+            if (!validateOrderDateRange()) {
+                return;
+            }
+            const request = new AbortController();
+            orderCountRequest = request;
+            applyOrderFilter.disabled = true;
+            applyOrderFilter.textContent = 'ĐANG ĐẾM...';
+            const parameters = new URLSearchParams(new FormData(orderFilterForm));
+            parameters.set('view', orderFilterForm.dataset.view);
+            try {
+                const response = await fetch(orderFilterForm.dataset.countUrl + '?' + parameters.toString(), {
+                    signal: request.signal,
+                    cache: 'no-store',
+                    headers: {'Accept': 'application/json'}
+                });
+                if (!response.ok || response.redirected) {
+                    throw new Error('Không thể tải số kết quả.');
+                }
+                const count = await response.json();
+                if (request.signal.aborted) {
+                    return;
+                }
+                if (!Number.isInteger(count) || count < 0) {
+                    throw new Error('Số kết quả không hợp lệ.');
+                }
+                applyOrderFilter.textContent = count + ' KẾT QUẢ';
+                applyOrderFilter.disabled = false;
+                orderCountReady = true;
+            } catch (error) {
+                if (request.signal.aborted) {
+                    return;
+                }
+                applyOrderFilter.textContent = 'THỬ LẠI';
+                applyOrderFilter.disabled = false;
+                orderFilterError.textContent = 'Không thể tải số kết quả. Vui lòng thử lại.';
+                orderFilterError.hidden = false;
+            }
+        }
+
+        validateOrderDateRange();
+
+        openOrderFilter.addEventListener('click', () => {
+            orderFilterForm.reset();
+            orderFilterDialog.showModal();
+            refreshOrderFilterCount();
+        });
+        document.getElementById('close-order-filter').addEventListener('click', () => orderFilterDialog.close());
+        orderFilterDialog.addEventListener('close', () => {
+            if (orderCountRequest) {
+                orderCountRequest.abort();
+            }
+        });
+        orderFilterForm.addEventListener('input', refreshOrderFilterCount);
+        orderFilterForm.addEventListener('submit', (event) => {
+            if (!validateOrderDateRange()) {
+                event.preventDefault();
+                return;
+            }
+            if (!orderCountReady) {
+                event.preventDefault();
+                refreshOrderFilterCount();
+            }
+        });
+    </script>
+</div>
+</body>
+</html>
