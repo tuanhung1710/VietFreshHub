@@ -296,14 +296,6 @@
         const toDateInput = document.getElementById('toDate');
         const fromDateError = document.getElementById('fromDate-error');
         const toDateError = document.getElementById('toDate-error');
-        const appliedOrderFilters = new FormData(orderFilterForm);
-        let activeOrderFilterCount = appliedOrderFilters.get('fromDate') || appliedOrderFilters.get('toDate') ? 1 : 0;
-        for (const field of ['priceRange', 'status', 'paymentStatus']) {
-            if (appliedOrderFilters.get(field)) {
-                activeOrderFilterCount++;
-            }
-        }
-        openOrderFilter.textContent = activeOrderFilterCount ? 'Bộ lọc ' + activeOrderFilterCount : 'Bộ lọc';
 
         let orderCountRequest;
         let orderCountReady = false;
@@ -433,5 +425,12 @@
         });
     </script>
 </div>
+<nav th:fragment="pagination(filterAction)" th:if="${totalPages > 1}" aria-label="Phân trang đơn hàng">
+    <a th:if="${currentPage > 0}"
+       th:href="@{${filterAction}(page=${currentPage - 1},keyword=${filter.keyword},fromDate=${filter.fromDate},toDate=${filter.toDate},priceRange=${filter.priceRange},status=${filter.status},paymentStatus=${filter.paymentStatus})}">← Trước</a>
+    <span th:text="${'Trang ' + (currentPage + 1) + ' / ' + totalPages}"></span>
+    <a th:if="${currentPage + 1 < totalPages}"
+       th:href="@{${filterAction}(page=${currentPage + 1},keyword=${filter.keyword},fromDate=${filter.fromDate},toDate=${filter.toDate},priceRange=${filter.priceRange},status=${filter.status},paymentStatus=${filter.paymentStatus})}">Sau →</a>
+</nav>
 </body>
 </html>

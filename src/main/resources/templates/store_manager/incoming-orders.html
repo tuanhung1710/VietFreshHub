@@ -12,16 +12,35 @@
             border: 1px solid black;
             padding: 8px;
         }
+
+        .bulk-order-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
     </style>
     <style th:replace="~{store_manager/order-filters :: styles}"></style>
 </head>
 <body>
 <a th:href="@{/seller}">← Quay lại cửa hàng</a>
 <h1 th:text="${pageTitle}">Đơn hàng</h1>
-<div th:replace="~{store_manager/order-filters :: filters(${orderView}, ${filterAction}, ${showStatusFilter}, true, ${#lists.size(orders)})}"></div>
+<div th:replace="~{store_manager/order-filters :: filters(${orderView}, ${filterAction}, ${showStatusFilter}, true, ${totalElements})}"></div>
+<form id="bulk-order-form" class="bulk-order-actions" method="post" autocomplete="off" th:if="${bulkAction != null}"
+      th:action="@{${bulkAction}}"
+      th:attr="data-view=${orderView},data-clear-selection=${clearOrderSelection == orderView}">
+    <input th:if="${orderView == 'preparing' or orderView == 'ready'}" type="hidden" name="view" th:value="${orderView}">
+    <div id="bulk-selected-orders" hidden></div>
+    <button id="bulk-order-button" type="submit" disabled aria-live="polite">CHỌN ĐƠN HÀNG</button>
+    <button id="bulk-invoice-button" type="submit" disabled aria-live="polite" th:if="${orderView == 'preparing'}"
+            th:formaction="@{/seller/orders/bulk-invoices}">IN HÓA ĐƠN</button>
+</form>
 <table>
     <thead>
     <tr>
+        <th scope="col">STT</th>
+        <th scope="col" th:if="${bulkAction != null}">
+            <label><input id="select-all-orders" type="checkbox" aria-label="Chọn tất cả đơn hàng trên trang này"> Chọn</label>
+        </th>
         <th scope="col">Mã đơn hàng</th>
         <th scope="col">Khách hàng</th>
         <th scope="col">Ngày đặt hàng</th>
@@ -33,9 +52,14 @@
     </thead>
     <tbody>
     <tr th:if="${#lists.isEmpty(orders)}">
-        <td colspan="7" th:text="${emptyMessage}"></td>
+        <td th:colspan="${bulkAction == null ? 8 : 9}" th:text="${emptyMessage}"></td>
     </tr>
-    <tr th:each="order : ${orders}">
+    <tr th:each="order, row : ${orders}">
+        <td th:text="${pageOffset + row.index + 1}"></td>
+        <td th:if="${bulkAction != null}">
+            <input class="order-selection" type="checkbox"
+                   th:value="${order.shopOrderId}" th:attr="aria-label=${'Chọn đơn hàng ' + order.orderCode}">
+        </td>
         <td th:text="${order.orderCode}"></td>
         <td th:text="${order.customerName}"></td>
         <td th:text="${#temporals.format(order.placedAt, 'dd-MM-yyyy HH:mm')}"></td>
@@ -52,5 +76,124 @@
     </tr>
     </tbody>
 </table>
+<nav th:replace="~{store_manager/order-filters :: pagination(${filterAction})}"></nav>
+<script th:if="${bulkAction != null}">
+    const bulkOrderForm = document.getElementById('bulk-order-form');
+    const bulkOrderButton = document.getElementById('bulk-order-button');
+    const bulkInvoiceButton = document.getElementById('bulk-invoice-button');
+    const bulkSelectedOrders = document.getElementById('bulk-selected-orders');
+    const selectAllOrders = document.getElementById('select-all-orders');
+    const orderSelections = Array.from(document.querySelectorAll('.order-selection'));
+    const orderSelectionKey = 'vietfreshhub.orderSelection.' + bulkOrderForm.dataset.view;
+    let selectedOrderIds = new Set();
+
+    function readSelectedOrderIds() {
+        try {
+            const storedIds = JSON.parse(sessionStorage.getItem(orderSelectionKey) || '[]');
+            return new Set(Array.isArray(storedIds) ? storedIds.map(String) : []);
+        } catch (error) {
+            return new Set();
+        }
+    }
+
+    function restoreOrderSelection() {
+        selectedOrderIds = readSelectedOrderIds();
+        for (const checkbox of orderSelections) {
+            checkbox.checked = selectedOrderIds.has(checkbox.value);
+        }
+        updateOrderSelection();
+    }
+
+    function saveOrderSelection() {
+        sessionStorage.setItem(orderSelectionKey, JSON.stringify(Array.from(selectedOrderIds)));
+        updateOrderSelection();
+    }
+
+    function clearOrderSelection() {
+        sessionStorage.removeItem(orderSelectionKey);
+        restoreOrderSelection();
+    }
+
+    function updateOrderSelection() {
+        const count = selectedOrderIds.size;
+        const pageSelectedCount = orderSelections.filter(checkbox => checkbox.checked).length;
+        selectAllOrders.disabled = orderSelections.length === 0;
+        selectAllOrders.checked = pageSelectedCount > 0 && pageSelectedCount === orderSelections.length;
+        selectAllOrders.indeterminate = pageSelectedCount > 0 && pageSelectedCount < orderSelections.length;
+        bulkOrderButton.disabled = count === 0;
+        if (bulkInvoiceButton) {
+            bulkInvoiceButton.disabled = count === 0;
+            bulkInvoiceButton.textContent = count ? 'IN HÓA ĐƠN ' + count + ' ĐƠN HÀNG' : 'IN HÓA ĐƠN';
+        }
+        if (count === 0) {
+            bulkOrderButton.textContent = 'CHỌN ĐƠN HÀNG';
+            return;
+        }
+        switch (bulkOrderForm.dataset.view) {
+            case 'incoming':
+                bulkOrderButton.textContent = 'XÁC NHẬN ' + count + ' ĐƠN HÀNG';
+                break;
+            case 'confirmed':
+                bulkOrderButton.textContent = 'BẮT ĐẦU CHUẨN BỊ ' + count + ' ĐƠN HÀNG';
+                break;
+            case 'preparing':
+                bulkOrderButton.textContent = 'ĐÁNH DẤU ' + count + ' ĐƠN SẴN SÀNG GIAO HÀNG';
+                break;
+            case 'ready':
+                bulkOrderButton.textContent = 'IN LẠI HÓA ĐƠN ' + count + ' ĐƠN HÀNG';
+                break;
+        }
+    }
+
+    selectAllOrders.addEventListener('change', () => {
+        for (const checkbox of orderSelections) {
+            checkbox.checked = selectAllOrders.checked;
+            if (checkbox.checked) {
+                selectedOrderIds.add(checkbox.value);
+            } else {
+                selectedOrderIds.delete(checkbox.value);
+            }
+        }
+        saveOrderSelection();
+    });
+    for (const checkbox of orderSelections) {
+        checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+                selectedOrderIds.add(checkbox.value);
+            } else {
+                selectedOrderIds.delete(checkbox.value);
+            }
+            saveOrderSelection();
+        });
+    }
+    bulkOrderForm.addEventListener('submit', (event) => {
+        restoreOrderSelection();
+        if (selectedOrderIds.size === 0) {
+            event.preventDefault();
+            return;
+        }
+        bulkSelectedOrders.replaceChildren();
+        for (const shopOrderId of selectedOrderIds) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'shopOrderIds';
+            input.value = shopOrderId;
+            bulkSelectedOrders.appendChild(input);
+        }
+    });
+    for (const criteriaForm of [document.querySelector('.order-search-form'), document.getElementById('order-filter-form')]) {
+        criteriaForm.addEventListener('submit', (event) => {
+            if (!event.defaultPrevented) {
+                clearOrderSelection();
+            }
+        });
+    }
+    document.querySelector('.order-filter-clear').addEventListener('click', clearOrderSelection);
+    window.addEventListener('pageshow', restoreOrderSelection);
+    if (bulkOrderForm.dataset.clearSelection === 'true') {
+        sessionStorage.removeItem(orderSelectionKey);
+    }
+    restoreOrderSelection();
+</script>
 </body>
 </html>
