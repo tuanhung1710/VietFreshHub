@@ -2,6 +2,8 @@ package VietFreshHub.Order.repository;
 
 import VietFreshHub.Order.entity.ShopOrder;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -20,6 +22,10 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, Jpa
     @Override
     @EntityGraph(attributePaths = {"order", "order.customer"})
     List<ShopOrder> findAll(Specification<ShopOrder> specification, Sort sort);
+
+    @Override
+    @EntityGraph(attributePaths = {"order", "order.customer"})
+    Page<ShopOrder> findAll(Specification<ShopOrder> specification, Pageable pageable);
 
     long countByShopId(Long shopId);
 

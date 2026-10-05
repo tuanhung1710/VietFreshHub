@@ -18,10 +18,11 @@
 <body>
 <a th:href="@{/seller}">← Quay lại cửa hàng</a>
 <h1>LỊCH SỬ ĐƠN ĐÃ XỬ LÝ</h1>
-<div th:replace="~{store_manager/order-filters :: filters('processed', '/seller/processed-orders', true, true, ${#lists.size(processedOrders)})}"></div>
+<div th:replace="~{store_manager/order-filters :: filters('processed', '/seller/processed-orders', true, true, ${totalElements})}"></div>
 <table>
     <thead>
     <tr>
+        <th scope="col">STT</th>
         <th scope="col">Mã đơn hàng</th>
         <th scope="col">Khách hàng</th>
         <th scope="col">Ngày đặt hàng</th>
@@ -33,9 +34,10 @@
     </thead>
     <tbody>
     <tr th:if="${#lists.isEmpty(processedOrders)}">
-        <td colspan="7">Hiện không có đơn hàng đã xử lý.</td>
+        <td colspan="8">Hiện không có đơn hàng đã xử lý.</td>
     </tr>
-    <tr th:each="order : ${processedOrders}">
+    <tr th:each="order, row : ${processedOrders}">
+        <td th:text="${pageOffset + row.index + 1}"></td>
         <td th:text="${order.orderCode}"></td>
         <td th:text="${order.customerName}"></td>
         <td th:text="${#temporals.format(order.placedAt, 'dd-MM-yyyy HH:mm')}"></td>
@@ -54,5 +56,6 @@
     </tr>
     </tbody>
 </table>
+<nav th:replace="~{store_manager/order-filters :: pagination('/seller/processed-orders')}"></nav>
 </body>
 </html>

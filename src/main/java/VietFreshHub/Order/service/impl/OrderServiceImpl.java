@@ -20,6 +20,9 @@ import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -33,6 +36,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.TreeSet;
 
 @Service
 @RequiredArgsConstructor
@@ -45,43 +49,40 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<IncomingOrderResponse> getIncomingOrders(Authentication authentication, OrderFilterRequest filter) {
-        return toOrderResponses(findFilteredShopOrders(authentication, filter, "incoming"));
+    public Page<IncomingOrderResponse> getIncomingOrders(Authentication authentication, OrderFilterRequest filter, int page) {
+        return findFilteredShopOrders(authentication, filter, "incoming", page).map(this::toOrderResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<IncomingOrderResponse> getAllOrders(Authentication authentication, OrderFilterRequest filter) {
-        return toOrderResponses(findFilteredShopOrders(authentication, filter, "all"));
+    public Page<IncomingOrderResponse> getAllOrders(Authentication authentication, OrderFilterRequest filter, int page) {
+        return findFilteredShopOrders(authentication, filter, "all", page).map(this::toOrderResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<IncomingOrderResponse> getConfirmedOrders(Authentication authentication, OrderFilterRequest filter) {
-        return toOrderResponses(findFilteredShopOrders(authentication, filter, "confirmed"));
+    public Page<IncomingOrderResponse> getConfirmedOrders(Authentication authentication, OrderFilterRequest filter, int page) {
+        return findFilteredShopOrders(authentication, filter, "confirmed", page).map(this::toOrderResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<IncomingOrderResponse> getPreparingOrders(Authentication authentication, OrderFilterRequest filter) {
-        return toOrderResponses(findFilteredShopOrders(authentication, filter, "preparing"));
+    public Page<IncomingOrderResponse> getPreparingOrders(Authentication authentication, OrderFilterRequest filter, int page) {
+        return findFilteredShopOrders(authentication, filter, "preparing", page).map(this::toOrderResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<IncomingOrderResponse> getReadyOrders(Authentication authentication, OrderFilterRequest filter) {
-        return toOrderResponses(findFilteredShopOrders(authentication, filter, "ready"));
+    public Page<IncomingOrderResponse> getReadyOrders(Authentication authentication, OrderFilterRequest filter, int page) {
+        return findFilteredShopOrders(authentication, filter, "ready", page).map(this::toOrderResponse);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProcessedOrderResponse> getProcessedOrderHistory(Authentication authentication, OrderFilterRequest filter) {
-        List<ShopOrder> shopOrders = findFilteredShopOrders(authentication, filter, "processed");
-        List<ProcessedOrderResponse> orders = new ArrayList<>();
-
-        for (ShopOrder shopOrder : shopOrders) {
+    public Page<ProcessedOrderResponse> getProcessedOrderHistory(Authentication authentication, OrderFilterRequest filter, int page) {
+        return findFilteredShopOrders(authentication, filter, "processed", page).map(shopOrder -> {
             Order order = shopOrder.getOrder();
-            orders.add(new ProcessedOrderResponse(
+            return new ProcessedOrderResponse(
                     shopOrder.getShopOrderId(),
                     order.getOrderCode(),
                     order.getCustomer().getFullName(),
@@ -89,10 +90,8 @@ public class OrderServiceImpl implements OrderService {
                     shopOrder.getTotalAmount(),
                     getOrderStatusLabel(shopOrder.getStatus()),
                     order.getPaymentStatus()
-            ));
-        }
-
-        return orders;
+            );
+        });
     }
 
     @Override
@@ -121,6 +120,10 @@ public class OrderServiceImpl implements OrderService {
         Long shopId = shopService.getManagedShopId(authentication);
         ShopOrder shopOrder = shopOrderRepository.findByShopOrderIdAndShopId(shopOrderId, shopId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return toOrderDetailResponse(shopOrder);
+    }
+
+    private OrderDetailResponse toOrderDetailResponse(ShopOrder shopOrder) {
         Order order = shopOrder.getOrder();
         OrderAddress address = orderAddressRepository.findByOrderId(order.getOrderId()).orElse(null);
         List<OrderItemResponse> items = new ArrayList<>();
@@ -183,10 +186,111 @@ public class OrderServiceImpl implements OrderService {
         shopOrder.markReady();
     }
 
-    private List<ShopOrder> findFilteredShopOrders(Authentication authentication, OrderFilterRequest filter,
-                                                 String view) {
+    @Override
+    @Transactional
+    public void confirmOrders(List<Long> shopOrderIds, Authentication authentication) {
+        List<ShopOrder> shopOrders = getShopOrdersForUpdate(shopOrderIds, authentication);
+        for (ShopOrder shopOrder : shopOrders) {
+            if (!"PENDING".equals(shopOrder.getStatus())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Chỉ có thể xác nhận đơn hàng đang chờ xác nhận.");
+            }
+        }
+        for (ShopOrder shopOrder : shopOrders) {
+            shopOrder.confirm();
+        }
+    }
+
+    @Override
+    @Transactional
+    public void startPreparingOrders(List<Long> shopOrderIds, Authentication authentication) {
+        List<ShopOrder> shopOrders = getShopOrdersForUpdate(shopOrderIds, authentication);
+        for (ShopOrder shopOrder : shopOrders) {
+            if (!"CONFIRMED".equals(shopOrder.getStatus())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Chỉ có thể bắt đầu chuẩn bị đơn hàng đã xác nhận.");
+            }
+        }
+        for (ShopOrder shopOrder : shopOrders) {
+            shopOrder.startPreparing();
+        }
+    }
+
+    @Override
+    @Transactional
+    public void markOrdersReady(List<Long> shopOrderIds, Authentication authentication) {
+        List<ShopOrder> shopOrders = getShopOrdersForUpdate(shopOrderIds, authentication);
+        for (ShopOrder shopOrder : shopOrders) {
+            if (!"PREPARING".equals(shopOrder.getStatus())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Chỉ có thể đánh dấu sẵn sàng giao hàng cho đơn hàng đang chuẩn bị.");
+            }
+        }
+        for (ShopOrder shopOrder : shopOrders) {
+            shopOrder.markReady();
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderDetailResponse> getBulkInvoices(List<Long> shopOrderIds, Authentication authentication, String view) {
+        Long shopId = shopService.getManagedShopId(authentication);
+        String expectedStatus = switch (view) {
+            case "preparing" -> "PREPARING";
+            case "ready" -> "READY_FOR_DELIVERY";
+            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Danh sách in hóa đơn không hợp lệ.");
+        };
+        List<ShopOrder> shopOrders = new ArrayList<>();
+        for (Long shopOrderId : validateSelectedIds(shopOrderIds)) {
+            ShopOrder shopOrder = shopOrderRepository.findByShopOrderIdAndShopId(shopOrderId, shopId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            if (!expectedStatus.equals(shopOrder.getStatus())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Đơn hàng được chọn không còn thuộc trạng thái của danh sách in hóa đơn.");
+            }
+            shopOrders.add(shopOrder);
+        }
+        List<OrderDetailResponse> invoices = new ArrayList<>();
+        for (ShopOrder shopOrder : shopOrders) {
+            invoices.add(toOrderDetailResponse(shopOrder));
+        }
+        return invoices;
+    }
+
+    private List<Long> validateSelectedIds(List<Long> shopOrderIds) {
+        if (shopOrderIds == null || shopOrderIds.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Vui lòng chọn ít nhất một đơn hàng.");
+        }
+        TreeSet<Long> selectedIds = new TreeSet<>();
+        for (Long shopOrderId : shopOrderIds) {
+            if (shopOrderId == null || shopOrderId <= 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đơn hàng được chọn không hợp lệ.");
+            }
+            selectedIds.add(shopOrderId);
+        }
+        return new ArrayList<>(selectedIds);
+    }
+
+    private List<ShopOrder> getShopOrdersForUpdate(List<Long> shopOrderIds, Authentication authentication) {
+        Long shopId = shopService.getManagedShopId(authentication);
+        List<ShopOrder> shopOrders = new ArrayList<>();
+        for (Long shopOrderId : validateSelectedIds(shopOrderIds)) {
+            shopOrders.add(shopOrderRepository.findForUpdateByShopOrderIdAndShopId(shopOrderId, shopId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)));
+        }
+        return shopOrders;
+    }
+
+    private Page<ShopOrder> findFilteredShopOrders(Authentication authentication, OrderFilterRequest filter,
+                                                 String view, int page) {
+        if (page < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Số trang không hợp lệ.");
+        }
         Specification<ShopOrder> specification = buildOrderSpecification(authentication, filter, view);
-        return shopOrderRepository.findAll(specification, Sort.by(Sort.Direction.DESC, "order.placedAt"));
+        int pageSize = "all".equals(view) || "processed".equals(view) ? 50 : 15;
+        Pageable pageable = PageRequest.of(page, pageSize,
+                Sort.by(Sort.Direction.DESC, "order.placedAt", "shopOrderId"));
+        return shopOrderRepository.findAll(specification, pageable);
     }
 
     private Specification<ShopOrder> buildOrderSpecification(Authentication authentication, OrderFilterRequest filter,
@@ -285,24 +389,18 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    private List<IncomingOrderResponse> toOrderResponses(List<ShopOrder> shopOrders) {
-        List<IncomingOrderResponse> orders = new ArrayList<>();
-
-        for (ShopOrder shopOrder : shopOrders) {
-            Order order = shopOrder.getOrder();
-            orders.add(new IncomingOrderResponse(
-                    shopOrder.getShopOrderId(),
-                    order.getOrderCode(),
-                    order.getCustomer().getFullName(),
-                    order.getPlacedAt(),
-                    shopOrder.getTotalAmount(),
-                    shopOrder.getStatus(),
-                    getOrderStatusLabel(shopOrder.getStatus()),
-                    order.getPaymentStatus()
-            ));
-        }
-
-        return orders;
+    private IncomingOrderResponse toOrderResponse(ShopOrder shopOrder) {
+        Order order = shopOrder.getOrder();
+        return new IncomingOrderResponse(
+                shopOrder.getShopOrderId(),
+                order.getOrderCode(),
+                order.getCustomer().getFullName(),
+                order.getPlacedAt(),
+                shopOrder.getTotalAmount(),
+                shopOrder.getStatus(),
+                getOrderStatusLabel(shopOrder.getStatus()),
+                order.getPaymentStatus()
+        );
     }
 
     private ShopOrder getShopOrderForUpdate(Long shopOrderId, Authentication authentication) {
