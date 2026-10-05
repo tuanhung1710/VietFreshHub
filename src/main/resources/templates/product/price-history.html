@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/product-inventory :: head('Lịch sử giá SKU','product')}"></head>
+<body><header th:replace="~{fragments/product-inventory :: nav('product')}"></header>
+<main class="container vf-main">
+<a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{/seller/products/{id}(id=${productId})}">← Chi tiết sản phẩm</a>
+<h1>Lịch sử giá SKU</h1><p class="text-body-secondary mb-4">Giá bán gốc của SKU. Giá cận hạn theo lô được ghi riêng trong lịch sử thao tác kho.</p>
+<div class="card overflow-hidden mb-3"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+<thead class="table-light"><tr><th scope="col">Giá (VND)</th><th scope="col">Bắt đầu (giờ Việt Nam)</th><th scope="col">Kết thúc</th><th scope="col">Người thay đổi</th></tr></thead>
+<tbody><tr th:each="e : ${events.content}"><td class="fw-semibold text-success" th:text="${#numbers.formatDecimal(e.price,0,'POINT',0,'COMMA')+' ₫'}"></td><td class="text-nowrap" th:text="${#temporals.format(e.effectiveFrom.plusHours(7),'dd/MM/yyyy HH:mm:ss')}"></td><td class="text-nowrap" th:text="${e.effectiveTo==null?'Hiện hành':#temporals.format(e.effectiveTo.plusHours(7),'dd/MM/yyyy HH:mm:ss')}"></td><td th:text="${e.changedBy==null?'Hệ thống':'#'+e.changedBy}"></td></tr><tr th:if="${events.empty}"><td colspan="4" class="text-center text-body-secondary py-5">SKU chưa có lịch sử giá được ghi nhận.</td></tr></tbody>
+</table></div></div>
+<nav class="d-flex flex-wrap align-items-center justify-content-between gap-3" aria-label="Trang lịch sử giá">
+<a class="btn btn-outline-secondary btn-sm" th:if="${events.hasPrevious()}" th:href="@{/seller/products/{id}/variants/{v}/prices(id=${productId},v=${variantId},page=${events.number})}">← Trước</a>
+<span class="small text-body-secondary" th:text="${'Trang '+(events.number+1)+' / '+T(java.lang.Math).max(1,events.totalPages)}"></span>
+<a class="btn btn-outline-secondary btn-sm" th:if="${events.hasNext()}" th:href="@{/seller/products/{id}/variants/{v}/prices(id=${productId},v=${variantId},page=${events.number+2})}">Sau →</a>
+</nav></main></body></html>
+
