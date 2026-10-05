@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/product-inventory :: head('Tem lô hàng','inventory')}"></head>
+<body><header th:replace="~{fragments/product-inventory :: nav('inventory')}"></header>
+<main class="container vf-main narrow">
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 no-print"><a class="text-success text-decoration-none" th:href="@{/seller/inventory}">← Kho hàng</a><button class="btn btn-success" id="print-label" type="button">In tem</button></div>
+<section class="card p-4 batch-label mb-4">
+<h1>VietFresh Hub</h1><h2 class="h5" th:text="${row.productName}"></h2><p class="small mb-2" th:text="${row.sku+' · '+row.unit+' · Lô '+row.batch.batchCode}"></p><p class="fw-semibold" th:text="${row.batch.expiryDate==null?'HSD chưa khai báo':'HSD: '+#temporals.format(row.batch.expiryDate,'dd/MM/yyyy')}"></p>
+<svg id="batch-barcode" role="img" aria-label="Mã vạch lô hàng" th:attr="data-code=${'VF-BATCH-'+row.batch.batchId}"></svg>
+<p class="barcode-text mb-0" th:text="${'VF-BATCH-'+row.batch.batchId}"></p>
+</section>
+<section class="card p-4 no-print"><h2 class="h5 mb-3">Phân bổ thực tế cho đơn</h2><p class="text-body-secondary mb-0" th:if="${row.allocations.empty}">Lô chưa có bản ghi phân bổ.</p>
+<div class="table-responsive" th:if="${!row.allocations.empty}"><table class="table table-hover align-middle mb-0">
+<thead class="table-light"><tr><th scope="col">Dòng đơn</th><th scope="col">Số lượng</th><th scope="col">Trạng thái</th></tr></thead>
+<tbody><tr th:each="a : ${row.allocations}"><td th:text="${'#'+a.orderItemId}"></td><td th:text="${a.quantity}"></td><td><span class="badge bg-secondary-subtle text-secondary-emphasis" th:text="${a.status.name()=='RESERVED'?'Đang giữ':a.status.name()=='SOLD'?'Đã bán':'Đã trả giữ'}"></span></td></tr></tbody>
+</table></div></section>
+</main><script defer th:src="@{/js/inventory/label.js}"></script>
+</body></html>
+

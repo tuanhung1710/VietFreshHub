@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/product-inventory :: head('Nhập lô hàng','inventory')}"></head>
+<body><header th:replace="~{fragments/product-inventory :: nav('inventory')}"></header>
+<main class="container vf-main narrow">
+<a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{/seller/inventory}">← Kho hàng</a>
+<h1>Nhập lô mới</h1><p class="text-body-secondary mb-4" th:text="${row.product.name+' · '+variant.variant.sku+' · '+variant.variant.unit}"></p>
+<form class="card p-4 form-stack" th:object="${form}" th:action="@{/seller/inventory/products/{p}/variants/{v}/restock(p=${productId},v=${variantId})}" method="post">
+<div th:replace="~{fragments/product-inventory :: errors}"></div>
+<h2 class="h5 mb-3">Thông tin lô nhập</h2>
+<div class="row g-3">
+<label class="col-md-6 form-label" for="batchCode">Mã lô (tự động)<input class="form-control mt-1" id="batchCode" th:field="*{batchCode}" maxlength="100" placeholder="Tự sinh khi lưu" readonly><small class="d-block text-body-secondary mt-1">Mỗi lần nhập tạo một mã lô riêng.</small></label>
+<label class="col-md-6 form-label" for="quantity">Số lượng nhập <span class="text-danger">*</span><input class="form-control mt-1" id="quantity" type="number" min="1" step="1" th:field="*{quantity}" required></label>
+<label class="col-md-6 form-label" for="receivedDate">Ngày nhập <span class="text-danger">*</span><input class="form-control mt-1" id="receivedDate" type="date" th:field="*{receivedDate}" th:max="${today}" required></label>
+<label class="col-md-6 form-label" for="expiryDate">Hạn dùng <span class="text-danger">*</span><input class="form-control mt-1" id="expiryDate" type="date" th:field="*{expiryDate}" th:min="${today}" required></label>
+<label class="col-md-6 form-label" for="costPrice">Giá vốn / đơn vị (VND)<input class="form-control mt-1" id="costPrice" type="number" min="0" step="0.01" th:field="*{costPrice}"></label>
+<label class="col-12 form-label" for="reason">Lý do / ghi chú <span class="text-danger">*</span><input class="form-control mt-1" id="reason" th:field="*{reason}" maxlength="900" required></label>
+</div><div class="d-flex gap-2 mt-4"><button type="submit" class="btn btn-success">Nhập hàng</button><a class="btn btn-outline-secondary" th:href="@{/seller/inventory}">Hủy</a></div>
+</form></main></body></html>
+
