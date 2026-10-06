@@ -130,8 +130,8 @@ public class AuthController {
 //        return "redirect:" + getHomeUrl(authentication);
         String homeUrl = getHomeUrl(authentication);
 
-        if ("/seller".equals(homeUrl)) {
-            return "redirect:/seller";
+        if ("/seller".equals(homeUrl) || "/delivery".equals(homeUrl)) {
+            return "redirect:" + homeUrl;
         }
 
         return homeUrl;
@@ -146,7 +146,7 @@ public class AuthController {
         }
 
         if (hasAuthority(authentication, "ROLE_DELIVERY_STAFF")) {
-            return "/delivery/delivery";
+            return "/delivery";
         }
 
         if (hasAuthority(authentication, "ROLE_CUSTOMER")) {

@@ -119,6 +119,9 @@ public class AuthService {
 
         for (UserRole userRole : user.getUserRoles()) {
             String roleName = userRole.getRole().getRoleName();
+            if ("DELIVERY_STAFF".equals(roleName)) {
+                roleName = "ROLE_DELIVERY_STAFF";
+            }
             authorities.add(new SimpleGrantedAuthority(roleName));
         }
 
