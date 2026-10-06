@@ -31,7 +31,10 @@ public class SecurityConfig {
         CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
         requestHandler.setCsrfRequestAttributeName(null);
 
-        http.csrf(csrf -> csrf.csrfTokenRequestHandler(requestHandler));
+        http.csrf(csrf -> csrf
+                .csrfTokenRequestHandler(requestHandler)
+                .ignoringRequestMatchers("/api/**")
+        );
 
         http.securityContext(context -> {
             context.securityContextRepository(securityContextRepository);
@@ -40,12 +43,12 @@ public class SecurityConfig {
         http.authorizeHttpRequests(authorize -> {
             authorize.requestMatchers(
                     "/", "/login", "/register", "/error",
-                    "/css/**", "/js/**", "/images/**"
+                    "/css/**", "/js/**", "/images/**", "/api/**",
+                    "/product-detail/**", "/cart/**", "/home", "/customer/**"
             ).permitAll()
              .requestMatchers("/admin/**").hasRole("ADMIN")
                     .requestMatchers("/manager/**").hasRole("STORE_MANAGER")
                     .requestMatchers("/delivery/**").hasRole("DELIVERY_STAFF")
-                    .requestMatchers("/customer/**").hasRole("CUSTOMER")
                     .anyRequest().authenticated();
         });
 

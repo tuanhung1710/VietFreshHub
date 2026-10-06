@@ -40,9 +40,18 @@ public class AuthController {
         return "auth/register";
     }
     @GetMapping("/")
-    public String redirectToLogin() {
+    public String rootRedirect(Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            return "redirect:" + getHomeUrl(authentication);
+        }
         return "redirect:/login";
     }
+
+    @GetMapping("/login")
+    public String showLoginPage() {
+        return "auth/login";
+    }
+
     @PostMapping("/register")
     public String register(
             @Valid @ModelAttribute("registerRequest") RegisterRequest request,
@@ -57,7 +66,6 @@ public class AuthController {
 
         RegisterResponse registerResponse = authService.register(request);
 
-        // Tài khoản vừa đăng ký luôn được gán ROLE_CUSTOMER
         Authentication authentication =
                 new UsernamePasswordAuthenticationToken(
                         registerResponse.getEmail(),
@@ -65,36 +73,16 @@ public class AuthController {
                         List.of(new SimpleGrantedAuthority("ROLE_CUSTOMER"))
                 );
 
-        // Đưa Authentication vào SecurityContext
-        SecurityContext context =
-                SecurityContextHolder.createEmptyContext();
-
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);
 
+        securityContextRepository.saveContext(context, httpRequest, httpResponse);
 
-        securityContextRepository.saveContext(
-                context,
-                httpRequest,
-                httpResponse
-        );
-
-        redirectAttributes.addFlashAttribute(
-                "successMessage",
-                registerResponse.getMessage()
-        );
-        //        return "redirect:/";
+        redirectAttributes.addFlashAttribute("successMessage", registerResponse.getMessage());
         return "redirect:" + getHomeUrl(authentication);
-//        return "customer/home";
     }
-    @GetMapping("/login")
-    public String showLoginPage() {
-//        csrfToken.getToken();
-//        System.out.println("csrfToken: " + csrfToken.getToken());
-        String demoPassword = "Demo@123";
-        System.out.println(passwordEncoder.encode(demoPassword));
-        return "auth/login";
-    }
+
     @PostMapping("/login")
     public String login(
             @RequestParam("username") String email,
@@ -126,10 +114,7 @@ public class AuthController {
                 response
         );
 
-//        return "redirect:/";
-//        return "customer/home";
-//        return "redirect:" + getHomeUrl(authentication);
-        return   getHomeUrl(authentication);
+        return "redirect:" + getHomeUrl(authentication);
     }
     private String getHomeUrl(Authentication authentication) {
         if (hasAuthority(authentication, "ROLE_ADMIN")) {

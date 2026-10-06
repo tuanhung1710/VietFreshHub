@@ -114,8 +114,8 @@ public class SellerApplicationService {
                     ? uploadError.getCause()
                     : uploadError;
 
-            if (cause instanceof IllegalArgumentException illegalArgument) {
-                throw illegalArgument;
+            if (cause instanceof IllegalArgumentException) {
+                throw (IllegalArgumentException) cause;
             }
 
             throw new IOException(

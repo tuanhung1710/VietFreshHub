@@ -309,20 +309,24 @@ public class AdminSellerApplicationService {
     }
 
     private String statusLabel(SellerApplicationStatus status) {
-        return switch (status) {
-            case PENDING -> "Chờ tiếp nhận";
-            case UNDER_REVIEW -> "Đang thẩm định";
-            case APPROVED -> "Đã phê duyệt";
-            case REJECTED -> "Đã từ chối";
-            case CANCELLED -> "Đã hủy";
-        };
+        if (status == null) return "—";
+        switch (status) {
+            case PENDING: return "Chờ tiếp nhận";
+            case UNDER_REVIEW: return "Đang thẩm định";
+            case APPROVED: return "Đã phê duyệt";
+            case REJECTED: return "Đã từ chối";
+            case CANCELLED: return "Đã hủy";
+            default: return status.name();
+        }
     }
 
     private String documentStatusLabel(DocumentVerificationStatus status) {
-        return switch (status) {
-            case PENDING -> "Chưa xác minh";
-            case VERIFIED -> "Đã xác minh";
-            case REJECTED -> "Không hợp lệ";
-        };
+        if (status == null) return "—";
+        switch (status) {
+            case PENDING: return "Chưa xác minh";
+            case VERIFIED: return "Đã xác minh";
+            case REJECTED: return "Không hợp lệ";
+            default: return status.name();
+        }
     }
 }

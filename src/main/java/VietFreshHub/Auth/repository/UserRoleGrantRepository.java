@@ -11,14 +11,11 @@ import org.springframework.data.repository.query.Param;
 public interface UserRoleGrantRepository extends Repository<UserRole, UserRoleId> {
 
     @Modifying
-    @Query(value = """
-            INSERT INTO dbo.user_roles (user_id, role_id, assigned_at)
-            SELECT :userId, :roleId, SYSUTCDATETIME()
-            WHERE NOT EXISTS (
-                SELECT 1
-                FROM dbo.user_roles WITH (UPDLOCK, HOLDLOCK)
-                WHERE user_id = :userId AND role_id = :roleId
-            )
-            """, nativeQuery = true)
+    @Query(value = "INSERT INTO dbo.user_roles (user_id, role_id, assigned_at) " +
+                   "SELECT :userId, :roleId, SYSUTCDATETIME() " +
+                   "WHERE NOT EXISTS (" +
+                   "    SELECT 1 FROM dbo.user_roles WITH (UPDLOCK, HOLDLOCK) " +
+                   "    WHERE user_id = :userId AND role_id = :roleId" +
+                   ")", nativeQuery = true)
     int grantIfMissing(@Param("userId") Long userId, @Param("roleId") Integer roleId);
 }
