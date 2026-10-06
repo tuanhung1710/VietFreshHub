@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/product-inventory :: head('Không thể thực hiện','product')}"></head>
+<body><header th:replace="~{fragments/product-inventory :: nav('product')}"></header>
+<main class="container vf-main narrow">
+<section class="card p-4"><h1 class="mb-3">Không thể thực hiện</h1><p class="alert alert-danger" role="alert" th:text="${message}"></p><div class="d-flex flex-wrap gap-2"><a class="btn btn-success" th:href="@{/seller/products}">Sản phẩm</a><a class="btn btn-outline-secondary" th:href="@{/seller/inventory}">Kho hàng</a></div></section>
+</main></body></html>
+
