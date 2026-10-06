@@ -39,11 +39,12 @@ public class SecurityConfig {
 
         http.authorizeHttpRequests(authorize -> {
             authorize.requestMatchers(
-                    "/", "/login", "/register", "/error",
+                    "/", "/login", "/register", "/verify-email",
+                            "/verify-email/resend", "/error",
                     "/css/**", "/js/**", "/images/**"
             ).permitAll()
              .requestMatchers("/admin/**").hasRole("ADMIN")
-                    .requestMatchers("/manager/**").hasRole("STORE_MANAGER")
+                    .requestMatchers("/store_manager/**").hasRole("STORE_MANAGER")
                     .requestMatchers("/delivery/**").hasRole("DELIVERY_STAFF")
                     .requestMatchers("/customer/**").hasRole("CUSTOMER")
                     .anyRequest().authenticated();
@@ -61,11 +62,14 @@ public class SecurityConfig {
             );
         });
 
-        http.logout(logout -> {
-            logout.logoutUrl("/logout");
-            logout.logoutSuccessUrl("/login?logout");
-            logout.permitAll();
-        });
+        http.logout(logout -> logout
+                .logoutUrl("/logout")
+                .invalidateHttpSession(true)
+                .clearAuthentication(true)
+                .deleteCookies("JSESSIONID")
+                .logoutSuccessUrl("/login?logout")
+                .permitAll()
+        );
 
         return http.build();
     }
