@@ -212,18 +212,18 @@
             <h2 id="order-filter-title">BỘ LỌC</h2>
             <button id="close-order-filter" class="order-filter-close" type="button" aria-label="Đóng bộ lọc">×</button>
         </div>
-        <form id="order-filter-form" method="get" novalidate th:action="@{${filterAction}}" th:object="${filter}"
+        <form id="order-filter-form" method="get" novalidate th:action="@{${filterAction}}"
               th:attr="data-count-url=@{/seller/orders/filter-count},data-view=${orderView}">
             <input type="hidden" name="keyword" th:value="${filter.keyword}">
             <fieldset>
                 <legend>Ngày đặt hàng</legend>
                 <div class="order-filter-dates">
                     <label for="fromDate">Từ ngày</label>
-                    <input type="date" th:field="*{fromDate}" aria-describedby="fromDate-error">
+                    <input id="fromDate" name="fromDate" type="date" th:value="${filter.fromDate}" aria-describedby="fromDate-error">
                     <p id="fromDate-error" class="order-filter-date-error" aria-live="polite"></p>
                     <span class="order-filter-date-separator" aria-hidden="true">-</span>
                     <label for="toDate">Đến ngày</label>
-                    <input type="date" th:field="*{toDate}" aria-describedby="toDate-error">
+                    <input id="toDate" name="toDate" type="date" th:value="${filter.toDate}" aria-describedby="toDate-error">
                     <p id="toDate-error" class="order-filter-date-error" aria-live="polite"></p>
                 </div>
             </fieldset>
