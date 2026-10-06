@@ -245,14 +245,26 @@ public class AuthController {
                 authentication.getAuthorities()
         );
 
+//        return "redirect:/";
+//        return "customer/home";
+//        return "redirect:" + getHomeUrl(authentication);
+        String homeUrl = getHomeUrl(authentication);
+
+        if ("/seller".equals(homeUrl) || "/delivery".equals(homeUrl)) {
+            return "redirect:" + homeUrl;
+        }
+
+        return homeUrl;
+    }
+    private String getHomeUrl(Authentication authentication) {
         if (hasAuthority(authentication, "ROLE_ADMIN")) {
             return "/admin/admin";
         }
         if (hasAuthority(authentication, "ROLE_STORE_MANAGER")) {
-            return "/store_manager/shop";
+            return "/seller";
         }
         if (hasAuthority(authentication, "ROLE_DELIVERY_STAFF")) {
-            return "/delivery/delivery";
+            return "/delivery";
         }
         if (hasAuthority(authentication, "ROLE_CUSTOMER")) {
             return "/customer/home";

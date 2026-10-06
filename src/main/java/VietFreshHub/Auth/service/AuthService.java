@@ -13,6 +13,7 @@ import VietFreshHub.Auth.repository.UserRepository;
 import VietFreshHub.Auth.repository.UserRoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -141,10 +142,12 @@ public class AuthService {
         User user = userRepository.findByEmailIgnoreCase(email.trim())
                 .orElse(null);
 
-        if (user == null
-                || user.getEmailVerifiedAt() == null
-                || !"ACTIVE".equalsIgnoreCase(user.getStatus())) {
-            return null;
+        for (UserRole userRole : user.getUserRoles()) {
+            String roleName = userRole.getRole().getRoleName();
+            if ("DELIVERY_STAFF".equals(roleName)) {
+                roleName = "ROLE_DELIVERY_STAFF";
+            }
+            authorities.add(new SimpleGrantedAuthority(roleName));
         }
 
         return createAuthentication(user);
@@ -169,5 +172,18 @@ public class AuthService {
                 null,
                 authorities
         );
+    }
+
+    @Transactional(readOnly = true)
+    public Long getCurrentUserId(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AccessDeniedException("Bạn cần đăng nhập để truy cập.");
+        }
+
+        User user = userRepository.findByEmailIgnoreCase(authentication.getName())
+                .filter(currentUser -> "ACTIVE".equalsIgnoreCase(currentUser.getStatus()))
+                .orElseThrow(() -> new AccessDeniedException("Tài khoản không được phép truy cập."));
+
+        return user.getUserId();
     }
 }

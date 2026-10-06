@@ -44,8 +44,9 @@ public class SecurityConfig {
                     "/css/**", "/js/**", "/images/**"
             ).permitAll()
              .requestMatchers("/admin/**").hasRole("ADMIN")
-                    .requestMatchers("/store_manager/**").hasRole("STORE_MANAGER")
-                    .requestMatchers("/delivery/**").hasRole("DELIVERY_STAFF")
+                    .requestMatchers("/manager/**").hasRole("STORE_MANAGER")
+                    .requestMatchers("/seller", "/seller/**").hasRole("STORE_MANAGER")
+                    .requestMatchers("/delivery", "/delivery/**").hasRole("DELIVERY_STAFF")
                     .requestMatchers("/customer/**").hasRole("CUSTOMER")
                     .anyRequest().authenticated();
         });

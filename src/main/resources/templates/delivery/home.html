@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng điều khiển giao hàng | VIETFRESH HUB</title>
+</head>
+<body>
+<header>
+    <p>VIETFRESH HUB</p>
+</header>
+<div>
+    <aside>
+        <nav aria-label="Điều hướng giao hàng">
+            <ul>
+                <li><a th:href="@{/delivery}" aria-current="page">Bảng điều khiển</a></li>
+                <li><button type="button" disabled>Đơn giao được phân công</button></li>
+                <li><button type="button" disabled>Lịch sử giao hàng</button></li>
+                <li><button type="button" disabled>Thông báo</button></li>
+            </ul>
+        </nav>
+    </aside>
+    <main>
+        <h1>BẢNG ĐIỀU KHIỂN GIAO HÀNG</h1>
+        <p>Quản lý các đơn giao hàng được phân công và hoạt động giao hàng.</p>
+        <section aria-labelledby="delivery-management-heading">
+            <h2 id="delivery-management-heading">QUẢN LÝ GIAO HÀNG</h2>
+            <div>
+                <article>
+                    <h3>Đơn giao được phân công</h3>
+                    <p>Xem các đơn giao hàng được phân công cho bạn và chấp nhận nhiệm vụ giao hàng.</p>
+                    <button type="button" disabled>Xem đơn giao hàng</button>
+                </article>
+                <article>
+                    <h3>Lịch sử giao hàng</h3>
+                    <p>Xem lại các đơn hàng mà bạn đã xử lý trước đó.</p>
+                    <button type="button" disabled>Xem lịch sử</button>
+                </article>
+                <article>
+                    <h3>Thông báo</h3>
+                    <p>Xem các thông báo liên quan đến trạng thái giao hàng.</p>
+                    <button type="button" disabled>Xem thông báo</button>
+                </article>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

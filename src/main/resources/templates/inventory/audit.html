@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/product-inventory :: head('Lịch sử thao tác','inventory')}"></head>
+<body><header th:replace="~{fragments/product-inventory :: nav('inventory')}"></header>
+<main class="container vf-main">
+<a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{/seller/inventory}">← Kho hàng</a>
+<h1>Lịch sử thao tác</h1><p class="text-body-secondary mb-4">Các thay đổi thông tin, giá, trạng thái và biến động kho của cửa hàng.</p>
+<div class="card overflow-hidden mb-3"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+<thead class="table-light"><tr><th scope="col">Thời gian</th><th scope="col">Thao tác</th><th scope="col">Đối tượng</th><th scope="col">Người thao tác</th><th scope="col">Lý do</th></tr></thead>
+<tbody><tr th:each="a : ${events.content}"><td class="small text-nowrap" th:text="${#temporals.format(a.createdAt.plusHours(7),'dd/MM/yyyy HH:mm:ss')}"></td><td th:text="${a.action}"></td><td class="text-nowrap" th:text="${a.entityType+' #'+a.entityId}"></td><td th:text="${'#'+a.actorId}"></td><td th:text="${a.reason}"></td></tr><tr th:if="${events.empty}"><td colspan="5" class="text-center text-body-secondary py-5">Chưa có lịch sử thao tác.</td></tr></tbody>
+</table></div></div>
+<nav class="d-flex flex-wrap align-items-center justify-content-between gap-3" aria-label="Trang lịch sử">
+<a class="btn btn-outline-secondary btn-sm" th:if="${events.hasPrevious()}" th:href="@{/seller/inventory/audit(page=${events.number},size=${events.size})}">← Trước</a>
+<span class="small text-body-secondary" th:text="${'Trang '+(events.number+1)+' / '+T(java.lang.Math).max(1,events.totalPages)}"></span>
+<a class="btn btn-outline-secondary btn-sm" th:if="${events.hasNext()}" th:href="@{/seller/inventory/audit(page=${events.number+2},size=${events.size})}">Sau →</a>
+</nav></main></body></html>
+
