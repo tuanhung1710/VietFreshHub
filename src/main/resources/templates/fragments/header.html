@@ -1,0 +1,41 @@
+<header th:fragment="header"
+        xmlns:th="http://www.thymeleaf.org"
+        class="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+  <div class="bg-primary text-on-primary py-1 px-margin text-center text-label-sm font-label-md">
+    <div class="max-w-[1280px] mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-space-md"></div>
+    </div>
+  </div>
+  <div class="h-20 max-w-[1280px] mx-auto px-margin flex items-center justify-between gap-space-lg">
+    <div class="flex items-center gap-space-md shrink-0"><img alt="VietFresh Hub Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCoee1aQxiSWv--WD0wwWrihEh5Q7BqMermSiCv4RPI9UClurYSjjlcSO0o3qWnCVwtn86xWqMBhy9UlCebehpUbdSjGL-DdOYPTIDxyJy0vw5FsudiEnBNufXggJ8sZhbN1EmrlXp482O626r6K-_SwIRR4MUrHtiErUZ_SVIhiF4tlgAqFpHPgHXieHK3hnG1xhZAi5YV_gsvAznVdoSNgMRVzR2JPdvvz4nU7FN9JbvKauJVIoz7">
+      <a class="flex flex-col" data-path="home" href="#">
+        <span class="font-title-md text-title-md text-primary tracking-tight">VIETFRESH HUB</span>
+        <span class="font-label-sm text-label-sm text-on-surface-variant tracking-wider uppercase"><br>
+        </span>
+      </a>
+    </div>
+    <div class="hidden lg:flex flex-1 max-w-xl mx-space-md">
+      <div class="relative w-full flex items-center bg-surface-container-lowest rounded-lg shadow-[0_1px_3px_0_rgba(15,23,42,0.04)] p-1">
+        <span class="material-symbols-outlined text-outline ml-space-sm">search</span>
+        <input class="w-full bg-transparent px-space-sm py-1.5 text-body-md font-body-md text-on-surface focus:outline-none placeholder:text-outline" placeholder="Tìm kiếm trái cây tươi, bưởi da xanh, xoài cát..." type="text">
+        <button class="bg-primary text-on-primary font-label-md text-label-md px-space-md py-2 rounded-lg hover:bg-primary-container hover:text-on-primary-container transition-colors">Tìm kiếm</button></div></div><nav class="hidden xl:flex items-center gap-space-md shrink-0" data-active-classes="text-primary font-title-md">
+    <a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors py-2" data-path="he-thong-cua-hang" href="#">Hệ Thống Cửa Hàng</a></nav>
+    <div class="flex items-center gap-space-md shrink-0">
+      <a class="relative flex items-center justify-center p-2 rounded-full hover:bg-surface-container hover:text-on-surface text-on-surface-variant transition-colors" data-path="thong-bao" href="#" title="Thông báo">
+        <span class="material-symbols-outlined text-2xl">notifications</span>
+        <span class="absolute top-0.5 right-0.5 min-w-[20px] h-[20px] px-1 bg-tertiary text-on-tertiary text-label-sm font-label-md rounded-full flex items-center justify-center">2</span>
+      </a>
+      <a class="relative flex items-center justify-center p-2 rounded-full hover:bg-surface-container hover:text-on-surface text-on-surface-variant transition-colors" data-path="gio-hang" href="#" title="Giỏ hàng">
+        <span class="material-symbols-outlined text-2xl">shopping_cart</span>
+        <span class="absolute 0 top-0.5 right-0.5 min-w-[20px] h-[20px] px-1 bg-tertiary text-on-tertiary text-label-sm font-label-md rounded-full flex items-center justify-center">3</span></a>
+      <div class="h-6 w-px bg-outline-variant hidden sm:block"></div>
+      <div class="flex items-center gap-space-sm">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+          <span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
+        </div><div class="hidden md:flex flex-col text-left"><a class="font-label-md text-label-md text-on-surface hover:text-primary transition-colors" data-path="tai-khoan" href="#">Tài khoản</a>
+        <a class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="dang-nhap" href="#">Đăng nhập / Đăng ký</a>
+      </div>
+      </div>
+    </div>
+  </div>
+</header>

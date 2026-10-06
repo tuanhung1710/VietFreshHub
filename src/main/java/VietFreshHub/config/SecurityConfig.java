@@ -9,6 +9,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 @Configuration
 public class SecurityConfig {
@@ -24,8 +25,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
+
             SecurityContextRepository securityContextRepository)
             throws Exception {
+        CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
+        requestHandler.setCsrfRequestAttributeName(null);
+
+        http.csrf(csrf -> csrf.csrfTokenRequestHandler(requestHandler));
 
         http.securityContext(context -> {
             context.securityContextRepository(securityContextRepository);
@@ -33,7 +39,8 @@ public class SecurityConfig {
 
         http.authorizeHttpRequests(authorize -> {
             authorize.requestMatchers(
-                    "/", "/login", "/register", "/error",
+                    "/", "/login", "/register", "/verify-email",
+                            "/verify-email/resend", "/error",
                     "/css/**", "/js/**", "/images/**"
             ).permitAll()
              .requestMatchers("/admin/**").hasRole("ADMIN")
@@ -56,11 +63,14 @@ public class SecurityConfig {
             );
         });
 
-        http.logout(logout -> {
-            logout.logoutUrl("/logout");
-            logout.logoutSuccessUrl("/login?logout");
-            logout.permitAll();
-        });
+        http.logout(logout -> logout
+                .logoutUrl("/logout")
+                .invalidateHttpSession(true)
+                .clearAuthentication(true)
+                .deleteCookies("JSESSIONID")
+                .logoutSuccessUrl("/login?logout")
+                .permitAll()
+        );
 
         return http.build();
     }
