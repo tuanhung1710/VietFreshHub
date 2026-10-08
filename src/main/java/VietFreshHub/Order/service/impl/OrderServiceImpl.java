@@ -1,5 +1,6 @@
 package VietFreshHub.Order.service.impl;
 
+import VietFreshHub.Delivery.service.DeliveryCreationService;
 import VietFreshHub.Order.dto.IncomingOrderResponse;
 import VietFreshHub.Order.dto.OrderCountsResponse;
 import VietFreshHub.Order.dto.OrderDetailResponse;
@@ -46,6 +47,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderAddressRepository orderAddressRepository;
     private final OrderItemRepository orderItemRepository;
     private final ShopService shopService;
+    private final DeliveryCreationService deliveryCreationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -184,6 +186,7 @@ public class OrderServiceImpl implements OrderService {
                     "Chỉ có thể đánh dấu sẵn sàng giao hàng cho đơn hàng đang chuẩn bị.");
         }
         shopOrder.markReady();
+        deliveryCreationService.ensureDeliveryForReadyShopOrder(shopOrder);
     }
 
     @Override
@@ -228,6 +231,7 @@ public class OrderServiceImpl implements OrderService {
         }
         for (ShopOrder shopOrder : shopOrders) {
             shopOrder.markReady();
+            deliveryCreationService.ensureDeliveryForReadyShopOrder(shopOrder);
         }
     }
 

@@ -19,6 +19,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -142,12 +143,8 @@ public class AuthService {
         User user = userRepository.findByEmailIgnoreCase(email.trim())
                 .orElse(null);
 
-        for (UserRole userRole : user.getUserRoles()) {
-            String roleName = userRole.getRole().getRoleName();
-            if ("DELIVERY_STAFF".equals(roleName)) {
-                roleName = "ROLE_DELIVERY_STAFF";
-            }
-            authorities.add(new SimpleGrantedAuthority(roleName));
+        if (user == null) {
+            return null;
         }
 
         return createAuthentication(user);
@@ -160,11 +157,8 @@ public class AuthService {
                 userRoleRepository.findAllByUser_UserId(user.getUserId());
 
         for (UserRole userRole : userRoles) {
-            authorities.add(
-                    new SimpleGrantedAuthority(
-                            userRole.getRole().getRoleName()
-                    )
-            );
+            String roleName = userRole.getRole().getRoleName();
+            authorities.add(new SimpleGrantedAuthority(roleName));
         }
 
         return new UsernamePasswordAuthenticationToken(
@@ -172,6 +166,27 @@ public class AuthService {
                 null,
                 authorities
         );
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public List<Long> lockActiveDeliveryStaffIdsForAssignment() {
+        return userRepository.findActiveUsersByRoleNameForUpdate("ROLE_DELIVERY_STAFF")
+                .stream()
+                .map(User::getUserId)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Long getCurrentDeliveryStaffId(Authentication authentication) {
+        Long userId = getCurrentUserId(authentication);
+        boolean deliveryStaff = userRoleRepository.findAllByUser_UserId(userId)
+                .stream()
+                .anyMatch(userRole -> "ROLE_DELIVERY_STAFF".equals(userRole.getRole().getRoleName()));
+        if (!deliveryStaff) {
+            throw new AccessDeniedException("Bạn không có quyền thực hiện thao tác giao hàng.");
+        }
+
+        return userId;
     }
 
     @Transactional(readOnly = true)

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi tiết giao hàng | VIETFRESH HUB</title>
+    <style>
+        body {
+            max-width: 1000px;
+            margin: 24px auto;
+            padding: 0 16px;
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+        }
+
+        section, .delivery-actions {
+            margin-top: 24px;
+        }
+
+        .information-card, .delivery-actions {
+            border: 1px solid black;
+            padding: 16px;
+        }
+
+        .information-card h2 {
+            margin-top: 0;
+        }
+
+        .delivery-actions {
+            text-align: right;
+        }
+
+        .delivery-actions button {
+            padding: 8px 16px;
+        }
+
+        dt {
+            font-weight: bold;
+        }
+
+        dd {
+            margin: 0 0 12px;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <p>VIETFRESH HUB</p>
+    <a th:href="@{/delivery}">← Quay lại danh sách phân công</a>
+</header>
+<main>
+    <h1>CHI TIẾT GIAO HÀNG #<span th:text="${deliveryDetail.orderCode}"></span></h1>
+    <section class="information-card" aria-labelledby="assignment-heading">
+        <h2 id="assignment-heading">THÔNG TIN PHÂN CÔNG</h2>
+        <dl>
+            <dt>Trạng thái phân công</dt>
+            <dd><strong th:text="${deliveryDetail.assignmentStatus}"></strong></dd>
+            <dt>Trạng thái giao hàng</dt>
+            <dd><strong th:text="${deliveryDetail.deliveryStatus}"></strong></dd>
+            <th:block th:if="${deliveryDetail.placedAt != null}">
+                <dt>Thời gian đặt hàng</dt>
+                <dd th:text="${#temporals.format(deliveryDetail.placedAt, 'dd-MM-yyyy HH:mm')}"></dd>
+            </th:block>
+            <dt>Thời gian phân công</dt>
+            <dd th:text="${deliveryDetail.assignedAt == null ? '—' : #temporals.format(deliveryDetail.assignedAt, 'dd-MM-yyyy HH:mm')}"></dd>
+            <dt>Thời gian chấp nhận</dt>
+            <dd th:text="${deliveryDetail.acceptedAt == null ? '—' : #temporals.format(deliveryDetail.acceptedAt, 'dd-MM-yyyy HH:mm')}"></dd>
+            <dt>Thời gian nhận hàng</dt>
+            <dd th:text="${deliveryDetail.pickedUpAt == null ? '—' : #temporals.format(deliveryDetail.pickedUpAt, 'dd-MM-yyyy HH:mm')}"></dd>
+            <th:block th:if="${deliveryDetail.deliveredAt != null}">
+                <dt>Thời gian giao hàng thành công</dt>
+                <dd th:text="${#temporals.format(deliveryDetail.deliveredAt, 'dd-MM-yyyy HH:mm')}"></dd>
+            </th:block>
+            <th:block th:if="${deliveryDetail.redeliveryRequestedAt != null}">
+                <dt>Thời gian yêu cầu giao lại</dt>
+                <dd th:text="${#temporals.format(deliveryDetail.redeliveryRequestedAt, 'dd-MM-yyyy HH:mm')}"></dd>
+            </th:block>
+            <th:block th:if="${deliveryDetail.redeliveryScheduledAt != null}">
+                <dt>Thời gian hẹn giao lại</dt>
+                <dd th:text="${#temporals.format(deliveryDetail.redeliveryScheduledAt, 'dd-MM-yyyy HH:mm')}"></dd>
+            </th:block>
+        </dl>
+    </section>
+    <section class="information-card" aria-labelledby="recipient-heading">
+        <h2 id="recipient-heading">THÔNG TIN NGƯỜI NHẬN</h2>
+        <dl>
+            <dt>Người nhận</dt>
+            <dd th:text="${deliveryDetail.recipientName ?: '—'}"></dd>
+            <dt>SĐT</dt>
+            <dd th:text="${deliveryDetail.recipientPhone ?: '—'}"></dd>
+        </dl>
+    </section>
+    <section class="information-card" aria-labelledby="pickup-heading">
+        <h2 id="pickup-heading">ĐỊA ĐIỂM NHẬN HÀNG</h2>
+        <p th:if="${deliveryDetail.pickupLocation == null}">Không có thông tin địa điểm nhận hàng.</p>
+        <div th:if="${deliveryDetail.pickupLocation != null}" th:with="pickup=${deliveryDetail.pickupLocation}">
+            <p th:if="${!#strings.isEmpty(#strings.trim(pickup.formattedAddress))}"
+               th:text="${pickup.formattedAddress}"></p>
+            <div th:if="${#strings.isEmpty(#strings.trim(pickup.formattedAddress))}">
+                <p th:text="${#strings.isEmpty(#strings.trim(pickup.addressLine)) ? '—' : pickup.addressLine}"></p>
+                <p th:if="${!#strings.isEmpty(#strings.trim(pickup.ward))}" th:text="${pickup.ward}"></p>
+                <p th:if="${!#strings.isEmpty(#strings.trim(pickup.district))}" th:text="${pickup.district}"></p>
+                <p th:if="${!#strings.isEmpty(#strings.trim(pickup.province))}" th:text="${pickup.province}"></p>
+            </div>
+        </div>
+    </section>
+    <section class="information-card" aria-labelledby="delivery-location-heading">
+        <h2 id="delivery-location-heading">ĐỊA CHỈ GIAO HÀNG</h2>
+        <p th:if="${deliveryDetail.deliveryLocation == null}">Không có thông tin địa chỉ giao hàng.</p>
+        <div th:if="${deliveryDetail.deliveryLocation != null}" th:with="destination=${deliveryDetail.deliveryLocation}">
+            <p th:if="${!#strings.isEmpty(#strings.trim(destination.formattedAddress))}"
+               th:text="${destination.formattedAddress}"></p>
+            <div th:if="${#strings.isEmpty(#strings.trim(destination.formattedAddress))}">
+                <p th:text="${#strings.isEmpty(#strings.trim(destination.addressLine)) ? '—' : destination.addressLine}"></p>
+                <p th:if="${!#strings.isEmpty(#strings.trim(destination.ward))}" th:text="${destination.ward}"></p>
+                <p th:if="${!#strings.isEmpty(#strings.trim(destination.district))}" th:text="${destination.district}"></p>
+                <p th:if="${!#strings.isEmpty(#strings.trim(destination.province))}" th:text="${destination.province}"></p>
+            </div>
+        </div>
+    </section>
+    <form class="delivery-actions" method="post"
+          th:if="${deliveryDetail.assignmentStatus.name() == 'ASSIGNED' and (deliveryDetail.deliveryStatus.name() == 'ASSIGNED' or deliveryDetail.deliveryStatus.name() == 'REDELIVERY_SCHEDULED')}"
+          th:action="@{/delivery/assignments/{assignmentId}/accept(assignmentId=${deliveryDetail.assignmentId})}">
+        <button type="submit">CHẤP NHẬN PHÂN CÔNG</button>
+    </form>
+    <form class="delivery-actions" method="post"
+          th:if="${deliveryDetail.assignmentStatus.name() == 'ASSIGNED' and deliveryDetail.deliveryStatus.name() == 'REDELIVERY_SCHEDULED'}"
+          th:action="@{/delivery/assignments/{assignmentId}/reject(assignmentId=${deliveryDetail.assignmentId})}">
+        <button type="submit">TỪ CHỐI PHÂN CÔNG</button>
+    </form>
+    <form class="delivery-actions" method="post"
+          th:if="${deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'ACCEPTED'}"
+          th:action="@{/delivery/assignments/{assignmentId}/pickup(assignmentId=${deliveryDetail.assignmentId})}">
+        <button type="submit">XÁC NHẬN NHẬN HÀNG</button>
+    </form>
+    <form class="delivery-actions" method="post"
+          th:if="${deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'PICKED_UP'}"
+          th:action="@{/delivery/assignments/{assignmentId}/start-delivery(assignmentId=${deliveryDetail.assignmentId})}">
+        <button type="submit">BẮT ĐẦU GIAO HÀNG</button>
+    </form>
+    <form class="delivery-actions" method="post"
+          th:if="${deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'OUT_FOR_DELIVERY'}"
+          th:action="@{/delivery/assignments/{assignmentId}/delivered(assignmentId=${deliveryDetail.assignmentId})}">
+        <button type="submit">XÁC NHẬN GIAO HÀNG THÀNH CÔNG</button>
+    </form>
+    <form class="delivery-actions" method="post"
+          th:if="${deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'OUT_FOR_DELIVERY'}"
+          th:action="@{/delivery/assignments/{assignmentId}/schedule-redelivery(assignmentId=${deliveryDetail.assignmentId})}">
+        <label for="redeliveryScheduledAt">Thời gian giao lại (UTC)</label>
+        <input type="datetime-local" id="redeliveryScheduledAt" name="redeliveryScheduledAt" required>
+        <button type="submit">HẸN GIAO LẠI</button>
+    </form>
+</main>
+</body>
+</html>

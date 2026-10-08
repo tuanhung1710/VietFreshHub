@@ -8,6 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Nationalized;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -39,7 +40,7 @@ public class Address {
     private String province;
 
     @Nationalized
-    @Column(nullable = false, length = 100)
+    @Column(length = 100)
     private String district;
 
     @Nationalized
@@ -49,6 +50,25 @@ public class Address {
     @Nationalized
     @Column(name = "address_line", nullable = false, length = 500)
     private String addressLine;
+
+    @Column(name = "province_id")
+    private Integer provinceId;
+
+    @Column(name = "district_id")
+    private Integer districtId;
+
+    @Column(name = "ward_id")
+    private Integer wardId;
+
+    @Nationalized
+    @Column(name = "formatted_address", length = 1000)
+    private String formattedAddress;
+
+    @Column(name = "latitude", precision = 9, scale = 6)
+    private BigDecimal latitude;
+
+    @Column(name = "longitude", precision = 10, scale = 6)
+    private BigDecimal longitude;
 
     @Column(name = "is_default", nullable = false)
     private Boolean isDefault = false;
