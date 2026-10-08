@@ -133,6 +133,9 @@ public class AuthService {
     /**
      * Chỉ gọi sau khi OTP hợp lệ và registerVerified đã tạo user.
      */
+    /**
+     * Chỉ gọi sau khi OTP hợp lệ và registerVerified đã tạo tài khoản.
+     */
     @Transactional(readOnly = true)
     public Authentication loginAfterEmailVerification(String email) {
         if (email == null || email.isBlank()) {
@@ -142,17 +145,14 @@ public class AuthService {
         User user = userRepository.findByEmailIgnoreCase(email.trim())
                 .orElse(null);
 
-        for (UserRole userRole : user.getUserRoles()) {
-            String roleName = userRole.getRole().getRoleName();
-            if ("DELIVERY_STAFF".equals(roleName)) {
-                roleName = "ROLE_DELIVERY_STAFF";
-            }
-            authorities.add(new SimpleGrantedAuthority(roleName));
+        if (user == null
+                || !"ACTIVE".equalsIgnoreCase(user.getStatus())
+                || user.getEmailVerifiedAt() == null) {
+            return null;
         }
 
         return createAuthentication(user);
     }
-
     private Authentication createAuthentication(User user) {
         List<GrantedAuthority> authorities = new ArrayList<>();
 

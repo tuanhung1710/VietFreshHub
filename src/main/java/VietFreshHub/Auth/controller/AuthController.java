@@ -238,24 +238,24 @@ public class AuthController {
         securityContextRepository.saveContext(context, request, response);
     }
 
-    private String getHomeUrl(Authentication authentication) {
-        log.info(
-                "Home routing for user={}, authorities={}",
-                authentication.getName(),
-                authentication.getAuthorities()
-        );
-
-//        return "redirect:/";
-//        return "customer/home";
-//        return "redirect:" + getHomeUrl(authentication);
-        String homeUrl = getHomeUrl(authentication);
-
-        if ("/seller".equals(homeUrl) || "/delivery".equals(homeUrl)) {
-            return "redirect:" + homeUrl;
-        }
-
-        return homeUrl;
-    }
+//    private String getHomeUrl(Authentication authentication) {
+//        log.info(
+//                "Home routing for user={}, authorities={}",
+//                authentication.getName(),
+//                authentication.getAuthorities()
+//        );
+//
+////        return "redirect:/";
+////        return "customer/home";
+////        return "redirect:" + getHomeUrl(authentication);
+//        String homeUrl = getHomeUrl(authentication);
+//
+//        if ("/seller".equals(homeUrl) || "/delivery".equals(homeUrl)) {
+//            return "redirect:" + homeUrl;
+//        }
+//
+//        return homeUrl;
+//    }
     private String getHomeUrl(Authentication authentication) {
         if (hasAuthority(authentication, "ROLE_ADMIN")) {
             return "/admin/admin";
