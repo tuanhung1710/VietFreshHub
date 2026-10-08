@@ -1,5 +1,6 @@
 package VietFreshHub.config;
 
+import VietFreshHub.Auth.service.Oidc_UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -25,7 +26,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-
+            Oidc_UserService oidcUserService,
             SecurityContextRepository securityContextRepository)
             throws Exception {
         CsrfTokenRequestAttributeHandler requestHandler = new CsrfTokenRequestAttributeHandler();
@@ -41,7 +42,7 @@ public class SecurityConfig {
             authorize.requestMatchers(
                     "/", "/login", "/register", "/verify-email",
                             "/verify-email/resend", "/error",
-                    "/css/**", "/js/**", "/images/**"
+                    "/css/**", "/js/**", "/images/**","/oauth2/**", "/login/oauth2/**"
             ).permitAll()
              .requestMatchers("/admin/**").hasRole("ADMIN")
                     .requestMatchers("/store_manager/**").hasRole("STORE_MANAGER")
@@ -49,7 +50,14 @@ public class SecurityConfig {
                     .requestMatchers("/customer/**").hasRole("CUSTOMER")
                     .anyRequest().authenticated();
         });
-
+        http.oauth2Login(oauth2 -> oauth2
+                .loginPage("/login")
+                .userInfoEndpoint(userInfo -> userInfo
+                        .oidcUserService(oidcUserService)
+                )
+                .defaultSuccessUrl("/customer/home", true)
+                .failureUrl("/login?oauthError=true")
+        );
 
         http.formLogin(form -> {
             form.disable();

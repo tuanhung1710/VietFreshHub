@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.mail.MailException;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -45,8 +46,14 @@ public class AuthController {
     }
 
     @GetMapping("/")
-    public String redirectToLogin() {
-        return "redirect:/login";
+    public String redirectToLogin(Authentication authentication) {
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            return "redirect:/login";
+        }
+
+        return "redirect:" + getHomeUrl(authentication);
     }
 
     @PostMapping("/register")
