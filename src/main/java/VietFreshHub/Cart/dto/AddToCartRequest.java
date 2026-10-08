@@ -13,10 +13,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AddToCartRequest {
 
-    @NotNull(message = "Variant ID is required")
+    @NotNull(message = "Vui lòng chọn sản phẩm.")
+    @Min(value = 1, message = "Sản phẩm không hợp lệ.")
     private Long variantId;
 
-    @NotNull(message = "Quantity is required")
-    @Min(value = 1, message = "Quantity must be at least 1")
+    @NotNull(message = "Vui lòng nhập số lượng.")
+    @Min(value = 1, message = "Số lượng phải từ 1 trở lên.")
     private Integer quantity;
 }

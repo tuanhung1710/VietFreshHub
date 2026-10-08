@@ -1,178 +1,200 @@
 package VietFreshHub.config;
 
-import VietFreshHub.Auth.entity.User;
-import VietFreshHub.Auth.repository.UserRepository;
-import VietFreshHub.Cart.entity.Cart;
-import VietFreshHub.Cart.entity.CartItem;
-import VietFreshHub.Cart.repository.CartItemRepository;
-import VietFreshHub.Cart.repository.CartRepository;
+import VietFreshHub.Auth.entity.*;
+import VietFreshHub.Auth.repository.*;
+import VietFreshHub.Cart.entity.*;
+import VietFreshHub.Cart.repository.*;
 import VietFreshHub.Inventory.entity.InventoryBatch;
 import VietFreshHub.Inventory.repository.InventoryBatchRepository;
-import VietFreshHub.Product.entity.Product;
-import VietFreshHub.Product.entity.ProductVariant;
-import VietFreshHub.Product.repository.ProductRepository;
-import VietFreshHub.Product.repository.ProductVariantRepository;
+import VietFreshHub.Product.entity.*;
+import VietFreshHub.Product.repository.*;
 import VietFreshHub.Shop.entity.Shop;
 import VietFreshHub.Shop.repository.ShopRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.List;
+import java.time.*;
+import java.util.*;
 
 @Slf4j
 @Component
+@Profile("dev")
+@ConditionalOnProperty(name = "app.seed.enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
-
-    private final UserRepository userRepository;
-    private final ShopRepository shopRepository;
-    private final ProductRepository productRepository;
-    private final ProductVariantRepository productVariantRepository;
-    private final InventoryBatchRepository inventoryBatchRepository;
-    private final CartRepository cartRepository;
-    private final CartItemRepository cartItemRepository;
+    public static final String CUSTOMER_EMAIL = "customer.demo@vietfreshhub.example";
+    private final UserRepository users;
+    private final RoleRepository roles;
+    private final UserRoleRepository userRoles;
+    private final SellerApplicationRepository applications;
+    private final ShopRepository shops;
+    private final ProductRepository products;
+    private final ProductVariantRepository variants;
+    private final InventoryBatchRepository batches;
+    private final CartRepository carts;
+    private final CartItemRepository cartItems;
+    private final PasswordEncoder passwordEncoder;
+    private final EntityManager entityManager;
+    private final VietFreshHub.Payment.repository.PaymentMethodRepository paymentMethods;
+    private final Map<String, Category> demoCategories = new LinkedHashMap<>();
+    @Value("${app.seed.password:}")
+    private String seedPassword;
 
     @Override
     @Transactional
-    public void run(String... args) throws Exception {
-        log.info("Checking & Initializing Data Seed for VietFresh Hub...");
-
-        // 1. Ensure Default User Exists
-        User defaultUser = userRepository.findById(1L).orElseGet(() -> {
-            User user = new User();
-            user.setEmail("customer@vietfreshhub.com");
-            user.setPasswordHash("encoded_password");
-            user.setFullName("Khách Hàng VietFresh");
-            user.setPhone("0901234567");
-            user.setStatus("ACTIVE");
-            return userRepository.save(user);
-        });
-
-        // 1.1. Ensure Default Shop Exists
-        Shop defaultShop = shopRepository.findByShopName("VietFresh Official Store").orElseGet(() -> {
-            Shop s = new Shop();
-            s.setShopName("VietFresh Official Store");
-            s.setDescription("Cửa hàng nông sản tươi sạch chính hãng");
-            s.setStatus("ACTIVE");
-            return shopRepository.save(s);
-        });
-
-        // 2. Create distinct Products
-        Product pBuoi = createProductIfMissing("Bưởi da xanh Bến Tre", "buoi-da-xanh-ben-tre", "buoi", "Bưởi da xanh tép hồng mọng nước, vị ngọt thanh tự nhiên. Thu hoạch trực tiếp từ trang trại chuẩn VietGAP tại Bến Tre.", "/images/buoi-da-xanh.jpg", defaultShop);
-        Product pSauRieng = createProductIfMissing("Sầu riêng", "sau-rieng", "sau", "Sầu riêng cơm vàng hạt lép, béo ngậy chín cây tự nhiên.", "/images/sau-rieng.jpg", defaultShop);
-        Product pXoai = createProductIfMissing("Xoài cát", "xoai-cat", "xoai", "Xoài cát thơm ngọt đậm đà, vỏ mỏng mịn chuẩn trái cây hữu cơ.", "/images/xoai-cat.png", defaultShop);
-        Product pVai = createProductIfMissing("Vải thiều Bắc Giang", "vai-thieu-bac-giang", "vai", "Vải thiều Bắc Giang quả to tròn, vỏ đỏ mọng, mọt nước.", "/images/vai-thieu.png", defaultShop);
-
-        // 3. Create Variants for each Product
-        // Product 1: Bưởi Da Xanh
-        ProductVariant vBuoi1 = createVariantIfMissing(pBuoi, "VF-BUOI-1KG", "Hộp 1kg (Tép Hồng Mọng Nước)", new BigDecimal("150000.00"), "ACTIVE");
-        ProductVariant vBuoi2 = createVariantIfMissing(pBuoi, "VF-BUOI-5KG", "Thùng 5kg (Tiết Kiệm Gia Đình)", new BigDecimal("680000.00"), "ACTIVE");
-        ProductVariant vBuoi3 = createVariantIfMissing(pBuoi, "VF-BUOI-3KG", "Túi 3kg Biếu Tặng (Tạm Hết Hàng)", new BigDecimal("420000.00"), "OUT_OF_STOCK");
-        ProductVariant vBuoi4 = createVariantIfMissing(pBuoi, "VF-BUOI-10KG", "Hộp 10kg Special (Đã Hết Vụ)", new BigDecimal("1200000.00"), "INACTIVE");
-
-        // Product 2: Sầu Riêng
-        ProductVariant vSauRieng1 = createVariantIfMissing(pSauRieng, "VF-SAURIENG-1KG", "Hộp 1kg (Cơm Vàng Hạt Lép)", new BigDecimal("220000.00"), "ACTIVE");
-        ProductVariant vSauRieng2 = createVariantIfMissing(pSauRieng, "VF-SAURIENG-5KG", "Thùng 5kg (Nguyên Trái Chín Cây)", new BigDecimal("950000.00"), "ACTIVE");
-        ProductVariant vSauRieng3 = createVariantIfMissing(pSauRieng, "VF-SAURIENG-500G", "Khay 500g Tách Múi (Tạm Hết Hàng)", new BigDecimal("120000.00"), "OUT_OF_STOCK");
-
-        // Product 3: Xoài Cát
-        ProductVariant vXoai1 = createVariantIfMissing(pXoai, "VF-XOAI-1KG", "Hộp 1kg (Trái Lớn 400g+)", new BigDecimal("110000.00"), "OUT_OF_STOCK");
-        ProductVariant vXoai2 = createVariantIfMissing(pXoai, "VF-XOAI-3KG", "Thùng 3kg (Đã Hết Mùa)", new BigDecimal("300000.00"), "INACTIVE");
-
-        // Product 4: Vải Thiều Bắc Giang
-        ProductVariant vVai1 = createVariantIfMissing(pVai, "VF-VAITHIEU-1KG", "Túi 1kg (Đã Ngưng Bán / Hết Vụ)", new BigDecimal("90000.00"), "INACTIVE");
-
-        // 4. Ensure Inventory Batches Exist
-        createBatchIfMissing(vBuoi1, 15, 0);       // 15 available stock
-        createBatchIfMissing(vBuoi2, 5, 0);        // 5 available stock
-        createBatchIfMissing(vBuoi3, 0, 0);        // Out of stock
-        createBatchIfMissing(vBuoi4, 0, 0);        // Inactive
-
-        createBatchIfMissing(vSauRieng1, 10, 0);   // 10 available stock
-        createBatchIfMissing(vSauRieng2, 3, 0);    // 3 available stock (low stock)
-        createBatchIfMissing(vSauRieng3, 0, 0);   // Out of stock
-
-        createBatchIfMissing(vXoai1, 0, 0);        // Out of stock
-        createBatchIfMissing(vXoai2, 0, 0);        // Inactive
-
-        createBatchIfMissing(vVai1, 0, 0);         // Inactive
-
-        // 5. Ensure Active Cart and Cart Item Exist for View Cart Scenario
-        Cart activeCart = cartRepository.findByUserUserIdAndStatus(defaultUser.getUserId(), "ACTIVE")
-                .orElseGet(() -> {
-                    Cart cart = new Cart();
-                    cart.setUser(defaultUser);
-                    cart.setStatus("ACTIVE");
-                    return cartRepository.save(cart);
-                });
-
-        if (cartItemRepository.findByCartCartIdAndVariantVariantId(activeCart.getCartId(), vBuoi1.getVariantId()).isEmpty()) {
-            CartItem item = new CartItem();
-            item.setCart(activeCart);
-            item.setVariant(vBuoi1);
-            item.setQuantity(2);
-            item.setUnitPriceSnapshot(vBuoi1.getPrice());
-            cartItemRepository.save(item);
-            log.info("Seeded initial CartItem in Cart id={}", activeCart.getCartId());
+    public void run(String... args) {
+        if(paymentMethods.findByMethodCode("COD").isEmpty()) {
+            var cod=new VietFreshHub.Payment.entity.PaymentMethod(); cod.setMethodCode("COD");
+            cod.setName("Thanh toán khi nhận hàng (COD)"); paymentMethods.save(cod);
         }
-
-        log.info("Data Seed Initialized Successfully!");
-    }
-
-    private Product createProductIfMissing(String name, String slug, String keyword, String description, String imageUrl, Shop shop) {
-        List<Product> allProducts = productRepository.findAll();
-        Product p = allProducts.stream()
-                .filter(prod -> prod.getSlug() != null && prod.getSlug().equalsIgnoreCase(slug))
-                .findFirst()
-                .orElseGet(() -> allProducts.stream()
-                        .filter(prod -> (prod.getSlug() != null && prod.getSlug().toLowerCase().contains(keyword))
-                                     || (prod.getName() != null && prod.getName().toLowerCase().contains(keyword))
-                                     || (prod.getName() != null && prod.getName().toLowerCase().contains(name.toLowerCase())))
-                        .findFirst()
-                        .orElseGet(() -> {
-                            Product newP = new Product();
-                            newP.setShop(shop);
-                            return newP;
-                        }));
-
-        p.setName(name);
-        p.setSlug(slug);
-        p.setDescription(description);
-        p.setImageUrl(imageUrl);
-        p.setStatus("ACTIVE");
-        p.setShop(shop);
-        return productRepository.save(p);
-    }
-
-    private ProductVariant createVariantIfMissing(Product parentProduct, String sku, String name, BigDecimal price, String status) {
-        return productVariantRepository.findAll().stream()
-                .filter(v -> (v.getSku() != null && v.getSku().equalsIgnoreCase(sku)) || (name.equalsIgnoreCase(v.getVariantName()) && v.getProduct().getProductId().equals(parentProduct.getProductId())))
-                .findFirst()
-                .orElseGet(() -> {
-                    ProductVariant variant = new ProductVariant();
-                    variant.setProduct(parentProduct);
-                    variant.setSku(sku);
-                    variant.setVariantName(name);
-                    variant.setPrice(price);
-                    variant.setStatus(status);
-                    return productVariantRepository.save(variant);
-                });
-    }
-
-    private void createBatchIfMissing(ProductVariant variant, int onHand, int reserved) {
-        if (inventoryBatchRepository.getAvailableStockByVariantId(variant.getVariantId()) == 0 && onHand > 0) {
-            InventoryBatch batch = new InventoryBatch();
-            batch.setVariant(variant);
-            batch.setBatchCode("BATCH-" + (variant.getSku() != null ? variant.getSku() : variant.getVariantId()));
-            batch.setQuantityOnHand(onHand);
-            batch.setReservedQuantity(reserved);
-            batch.setExpiryDate(LocalDate.now().plusMonths(1));
-            inventoryBatchRepository.save(batch);
+        if (users.existsByEmailIgnoreCase(CUSTOMER_EMAIL)) {
+            log.info("Demo seed already exists; preserving accounts, prices, stock and carts.");
+            return;
         }
+        if (seedPassword == null || seedPassword.length() < 12) {
+            throw new IllegalStateException("Set APP_SEED_PASSWORD to a test password of at least 12 characters before seeding.");
+        }
+        // One transaction: partial fixtures are rolled back. Never merge or overwrite unrelated records.
+        Map<String, Role> roleMap = new HashMap<>();
+        for (String name : List.of("CUSTOMER", "STORE_MANAGER", "ADMIN", "DELIVERY_STAFF")) {
+            roleMap.put(name, roles.findByRoleName("ROLE_" + name).orElseGet(() -> {
+                Role role = new Role(); role.setRoleName("ROLE_" + name);
+                role.setDescription("Quyền " + name); return roles.save(role);
+            }));
+        }
+        String hash = passwordEncoder.encode(seedPassword);
+        User buyer = createUser(CUSTOMER_EMAIL, "Khách hàng giỏ mẫu", "ACTIVE", roleMap.get("CUSTOMER"), hash);
+        User emptyBuyer = createUser("empty.demo@vietfreshhub.example", "Khách hàng giỏ trống", "ACTIVE", roleMap.get("CUSTOMER"), hash);
+        createUser("blocked.demo@vietfreshhub.example", "Khách hàng bị khóa", "BLOCKED", roleMap.get("CUSTOMER"), hash);
+        User admin = createUser("admin.demo@vietfreshhub.example", "Quản trị kiểm thử", "ACTIVE", roleMap.get("ADMIN"), hash);
+        createUser("delivery.demo@vietfreshhub.example", "Nhân viên giao hàng kiểm thử", "ACTIVE", roleMap.get("DELIVERY_STAFF"), hash);
+        User managerA = createUser("manager-a.demo@vietfreshhub.example", "Quản lý Vườn Nhà", "ACTIVE", roleMap.get("STORE_MANAGER"), hash);
+        User managerB = createUser("manager-b.demo@vietfreshhub.example", "Quản lý Miệt Vườn", "ACTIVE", roleMap.get("STORE_MANAGER"), hash);
+        User managerClosed = createUser("manager-closed.demo@vietfreshhub.example", "Quản lý cửa hàng tạm đóng", "ACTIVE", roleMap.get("STORE_MANAGER"), hash);
+        User applicant = createUser("applicant.demo@vietfreshhub.example", "Người bán chờ duyệt", "ACTIVE", roleMap.get("CUSTOMER"), hash);
+
+        Shop shopA = createShop("[DEMO] Vườn Nhà Fresh", managerA, admin, true, "OPEN");
+        Shop shopB = createShop("[DEMO] Miệt Vườn Fruit", managerB, admin, true, "OPEN");
+        Shop closedShop = createShop("[DEMO] Fresh Corner", managerClosed, admin, true, "CLOSED");
+        Shop hiddenShop = createShop("[DEMO] Cửa hàng chờ duyệt", applicant, admin, false, "OPEN");
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+        Map<String, ProductVariant> sample = new HashMap<>();
+        String[] names = {"Bưởi da xanh", "Sầu riêng", "Xoài cát", "Vải thiều"};
+        String[] slugs = {"buoi", "sau-rieng", "xoai", "vai"};
+        int[] prices = {79000, 229000, 65000, 89000};
+        for (int fruit = 0; fruit < names.length; fruit++) {
+            Category category = new Category(); category.setName("[DEMO] " + names[fruit]);
+            category.setSlug("vf-demo-category-" + slugs[fruit]); entityManager.persist(category);
+            demoCategories.put(slugs[fruit], category);
+        }
+        int index = 0;
+        for (Shop shop : List.of(shopA, shopB)) {
+            String key = shop == shopA ? "A" : "B";
+            for (int fruit = 0; fruit < names.length; fruit++) {
+                for (int pack = 0; pack < 2; pack++) {
+                    Product product = createProduct(shop, names[fruit] + (pack == 0 ? " tuyển chọn" : " giỏ quà"),
+                            "vf-demo-" + key.toLowerCase() + "-" + slugs[fruit] + "-" + pack,
+                            "Trái cây đóng gói theo phân loại. Cửa hàng: " + shop.getShopName() + ".", admin);
+                    for (int weight : List.of(1, 3)) {
+                        String sku = "VF-DEMO-" + key + "-" + fruit + "-" + pack + "-" + weight;
+                        int stock = 18 + (index++ % 12);
+                        int reserved = 0;
+                        String status = "ACTIVE";
+                        LocalDate expiry = today.plusDays(10 + index % 10);
+                        if (key.equals("B") && fruit == 1 && pack == 0 && weight == 1) stock = 2;
+                        if (key.equals("A") && fruit == 2 && pack == 0 && weight == 1) { stock = 0; status = "OUT_OF_STOCK"; }
+                        if (key.equals("B") && fruit == 3 && pack == 0 && weight == 1) status = "INACTIVE";
+                        if (key.equals("B") && fruit == 0 && pack == 1 && weight == 1) expiry = today.minusDays(1);
+                        if (key.equals("B") && fruit == 2 && pack == 0 && weight == 1) { stock = 12; reserved = 4; }
+                        ProductVariant variant = createVariant(product, sku, (pack == 0 ? "Hộp " : "Giỏ ") + weight + " kg",
+                                BigDecimal.valueOf((long) prices[fruit] * weight + (pack == 1 ? 20000 : 0)), status);
+                        createBatch(variant, "VF-DEMO-BATCH-" + sku, stock, reserved, expiry);
+                        sample.put(key + "-" + fruit + "-" + pack + "-" + weight, variant);
+                    }
+                }
+            }
+        }
+        Product closed = createProduct(closedShop, "Bưởi da xanh hộp gia đình", "vf-demo-closed-buoi",
+                "Cửa hàng tạm đóng; sản phẩm vẫn xem được, hiện chưa nhận đơn mới.", admin);
+        ProductVariant closedVariant = createVariant(closed, "VF-DEMO-CLOSED", "Hộp 2 kg", new BigDecimal("159000"), "ACTIVE");
+        createBatch(closedVariant, "VF-DEMO-CLOSED-BATCH", 20, 0, today.plusDays(12));
+        Product hidden = createProduct(hiddenShop, "Xoài cát cửa hàng chờ duyệt", "vf-demo-hidden-xoai",
+                "Dữ liệu kiểm thử quyền hiển thị cửa hàng.", admin);
+        ProductVariant hiddenVariant = createVariant(hidden, "VF-DEMO-HIDDEN", "Hộp 1 kg", new BigDecimal("65000"), "ACTIVE");
+        createBatch(hiddenVariant, "VF-DEMO-HIDDEN-BATCH", 20, 0, today.plusDays(12));
+
+        ProductVariant changedPrice = sample.get("A-0-0-1");
+        createBatch(changedPrice, "VF-DEMO-EXPIRED-EXCLUDED", 100, 0, today.minusDays(3));
+        createBatch(changedPrice, "VF-DEMO-UNDATED-EXCLUDED", 50, 0, null);
+        Cart cart = new Cart(); cart.setUser(buyer); carts.save(cart);
+        createCartItem(cart, changedPrice, 2, new BigDecimal("69000"));
+        createCartItem(cart, sample.get("B-2-0-1"), 1, null);
+        createCartItem(cart, sample.get("B-1-0-1"), 5, null);
+        createCartItem(cart, sample.get("A-2-0-1"), 1, null);
+        createCartItem(cart, sample.get("B-3-0-1"), 1, null);
+        createCartItem(cart, sample.get("B-0-1-1"), 1, null);
+        createCartItem(cart, closedVariant, 1, null);
+        createAddress(buyer, "Nhà riêng", "Đường kiểm thử 01", true);
+        createAddress(buyer, "Văn phòng", "Đường kiểm thử 02", false);
+        createAddress(emptyBuyer, "Nhà riêng", "Đường kiểm thử 03", true);
+        entityManager.flush();
+        log.info("Created demo dataset: 9 accounts, 4 shops, 4 categories, 18 products, 34 variants, 36 batches, 7 cart items, 3 addresses. Passwords are not logged.");
+    }
+
+    private User createUser(String email, String fullName, String status, Role role, String hash) {
+        if (users.existsByEmailIgnoreCase(email)) throw new IllegalStateException("Demo account already exists: " + email + ". No account has been overwritten.");
+        User user = new User(); user.setEmail(email); user.setFullName(fullName); user.setStatus(status);
+        user.setPasswordHash(hash); user.setEmailVerifiedAt(LocalDateTime.now(ZoneOffset.UTC).withNano(0));
+        users.save(user);
+        UserRoleId id = new UserRoleId(); id.setUserId(user.getUserId()); id.setRoleId(role.getRoleId());
+        UserRole grant = new UserRole(); grant.setId(id); grant.setUser(user); grant.setRole(role);
+        userRoles.save(grant); user.getUserRoles().add(grant);
+        return user;
+    }
+    private Shop createShop(String name, User owner, User admin, boolean approved, String availability) {
+        SellerApplication application = new SellerApplication(); application.setUser(owner); application.setBusinessName(name);
+        application.setStatus(approved ? SellerApplicationStatus.APPROVED : SellerApplicationStatus.PENDING);
+        if (approved) { application.setReviewedBy(admin); application.setReviewedAt(LocalDateTime.now(ZoneOffset.UTC).withNano(0)); }
+        applications.save(application);
+        Shop shop = new Shop(); shop.setShopName(name); shop.setApplicationId(application.getApplicationId());
+        shop.setDescription("Cửa hàng giả định dùng để kiểm thử VietFresh Hub."); shop.setStatus("ACTIVE");
+        shop.setAvailabilityStatus(availability);
+        return shops.save(shop);
+    }
+    private Product createProduct(Shop shop, String name, String slug, String description, User admin) {
+        Product product = new Product(); product.setShop(shop); product.setName(name); product.setSlug(slug);
+        product.setDescription(description); product.setStatus("ACTIVE"); product.setApprovalStatus("APPROVED");
+        product.setApprovedBy(admin.getUserId()); product.setApprovedAt(LocalDateTime.now(ZoneOffset.UTC).withNano(0));
+        demoCategories.entrySet().stream().filter(entry -> slug.contains(entry.getKey())).findFirst()
+                .ifPresent(entry -> product.getCategories().add(entry.getValue()));
+        return products.save(product);
+    }
+    private ProductVariant createVariant(Product product, String sku, String name, BigDecimal price, String status) {
+        ProductVariant variant = new ProductVariant(); variant.setProduct(product); variant.setSku(sku);
+        variant.setVariantName(name); variant.setPrice(price); variant.setStatus(status); variant.setLowStockThreshold(5);
+        return variants.save(variant);
+    }
+    private void createBatch(ProductVariant variant, String code, int stock, int reserved, LocalDate expiry) {
+        InventoryBatch batch = new InventoryBatch(); batch.setVariant(variant); batch.setBatchCode(code);
+        batch.setQuantityOnHand(stock); batch.setReservedQuantity(reserved); batch.setExpiryDate(expiry);
+        batches.save(batch);
+    }
+    private void createCartItem(Cart cart, ProductVariant variant, int quantity, BigDecimal oldPrice) {
+        CartItem item = new CartItem(); item.setCart(cart); item.setVariant(variant); item.setQuantity(quantity);
+        item.setUnitPriceSnapshot(oldPrice == null ? variant.getPrice() : oldPrice);
+        cartItems.save(item); cart.getItems().add(item);
+    }
+    private void createAddress(User user, String label, String line, boolean defaultAddress) {
+        Address address = new Address(); address.setUser(user); address.setRecipientName(user.getFullName() + " — " + label);
+        address.setPhone("0900000000"); address.setProvince("Hà Nội"); address.setDistrict("Cầu Giấy"); address.setWard("Dịch Vọng");
+        address.setAddressLine(line); address.setIsDefault(defaultAddress); entityManager.persist(address);
     }
 }

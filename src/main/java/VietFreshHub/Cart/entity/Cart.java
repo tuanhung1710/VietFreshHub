@@ -30,7 +30,7 @@ public class Cart {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false, length = 30)
+    @Column(nullable = false, length = 20)
     private String status = "ACTIVE";
 
     @CreationTimestamp

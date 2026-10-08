@@ -1,0 +1,26 @@
+<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/storefront :: head('Đơn hàng của tôi')}"></head><body>
+<header th:replace="~{fragments/storefront :: header}"></header><main class="container page">
+    <div class="page-heading"><p class="eyebrow">Mua sắm của bạn</p><h1 class="checkout-title">Đơn hàng của tôi</h1><p class="muted">Xem lịch sử, theo dõi tiến trình và mua lại sản phẩm.</p></div>
+    <div th:replace="~{fragments/storefront :: messages}"></div>
+    <p th:if="${filterError != null}" class="notice error" role="alert" th:text="${filterError}"></p>
+    <form class="panel order-filters" th:action="@{/customer/orders}" th:object="${filter}" method="get">
+        <div><label for="order-keyword">Mã đơn hàng</label><input id="order-keyword" type="search" th:field="*{keyword}" maxlength="100" placeholder="Nhập mã đơn"></div>
+        <div><label for="order-status">Trạng thái</label><select id="order-status" th:field="*{status}"><option value="">Tất cả trạng thái</option><option th:each="state : ${statusOptions}" th:value="${state.key}" th:text="${state.value}"></option></select></div>
+        <div><label for="order-from">Từ ngày</label><input id="order-from" type="date" th:field="*{fromDate}"></div>
+        <div><label for="order-to">Đến ngày</label><input id="order-to" type="date" th:field="*{toDate}"></div>
+        <button class="button" type="submit">Lọc đơn</button><a class="filter-reset" th:href="@{/customer/orders}">Xóa bộ lọc</a>
+    </form>
+    <p class="muted" th:text="${orderPage.totalElements} + ' đơn hàng'"></p>
+    <section th:if="${orderPage.empty}" class="panel empty"><h2>Chưa có đơn hàng phù hợp</h2><p class="muted">Bạn có thể thay đổi bộ lọc hoặc tiếp tục mua sắm.</p><a class="button secondary" th:href="@{/home}">Khám phá sản phẩm</a></section>
+    <section class="order-list" aria-label="Danh sách đơn hàng"><article th:each="order : ${orderPage.content}" class="panel history-order">
+        <div class="history-order-top"><div><span class="muted" th:text="${#temporals.format(order.placedAtLocal(),'HH:mm dd/MM/yyyy')}"></span><h2 class="order-code" th:text="${order.orderCode}"></h2></div><span class="order-state" th:text="${order.statusLabel()}"></span></div>
+        <div class="history-order-bottom"><div><span class="muted">Giá trị đơn</span><strong class="price" th:text="${#numbers.formatInteger(order.grandTotal,0,'POINT')} + ' ₫'"></strong></div>
+            <div class="history-actions"><a class="button secondary" th:href="@{/customer/orders/{id}/tracking(id=${order.orderId})}">Theo dõi</a><a class="button" th:href="@{/customer/orders/{id}(id=${order.orderId})}">Xem chi tiết</a></div></div>
+    </article></section>
+    <nav th:if="${orderPage.totalPages > 1}" class="pagination" aria-label="Phân trang đơn hàng">
+        <a th:if="${orderPage.hasPrevious()}" class="button secondary" th:href="@{/customer/orders(page=${orderPage.number},keyword=${filter.keyword},status=${filter.status},fromDate=${filter.fromDate},toDate=${filter.toDate})}">← Trang trước</a>
+        <span th:text="'Trang ' + ${orderPage.number+1} + ' / ' + ${orderPage.totalPages}"></span>
+        <a th:if="${orderPage.hasNext()}" class="button secondary" th:href="@{/customer/orders(page=${orderPage.number+2},keyword=${filter.keyword},status=${filter.status},fromDate=${filter.fromDate},toDate=${filter.toDate})}">Trang tiếp →</a>
+    </nav>
+</main><footer th:replace="~{fragments/storefront :: footer}"></footer></body></html>

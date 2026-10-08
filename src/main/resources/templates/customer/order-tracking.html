@@ -1,0 +1,14 @@
+<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/storefront :: head('Theo dõi đơn hàng')}"></head><body>
+<header th:replace="~{fragments/storefront :: header}"></header><main class="container page">
+    <p><a th:href="@{/customer/orders/{id}(id=${tracking.orderId})}">← Chi tiết đơn hàng</a></p>
+    <div class="page-heading"><h1 class="checkout-title">Theo dõi đơn hàng</h1><p class="order-code" th:text="${tracking.orderCode}"></p><span class="order-state" th:text="${tracking.statusLabel}"></span></div>
+    <p class="muted">Mỗi cửa hàng xử lý phần đơn của mình. Trạng thái bên dưới được ghi nhận từ quá trình chuẩn bị và giao hàng.</p>
+    <a class="button secondary" th:href="@{/customer/orders/{id}/tracking(id=${tracking.orderId})}">Cập nhật trạng thái</a>
+    <div class="tracking-shops"><section th:each="shop : ${tracking.shops}" class="panel tracking-shop">
+        <div class="order-shop-heading"><h2 th:text="${shop.shopName}"></h2><span class="order-state" th:text="${shop.orderStatus}"></span></div>
+        <p><strong th:text="${shop.deliveryStatus}"></strong></p><p th:if="${shop.failureReason != null and !#strings.isEmpty(shop.failureReason)}" class="notice error">Lý do giao thất bại: <span th:text="${shop.failureReason}"></span></p>
+        <p th:if="${#lists.isEmpty(shop.events)}" class="muted">Chưa có lịch sử cập nhật.</p>
+        <ol class="order-timeline"><li th:each="event : ${shop.events}"><time th:text="${#temporals.format(event.occurredAt,'HH:mm dd/MM/yyyy')}"></time><div><strong th:text="${event.label}"></strong><p th:if="${event.note != null}" class="muted" th:text="${event.note}"></p></div></li></ol>
+    </section></div>
+</main><footer th:replace="~{fragments/storefront :: footer}"></footer></body></html>

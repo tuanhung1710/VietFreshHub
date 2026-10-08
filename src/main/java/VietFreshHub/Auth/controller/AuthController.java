@@ -44,11 +44,12 @@ public class AuthController {
         if (authentication != null && authentication.isAuthenticated()) {
             return "redirect:" + getHomeUrl(authentication);
         }
-        return "redirect:/login";
+        return "redirect:/home";
     }
 
     @GetMapping("/login")
-    public String showLoginPage() {
+    public String showLoginPage(@RequestParam(name = "continue", required = false) String continuePath, Model model) {
+        model.addAttribute("continuePath", safeProductReturn(continuePath));
         return "auth/login";
     }
 
@@ -77,6 +78,7 @@ public class AuthController {
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);
 
+        if (httpRequest.getSession(false) != null) httpRequest.changeSessionId();
         securityContextRepository.saveContext(context, httpRequest, httpResponse);
 
         redirectAttributes.addFlashAttribute("successMessage", registerResponse.getMessage());
@@ -87,6 +89,7 @@ public class AuthController {
     public String login(
             @RequestParam("username") String email,
             @RequestParam("password") String password,
+            @RequestParam(name = "continue", required = false) String continuePath,
             HttpServletRequest request,
             HttpServletResponse response,
             Model model) {
@@ -95,6 +98,8 @@ public class AuthController {
                 authService.login(email, password);
 
         if (authentication == null) {
+            model.addAttribute("continuePath", safeProductReturn(continuePath));
+            model.addAttribute("enteredEmail", email);
             model.addAttribute(
                     "errorMessage",
                     "Email hoặc mật khẩu không đúng"
@@ -108,13 +113,29 @@ public class AuthController {
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);
 
+        if (request.getSession(false) != null) request.changeSessionId();
         securityContextRepository.saveContext(
                 context,
                 request,
                 response
         );
 
+        String productReturn = safeProductReturn(continuePath);
+        if (productReturn != null) return "redirect:" + productReturn;
+        org.springframework.security.web.savedrequest.HttpSessionRequestCache cache = new org.springframework.security.web.savedrequest.HttpSessionRequestCache();
+        var saved = cache.getRequest(request, response);
+        cache.removeRequest(request, response);
+        if (saved != null && "GET".equals(saved.getMethod()) && hasAuthority(authentication, "ROLE_CUSTOMER")) {
+            try {
+                String savedPath = java.net.URI.create(saved.getRedirectUrl()).getPath();
+                if ("/cart".equals(savedPath) || "/customer/checkout".equals(savedPath)
+                        || "/customer/orders".equals(savedPath) || savedPath.matches("/customer/orders/[1-9][0-9]*(/confirmation|/tracking)?")) return "redirect:" + savedPath;
+            } catch (IllegalArgumentException ignored) { /* Use the role home when the cached URL is invalid. */ }
+        }
         return "redirect:" + getHomeUrl(authentication);
+    }
+    private String safeProductReturn(String path) {
+        return path != null && path.matches("/product-detail/[1-9][0-9]*") ? path : null;
     }
     private String getHomeUrl(Authentication authentication) {
         if (hasAuthority(authentication, "ROLE_ADMIN")) {

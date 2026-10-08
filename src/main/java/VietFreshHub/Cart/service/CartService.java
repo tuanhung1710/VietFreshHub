@@ -35,4 +35,5 @@ public interface CartService {
      * Removes a cart item from user's active cart.
      */
     void removeCartItem(Long userId, Long variantId);
+    void clearCart(Long userId);
 }

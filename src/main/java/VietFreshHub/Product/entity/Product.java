@@ -32,10 +32,10 @@ public class Product {
     private Shop shop;
 
     @Nationalized
-    @Column(name = "name", nullable = false, length = 255)
+    @Column(name = "name", nullable = false, length = 250)
     private String name;
 
-    @Column(name = "slug", nullable = false, length = 255)
+    @Column(name = "slug", nullable = false, length = 300)
     private String slug;
 
     @Nationalized
@@ -70,7 +70,7 @@ public class Product {
     private String status = "ACTIVE";
 
     @Column(name = "approval_status", nullable = false, length = 30)
-    private String approvalStatus = "APPROVED";
+    private String approvalStatus = "PENDING";
 
     @Column(name = "approved_by")
     private Long approvedBy;
@@ -87,5 +87,11 @@ public class Product {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @org.hibernate.annotations.BatchSize(size = 16)
     private List<ProductVariant> variants = new ArrayList<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(schema = "dbo", name = "product_categories",
+            joinColumns = @JoinColumn(name = "product_id"), inverseJoinColumns = @JoinColumn(name = "category_id"))
+    private java.util.Set<Category> categories = new java.util.LinkedHashSet<>();
 }

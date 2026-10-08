@@ -9,5 +9,6 @@ import java.util.Optional;
 @Repository
 public interface CartRepository extends JpaRepository<Cart, Long> {
 
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"items.variant.product.shop"})
     Optional<Cart> findByUserUserIdAndStatus(Long userId, String status);
 }

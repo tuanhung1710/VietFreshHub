@@ -1,173 +1,87 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="utf-8">
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>Giỏ Hàng Của Bạn | VietFresh Hub</title>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: "#006b2c",
-                        surface: "#f8f9ff",
-                        "on-surface": "#0b1c30"
-                    },
-                    fontFamily: {
-                        sans: ["Be Vietnam Pro", "sans-serif"]
-                    },
-                    borderRadius: {
-                        DEFAULT: '0px',
-                        'none': '0px',
-                        'sm': '0px',
-                        'md': '0px',
-                        'lg': '0px',
-                        'xl': '0px',
-                        '2xl': '0px',
-                        '3xl': '0px',
-                        'full': '0px'
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        *, ::before, ::after {
-            border-radius: 0 !important;
-        }
-    </style>
-</head>
-<body class="bg-slate-50 font-sans text-on-surface antialiased min-h-screen flex flex-col">
-
-    <!-- Header Navigation -->
-    <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md shadow-sm border-b border-slate-100">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-            <a href="/customer/home" class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-emerald-600 text-3xl">nutrition</span>
-                <span class="font-bold text-xl text-emerald-800 tracking-tight">VIETFRESH HUB</span>
-            </a>
-            
-            <a href="/customer/home" class="text-sm font-medium text-emerald-700 hover:text-emerald-800 flex items-center gap-1">
-                <span class="material-symbols-outlined">arrow_back</span>
-                <span>Tiếp tục mua sắm</span>
-            </a>
-        </div>
-    </header>
-
-    <!-- Main Cart Area -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
-        <h1 class="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-3">
-            <span class="material-symbols-outlined text-emerald-700 text-3xl">shopping_cart</span>
-            <span>Giỏ Hàng Của Bạn</span>
-        </h1>
-
-        <!-- Flash Messages -->
-        <div th:if="${successMessage != null}" class="mb-6 p-4 bg-emerald-100 border border-emerald-300 text-emerald-800 font-medium text-sm">
-            <span th:text="${successMessage}">Thành công!</span>
-        </div>
-        <div th:if="${errorMessage != null}" class="mb-6 p-4 bg-rose-100 border border-rose-300 text-rose-800 font-medium text-sm">
-            <span th:text="${errorMessage}">Lỗi!</span>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Cart Items List -->
-            <div class="lg:col-span-2 bg-white rounded-none p-6 border border-slate-100 shadow-sm">
-                <!-- If Cart is Empty -->
-                <div th:if="${cart == null or #lists.isEmpty(cart.items)}" class="py-12 text-center text-slate-500">
-                    <span class="material-symbols-outlined text-5xl text-slate-300 mb-3 block">remove_shopping_cart</span>
-                    <p class="font-medium text-slate-700">Giỏ hàng của bạn đang trống.</p>
-                    <a href="/customer/home" class="inline-block mt-4 bg-emerald-700 text-white text-sm font-bold px-6 py-2.5 rounded-none hover:bg-emerald-800 transition-colors">
-                        Khám phá sản phẩm ngay
+<head th:replace="~{fragments/storefront :: head('Giỏ hàng của bạn')}"></head>
+<body>
+<header th:replace="~{fragments/storefront :: header}"></header>
+<main class="container page" th:attr="data-cart-id=${cart.cartId}">
+    <div class="page-heading cart-page-heading"><div><p class="eyebrow">Mua sắm của bạn</p><h1>Giỏ hàng <span class="heading-count" th:text="'(' + ${#lists.size(cart.items)} + ')'"></span></h1></div>
+        <a th:href="@{/home}">← Tiếp tục mua sắm</a></div>
+    <div th:replace="~{fragments/storefront :: messages}"></div>
+    <section th:if="${reorderSkipped != null and !#lists.isEmpty(reorderSkipped)}" class="notice error" aria-label="Sản phẩm chưa thể mua lại">
+        <strong>Sản phẩm chưa được thêm vào giỏ</strong><ul><li th:each="item : ${reorderSkipped}"><span th:text="${item.productName} + ' — ' + ${item.variantName}"></span>: <span th:text="${item.reason}"></span></li></ul>
+    </section>
+    <section th:if="${#lists.isEmpty(cart.items)}" class="panel empty" aria-label="Giỏ hàng trống">
+        <div class="empty-symbol" aria-hidden="true">❋</div>
+        <h2>Giỏ hàng của bạn đang trống</h2><p class="muted">Chọn trái cây từ các cửa hàng để bắt đầu mua sắm.</p>
+        <a class="button" th:href="@{/home}">Khám phá sản phẩm</a>
+    </section>
+    <form id="checkout-selection" th:action="@{/customer/checkout}" method="get"><input type="hidden" name="selectionSubmitted" value="true"></form>
+    <div th:unless="${#lists.isEmpty(cart.items)}" class="cart-layout">
+        <section class="panel cart-products" aria-label="Sản phẩm trong giỏ">
+            <div class="cart-list-heading"><label class="select-all-label"><input type="checkbox" id="select-all-items" th:checked="${selectableCount > 0}" th:disabled="${selectableCount == 0}"> Chọn tất cả</label><span class="muted">Thành tiền</span></div>
+            <section th:each="group : ${shopGroups}" class="shop-group">
+                <h2 class="shop-heading"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10V5h18v5M5 10v11h14V10M9 21v-7h6v7M2 10h20M3 5l2-3h14l2 3"/></svg><span th:text="${group.value[0].shopName}">Cửa hàng</span></h2>
+                <article th:each="item : ${group.value}" class="cart-item">
+                    <input class="cart-selection-checkbox" type="checkbox" name="itemIds" form="checkout-selection"
+                           th:value="${item.cartItemId}" th:checked="${item.purchasable}" th:disabled="${!item.purchasable}"
+                           th:attr="data-amount=${item.itemSubtotal},data-shop-id=${item.shopId}"
+                           th:aria-label="'Chọn ' + ${item.productName} + ' ' + ${item.variantName}">
+                    <a th:href="@{/product-detail/{id}(id=${item.variantId})}">
+                        <img class="item-image" th:src="${item.imageUrl}" th:alt="${item.productName}" width="88" height="88">
                     </a>
-                </div>
-
-                <!-- Active Cart Items List -->
-                <div th:if="${cart != null and not #lists.isEmpty(cart.items)}" class="divide-y divide-slate-100" id="cart-items-container">
-                    <div th:each="item : ${cart.items}" class="py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div class="flex items-center gap-4">
-                            <img th:src="${item.imageUrl != null ? item.imageUrl : '/images/buoi-da-xanh.jpg'}"
-                                 src="/images/buoi-da-xanh.jpg" 
-                                 alt="Trái cây tươi" 
-                                 class="w-20 h-20 object-cover rounded-none border border-slate-100">
-                            <div>
-                                <h3 class="font-bold text-slate-800 text-base" th:text="${item.variantName}">Bưởi Da Xanh Bến Tre</h3>
-                                <div class="flex items-center gap-2 mt-1">
-                                    <span class="text-xs text-slate-500" th:text="'Mã variant: ' + ${item.variantId}">Variant ID</span>
-                                    <span th:if="${item.status == 'ACTIVE'}" class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-none">Hoạt động</span>
-                                    <span th:if="${item.status != 'ACTIVE'}" class="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-none">Ngưng bán</span>
+                    <div class="item-info">
+                        <div class="item-top">
+                            <div><h3 th:text="${item.productName}">Sản phẩm</h3><p class="muted" th:text="${item.variantName}">Phân loại</p>
+                                <span class="price" th:text="${#numbers.formatInteger(item.unitPriceSnapshot,0,'POINT')} + ' ₫'">0 ₫</span></div>
+                            <form th:action="@{/cart/remove}" method="post">
+                                <input type="hidden" name="variantId" th:value="${item.variantId}">
+                                <button class="text-button" type="submit" th:aria-label="'Xóa ' + ${item.productName}">Xóa</button>
+                            </form>
+                        </div>
+                        <p th:if="${item.priceChanged}" class="item-warning">
+                            Giá đã thay đổi từ <span th:text="${#numbers.formatInteger(item.previousPrice,0,'POINT')} + ' ₫'"></span>.
+                            Giỏ hàng đang hiển thị giá mới nhất.
+                        </p>
+                        <p th:if="${item.availabilityMessage != null}" class="item-error" th:text="${item.availabilityMessage}"></p>
+                        <div class="item-bottom">
+                            <form th:if="${item.quantityEditable}" th:action="@{/cart/update}" method="post" data-quantity-form>
+                                <input type="hidden" name="variantId" th:value="${item.variantId}">
+                                <div class="quantity">
+                                    <button type="button" data-step="-1" th:aria-label="'Giảm số lượng ' + ${item.productName}">−</button>
+                                    <input type="number" name="quantity" min="0" required th:max="${item.availableStock}"
+                                           th:value="${item.quantity}" th:aria-label="'Số lượng ' + ${item.productName}">
+                                    <button type="button" data-step="1" th:disabled="${item.quantity >= item.availableStock}"
+                                            th:aria-label="'Tăng số lượng ' + ${item.productName}">+</button>
                                 </div>
-                                <span class="text-emerald-700 font-semibold text-sm mt-1 inline-block" 
-                                      th:text="${#numbers.formatDecimal(item.unitPriceSnapshot, 0, 'COMMA', 0, 'POINT')} + ' đ'">150.000 đ</span>
-                            </div>
+                                <noscript><button class="noscript-update" type="submit">Cập nhật số lượng</button></noscript>
+                            </form>
+                            <span th:unless="${item.quantityEditable}" class="muted" th:text="'Số lượng: ' + ${item.quantity}"></span>
+                            <span class="price" th:text="${#numbers.formatInteger(item.itemSubtotal,0,'POINT')} + ' ₫'"></span>
                         </div>
-
-                        <div class="flex items-center gap-6">
-                            <div class="flex items-center gap-2">
-                                <!-- Decrease Quantity Form -->
-                                <form th:action="@{/cart/update}" method="post">
-                                    <input type="hidden" name="variantId" th:value="${item.variantId}">
-                                    <input type="hidden" name="quantity" th:value="${item.quantity - 1}">
-                                    <button type="submit" class="w-8 h-8 flex items-center justify-center text-slate-600 hover:bg-slate-200 border border-slate-300 font-bold">-</button>
-                                </form>
-
-                                <span class="w-8 text-center text-sm font-bold text-slate-800" th:text="${item.quantity}">1</span>
-
-                                <!-- Increase Quantity Form -->
-                                <form th:action="@{/cart/update}" method="post">
-                                    <input type="hidden" name="variantId" th:value="${item.variantId}">
-                                    <input type="hidden" name="quantity" th:value="${item.quantity + 1}">
-                                    <button type="submit" class="w-8 h-8 flex items-center justify-center text-slate-600 hover:bg-slate-200 border border-slate-300 font-bold">+</button>
-                                </form>
-
-                                <!-- Remove Item Form -->
-                                <form th:action="@{/cart/remove}" method="post" class="ml-2">
-                                    <input type="hidden" name="variantId" th:value="${item.variantId}">
-                                    <button type="submit" class="text-rose-600 hover:text-rose-800 p-1 flex items-center" title="Xóa khỏi giỏ hàng">
-                                        <span class="material-symbols-outlined text-xl">delete</span>
-                                    </button>
-                                </form>
-                            </div>
-                            <span class="font-bold text-slate-900 text-base min-w-[110px] text-right" 
-                                  th:text="${#numbers.formatDecimal(item.itemSubtotal, 0, 'COMMA', 0, 'POINT')} + ' đ'">300.000 đ</span>
-                        </div>
+                        <p th:if="${item.quantityEditable}" class="muted">Nhập 0 hoặc chọn Xóa để bỏ sản phẩm.</p>
                     </div>
-                </div>
-            </div>
-
-            <!-- Order Summary Card -->
-            <div class="bg-white rounded-none p-6 border border-slate-100 shadow-sm h-fit">
-                <h2 class="font-bold text-slate-900 text-lg mb-4">Tóm Tắt Đơn Hàng</h2>
-                
-                <div class="space-y-3 text-sm text-slate-600 mb-6">
-                    <div class="flex justify-between">
-                        <span>Tổng số lượng sản phẩm:</span>
-                        <span class="font-semibold text-slate-800" th:text="${cart != null ? cart.totalItems : 0} + ' món'">2 món</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>Phí vận chuyển:</span>
-                        <span class="text-emerald-700 font-semibold">TÍNH KHI CHECKOUT</span>
-                    </div>
-                    <div class="border-t border-slate-100 pt-3 flex justify-between text-base font-bold text-slate-900">
-                        <span>Tổng cộng:</span>
-                        <span class="text-emerald-700 text-xl" 
-                              th:text="${cart != null ? #numbers.formatDecimal(cart.totalAmount, 0, 'COMMA', 0, 'POINT') : 0} + ' đ'">300.000 đ</span>
-                    </div>
-                </div>
-
-                <a href="#" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3.5 px-4 rounded-none shadow-md flex items-center justify-center gap-2 transition-all">
-                    <span>TIẾN HÀNH CHECKOUT</span>
-                    <span class="material-symbols-outlined">arrow_forward</span>
-                </a>
-            </div>
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-white border-t border-slate-100 py-6 text-center text-xs text-slate-400">
-        © 2026 VietFresh Hub. Tất cả các quyền được bảo lưu.
-    </footer>
-</body>
-</html>
+                </article>
+            </section>
+            <details class="clear-area"><summary>Xóa toàn bộ giỏ hàng</summary>
+                <form th:action="@{/cart/clear}" method="post">
+                    <p class="muted">Tất cả sản phẩm trong giỏ sẽ được xóa.</p>
+                    <button class="button secondary" type="submit">Xác nhận xóa toàn bộ</button>
+                </form>
+            </details>
+        </section>
+        <aside class="panel summary" aria-label="Tóm tắt giỏ hàng">
+            <h2>Tóm tắt giỏ hàng</h2>
+            <div class="summary-line"><span>Sản phẩm đã chọn</span><strong id="selected-item-count" th:text="${selectableCount}"></strong></div>
+            <div class="summary-line"><span>Tiền sản phẩm</span><strong id="selected-subtotal" th:text="${#numbers.formatInteger(cart.totalAmount,0,'POINT')} + ' ₫'"></strong></div>
+            <div class="summary-line"><span>Phí giao hàng</span><strong id="selected-shipping" th:attr="data-fee-per-shop=${shippingFeePerShop}" th:text="${selectedShippingFee != null ? #numbers.formatInteger(selectedShippingFee,0,'POINT') + ' ₫' : 'Tính khi đặt hàng'}"></strong></div>
+            <div class="summary-line summary-total"><span>Tổng dự kiến</span><span id="selected-grand-total" class="price" th:text="${#numbers.formatInteger(selectedGrandTotal,0,'POINT')} + ' ₫'"></span></div>
+            <p th:if="${cart.hasUnavailableItems}" class="muted">Sản phẩm chưa thể mua không được chọn. Bạn vẫn có thể đặt các sản phẩm khả dụng còn lại.</p>
+            <p class="muted summary-footnote">Thêm vào giỏ chưa giữ hàng. Giá và tồn kho sẽ được kiểm tra lại khi đặt hàng.</p>
+            <button id="checkout-selected-button" class="button full" type="submit" form="checkout-selection" th:disabled="${selectableCount == 0}">Đặt sản phẩm đã chọn</button>
+            <p id="checkout-note" class="muted">Những sản phẩm không chọn vẫn được giữ trong giỏ.</p>
+            <noscript><p class="muted">Tổng tiền theo lựa chọn sẽ được kiểm tra lại tại trang đặt hàng.</p></noscript>
+        </aside>
+    </div>
+</main>
+<footer th:replace="~{fragments/storefront :: footer}"></footer>
+</body></html>

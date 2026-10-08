@@ -22,4 +22,12 @@ public class CartItemDto {
     private Integer availableStock;
     private String status;
     private String imageUrl;
+    private Long shopId;
+    private String shopName;
+    private String productName;
+    private boolean purchasable;
+    private boolean quantityEditable;
+    private boolean priceChanged;
+    private BigDecimal previousPrice;
+    private String availabilityMessage;
 }

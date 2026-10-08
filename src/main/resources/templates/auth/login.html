@@ -102,6 +102,7 @@
                       id="loginForm"
                       method="post"
                       th:action="@{/login}">
+                    <input type="hidden" name="continue" th:value="${continuePath}">
                     <div th:if="${errorMessage}"
                          class="mb-4 rounded-lg border border-red-200 border-l-4 border-l-red-600 bg-red-50 px-4 py-3 text-sm text-red-800"
                          role="alert">
@@ -121,7 +122,7 @@
                         </label>
                         <div class="relative flex items-center">
                             <span class="material-symbols-outlined absolute left-3.5 text-outline pointer-events-none text-xl">alternate_email</span>
-                            <input autocomplete="email" class="w-full bg-surface-container-lowest text-on-surface pl-11 pr-space-md py-3 rounded-lg font-body-md text-body-md shadow-sm border border-outline-variant focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline" id="username" name="username" placeholder="vidu@vietfresh.vn" required="" type="email">
+                            <input autocomplete="email" th:value="${enteredEmail}" class="w-full bg-surface-container-lowest text-on-surface pl-11 pr-space-md py-3 rounded-lg font-body-md text-body-md shadow-sm border border-outline-variant focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline" id="username" name="username" placeholder="vidu@vietfresh.vn" required="" type="email">
                             <span class="material-symbols-outlined absolute right-3 text-primary text-xl hidden" id="emailValidationIcon">check_circle</span>
                         </div>
                         <span class="font-label-sm text-label-sm text-error hidden" id="emailErrorMsg">Vui lòng nhập địa chỉ email hợp lệ.</span>

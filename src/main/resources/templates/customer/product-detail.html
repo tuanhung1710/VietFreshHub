@@ -1,208 +1,37 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="utf-8">
-    <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title th:text="${product != null ? product.name + ' | VietFresh Hub' : 'Chi Tiết Sản Phẩm | VietFresh Hub'}">Chi Tiết Sản Phẩm | VietFresh Hub</title>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: "#006b2c",
-                        "primary-hover": "#005320",
-                        secondary: "#006c49",
-                        surface: "#f8f9ff",
-                        "on-surface": "#0b1c30",
-                        tertiary: "#cc4900"
-                    },
-                    fontFamily: {
-                        sans: ["Be Vietnam Pro", "sans-serif"]
-                    },
-                    borderRadius: {
-                        DEFAULT: '0px',
-                        'none': '0px',
-                        'sm': '0px',
-                        'md': '0px',
-                        'lg': '0px',
-                        'xl': '0px',
-                        '2xl': '0px',
-                        '3xl': '0px',
-                        'full': '0px'
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        *, ::before, ::after {
-            border-radius: 0 !important;
-        }
-    </style>
-</head>
-<body class="bg-slate-50 font-sans text-on-surface antialiased min-h-screen flex flex-col">
-
-    <!-- Header Navigation -->
-    <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md shadow-sm border-b border-slate-100">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-            <a href="/customer/home" class="flex items-center gap-3">
-                <span class="material-symbols-outlined text-emerald-600 text-3xl">nutrition</span>
-                <span class="font-bold text-xl text-emerald-800 tracking-tight">VIETFRESH HUB</span>
-            </a>
-            
-            <div class="flex items-center gap-4">
-                <button onclick="history.back()" class="text-sm font-semibold text-slate-600 hover:text-emerald-700 flex items-center gap-1 bg-slate-100 px-3 py-1.5 rounded-none transition-colors">
-                    <span class="material-symbols-outlined text-base">arrow_back</span>
-                    <span>Quay lại</span>
-                </button>
-                <a href="/cart" class="relative p-2 text-slate-700 hover:text-emerald-700 hover:bg-slate-100 rounded-none transition-colors" title="Giỏ hàng">
-                    <span class="material-symbols-outlined text-2xl">shopping_cart</span>
-                    <span id="cart-badge" th:text="${cart != null ? cart.totalItems : 0}" class="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 bg-amber-600 text-white text-xs font-bold rounded-none flex items-center justify-center transition-transform duration-300">
-                        0
-                    </span>
+<head th:replace="~{fragments/storefront :: head(${product.name})}"></head><body>
+<header th:replace="~{fragments/storefront :: header}"></header>
+<main class="container page">
+    <p><a th:href="@{/home}">← Tiếp tục mua sắm</a></p>
+    <div th:replace="~{fragments/storefront :: messages}"></div>
+    <article class="detail-grid"><img class="detail-image" th:src="${product.imageUrl}" th:alt="${product.name}">
+        <section class="panel"><p class="eyebrow" th:text="${product.shopName}"></p><h1 th:text="${product.name}"></h1>
+            <p class="description muted" th:text="${product.description}"></p>
+            <h2>Chọn phân loại</h2>
+            <div class="variant-list" aria-label="Phân loại sản phẩm">
+                <a th:each="v : ${variants}" class="variant-option" th:classappend="${v.variantId == variantId} ? 'selected'"
+                   th:aria-current="${v.variantId == variantId} ? 'true' : 'false'"
+                   th:href="@{/product-detail/{id}(id=${v.variantId})}">
+                    <span th:text="${v.variantName}"></span><span th:unless="${v.purchasable}"> · Chưa khả dụng</span>
                 </a>
             </div>
-        </div>
-    </header>
-
-    <!-- Main Content Area -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 w-full">
-        <!-- Breadcrumb -->
-        <nav class="flex text-sm text-slate-500 mb-6 gap-2 items-center">
-            <a href="/customer/home" class="hover:text-emerald-700">Trang chủ</a>
-            <span>/</span>
-            <a href="/customer/home" class="hover:text-emerald-700">Trái cây đặc sản</a>
-            <span>/</span>
-            <span class="text-slate-900 font-medium" id="breadcrumb-title" th:text="${product != null ? product.name : 'Chi tiết sản phẩm'}">Chi tiết sản phẩm</span>
-        </nav>
-
-        <!-- Flash Messages -->
-        <div th:if="${successMessage != null}" class="mb-6 p-4 bg-emerald-100 border border-emerald-300 text-emerald-800 font-medium text-sm">
-            <span th:text="${successMessage}">Thành công!</span>
-        </div>
-        <div th:if="${errorMessage != null}" class="mb-6 p-4 bg-rose-100 border border-rose-300 text-rose-800 font-medium text-sm">
-            <span th:text="${errorMessage}">Lỗi!</span>
-        </div>
-
-        <div class="bg-white rounded-none shadow-sm border border-slate-100 p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-2 gap-10">
-            <!-- Product Gallery -->
-            <div class="flex flex-col gap-4">
-                <div class="relative aspect-square rounded-none overflow-hidden bg-emerald-50 border border-slate-100 group">
-                    <img id="main-product-img" 
-                         th:src="${product != null ? product.imageUrl : '/images/buoi-da-xanh.jpg'}"
-                         src="/images/buoi-da-xanh.jpg" 
-                         alt="Trái Cây VietFresh" 
-                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                    <span class="absolute top-4 left-4 bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-none shadow-md">
-                        VietGAP 100%
-                    </span>
-                </div>
+            <div th:if="${selectedVariant != null}">
+                <p class="price detail-price" th:text="${#numbers.formatInteger(selectedVariant.price,0,'POINT')} + ' ₫'"></p>
+                <p th:if="${purchasable}" class="muted" th:text="'Còn ' + ${availableStock} + ' sản phẩm có thể mua.'"></p>
+                <p th:unless="${purchasable}" class="item-error">Phân loại này hiện chưa thể đặt mua. Bạn có thể chọn phân loại khác hoặc quay lại sau.</p>
+                <form th:if="${purchasable and #authorization.expression('hasRole(''CUSTOMER'')')}" th:action="@{/cart/add}" method="post" class="detail-form">
+                    <input type="hidden" name="variantId" th:value="${variantId}"><input type="hidden" name="redirect" value="detail">
+                    <label for="quantity">Số lượng</label>
+                    <input id="quantity" type="number" name="quantity" min="1" th:max="${availableStock}"
+                           th:value="${requestedQuantity != null ? requestedQuantity : 1}" required>
+                    <button class="button full" type="submit">Thêm vào giỏ hàng</button>
+                </form>
+                <a th:if="${purchasable and #authorization.expression('!isAuthenticated()')}" class="button full" th:href="@{/login(continue=${'/product-detail/' + variantId})}">Đăng nhập để thêm vào giỏ</a>
+                <p th:if="${purchasable and #authorization.expression('isAuthenticated() and !hasRole(''CUSTOMER'')')}" class="muted">Mua hàng bằng tài khoản khách hàng.</p>
+                <p class="muted">Giỏ hàng không giữ hàng. Tồn kho được kiểm tra lại khi bạn đặt hàng.</p>
             </div>
-
-            <!-- Product Details & Cart Controls -->
-            <div class="flex flex-col justify-between">
-                <div>
-                    <!-- Title & Category -->
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-none uppercase tracking-wider">
-                            Nông sản Việt Nam
-                        </span>
-                        <span class="text-xs text-slate-400 font-mono" id="sku-label" th:text="${selectedVariant != null ? 'SKU: ' + selectedVariant.sku : 'SKU: N/A'}">
-                            SKU: VF-BUOI-1KG
-                        </span>
-                    </div>
-
-                    <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-3" id="product-title" th:text="${product != null ? product.name : 'Tên Sản Phẩm'}">
-                        Bưởi Da Xanh Bến Tre VietGAP
-                    </h1>
-
-                    <p class="text-sm text-slate-600 mb-6 leading-relaxed" id="product-description" th:text="${product != null ? product.description : 'Mô tả sản phẩm'}">
-                        Thu hoạch trực tiếp từ trang trại chuẩn VietGAP, bảo quản tươi ngon tự nhiên không dùng hóa chất. Nguồn gốc minh bạch, kiểm định nghiêm ngặt.
-                    </p>
-
-                    <!-- Price Banner -->
-                    <div class="bg-slate-50 p-4 rounded-none border border-slate-100 mb-6 flex items-baseline gap-3">
-                        <span id="variant-price" class="text-3xl font-bold text-emerald-700" th:text="${selectedVariant != null ? #numbers.formatInteger(selectedVariant.price, 0, 'POINT') + ' đ' : '0 đ'}">
-                            150.000 đ
-                        </span>
-                        <span class="text-sm text-slate-400 line-through">180.000 đ</span>
-                        <span class="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-none">Giảm 16%</span>
-                    </div>
-
-                    <!-- Variant Selection (Chips) -->
-                    <div class="mb-6">
-                        <label class="block text-sm font-semibold text-slate-800 mb-3">
-                            Chọn Quy Cách / Biến Thể của Sản Phẩm này:
-                        </label>
-                        <div class="flex flex-wrap gap-3" id="variant-chips-container">
-                            <!-- Dynamically Render Product's Own Variants via Thymeleaf Links -->
-                            <th:block th:if="${variants != null}">
-                                <a th:each="v : ${variants}"
-                                   th:href="@{'/product-detail?slug=' + ${product.slug} + '&variantId=' + ${v.variantId}}"
-                                   th:class="${v.variantId == variantId ? 'variant-chip border-2 border-emerald-600 bg-emerald-50 text-emerald-800 px-4 py-2.5 rounded-none font-medium text-sm transition-all shadow-sm' : (v.status == 'ACTIVE' ? 'variant-chip border border-slate-200 hover:border-emerald-600 text-slate-700 px-4 py-2.5 rounded-none font-medium text-sm transition-all' : 'variant-chip border border-slate-200 bg-slate-50 text-slate-500 opacity-80 px-4 py-2.5 rounded-none font-medium text-sm')}">
-                                    <span th:text="${v.variantName} + ' (' + ${#numbers.formatInteger(v.price, 0, 'POINT')} + ' đ)'">Biến Thể</span>
-                                    <span th:if="${v.status == 'INACTIVE'}" class="text-xs font-bold text-rose-600 ml-1">(Hết vụ)</span>
-                                    <span th:if="${v.status == 'OUT_OF_STOCK'}" class="text-xs font-bold text-amber-600 ml-1">(Hết hàng)</span>
-                                </a>
-                            </th:block>
-                        </div>
-                    </div>
-
-                    <!-- Real-time Inventory Stock Badge -->
-                    <div class="mb-6 flex items-center gap-3">
-                        <span class="text-sm font-semibold text-slate-800">Tình trạng tồn kho:</span>
-                        <div th:if="${purchasable and availableStock > 0}" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-none text-xs font-bold bg-emerald-100 text-emerald-800">
-                            <span class="w-2 h-2 rounded-none bg-emerald-500 animate-pulse"></span>
-                            <span th:text="'Còn ' + ${availableStock} + ' sản phẩm khả dụng'">Còn 15 sản phẩm khả dụng</span>
-                        </div>
-                        <div th:if="${!purchasable or availableStock <= 0}" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-none text-xs font-bold bg-rose-100 text-rose-800">
-                            <span>Tạm hết hàng hoặc Ngưng bán</span>
-                        </div>
-                    </div>
-
-                    <!-- Add to Cart Form (Pure Spring Boot POST) -->
-                    <form th:action="@{/cart/add}" method="post" class="space-y-6">
-                        <input type="hidden" name="variantId" th:value="${selectedVariant != null ? selectedVariant.variantId : 0}">
-                        <input type="hidden" name="redirect" value="detail">
-
-                        <!-- Quantity Picker -->
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-800 mb-3">
-                                Số lượng đặt mua:
-                            </label>
-                            <div class="flex items-center gap-3">
-                                <input type="number" 
-                                       name="quantity" 
-                                       value="1" 
-                                       min="1" 
-                                       th:max="${availableStock != null ? availableStock : 1}"
-                                       th:disabled="${!purchasable or availableStock <= 0}"
-                                       class="w-28 h-11 border border-slate-300 rounded-none px-3 text-center font-bold text-slate-800 bg-white focus:outline-none focus:border-emerald-600">
-                                <span th:if="${availableStock > 0}" class="text-xs text-slate-500" th:text="'(Tối đa ' + ${availableStock} + ' sản phẩm)'"></span>
-                            </div>
-                        </div>
-
-                        <!-- Add to Cart Action Button -->
-                        <div class="flex gap-4">
-                            <button type="submit" 
-                                    th:disabled="${!purchasable or availableStock <= 0}"
-                                    class="flex-1 bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-none shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2 transition-all text-base">
-                                <span class="material-symbols-outlined">add_shopping_cart</span>
-                                <span>THÊM VÀO GIỎ HÀNG</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-white border-t border-slate-100 py-6 text-center text-xs text-slate-400">
-        © 2026 VietFresh Hub. Bảo lưu mọi bản quyền.
-    </footer>
-</body>
-</html>
+            <p th:if="${selectedVariant == null}" class="muted">Cửa hàng chưa có phân loại để bán.</p>
+        </section>
+    </article>
+</main><footer th:replace="~{fragments/storefront :: footer}"></footer></body></html>

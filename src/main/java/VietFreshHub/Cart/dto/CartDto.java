@@ -20,6 +20,7 @@ public class CartDto {
     private String status;
     @Builder.Default
     private List<CartItemDto> items = new ArrayList<>();
-    private Integer totalItems;
+    private long totalItems;
     private BigDecimal totalAmount;
+    private boolean hasUnavailableItems;
 }

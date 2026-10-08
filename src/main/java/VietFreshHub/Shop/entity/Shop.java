@@ -31,7 +31,7 @@ public class Shop {
     private Long applicationId;
 
     @Nationalized
-    @Column(name = "shop_name", nullable = false, length = 255)
+    @Column(name = "shop_name", nullable = false, length = 200)
     private String shopName;
 
     @Nationalized
@@ -39,13 +39,15 @@ public class Shop {
     private String description;
 
     @Nationalized
-    @Column(name = "logo_url", length = 500)
+    @Column(name = "logo_url", length = 1000)
     private String logoUrl;
 
-    @Column(name = "phone", length = 20)
+    @Nationalized
+    @Column(name = "phone", length = 30)
     private String phone;
 
-    @Column(name = "email", length = 100)
+    @Nationalized
+    @Column(name = "email", length = 255)
     private String email;
 
     @Column(nullable = false, length = 30)

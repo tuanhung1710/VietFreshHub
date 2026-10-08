@@ -33,7 +33,6 @@ public class SecurityConfig {
 
         http.csrf(csrf -> csrf
                 .csrfTokenRequestHandler(requestHandler)
-                .ignoringRequestMatchers("/api/**")
         );
 
         http.securityContext(context -> {
@@ -43,11 +42,15 @@ public class SecurityConfig {
         http.authorizeHttpRequests(authorize -> {
             authorize.requestMatchers(
                     "/", "/login", "/register", "/error",
-                    "/css/**", "/js/**", "/images/**", "/api/**",
-                    "/product-detail/**", "/cart/**", "/home", "/customer/**"
+                    "/css/**", "/js/**", "/images/**"
             ).permitAll()
+                    .requestMatchers(org.springframework.http.HttpMethod.GET,
+                            "/home", "/customer/home", "/product-detail", "/product-detail/**",
+                            "/api/products/variants/*/stock").permitAll()
+                    .requestMatchers("/cart", "/cart/**", "/api/carts/**", "/customer/**").hasRole("CUSTOMER")
              .requestMatchers("/admin/**").hasRole("ADMIN")
                     .requestMatchers("/manager/**").hasRole("STORE_MANAGER")
+                    .requestMatchers("/store_manager/**").hasRole("STORE_MANAGER")
                     .requestMatchers("/delivery/**").hasRole("DELIVERY_STAFF")
                     .anyRequest().authenticated();
         });
@@ -60,7 +63,13 @@ public class SecurityConfig {
         // Chuyển người chưa đăng nhập về trang login
         http.exceptionHandling(exception -> {
             exception.authenticationEntryPoint(
-                    new LoginUrlAuthenticationEntryPoint("/login")
+                    (request, response, authenticationException) -> {
+                        if (request.getRequestURI().startsWith(request.getContextPath() + "/api/")) {
+                            response.sendError(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
+                        } else {
+                            new LoginUrlAuthenticationEntryPoint("/login").commence(request, response, authenticationException);
+                        }
+                    }
             );
         });
 

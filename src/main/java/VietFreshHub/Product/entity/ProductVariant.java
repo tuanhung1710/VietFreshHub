@@ -29,11 +29,11 @@ public class ProductVariant {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    @Column(name = "sku", length = 100)
+    @Column(name = "sku", nullable = false, length = 100)
     private String sku;
 
     @Nationalized
-    @Column(name = "variant_name", length = 255)
+    @Column(name = "variant_name", nullable = false, length = 200)
     private String variantName;
 
     @Column(nullable = false, precision = 18, scale = 2)

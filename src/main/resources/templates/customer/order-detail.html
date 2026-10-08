@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/storefront :: head('Đơn hàng của bạn')}"></head><body>
+<header th:replace="~{fragments/storefront :: header}"></header>
+<main class="container page">
+    <div th:replace="~{fragments/storefront :: messages}"></div>
+    <p><a th:href="@{/customer/orders}">← Đơn hàng của tôi</a></p>
+    <section th:if="${confirmation}" class="order-success" role="status"><span class="success-check" aria-hidden="true">✓</span><div><h1>Đặt hàng thành công</h1><p>Đơn hàng đã được ghi nhận. Xem trạng thái của từng cửa hàng bên dưới.</p></div></section>
+    <div th:unless="${confirmation}" class="page-heading"><p class="eyebrow">Mua sắm của bạn</p><h1 class="checkout-title">Chi tiết đơn hàng</h1></div>
+    <div class="order-reference"><span>Mã đơn hàng</span><strong class="order-code" th:text="${order.orderCode}"></strong><span class="order-state" th:text="${order.statusLabel}"></span></div>
+    <div class="checkout-layout">
+        <div class="checkout-sections">
+            <section class="panel"><h2>Địa chỉ nhận hàng</h2><strong th:text="${order.recipientName}"></strong><p class="muted" th:text="${order.phone}"></p><p class="muted" th:text="${order.addressText}"></p></section>
+            <section class="panel"><h2>Sản phẩm đã đặt</h2>
+                <section th:each="shop : ${order.shops}" class="checkout-shop">
+                    <div class="order-shop-heading"><h3 th:text="${shop.shopName}"></h3><span class="order-state" th:text="${shop.statusLabel}"></span></div>
+                    <article th:each="item : ${shop.items}" class="checkout-line"><img th:src="${item.imageUrl}" th:alt="${item.productName}" width="64" height="64">
+                        <div><strong th:text="${item.productName}"></strong><p class="muted" th:text="${item.variantName} + ' · Số lượng ' + ${item.quantity}"></p>
+                            <span class="muted" th:text="${#numbers.formatInteger(item.unitPrice,0,'POINT')} + ' ₫ / sản phẩm'"></span></div>
+                        <span class="price" th:text="${#numbers.formatInteger(item.totalAmount,0,'POINT')} + ' ₫'"></span>
+                    </article>
+                    <p class="shop-shipping muted">Phí giao từ cửa hàng: <strong th:text="${#numbers.formatInteger(shop.shippingFee,0,'POINT')} + ' ₫'"></strong></p>
+                </section>
+            </section>
+        </div>
+        <aside class="panel summary"><h2>Thông tin thanh toán</h2><p><strong th:text="${actions != null ? actions.paymentMethodLabel : 'Thanh toán khi nhận hàng (COD)'}"></strong></p><p class="order-state" th:text="${order.statusLabel == 'Đã hủy' ? 'Đơn đã hủy' : order.paymentStatusLabel}"></p>
+            <div class="summary-line"><span>Tiền sản phẩm</span><strong th:text="${#numbers.formatInteger(order.subtotal,0,'POINT')} + ' ₫'"></strong></div>
+            <div th:if="${order.discountTotal.signum() > 0}" class="summary-line"><span>Giảm giá</span><strong th:text="${#numbers.formatInteger(order.discountTotal,0,'POINT')} + ' ₫'"></strong></div>
+            <div class="summary-line"><span>Phí giao hàng</span><strong th:text="${#numbers.formatInteger(order.shippingFee,0,'POINT')} + ' ₫'"></strong></div>
+            <div class="summary-line summary-total"><span>Tổng thanh toán</span><strong class="price" th:text="${#numbers.formatInteger(order.grandTotal,0,'POINT')} + ' ₫'"></strong></div>
+            <p class="muted" th:text="'Đặt lúc ' + ${#temporals.format(order.placedAt,'HH:mm dd/MM/yyyy')}"></p>
+            <a th:if="${confirmation}" class="button full" th:href="@{/customer/orders/{id}(id=${order.orderId})}">Xem chi tiết đơn</a>
+            <a class="button secondary full" th:href="@{/home}">Tiếp tục mua sắm</a>
+            <a class="button secondary full" th:href="@{/customer/orders/{id}/tracking(id=${order.orderId})}">Theo dõi đơn hàng</a>
+            <form th:action="@{/customer/orders/{id}/reorder(id=${order.orderId})}" method="post" class="order-action-form"><button type="submit" class="button secondary full">Mua lại</button></form>
+            <details th:if="${actions != null and actions.cancellable}" class="cancel-order"><summary>Hủy đơn hàng</summary>
+                <form th:action="@{/customer/orders/{id}/cancel(id=${order.orderId})}" method="post">
+                    <p class="muted">Hủy toàn bộ đơn và giải phóng các sản phẩm đã giữ. Không thể hoàn tác thao tác này.</p>
+                    <label for="cancel-reason">Lý do hủy (không bắt buộc)</label><textarea id="cancel-reason" name="reason" maxlength="500" rows="3" th:text="${cancelReason}"></textarea>
+                    <button class="button danger full" type="submit">Xác nhận hủy đơn</button>
+                </form>
+            </details>
+            <p th:if="${actions != null and !actions.cancellable}" class="muted" th:text="${actions.cancellationHint}"></p>
+        </aside>
+    </div>
+</main><footer th:replace="~{fragments/storefront :: footer}"></footer></body></html>

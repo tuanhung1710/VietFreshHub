@@ -50,15 +50,26 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException ex) {
+    public Object handleResourceNotFoundException(ResourceNotFoundException ex, jakarta.servlet.http.HttpServletRequest request) {
         log.warn("Resource not found: {}", ex.getMessage());
+        if (!request.getRequestURI().startsWith(request.getContextPath() + "/api/")) {
+            org.springframework.web.servlet.ModelAndView view = new org.springframework.web.servlet.ModelAndView("error/not-found");
+            view.setStatus(HttpStatus.NOT_FOUND);
+            view.addObject("message", ex.getMessage());
+            return view;
+        }
         ErrorResponse response = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.NOT_FOUND.value(),
                 "RESOURCE_NOT_FOUND",
                 ex.getMessage(),
                 LocalDateTime.now()
         );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidInput(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().body(new ErrorResponse(400, "INVALID_INPUT", ex.getMessage(), LocalDateTime.now()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
