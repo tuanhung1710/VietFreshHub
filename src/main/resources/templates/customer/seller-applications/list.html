@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hồ sơ bán hàng của tôi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-900">
+<main class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+    <header class="mb-6">
+        <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+            VietFresh Hub
+        </p>
+        <h1 class="mt-2 text-3xl font-bold">Hồ sơ đăng ký bán hàng của tôi</h1>
+        <p class="mt-2 text-slate-600">
+            Theo dõi trạng thái xử lý và xem phản hồi từ admin.
+        </p>
+    </header>
+    <div th:if="${errorMessage}"
+         class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+         th:text="${errorMessage}">
+    </div>
+    <div th:if="${#lists.isEmpty(applications)}"
+         class="rounded-2xl border bg-white p-8 text-center text-slate-600 shadow-sm">
+        Bạn chưa gửi hồ sơ đăng ký bán hàng.
+    </div>
+
+    <div th:unless="${#lists.isEmpty(applications)}"
+         class="overflow-hidden rounded-2xl border bg-white shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 text-slate-600">
+                <tr>
+                    <th class="px-5 py-4 font-semibold">Cơ sở kinh doanh</th>
+                    <th class="px-5 py-4 font-semibold">Ngày gửi</th>
+                    <th class="px-5 py-4 font-semibold">Trạng thái</th>
+                    <th class="px-5 py-4"></th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                <tr th:each="item : ${applications}">
+                    <td class="px-5 py-4">
+                        <p class="font-semibold" th:text="${item.businessName}">Tên cơ sở</p>
+                        <p th:if="${item.status.name() == 'REJECTED'
+                                   and item.rejectionReason != null}"
+                           class="mt-1 text-xs text-rose-700"
+                           th:text="${item.rejectionReason}">
+                            Lý do từ chối
+                        </p>
+                    </td>
+                    <td class="px-5 py-4 text-slate-600"
+                        th:text="${item.submittedAtLabel}">—</td>
+                    <td class="px-5 py-4">
+                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
+                              th:classappend="${item.status.name() == 'APPROVED'
+                                  ? ' bg-emerald-100 text-emerald-800'
+                                  : (item.status.name() == 'REJECTED'
+                                      ? ' bg-rose-100 text-rose-800'
+                                      : ' bg-amber-100 text-amber-800')}"
+                              th:text="${item.statusLabel}">
+                            Trạng thái
+                        </span>
+                    </td>
+                    <td class="px-5 py-4 text-right">
+                        <a th:if="${item.status.name() != 'UNDER_REVIEW'}"
+                           th:href="@{/customer/seller-applications/{id}(id=${item.applicationId})}"
+                           class="font-semibold text-emerald-700 hover:underline">
+                            Xem hồ sơ
+                        </a>
+
+                        <span th:if="${item.status.name() == 'UNDER_REVIEW'}"
+                              class="text-sm font-medium text-slate-500">
+        Admin đang thẩm định
+    </span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

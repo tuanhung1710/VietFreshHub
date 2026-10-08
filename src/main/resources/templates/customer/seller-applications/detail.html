@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chi tiết hồ sơ đăng ký</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-900">
+<main class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+  <a th:href="@{/customer/seller-applications}"
+     class="text-sm font-semibold text-emerald-700 hover:underline">
+    ← Hồ sơ của tôi
+  </a>
+
+  <header class="mt-5 flex flex-col gap-3 border-b pb-6 sm:flex-row sm:justify-between">
+    <div>
+      <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+        Hồ sơ #<span th:text="${detail.applicationId}">1</span>
+      </p>
+      <h1 class="mt-1 text-3xl font-bold" th:text="${detail.businessName}">
+        Tên cơ sở
+      </h1>
+      <p class="mt-2 text-sm text-slate-600">
+        Ngày gửi:
+        <span th:text="${detail.submittedAtLabel}">—</span>
+      </p>
+    </div>
+
+    <span class="inline-flex h-fit rounded-full bg-amber-100 px-3 py-1.5
+                     text-sm font-semibold text-amber-800"
+          th:classappend="${detail.status.name() == 'APPROVED'
+                  ? ' bg-emerald-100 text-emerald-800'
+                  : (detail.status.name() == 'REJECTED'
+                      ? ' bg-rose-100 text-rose-800'
+                      : '')}"
+          th:text="${detail.statusLabel}">
+            Trạng thái
+        </span>
+  </header>
+
+  <div th:if="${successMessage}"
+       class="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"
+       th:text="${successMessage}"></div>
+  <div th:if="${errorMessage}"
+       class="mt-5 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900"
+       th:text="${errorMessage}"></div>
+
+  <section th:if="${detail.status.name() == 'REJECTED'
+                      and detail.rejectionReason != null}"
+           class="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-5">
+    <h2 class="font-semibold text-rose-900">Lý do hồ sơ bị từ chối</h2>
+    <p class="mt-2 whitespace-pre-line text-sm text-rose-800"
+       th:text="${detail.rejectionReason}">Lý do từ chối</p>
+    <p class="mt-3 text-sm text-rose-800">
+      Bạn có thể cập nhật thông tin và thay các giấy tờ không hợp lệ bên dưới,
+      sau đó gửi lại hồ sơ.
+    </p>
+  </section>
+
+  <section class="mt-6 rounded-2xl border bg-white p-5 shadow-sm">
+    <h2 class="text-lg font-semibold">Giấy tờ trong hồ sơ</h2>
+
+    <div th:if="${#lists.isEmpty(detail.documents)}"
+         class="mt-4 rounded-lg bg-amber-50 p-4 text-sm text-amber-900">
+      Hồ sơ chưa có giấy tờ.
+    </div>
+
+    <div th:unless="${#lists.isEmpty(detail.documents)}"
+         class="mt-3 divide-y divide-slate-100">
+      <article th:each="document : ${detail.documents}"
+               class="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p class="font-semibold" th:text="${document.documentType}">Loại giấy tờ</p>
+          <p class="mt-1 text-xs text-slate-500">
+            Tải lên: <span th:text="${document.uploadedAtLabel}">—</span>
+          </p>
+          <span class="mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                th:classappend="${document.status.name() == 'VERIFIED'
+                              ? ' bg-emerald-100 text-emerald-800'
+                              : (document.status.name() == 'REJECTED'
+                                  ? ' bg-rose-100 text-rose-800'
+                                  : ' bg-amber-100 text-amber-800')}"
+                th:text="${document.statusLabel}">
+                        Trạng thái tài liệu
+                    </span>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <a th:if="${document.fileUrl != null}"
+             th:href="${document.fileUrl}"
+             target="_blank"
+             rel="noopener"
+             class="rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-slate-50">
+            Xem tài liệu
+          </a>
+
+          <form th:if="${document.status.name() == 'REJECTED'
+                                  and (detail.status.name() == 'REJECTED'
+                                       or detail.status.name() == 'UNDER_REVIEW')}"
+                method="post"
+                enctype="multipart/form-data"
+                th:action="@{/customer/seller-applications/{appId}/documents/{docId}/replace(
+                              appId=${detail.applicationId},
+                              docId=${document.documentId}
+                          )}"
+                class="flex flex-wrap items-center gap-2">
+            <input type="file"
+                   name="file"
+                   accept=".pdf,.jpg,.jpeg,.png"
+                   required
+                   class="max-w-xs rounded-lg border border-slate-300 p-2 text-sm">
+            <button class="rounded-lg bg-rose-700 px-3 py-2 text-sm
+                                       font-semibold text-white hover:bg-rose-800">
+              Thay giấy tờ
+            </button>
+          </form>
+
+          <span th:if="${document.status.name() == 'VERIFIED'}"
+                class="text-sm font-medium text-emerald-700">
+                        Đã xác minh — không cần chỉnh sửa
+                    </span>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section th:if="${detail.status.name() == 'REJECTED'}"
+           class="mt-6 rounded-2xl border bg-white p-5 shadow-sm">
+    <h2 class="text-lg font-semibold">Cập nhật và gửi lại hồ sơ</h2>
+    <p class="mt-1 text-sm text-slate-600">
+      Hãy thay tất cả giấy tờ bị từ chối trước khi gửi lại.
+    </p>
+
+    <form class="mt-4 space-y-4"
+          method="post"
+          th:action="@{/customer/seller-applications/{id}/resubmit(id=${detail.applicationId})}">
+      <div>
+        <label for="businessName" class="block text-sm font-medium">
+          Tên cơ sở kinh doanh
+        </label>
+        <input id="businessName"
+               name="businessName"
+               maxlength="200"
+               required
+               th:value="${detail.businessName}"
+               class="mt-1 w-full rounded-lg border-slate-300">
+      </div>
+
+      <div>
+        <label for="taxCode" class="block text-sm font-medium">
+          Mã số thuế
+        </label>
+        <input id="taxCode"
+               name="taxCode"
+               maxlength="50"
+               th:value="${detail.taxCode}"
+               class="mt-1 w-full rounded-lg border-slate-300">
+      </div>
+
+      <p th:if="${detail.hasRejectedDocuments}"
+         class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+        Hồ sơ vẫn còn giấy tờ bị từ chối. Hãy thay các giấy tờ đó trước.
+      </p>
+
+      <button th:disabled="${detail.hasRejectedDocuments}"
+              class="rounded-lg bg-emerald-700 px-5 py-2.5 font-semibold
+                           text-white hover:bg-emerald-800
+                           disabled:cursor-not-allowed disabled:bg-slate-300">
+        Gửi lại hồ sơ
+      </button>
+    </form>
+  </section>
+
+  <section class="mt-6 rounded-2xl border bg-white p-5 shadow-sm">
+    <h2 class="text-lg font-semibold">Lịch sử xử lý</h2>
+    <p th:if="${#lists.isEmpty(detail.history)}"
+       class="mt-3 text-sm text-slate-500">
+      Chưa có cập nhật.
+    </p>
+    <ol th:unless="${#lists.isEmpty(detail.history)}" class="mt-4 space-y-4">
+      <li th:each="entry : ${detail.history}"
+          class="border-l-2 border-emerald-300 pl-4">
+        <p class="font-semibold">
+          <span th:text="${entry.oldStatusLabel}">—</span>
+          →
+          <span th:text="${entry.newStatusLabel}">—</span>
+        </p>
+        <p class="mt-1 text-xs text-slate-500">
+          <span th:text="${entry.changedByName}">Admin</span>
+          ·
+          <span th:text="${entry.createdAtLabel}">—</span>
+        </p>
+        <p th:if="${entry.note != null}"
+           class="mt-1 whitespace-pre-line text-sm text-slate-700"
+           th:text="${entry.note}"></p>
+      </li>
+    </ol>
+  </section>
+</main>
+</body>
+</html>

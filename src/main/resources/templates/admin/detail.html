@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Thẩm định hồ sơ | VietFresh Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        #documentPreviewImage {
+            display: block;
+            width: auto;
+            height: auto;
+            max-width: calc(100vw - 2rem);
+            max-height: calc(100vh - 2rem);
+            max-height: calc(100dvh - 2rem);
+            object-fit: contain;
+        }
+
+        #documentPreviewFrame {
+            width: calc(100vw - 2rem);
+            height: calc(100vh - 2rem);
+            height: calc(100dvh - 2rem);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-900">
+<main class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+    <a th:href="@{/admin/seller-applications}" class="text-sm font-semibold text-emerald-800 hover:underline">← Quay lại danh sách</a>
+    <header class="mt-5 flex flex-col gap-3 border-b pb-6 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+            <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">Hồ sơ #APP-<span th:text="${application.applicationId}">1</span></p>
+            <h1 class="mt-1 text-3xl font-bold" th:text="${application.businessName}">Tên cơ sở</h1>
+            <p class="mt-2 text-sm text-slate-600">Nộp ngày <span th:text="${application.submittedAtLabel}">—</span></p>
+        </div>
+        <span class="inline-flex w-fit rounded-full px-3 py-1.5 text-sm font-semibold"
+              th:classappend="${applicationDetail.status.name() == 'APPROVED' ? ' bg-emerald-100 text-emerald-800' : ((applicationDetail.status.name() == 'REJECTED' or applicationDetail.status.name() == 'CANCELLED') ? ' bg-rose-100 text-rose-800' : (applicationDetail.status.name() == 'UNDER_REVIEW' ? ' bg-blue-100 text-blue-800' : ' bg-amber-100 text-amber-800'))}"
+              th:text="${applicationDetail.statusLabel}">Chờ tiếp nhận</span>
+    </header>
+
+    <div th:if="${successMessage}" class="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="mt-5 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900" th:text="${errorMessage}"></div>
+
+    <section class="mt-6 grid gap-5 lg:grid-cols-2">
+        <article class="rounded-2xl border bg-white p-5 shadow-sm">
+            <h2 class="text-lg font-semibold">Thông tin người nộp</h2>
+            <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+                <div><dt class="text-slate-500">Họ và tên</dt><dd class="mt-1 font-medium" th:text="${applicationDetail.applicantName}">—</dd></div>
+                <div><dt class="text-slate-500">Email</dt><dd class="mt-1 font-medium" th:text="${applicationDetail.applicantEmail}">—</dd></div>
+                <div><dt class="text-slate-500">Điện thoại</dt><dd class="mt-1 font-medium" th:text="${applicationDetail.applicantPhone != null ? applicationDetail.applicantPhone : '—'}">—</dd></div>
+                <div><dt class="text-slate-500">Mã số thuế</dt><dd class="mt-1 font-medium" th:text="${applicationDetail.taxCode != null ? applicationDetail.taxCode : '—'}">—</dd></div>
+            </dl>
+        </article>
+        <article class="rounded-2xl border bg-white p-5 shadow-sm">
+            <h2 class="text-lg font-semibold">Quyết định gần nhất</h2>
+            <p class="mt-4 text-sm text-slate-600" th:if="${applicationDetail.reviewerName != null}">
+                Người xử lý: <span class="font-medium text-slate-900" th:text="${applicationDetail.reviewerName}">—</span>
+                <span th:if="${applicationDetail.reviewedAtLabel != '—'}"> · <span th:text="${applicationDetail.reviewedAtLabel}">—</span></span>
+            </p>
+            <p class="mt-4 text-sm text-slate-500" th:unless="${applicationDetail.reviewerName != null}">Chưa có admin xử lý hồ sơ.</p>
+            <div th:if="${applicationDetail.rejectionReason != null}" class="mt-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-900">
+                <span class="font-semibold">Lý do từ chối: </span><span th:text="${applicationDetail.rejectionReason}">—</span>
+            </div>
+        </article>
+    </section>
+
+    <section class="mt-6 rounded-2xl border bg-white p-5 shadow-sm">
+        <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <h2 class="text-lg font-semibold">Giấy tờ xác minh</h2>
+                <p class="text-sm text-slate-500">Mở từng tệp để kiểm tra. Cần xác minh toàn bộ giấy tờ trước khi phê duyệt.</p>
+            </div>
+            <span class="text-sm font-semibold" th:classappend="${applicationDetail.readyForApproval} ? ' text-emerald-700' : ' text-amber-700'"
+                  th:text="${applicationDetail.readyForApproval ? 'Đã đủ điều kiện phê duyệt' : 'Còn giấy tờ cần xác minh'}">Còn giấy tờ cần xác minh</span>
+        </div>
+
+        <div th:if="${#lists.isEmpty(applicationDetail.documents)}" class="mt-4 rounded-lg bg-amber-50 p-4 text-sm text-amber-900">
+            Hồ sơ chưa có giấy tờ. Không thể phê duyệt cho đến khi có ít nhất một giấy tờ hợp lệ.
+        </div>
+        <div th:unless="${#lists.isEmpty(applicationDetail.documents)}" class="mt-4 divide-y divide-slate-100">
+            <article th:each="document : ${applicationDetail.documents}" class="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p class="font-semibold" th:text="${document.documentType}">Loại giấy tờ</p>
+                    <p class="mt-1 text-xs text-slate-500">Tải lên <span th:text="${document.uploadedAtLabel}">—</span></p>
+                    <span class="mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                          th:classappend="${document.verificationStatus.name() == 'VERIFIED'} ? ' bg-emerald-100 text-emerald-800' : (${document.verificationStatus.name() == 'REJECTED'} ? ' bg-rose-100 text-rose-800' : ' bg-amber-100 text-amber-800')"
+                          th:text="${document.verificationStatusLabel}">Chưa xác minh</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button
+                            type="button"
+                            th:if="${document.fileUrl != null}"
+                            th:attr="data-file-url=${document.fileUrl}"
+                            onclick="openDocumentPreview(this.dataset.fileUrl)"
+                            class="rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-slate-50">
+                        Mở giấy tờ
+                    </button>
+                    <span th:if="${document.fileUrl == null}" class="text-sm text-rose-700">Không tạo được liên kết. Kiểm tra Cloudinary cloud name.</span>
+                    <form th:if="${(applicationDetail.status.name() == 'PENDING'
+          or applicationDetail.status.name() == 'UNDER_REVIEW')
+          and document.verificationStatus.name() == 'PENDING'}"
+
+                          method="post" th:action="@{/admin/seller-applications/{appId}/documents/{docId}/verify(appId=${applicationDetail.applicationId},docId=${document.documentId})}">
+                        <button th:disabled="${document.verificationStatus.name() != 'PENDING'}"
+                                class="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300">Đánh dấu hợp lệ</button>
+                    </form>
+                    <form th:if="${(applicationDetail.status.name() == 'PENDING'
+          or applicationDetail.status.name() == 'UNDER_REVIEW')
+          and document.verificationStatus.name() == 'PENDING'}"
+                          method="post"
+                          th:action="@{/admin/seller-applications/{appId}/documents/{docId}/reject(
+          appId=${applicationDetail.applicationId},
+          docId=${document.documentId}
+      )}">
+                        <button th:disabled="${document.verificationStatus.name() != 'PENDING'}"
+                                class="rounded-lg bg-rose-700 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-800">
+                            Từ chối giấy tờ
+                        </button>
+                    </form>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="mt-6 rounded-2xl border bg-white p-5 shadow-sm">
+        <h2 class="text-lg font-semibold">Thao tác thẩm định</h2>
+        <div th:if="${applicationDetail.status.name() == 'PENDING'}" class="mt-4 rounded-xl bg-blue-50 p-4">
+            <p class="text-sm text-blue-900">Bắt đầu thẩm định sẽ chuyển hồ sơ sang trạng thái “Đang thẩm định”.</p>
+            <form class="mt-3 flex flex-col gap-3 sm:flex-row" method="post" th:action="@{/admin/seller-applications/{id}/start-review(id=${applicationDetail.applicationId})}">
+                <input name="note" maxlength="1000" placeholder="Ghi chú nội bộ (không bắt buộc)" class="min-w-0 flex-1 rounded-lg border-slate-300 text-sm focus:border-blue-600 focus:ring-blue-600">
+                <button class="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800">Bắt đầu thẩm định</button>
+            </form>
+        </div>
+
+        <div th:if="${applicationDetail.status.name() == 'PENDING' or applicationDetail.status.name() == 'UNDER_REVIEW'}" class="mt-5 grid gap-5 lg:grid-cols-2">
+            <form method="post" th:action="@{/admin/seller-applications/{id}/approve(id=${applicationDetail.applicationId})}" class="rounded-xl border border-emerald-200 p-4">
+                <h3 class="font-semibold text-emerald-900">Phê duyệt và cấp quyền cửa hàng</h3>
+                <p class="mt-1 text-sm text-slate-600">Người nộp sẽ được gán vai trò <code>ROLE_STORE_MANAGER</code>.</p>
+                <textarea name="note" rows="2" maxlength="1000" placeholder="Ghi chú nội bộ (không bắt buộc)" class="mt-3 w-full rounded-lg border-slate-300 text-sm focus:border-emerald-600 focus:ring-emerald-600"></textarea>
+                <button th:disabled="${!applicationDetail.readyForApproval}"
+                        class="mt-3 w-full rounded-lg bg-emerald-700 px-4 py-2.5 font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300">Phê duyệt hồ sơ</button>
+            </form>
+
+            <form method="post" th:action="@{/admin/seller-applications/{id}/reject(id=${applicationDetail.applicationId})}" class="rounded-xl border border-rose-200 p-4">
+                <h3 class="font-semibold text-rose-900">Từ chối hồ sơ</h3>
+                <label for="reason" class="mt-3 block text-sm font-medium">Lý do từ chối <span class="text-rose-600">*</span></label>
+                <textarea id="reason" name="reason" rows="3" maxlength="1000" required placeholder="Nêu rõ giấy tờ hoặc thông tin cần sửa" class="mt-1 w-full rounded-lg border-slate-300 text-sm focus:border-rose-600 focus:ring-rose-600"></textarea>
+                <button class="mt-3 w-full rounded-lg bg-rose-700 px-4 py-2.5 font-semibold text-white hover:bg-rose-800">Từ chối hồ sơ</button>
+            </form>
+        </div>
+        <p th:if="${applicationDetail.status.name() == 'APPROVED' or applicationDetail.status.name() == 'REJECTED' or applicationDetail.status.name() == 'CANCELLED'}"
+           class="mt-4 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">Hồ sơ đã ở trạng thái kết thúc nên không thể duyệt hoặc từ chối lại.</p>
+    </section>
+
+    <section class="mt-6 rounded-2xl border bg-white p-5 shadow-sm">
+        <h2 class="text-lg font-semibold">Lịch sử trạng thái</h2>
+        <p th:if="${#lists.isEmpty(applicationDetail.history)}" class="mt-3 text-sm text-slate-500">Chưa có lịch sử thay đổi trạng thái.</p>
+        <ol th:unless="${#lists.isEmpty(applicationDetail.history)}" class="mt-4 space-y-4">
+            <li th:each="entry : ${applicationDetail.history}" class="border-l-2 border-emerald-300 pl-4">
+                <p class="font-semibold"><span th:text="${entry.oldStatusLabel}">—</span> → <span th:text="${entry.newStatusLabel}">—</span></p>
+                <p class="mt-1 text-xs text-slate-500"><span th:text="${entry.changedByName}">Admin</span> · <span th:text="${entry.createdAtLabel}">—</span></p>
+                <p th:if="${entry.note != null}" class="mt-1 text-sm text-slate-700" th:text="${entry.note}">Ghi chú</p>
+            </li>
+        </ol>
+    </section>
+</main>
+<div id="documentPreviewModal"
+     class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 p-2"
+     role="dialog"
+     aria-modal="true"
+     aria-label="Xem giấy tờ"
+     onclick="if (event.target === this) closeDocumentPreview()">
+
+    <div class="relative flex h-[96vh] w-[96vw] max-w-none items-center justify-center">
+        <button type="button"
+                onclick="closeDocumentPreview()"
+                aria-label="Đóng"
+                class="absolute right-2 top-2 z-10 rounded-full bg-white px-3 py-1.5 text-xl font-bold text-slate-800 shadow hover:bg-slate-100">
+            &times;
+        </button>
+
+        <img id="documentPreviewImage"
+             alt="Giấy tờ xác minh"
+             class="hidden h-full w-full rounded-lg object-contain shadow-2xl">
+
+        <iframe id="documentPreviewFrame"
+                title="Giấy tờ xác minh"
+                class="hidden h-full w-full rounded-lg bg-white shadow-2xl">
+        </iframe>
+    </div>
+</div>
+<script>
+    const documentPreviewModal = document.getElementById('documentPreviewModal');
+    const documentPreviewImage = document.getElementById('documentPreviewImage');
+    const documentPreviewFrame = document.getElementById('documentPreviewFrame');
+
+    function openDocumentPreview(url) {
+        if (!url) return;
+
+        document.body.classList.add('overflow-hidden');
+        documentPreviewModal.classList.remove('hidden');
+        documentPreviewModal.classList.add('flex');
+
+        if (/\.pdf(?:[?#]|$)/i.test(url)) {
+            documentPreviewImage.classList.add('hidden');
+            documentPreviewImage.removeAttribute('src');
+            documentPreviewFrame.src = url;
+            documentPreviewFrame.classList.remove('hidden');
+        } else {
+            documentPreviewFrame.classList.add('hidden');
+            documentPreviewFrame.src = 'about:blank';
+            documentPreviewImage.src = url;
+            documentPreviewImage.classList.remove('hidden');
+        }
+    }
+
+    function closeDocumentPreview() {
+        documentPreviewModal.classList.add('hidden');
+        documentPreviewModal.classList.remove('flex');
+        documentPreviewImage.removeAttribute('src');
+        documentPreviewFrame.src = 'about:blank';
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && !documentPreviewModal.classList.contains('hidden')) {
+            closeDocumentPreview();
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 package VietFreshHub.Auth.service;
 
+import VietFreshHub.Auth.dto.PendingRegistration;
 import VietFreshHub.Auth.dto.RegisterRequest;
 import VietFreshHub.Auth.dto.RegisterResponse;
 import VietFreshHub.Auth.entity.Role;
@@ -23,7 +24,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -34,9 +34,7 @@ public class AuthService {
     private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
 
-
-    @Transactional
-    public RegisterResponse register(RegisterRequest request) {
+    public void validateRegistration(RegisterRequest request) {
         String email = request.getEmail().trim();
         String phone = request.getPhone().trim();
 
@@ -48,21 +46,43 @@ public class AuthService {
             throw new RegistrationException("phone", "Số điện thoại này đã được sử dụng");
         }
 
+        if (roleRepository.findByRoleName("ROLE_CUSTOMER").isEmpty()) {
+            throw new IllegalStateException(
+                    "Chưa có ROLE_CUSTOMER trong bảng roles"
+            );
+        }
+    }
+
+    @Transactional
+    public RegisterResponse registerVerified(PendingRegistration pending) {
+        String email = pending.getEmail().trim();
+        String phone = pending.getPhone().trim();
+
+        // Kiểm tra lại trước khi lưu, phòng trường hợp email/điện thoại
+        // được đăng ký trong lúc người dùng đang nhập OTP.
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            throw new RegistrationException("email", "Email này đã được sử dụng");
+        }
+
+        if (userRepository.existsByPhone(phone)) {
+            throw new RegistrationException("phone", "Số điện thoại này đã được sử dụng");
+        }
+
         Role customerRole = roleRepository.findByRoleName("ROLE_CUSTOMER")
                 .orElseThrow(() ->
-                        new IllegalStateException("Chưa có ROLE_CUSTOMER trong bảng roles"));
+                        new IllegalStateException(
+                                "Chưa có ROLE_CUSTOMER trong bảng roles"
+                        ));
 
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
 
         User user = new User();
-        user.setFullName(request.getFullName().trim());
+        user.setFullName(pending.getFullName());
         user.setEmail(email);
         user.setPhone(phone);
-
-        // Không lưu mật khẩu gốc.
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-
+        user.setPasswordHash(pending.getPasswordHash());
         user.setStatus("ACTIVE");
+        user.setEmailVerifiedAt(now);
         user.setCreatedAt(now);
         user.setUpdatedAt(now);
 
@@ -88,40 +108,61 @@ public class AuthService {
 
     @Transactional
     public Authentication login(String email, String rawPassword) {
-        Optional<User> result =
-                userRepository.findByEmailIgnoreCase(email);
-
-        if (result.isEmpty()) {
+        if (email == null || email.isBlank() || rawPassword == null) {
             return null;
         }
 
-        User user = result.get();
+        User user = userRepository.findByEmailIgnoreCase(email.trim())
+                .orElse(null);
 
-        if (user.getPasswordHash() == null) {
+        if (user == null
+                || user.getPasswordHash() == null
+//                || user.getEmailVerifiedAt() == null
+                || !"ACTIVE".equalsIgnoreCase(user.getStatus())) {
             return null;
         }
 
-        if (!"ACTIVE".equalsIgnoreCase(user.getStatus())) {
+        if (!passwordEncoder.matches(rawPassword, user.getPasswordHash())) {
             return null;
         }
 
-        // So sánh mật khẩu người dùng nhập với BCrypt hash trong database
-        boolean passwordCorrect =
-                passwordEncoder.matches(rawPassword, user.getPasswordHash());
+        return createAuthentication(user);
+    }
 
-        if (!passwordCorrect) {
+    /**
+     * Chỉ gọi sau khi OTP hợp lệ và registerVerified đã tạo user.
+     */
+    @Transactional(readOnly = true)
+    public Authentication loginAfterEmailVerification(String email) {
+        if (email == null || email.isBlank()) {
             return null;
         }
 
-        // Lấy role của user
+        User user = userRepository.findByEmailIgnoreCase(email.trim())
+                .orElse(null);
+
+        if (user == null
+                || user.getEmailVerifiedAt() == null
+                || !"ACTIVE".equalsIgnoreCase(user.getStatus())) {
+            return null;
+        }
+
+        return createAuthentication(user);
+    }
+
+    private Authentication createAuthentication(User user) {
         List<GrantedAuthority> authorities = new ArrayList<>();
 
-        for (UserRole userRole : user.getUserRoles()) {
-            String roleName = userRole.getRole().getRoleName();
-            authorities.add(new SimpleGrantedAuthority(roleName));
-        }
+        List<UserRole> userRoles =
+                userRoleRepository.findAllByUser_UserId(user.getUserId());
 
-        // Tạo thông tin đăng nhập sau khi kiểm tra thành công
+        for (UserRole userRole : userRoles) {
+            authorities.add(
+                    new SimpleGrantedAuthority(
+                            userRole.getRole().getRoleName()
+                    )
+            );
+        }
 
         return new UsernamePasswordAuthenticationToken(
                 user.getEmail(),
