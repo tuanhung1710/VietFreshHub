@@ -1,10 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quản lý cửa hàng | VietFresh Hub</title>
 </head>
 <body>
-<h1>Shop</h1>
+<main>
+    <h1>Quản lý cửa hàng</h1>
+    <p>Quản lý hoạt động và trao đổi với khách hàng.</p>
+    <a th:href="@{/store_manager/chat}">Mở tin nhắn khách hàng</a>
+</main>
 </body>
 </html>

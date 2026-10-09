@@ -1,9 +1,8 @@
-package VietFreshHub.Auth.repository;
+package VietFreshHub.auth.repository;
 
-import VietFreshHub.Auth.entity.PasswordResetToken;
-import VietFreshHub.Auth.entity.TokenType;
+import VietFreshHub.auth.entity.PasswordResetToken;
+import VietFreshHub.auth.entity.TokenType;
 import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +24,5 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
             Long userId,
             TokenType tokenType
     );
-
 
 }

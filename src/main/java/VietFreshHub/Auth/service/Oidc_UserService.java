@@ -1,8 +1,8 @@
-package VietFreshHub.Auth.service;
+package VietFreshHub.auth.service;
 
-import VietFreshHub.Auth.entity.User;
-import VietFreshHub.Auth.repository.UserRoleRepository;
-import VietFreshHub.config.Oidc_User;
+import VietFreshHub.auth.entity.User;
+import VietFreshHub.auth.repository.UserRoleRepository;
+import VietFreshHub.security.Oidc_User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -12,7 +12,6 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
-
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;

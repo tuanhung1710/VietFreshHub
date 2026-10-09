@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <title>Trò chuyện | VietFresh Hub</title>
+    <link rel="stylesheet" th:href="@{/css/chat.css}">
+    <script defer src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+    <script defer th:src="@{/js/chat.js}"></script>
+</head>
+<body>
+<main class="chat-app" id="chatApp"
+      th:attr="data-mode=${chatMode},data-user-id=${currentUserId}">
+    <aside class="chat-sidebar">
+        <header class="sidebar-header">
+            <a class="back-link" th:if="${chatMode == 'customer'}" th:href="@{/customer/home}">← Trang chủ</a>
+            <a class="back-link" th:if="${chatMode == 'shop'}" th:href="@{/store_manager/shop}">← Quản lý cửa hàng</a>
+            <h1>Tin nhắn</h1>
+            <p th:if="${chatMode == 'customer'}">Trao đổi trực tiếp với cửa hàng</p>
+            <p th:if="${chatMode == 'shop'}">Trao đổi với khách hàng của cửa hàng</p>
+        </header>
+
+        <section class="shop-picker" th:if="${chatMode == 'customer' and !#lists.isEmpty(shops)}">
+            <label for="shopSelect">Bắt đầu cuộc trò chuyện</label>
+            <div class="shop-picker-row">
+                <select id="shopSelect">
+                    <option value="">Chọn cửa hàng</option>
+                    <option th:each="shop : ${shops}" th:value="${shop.shopId}" th:text="${shop.shopName}"></option>
+                </select>
+                <button id="startChat" type="button">Nhắn tin</button>
+            </div>
+        </section>
+
+        <div class="conversation-heading">Cuộc trò chuyện</div>
+        <nav class="conversation-list" id="conversationList" aria-label="Danh sách cuộc trò chuyện">
+            <button class="conversation-item" type="button"
+                    th:each="conversation : ${conversations}"
+                    th:attr="data-conversation-id=${conversation.conversationId},data-shop-id=${conversation.shopId}"
+                    th:classappend="${conversationStat.first} ? ' selected' : ''">
+                <span class="conversation-avatar" th:text="${#strings.substring(conversation.otherPartyName, 0, 1)}">V</span>
+                <span class="conversation-copy">
+                    <strong th:text="${conversation.otherPartyName}">Tên</strong>
+                    <small class="conversation-preview" th:text="${conversation.lastMessage}">Tin nhắn gần nhất</small>
+                </span>
+                <span class="unread-count" th:if="${conversation.unreadCount > 0}" th:text="${conversation.unreadCount}">1</span>
+            </button>
+            <p class="empty-list" th:if="${#lists.isEmpty(conversations)}" id="emptyConversations">
+                Chưa có cuộc trò chuyện.
+            </p>
+        </nav>
+    </aside>
+
+    <section class="chat-panel" aria-label="Nội dung trò chuyện">
+        <header class="chat-header" id="chatHeader">
+            <div>
+                <h2 id="activeTitle">Chọn một cuộc trò chuyện</h2>
+                <p id="connectionStatus">Đang kết nối…</p>
+            </div>
+        </header>
+        <div class="message-list" id="messageList" aria-live="polite">
+            <div class="chat-welcome" id="welcomeMessage">
+                <span class="welcome-icon">✉</span>
+                <strong>Tin nhắn của bạn</strong>
+                <p>Chọn một cuộc trò chuyện ở bên trái để xem và gửi tin nhắn.</p>
+            </div>
+        </div>
+        <form class="message-form" id="messageForm">
+            <label class="visually-hidden" for="messageInput">Nội dung tin nhắn</label>
+            <input id="messageInput" type="text" maxlength="4000" autocomplete="off"
+                   placeholder="Nhập tin nhắn…" disabled>
+            <button type="submit" id="sendButton" disabled>Gửi</button>
+        </form>
+        <p class="chat-error" id="chatError" role="alert"></p>
+    </section>
+</main>
+</body>
+</html>

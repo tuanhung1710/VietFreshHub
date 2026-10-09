@@ -1,4 +1,4 @@
-package VietFreshHub.Auth.dto;
+package VietFreshHub.auth.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

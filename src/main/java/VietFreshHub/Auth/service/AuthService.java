@@ -1,16 +1,16 @@
-package VietFreshHub.Auth.service;
+package VietFreshHub.auth.service;
 
-import VietFreshHub.Auth.dto.PendingRegistration;
-import VietFreshHub.Auth.dto.RegisterRequest;
-import VietFreshHub.Auth.dto.RegisterResponse;
-import VietFreshHub.Auth.entity.Role;
-import VietFreshHub.Auth.entity.User;
-import VietFreshHub.Auth.entity.UserRole;
-import VietFreshHub.Auth.entity.UserRoleId;
-import VietFreshHub.Auth.exception.RegistrationException;
-import VietFreshHub.Auth.repository.RoleRepository;
-import VietFreshHub.Auth.repository.UserRepository;
-import VietFreshHub.Auth.repository.UserRoleRepository;
+import VietFreshHub.auth.dto.PendingRegistration;
+import VietFreshHub.auth.dto.RegisterRequest;
+import VietFreshHub.auth.dto.RegisterResponse;
+import VietFreshHub.auth.entity.Role;
+import VietFreshHub.auth.entity.User;
+import VietFreshHub.auth.entity.UserRole;
+import VietFreshHub.auth.entity.UserRoleId;
+import VietFreshHub.auth.exception.RegistrationException;
+import VietFreshHub.auth.repository.RoleRepository;
+import VietFreshHub.auth.repository.UserRepository;
+import VietFreshHub.auth.repository.UserRoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -19,7 +19,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;

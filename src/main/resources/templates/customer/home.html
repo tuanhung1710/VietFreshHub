@@ -5,7 +5,11 @@
 <body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col">
 <div th:replace="~{fragments/header :: header}"></div>
 <main class="w-full pt-20 bg-surface flex-1">
-    <div class="max-w-[1280px] mx-auto px-margin py-space-lg"></div>
+    <div class="max-w-[1280px] mx-auto px-margin py-space-lg">
+        <a th:href="@{/customer/chat}" class="inline-flex items-center gap-2 rounded-lg bg-green-700 px-5 py-3 font-semibold text-white">
+            Tin nhắn với cửa hàng
+        </a>
+    </div>
     <form th:action="@{/logout}" method="post">
         <input type="hidden"
                th:name="${_csrf.parameterName}"

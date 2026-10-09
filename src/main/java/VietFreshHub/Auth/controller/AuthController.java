@@ -1,10 +1,10 @@
-package VietFreshHub.Auth.controller;
+package VietFreshHub.auth.controller;
 
-import VietFreshHub.Auth.dto.PendingRegistration;
-import VietFreshHub.Auth.dto.RegisterRequest;
-import VietFreshHub.Auth.exception.RegistrationException;
-import VietFreshHub.Auth.service.AuthService;
-import VietFreshHub.Auth.service.EmailVerificationService;
+import VietFreshHub.auth.dto.PendingRegistration;
+import VietFreshHub.auth.dto.RegisterRequest;
+import VietFreshHub.auth.exception.RegistrationException;
+import VietFreshHub.auth.service.AuthService;
+import VietFreshHub.auth.service.EmailVerificationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;

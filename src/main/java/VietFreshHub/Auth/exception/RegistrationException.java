@@ -1,4 +1,4 @@
-package VietFreshHub.Auth.exception;
+package VietFreshHub.auth.exception;
 
 import lombok.Getter;
 

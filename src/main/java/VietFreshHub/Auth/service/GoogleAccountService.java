@@ -1,19 +1,18 @@
-package VietFreshHub.Auth.service;
+package VietFreshHub.auth.service;
 
-import VietFreshHub.Auth.entity.Role;
-import VietFreshHub.Auth.entity.User;
-import VietFreshHub.Auth.entity.UserExternalAccount;
-import VietFreshHub.Auth.entity.UserRole;
-import VietFreshHub.Auth.entity.UserRoleId;
-import VietFreshHub.Auth.repository.RoleRepository;
-import VietFreshHub.Auth.repository.UserExternalAccountRepository;
-import VietFreshHub.Auth.repository.UserRepository;
-import VietFreshHub.Auth.repository.UserRoleRepository;
+import VietFreshHub.auth.entity.Role;
+import VietFreshHub.auth.entity.User;
+import VietFreshHub.auth.entity.UserExternalAccount;
+import VietFreshHub.auth.entity.UserRole;
+import VietFreshHub.auth.entity.UserRoleId;
+import VietFreshHub.auth.repository.RoleRepository;
+import VietFreshHub.auth.repository.UserExternalAccountRepository;
+import VietFreshHub.auth.repository.UserRepository;
+import VietFreshHub.auth.repository.UserRoleRepository;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Locale;

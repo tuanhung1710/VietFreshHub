@@ -1,4 +1,4 @@
-package VietFreshHub.Customer.controller;
+package VietFreshHub.customer.controller;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;

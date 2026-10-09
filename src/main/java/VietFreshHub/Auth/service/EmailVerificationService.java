@@ -1,14 +1,13 @@
-package VietFreshHub.Auth.service;
+package VietFreshHub.auth.service;
 
-import VietFreshHub.Auth.dto.PendingRegistration;
-import VietFreshHub.Auth.dto.RegisterRequest;
+import VietFreshHub.auth.dto.PendingRegistration;
+import VietFreshHub.auth.dto.RegisterRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;

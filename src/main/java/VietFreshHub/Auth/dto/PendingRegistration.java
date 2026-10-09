@@ -1,9 +1,8 @@
-package VietFreshHub.Auth.dto;
+package VietFreshHub.auth.dto;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.LocalDateTime;

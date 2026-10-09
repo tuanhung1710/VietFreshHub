@@ -1,8 +1,7 @@
-package VietFreshHub.Auth.repository;
+package VietFreshHub.auth.repository;
 
-import VietFreshHub.Auth.entity.Role;
+import VietFreshHub.auth.entity.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.Optional;
 
 public interface RoleRepository extends JpaRepository<Role, Integer> {
