@@ -609,6 +609,8 @@
 <!--  </section>-->
   <!-- Client Script for Interactive UX -->
   <script>
+    const MAX_SELLER_DOCUMENT_SIZE = 5 * 1024 * 1024;
+
     document.querySelectorAll(".js-preview-file").forEach(input => {
 
         const preview = document.getElementById(input.id + "-preview");
@@ -674,6 +676,23 @@
       error.textContent = "";
     }
             const newlySelectedFiles = Array.from(input.files || []);
+
+            const oversizedFile = newlySelectedFiles.find(
+                file => file.size > MAX_SELLER_DOCUMENT_SIZE
+            );
+
+            if (oversizedFile) {
+                input.value = "";
+                selectedFiles = input.multiple ? selectedFiles : [];
+                syncInputFiles();
+                renderPreview();
+
+                if (error) {
+                    error.textContent = "Mỗi giấy tờ không được vượt quá 5 MB.";
+                    error.hidden = false;
+                }
+                return;
+            }
 
             // Trường multiple thì cộng file mới vào danh sách cũ.
             // Trường chỉ nhận một file thì thay bằng file vừa chọn.
@@ -797,6 +816,24 @@ if (firstInvalidInput) {
     return;
   }
 
+  const oversizedDocument = requiredFiles.find(item =>
+    Array.from(item.input.files).some(
+      file => file.size > MAX_SELLER_DOCUMENT_SIZE
+    )
+  );
+
+  if (oversizedDocument) {
+    event.preventDefault();
+    oversizedDocument.error.textContent =
+        "Mỗi giấy tờ không được vượt quá 5 MB.";
+    oversizedDocument.error.hidden = false;
+    oversizedDocument.input.closest(".upload-field").scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+    return;
+  }
+
   requiredFiles.forEach(item => {
     item.error.hidden = true;
     item.error.textContent = "";
@@ -833,9 +870,9 @@ if (firstInvalidInput) {
       // 100% ở đây mới chỉ có nghĩa Spring đã nhận request.
       // Spring vẫn cần upload các file lên Cloudinary.
       xhr.upload.addEventListener("load", function () {
-        progress.value = 100;
+        progress.removeAttribute("value");
         status.textContent =
-            "Đang xử lý tài liệu...";
+            "Đã gửi file đến máy chủ. Đang tải giấy tờ lên kho lưu trữ an toàn; vui lòng giữ trang này mở.";
       });
 
       xhr.onload = function () {

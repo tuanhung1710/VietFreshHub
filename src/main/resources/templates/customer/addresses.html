@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Địa chỉ giao hàng | VietFresh Hub')}"></head>
+<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col">
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="w-full pt-20 bg-surface flex-1">
+    <section class="max-w-[1100px] mx-auto px-margin py-space-lg">
+        <a th:href="@{/customer/profile}" class="text-primary hover:underline">← Hồ sơ của tôi</a>
+        <div class="mt-space-md mb-space-lg">
+            <p class="text-label-md text-primary font-semibold">TÀI KHOẢN CỦA TÔI</p>
+            <h1 class="mt-2 text-3xl font-bold">Địa chỉ giao hàng</h1>
+            <p class="mt-2 text-on-surface-variant">Lưu các địa chỉ nhận hàng và chọn địa chỉ thường dùng.</p>
+        </div>
+
+        <div th:if="${successMessage}" class="mb-space-md rounded-lg bg-green-50 px-4 py-3 text-green-800" role="status" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="mb-space-md rounded-lg bg-red-50 px-4 py-3 text-red-800" role="alert" th:text="${errorMessage}"></div>
+
+        <div class="grid gap-space-lg lg:grid-cols-[1.1fr_0.9fr]">
+            <section class="space-y-3" aria-label="Danh sách địa chỉ">
+                <article th:each="address : ${addresses}" class="rounded-xl border border-outline-variant bg-surface-container-lowest p-space-md shadow-sm">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="font-semibold" th:text="${address.recipientName}">Người nhận</h2>
+                                <span th:if="${address.isDefault()}" class="rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800">Mặc định</span>
+                            </div>
+                            <p class="mt-1 text-sm text-on-surface-variant" th:text="${address.phone}">Số điện thoại</p>
+                            <p class="mt-2" th:text="${address.addressLine + ', ' + address.ward + ', ' + address.district + ', ' + address.province}">Địa chỉ đầy đủ</p>
+                        </div>
+                        <a th:href="@{/customer/addresses(edit=${address.addressId})}" class="text-primary hover:underline">Sửa</a>
+                    </div>
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <form th:if="${!address.isDefault()}" th:action="@{/customer/addresses/{id}/default(id=${address.addressId})}" method="post">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <button type="submit" class="rounded-lg border border-outline-variant px-3 py-2 text-sm hover:bg-surface-container">Đặt mặc định</button>
+                        </form>
+                        <form th:action="@{/customer/addresses/{id}/delete(id=${address.addressId})}" method="post" onsubmit="return confirm('Bạn có muốn xóa địa chỉ này?');">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <button type="submit" class="rounded-lg border border-red-200 px-3 py-2 text-sm text-red-700 hover:bg-red-50">Xóa</button>
+                        </form>
+                    </div>
+                </article>
+                <div th:if="${#lists.isEmpty(addresses)}" class="rounded-xl border border-dashed border-outline-variant p-space-lg text-center text-on-surface-variant">
+                    Bạn chưa lưu địa chỉ giao hàng nào.
+                </div>
+            </section>
+
+            <section class="h-fit rounded-xl border border-outline-variant bg-surface-container-lowest p-space-lg shadow-sm">
+                <h2 class="mb-space-md text-xl font-bold" th:text="${addressForm.addressId == null ? 'Thêm địa chỉ' : 'Sửa địa chỉ'}">Thêm địa chỉ</h2>
+                <form th:action="@{/customer/addresses}" th:object="${addressForm}" method="post" class="space-y-4">
+                    <input type="hidden" th:field="*{addressId}">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <div th:if="${#fields.hasGlobalErrors()}" class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">
+                        <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+                    </div>
+
+                    <div>
+                        <label for="recipientName" class="mb-1 block font-semibold">Tên người nhận</label>
+                        <input id="recipientName" type="text" th:field="*{recipientName}" maxlength="150" required autocomplete="name" class="w-full rounded-lg border border-outline-variant px-3 py-2.5 focus:border-primary focus:outline-none">
+                        <p th:if="${#fields.hasErrors('recipientName')}" th:errors="*{recipientName}" class="mt-1 text-sm text-red-700"></p>
+                    </div>
+                    <div>
+                        <label for="phone" class="mb-1 block font-semibold">Số điện thoại</label>
+                        <input id="phone" type="tel" th:field="*{phone}" maxlength="30" required autocomplete="tel" class="w-full rounded-lg border border-outline-variant px-3 py-2.5 focus:border-primary focus:outline-none">
+                        <p th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}" class="mt-1 text-sm text-red-700"></p>
+                    </div>
+                    <div>
+                        <label for="province" class="mb-1 block font-semibold">Tỉnh/thành phố</label>
+                        <input id="province" type="text" th:field="*{province}" maxlength="100" required autocomplete="address-level1" class="w-full rounded-lg border border-outline-variant px-3 py-2.5 focus:border-primary focus:outline-none">
+                        <p th:if="${#fields.hasErrors('province')}" th:errors="*{province}" class="mt-1 text-sm text-red-700"></p>
+                    </div>
+                    <div>
+                        <label for="district" class="mb-1 block font-semibold">Quận/huyện</label>
+                        <input id="district" type="text" th:field="*{district}" maxlength="100" required autocomplete="address-level2" class="w-full rounded-lg border border-outline-variant px-3 py-2.5 focus:border-primary focus:outline-none">
+                        <p th:if="${#fields.hasErrors('district')}" th:errors="*{district}" class="mt-1 text-sm text-red-700"></p>
+                    </div>
+                    <div>
+                        <label for="ward" class="mb-1 block font-semibold">Phường/xã</label>
+                        <input id="ward" type="text" th:field="*{ward}" maxlength="100" required autocomplete="address-level3" class="w-full rounded-lg border border-outline-variant px-3 py-2.5 focus:border-primary focus:outline-none">
+                        <p th:if="${#fields.hasErrors('ward')}" th:errors="*{ward}" class="mt-1 text-sm text-red-700"></p>
+                    </div>
+                    <div>
+                        <label for="addressLine" class="mb-1 block font-semibold">Địa chỉ cụ thể</label>
+                        <textarea id="addressLine" th:field="*{addressLine}" maxlength="500" required autocomplete="street-address" rows="3" class="w-full rounded-lg border border-outline-variant px-3 py-2.5 focus:border-primary focus:outline-none"></textarea>
+                        <p th:if="${#fields.hasErrors('addressLine')}" th:errors="*{addressLine}" class="mt-1 text-sm text-red-700"></p>
+                    </div>
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" th:field="*{default}" class="rounded border-outline-variant text-primary focus:ring-primary">
+                        Đặt làm địa chỉ mặc định
+                    </label>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="submit" class="rounded-lg bg-primary px-4 py-2.5 font-semibold text-on-primary" th:text="${addressForm.addressId == null ? 'Thêm địa chỉ' : 'Lưu địa chỉ'}">Lưu địa chỉ</button>
+                        <a th:if="${addressForm.addressId != null}" th:href="@{/customer/addresses}" class="rounded-lg border border-outline-variant px-4 py-2.5 font-semibold">Hủy sửa</a>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </section>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

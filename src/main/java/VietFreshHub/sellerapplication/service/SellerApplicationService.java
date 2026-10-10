@@ -8,6 +8,7 @@ import VietFreshHub.sellerapplication.entity.SellerApplicationDocument;
 import VietFreshHub.sellerapplication.entity.SellerApplicationStatus;
 import VietFreshHub.sellerapplication.repository.SellerApplicationDocumentRepository;
 import VietFreshHub.sellerapplication.repository.SellerApplicationRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,14 +18,10 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @Service
+@Slf4j
 public class SellerApplicationService {
-
-    private static final Logger LOG =
-            Logger.getLogger(SellerApplicationService.class.getName());
 
     private final SellerApplicationRepository applicationRepository;
     private final SellerApplicationDocumentRepository documentRepository;
@@ -55,7 +52,13 @@ public class SellerApplicationService {
     ) {}
 
     public Long submit(User user, SellerApplicationForm form) throws IOException {
+        long submitStartedAt = System.nanoTime();
         List<UploadTask> tasks = createUploadTasks(form);
+
+        // Reject invalid documents before creating a temporary application row.
+        tasks.forEach(task -> cloudinaryStorageService.validateUpload(
+                task.file(), task.imagesOnly()
+        ));
 
         SellerApplication newApplication = new SellerApplication();
         newApplication.setUser(user);
@@ -67,8 +70,13 @@ public class SellerApplicationService {
         );
         newApplication.setStatus(SellerApplicationStatus.PENDING);
 
-        final SellerApplication application =
-                applicationRepository.save(newApplication);
+        long applicationSaveStartedAt = System.nanoTime();
+        final SellerApplication application = applicationRepository.save(newApplication);
+        log.info(
+                "Seller application row saved: applicationId={}, durationMs={}",
+                application.getApplicationId(),
+                elapsedMillis(applicationSaveStartedAt)
+        );
 
         List<CompletableFuture<CompletedUpload>> futures = new ArrayList<>();
 
@@ -92,16 +100,21 @@ public class SellerApplicationService {
             }, cloudinaryUploadExecutor));
         }
 
+        long cloudinaryWaitStartedAt = System.nanoTime();
         try {
             CompletableFuture.allOf(
                     futures.toArray(CompletableFuture[]::new)
             ).join();
+            log.info(
+                    "Seller application Cloudinary uploads completed: applicationId={}, durationMs={}",
+                    application.getApplicationId(),
+                    elapsedMillis(cloudinaryWaitStartedAt)
+            );
         } catch (CompletionException uploadError) {
-            LOG.log(
-                    Level.SEVERE,
-                    "Upload Cloudinary thất bại, applicationId="
-                            + application.getApplicationId(),
-                    uploadError
+            log.warn(
+                    "Seller application Cloudinary uploads failed: applicationId={}, durationMs={}",
+                    application.getApplicationId(),
+                    elapsedMillis(cloudinaryWaitStartedAt)
             );
             List<CompletedUpload> uploadedSuccessfully =
                     getSuccessfulUploads(futures);
@@ -143,11 +156,24 @@ public class SellerApplicationService {
                 })
                 .toList();
 
+        long documentSaveStartedAt = System.nanoTime();
         try {
             // Lưu danh sách document sau khi mọi file Cloudinary đều thành công.
             documentRepository.saveAll(documents);
+            log.info(
+                    "Seller application documents saved: applicationId={}, durationMs={}, totalDurationMs={}",
+                    application.getApplicationId(),
+                    elapsedMillis(documentSaveStartedAt),
+                    elapsedMillis(submitStartedAt)
+            );
             return application.getApplicationId();
         } catch (RuntimeException databaseError) {
+            log.warn(
+                    "Seller application documents could not be saved: applicationId={}, durationMs={}, totalDurationMs={}",
+                    application.getApplicationId(),
+                    elapsedMillis(documentSaveStartedAt),
+                    elapsedMillis(submitStartedAt)
+            );
             rollback(application, uploaded);
 
             throw new IOException(
@@ -206,12 +232,7 @@ public class SellerApplicationService {
             try {
                 cloudinaryStorageService.deletePrivate(item.asset());
             } catch (Exception cleanupError) {
-                LOG.log(
-                        Level.WARNING,
-                        "Không xóa được file Cloudinary sau khi submit lỗi: "
-                                + item.asset().publicId(),
-                        cleanupError
-                );
+                log.warn("Không xóa được file Cloudinary sau khi submit lỗi", cleanupError);
             }
         }
 
@@ -220,11 +241,11 @@ public class SellerApplicationService {
                     application.getApplicationId()
             );
         } catch (RuntimeException cleanupError) {
-            LOG.log(
-                    Level.WARNING,
-                    "Không xóa được hồ sơ tạm sau khi upload lỗi",
-                    cleanupError
-            );
+            log.warn("Không xóa được hồ sơ tạm sau khi upload lỗi", cleanupError);
         }
+    }
+
+    private long elapsedMillis(long startedAt) {
+        return (System.nanoTime() - startedAt) / 1_000_000;
     }
 }
