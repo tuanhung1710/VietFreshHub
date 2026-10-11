@@ -186,4 +186,31 @@ public class AuthService {
 
         return user.getUserId();
     }
+
+    @Transactional(readOnly = true)
+    public Long getCurrentDeliveryStaffId(Authentication authentication) {
+        Long userId = getCurrentUserId(authentication);
+
+        for (GrantedAuthority authority : authentication.getAuthorities()) {
+            if ("ROLE_DELIVERY_STAFF".equals(authority.getAuthority())) {
+                return userId;
+            }
+        }
+
+        throw new AccessDeniedException("Bạn không có quyền nhân viên giao hàng.");
+    }
+
+    @Transactional
+    public List<Long> lockActiveDeliveryStaffIdsForAssignment() {
+        List<User> deliveryStaff =
+                userRepository.findByStatusIgnoreCaseAndUserRoles_Role_RoleNameOrderByUserIdAsc(
+                        "ACTIVE", "ROLE_DELIVERY_STAFF");
+        List<Long> deliveryStaffIds = new ArrayList<>();
+
+        for (User user : deliveryStaff) {
+            deliveryStaffIds.add(user.getUserId());
+        }
+
+        return deliveryStaffIds;
+    }
 }

@@ -27,6 +27,12 @@ public class EmailVerificationService {
     @Value("${app.mail.from}")
     private String mailFrom;
 
+    @Value("${spring.mail.username:}")
+    private String mailUsername;
+
+    @Value("${spring.mail.password:}")
+    private String mailPassword;
+
     public PendingRegistration startRegistration(RegisterRequest request) {
         PendingRegistration pending = new PendingRegistration();
         pending.setFullName(request.getFullName().trim());
@@ -76,6 +82,14 @@ public class EmailVerificationService {
     }
 
     private void sendNewOtp(PendingRegistration pending) {
+        if (mailFrom == null || mailFrom.isBlank()
+                || mailUsername == null || mailUsername.isBlank()
+                || mailPassword == null || mailPassword.isBlank()) {
+            throw new IllegalStateException(
+                    "Chưa cấu hình email gửi OTP. Hãy thiết lập MAIL_USERNAME và MAIL_PASSWORD."
+            );
+        }
+
         String otp = String.format(
                 Locale.ROOT,
                 "%06d",

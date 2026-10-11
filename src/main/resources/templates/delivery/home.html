@@ -3,47 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bảng điều khiển giao hàng | VIETFRESH HUB</title>
+    <title>Đơn giao được phân công | VIETFRESH HUB</title>
+    <style>
+        body {
+            max-width: 1000px;
+            margin: 24px auto;
+            padding: 0 16px;
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+        }
+    </style>
 </head>
 <body>
 <header>
     <p>VIETFRESH HUB</p>
 </header>
-<div>
-    <aside>
-        <nav aria-label="Điều hướng giao hàng">
-            <ul>
-                <li><a th:href="@{/delivery}" aria-current="page">Bảng điều khiển</a></li>
-                <li><button type="button" disabled>Đơn giao được phân công</button></li>
-                <li><button type="button" disabled>Lịch sử giao hàng</button></li>
-                <li><button type="button" disabled>Thông báo</button></li>
-            </ul>
-        </nav>
-    </aside>
-    <main>
-        <h1>BẢNG ĐIỀU KHIỂN GIAO HÀNG</h1>
-        <p>Quản lý các đơn giao hàng được phân công và hoạt động giao hàng.</p>
-        <section aria-labelledby="delivery-management-heading">
-            <h2 id="delivery-management-heading">QUẢN LÝ GIAO HÀNG</h2>
-            <div>
-                <article>
-                    <h3>Đơn giao được phân công</h3>
-                    <p>Xem các đơn giao hàng được phân công cho bạn và chấp nhận nhiệm vụ giao hàng.</p>
-                    <button type="button" disabled>Xem đơn giao hàng</button>
-                </article>
-                <article>
-                    <h3>Lịch sử giao hàng</h3>
-                    <p>Xem lại các đơn hàng mà bạn đã xử lý trước đó.</p>
-                    <button type="button" disabled>Xem lịch sử</button>
-                </article>
-                <article>
-                    <h3>Thông báo</h3>
-                    <p>Xem các thông báo liên quan đến trạng thái giao hàng.</p>
-                    <button type="button" disabled>Xem thông báo</button>
-                </article>
-            </div>
-        </section>
-    </main>
-</div>
+<main>
+    <h1>ĐƠN GIAO ĐƯỢC PHÂN CÔNG</h1>
+    <p>Xem chi tiết đơn giao hàng để chấp nhận phân công và xác nhận nhận hàng.</p>
+    <p th:if="${#lists.isEmpty(assignedDeliveries)}">Hiện không có đơn giao hàng nào được phân công cho bạn.</p>
+    <div class="table-container" th:unless="${#lists.isEmpty(assignedDeliveries)}">
+        <table>
+            <thead>
+            <tr>
+                <th scope="col">Mã đơn hàng</th>
+                <th scope="col">Trạng thái phân công</th>
+                <th scope="col">Trạng thái giao hàng</th>
+                <th scope="col">Thời gian phân công</th>
+                <th scope="col">Thời gian chấp nhận</th>
+                <th scope="col">Chi tiết</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="delivery : ${assignedDeliveries}">
+                <td th:text="${delivery.orderCode}"></td>
+                <td><strong th:text="${delivery.assignmentStatus}"></strong></td>
+                <td><strong th:text="${delivery.deliveryStatus}"></strong></td>
+                <td th:text="${delivery.assignedAt == null ? '—' : #temporals.format(delivery.assignedAt, 'dd-MM-yyyy HH:mm')}"></td>
+                <td th:text="${delivery.acceptedAt == null ? '—' : #temporals.format(delivery.acceptedAt, 'dd-MM-yyyy HH:mm')}"></td>
+                <td>
+                    <a th:href="@{/delivery/assignments/{assignmentId}(assignmentId=${delivery.assignmentId})}">Xem chi tiết</a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
 </body>
 </html>

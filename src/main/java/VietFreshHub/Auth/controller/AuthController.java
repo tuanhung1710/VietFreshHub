@@ -245,9 +245,9 @@ public class AuthController {
 //                authentication.getAuthorities()
 //        );
 //
-////        return "redirect:/";
-////        return "customer/home";
-////        return "redirect:" + getHomeUrl(authentication);
+    ////        return "redirect:/";
+    ////        return "customer/home";
+    ////        return "redirect:" + getHomeUrl(authentication);
 //        String homeUrl = getHomeUrl(authentication);
 //
 //        if ("/seller".equals(homeUrl) || "/delivery".equals(homeUrl)) {
