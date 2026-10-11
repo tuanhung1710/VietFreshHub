@@ -46,4 +46,12 @@ public class ShopOrder {
     public void markReady() {
         this.status = "READY_FOR_DELIVERY";
     }
+
+    public void markOutForDelivery() {
+        this.status = "OUT_FOR_DELIVERY";
+    }
+
+    public void markCompleted() {
+        this.status = "COMPLETED";
+    }
 }

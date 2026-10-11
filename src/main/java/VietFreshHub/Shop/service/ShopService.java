@@ -3,6 +3,8 @@ package VietFreshHub.Shop.service;
 import VietFreshHub.shop.entity.ShopMember;
 import VietFreshHub.shop.repository.ShopMemberRepository;
 import VietFreshHub.auth.repository.UserRepository;
+import VietFreshHub.Shop.entity.ShopLocation;
+import VietFreshHub.Shop.repository.ShopLocationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +20,7 @@ public class ShopService {
 
     private final UserRepository userRepository;
     private final ShopMemberRepository shopMemberRepository;
+    private final ShopLocationRepository shopLocationRepository;
 
     @Transactional(readOnly = true)
     public Long getManagedShopId(Authentication authentication) {
@@ -38,5 +42,10 @@ public class ShopService {
         }
 
         return memberships.get(0).getShop().getShopId();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<ShopLocation> findLocationByShopId(Long shopId) {
+        return shopLocationRepository.findById(shopId);
     }
 }

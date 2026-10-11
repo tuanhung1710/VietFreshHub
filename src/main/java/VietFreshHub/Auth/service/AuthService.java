@@ -13,6 +13,7 @@ import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.auth.repository.UserRoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -168,5 +169,45 @@ public class AuthService {
                 null,
                 authorities
         );
+    }
+
+    @Transactional(readOnly = true)
+    public Long getCurrentUserId(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new AccessDeniedException("Bạn cần đăng nhập để truy cập.");
+        }
+
+        User user = userRepository.findByEmailIgnoreCase(authentication.getName())
+                .filter(currentUser -> "ACTIVE".equalsIgnoreCase(currentUser.getStatus()))
+                .orElseThrow(() -> new AccessDeniedException("Tài khoản không được phép truy cập."));
+
+        return user.getUserId();
+    }
+
+    @Transactional(readOnly = true)
+    public Long getCurrentDeliveryStaffId(Authentication authentication) {
+        Long userId = getCurrentUserId(authentication);
+
+        for (GrantedAuthority authority : authentication.getAuthorities()) {
+            if ("ROLE_DELIVERY_STAFF".equals(authority.getAuthority())) {
+                return userId;
+            }
+        }
+
+        throw new AccessDeniedException("Bạn không có quyền nhân viên giao hàng.");
+    }
+
+    @Transactional
+    public List<Long> lockActiveDeliveryStaffIdsForAssignment() {
+        List<User> deliveryStaff =
+                userRepository.findByStatusIgnoreCaseAndUserRoles_Role_RoleNameOrderByUserIdAsc(
+                        "ACTIVE", "ROLE_DELIVERY_STAFF");
+        List<Long> deliveryStaffIds = new ArrayList<>();
+
+        for (User user : deliveryStaff) {
+            deliveryStaffIds.add(user.getUserId());
+        }
+
+        return deliveryStaffIds;
     }
 }

@@ -123,6 +123,12 @@ public class OrderServiceImpl implements OrderService {
         return toOrderDetailResponse(shopOrder);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public OrderAddress getOrderAddress(Long orderId) {
+        return orderAddressRepository.findByOrderId(orderId).orElse(null);
+    }
+
     private OrderDetailResponse toOrderDetailResponse(ShopOrder shopOrder) {
         Order order = shopOrder.getOrder();
         OrderAddress address = orderAddressRepository.findByOrderId(order.getOrderId()).orElse(null);
