@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/product-inventory :: head('Quy cách bán','product')}"></head>
+<body>
+<header th:replace="~{fragments/product-inventory :: nav('product')}"></header>
+<main class="container vf-main narrow">
+<a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{/seller/products/{id}(id=${productId})}">← Chi tiết sản phẩm</a>
+<h1 th:text="${variantId==null?'Thêm SKU':'Sửa SKU'}"></h1><p class="text-body-secondary mb-2" th:text="${row.product.name}"></p>
+<p class="small text-body-secondary mb-4">SKU không được duyệt riêng. Thêm SKU hoặc đổi tên, khối lượng, đơn vị sẽ gửi sản phẩm đã duyệt về chờ duyệt lại; chỉ đổi giá giữ kết quả duyệt.</p>
+<form th:object="${form}" th:action="${variantId==null}?@{/seller/products/{id}/variants(id=${productId})}:@{/seller/products/{id}/variants/{v}/edit(id=${productId},v=${variantId})}" method="post" class="card p-4 form-stack">
+<div th:replace="~{fragments/product-inventory :: errors}"></div>
+<div class="variant-row">
+<h2 class="h5 mb-3">Thông tin phân loại hàng</h2>
+<div class="row g-3">
+<label class="col-md-6 form-label" for="variantName">Tên quy cách <span class="text-danger">*</span><input class="form-control mt-1" id="variantName" th:field="*{variantName}" maxlength="200" required></label>
+<label class="col-md-6 form-label" for="sku">Mã SKU (tự động)<input class="form-control mt-1" id="sku" th:field="*{sku}" maxlength="100" placeholder="Tự sinh khi lưu" readonly><small class="d-block text-body-secondary mt-1">Mã được tạo khi thêm mới và giữ nguyên khi sửa thông tin.</small></label>
+<div class="col-12 image-picker">
+<label class="form-label w-100" for="thumbnailUrl">Ảnh SKU <span class="text-danger">*</span><input id="thumbnailUrl" class="form-control mt-1 image-url" th:field="*{thumbnailUrl}" maxlength="1000" required></label>
+<label class="form-label small text-body-secondary w-100">Tải ảnh JPG/PNG ≤ 1 MB<input class="form-control form-control-sm image-upload" type="file" accept="image/jpeg,image/png"></label>
+<img class="image-preview rounded border mt-2" th:src="*{thumbnailUrl}" alt="Ảnh SKU" th:style="*{thumbnailUrl==null?'display:none':''}">
+</div>
+<label class="col-md-6 form-label" for="price">Giá bán (VND) <span class="text-danger">*</span><input class="form-control mt-1" id="price" type="number" min="10000" step="1" th:field="*{price}" required></label>
+<label class="col-md-6 form-label" for="compareAtPrice">Giá gốc tham chiếu (VND)<input class="form-control mt-1" id="compareAtPrice" type="number" min="0" step="1" th:field="*{compareAtPrice}"></label>
+<label class="col-md-4 form-label" for="unit">Đơn vị <span class="text-danger">*</span><select class="form-select mt-1" id="unit" th:field="*{unit}"><option th:each="u : ${units}" th:value="${u}" th:text="${u}"></option><option th:if="${!units.contains(form.unit)}" th:value="*{unit}" th:text="*{unit}"></option></select></label>
+<label class="col-md-4 form-label" for="weight">Khối lượng (kg/đơn vị)<input class="form-control mt-1" id="weight" type="number" min="0.001" step="0.001" th:field="*{weight}"></label>
+<label class="col-md-4 form-label" for="lowStockThreshold">Ngưỡng cảnh báo tồn<input class="form-control mt-1" id="lowStockThreshold" type="number" min="0" th:field="*{lowStockThreshold}" required></label>
+<div class="col-12" th:if="${variantId==null}"><label class="form-check-label d-flex align-items-center gap-2"><input class="form-check-input no-stock m-0" type="checkbox" th:field="*{noInitialStock}"> Chưa nhập hàng</label></div>
+</div>
+<div class="initial-stock row g-3 mt-2 border-top pt-2" th:if="${variantId==null}">
+<div class="col-12"><h2 class="h6 mb-0">Lô nhập ban đầu</h2></div>
+<label class="col-md-6 form-label">Số lượng ban đầu <span class="text-danger">*</span><input class="form-control mt-1 initial-quantity" type="number" min="1" th:field="*{initialQuantity}"></label>
+<label class="col-md-6 form-label">Mã lô (tự động)<input class="form-control mt-1" th:field="*{batchCode}" maxlength="100" placeholder="Tự sinh khi lưu" readonly><small class="d-block text-body-secondary mt-1">Chỉ tạo mã khi có nhập hàng ban đầu.</small></label>
+<label class="col-md-4 form-label">Ngày nhập <span class="text-danger">*</span><input class="form-control mt-1" type="date" th:field="*{receivedDate}" th:max="${today}"></label>
+<label class="col-md-4 form-label">Hạn dùng <span class="text-danger">*</span><input class="form-control mt-1" type="date" th:field="*{expiryDate}" th:min="${today}"></label>
+<label class="col-md-4 form-label">Giá vốn (VND/đơn vị)<input class="form-control mt-1" type="number" min="0" step="0.01" th:field="*{costPrice}"></label>
+</div>
+</div>
+<label class="form-label mt-3" for="reason">Lý do <span class="text-danger">*</span><input class="form-control mt-1" id="reason" th:field="*{reason}" maxlength="900" required></label>
+<div class="d-flex flex-wrap gap-2 mt-3"><button type="submit" class="btn btn-success">Lưu SKU</button><a class="btn btn-outline-secondary" th:href="@{/seller/products/{id}(id=${productId})}">Hủy</a></div>
+</form></main>
+<script defer th:src="@{/js/product/product.js}"></script>
+</body></html>
+

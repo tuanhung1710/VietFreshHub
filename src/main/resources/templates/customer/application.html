@@ -1,0 +1,782 @@
+<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_standard" name="shell-type"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={"darkMode":"class","theme":{"extend":{"colors":{"on-surface":"#0b1c30","on-primary":"#ffffff","secondary":"#006c49","tertiary-container":"#cc4900","tertiary":"#a33900","primary":"#006b2c","on-secondary-container":"#00714d","tertiary-fixed-dim":"#ffb599","surface-dim":"#cbdbf5","surface-container-low":"#eff4ff","secondary-fixed":"#6ffbbe","surface-bright":"#f8f9ff","background":"#f8f9ff","surface-variant":"#d3e4fe","tertiary-fixed":"#ffdbce","surface-tint":"#006e2d","on-background":"#0b1c30","on-tertiary-fixed":"#370e00","surface":"#f8f9ff","surface-container":"#e5eeff","primary-container":"#00873a","on-tertiary-container":"#fffbff","secondary-container":"#6cf8bb","primary-fixed":"#7ffc97","surface-container-highest":"#d3e4fe","error":"#ba1a1a","outline-variant":"#bdcaba","primary-fixed-dim":"#62df7d","secondary-fixed-dim":"#4edea3","on-secondary-fixed":"#002113","inverse-on-surface":"#eaf1ff","on-primary-fixed":"#002109","on-secondary-fixed-variant":"#005236","surface-container-high":"#dce9ff","inverse-surface":"#213145","on-error":"#ffffff","on-surface-variant":"#3e4a3d","on-tertiary-fixed-variant":"#7f2b00","outline":"#6e7b6c","surface-container-lowest":"#ffffff","on-error-container":"#93000a","on-primary-fixed-variant":"#005320","on-secondary":"#ffffff","on-primary-container":"#f7fff2","on-tertiary":"#ffffff","error-container":"#ffdad6","inverse-primary":"#62df7d"},"borderRadius":{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},"spacing":{"space-xl":"2.5rem","margin":"2rem","space-xs":"0.25rem","gutter-mobile":"0.75rem","space-lg":"1.5rem","margin-mobile":"1rem","gutter":"1.5rem","space-sm":"0.5rem","space-md":"1rem"},"fontFamily":{"headline-sm":["Be Vietnam Pro"],"headline-md":["Be Vietnam Pro"],"label-md":["Be Vietnam Pro"],"display":["Be Vietnam Pro"],"headline-lg-mobile":["Be Vietnam Pro"],"label-sm":["Be Vietnam Pro"],"title-md":["Be Vietnam Pro"],"display-mobile":["Be Vietnam Pro"],"body-md":["Be Vietnam Pro"],"body-lg":["Be Vietnam Pro"],"headline-lg":["Be Vietnam Pro"]},"fontSize":{"headline-sm":["20px",{"lineHeight":"28px","fontWeight":"600"}],"headline-md":["24px",{"lineHeight":"32px","fontWeight":"600"}],"label-md":["12px",{"lineHeight":"16px","letterSpacing":"0.02em","fontWeight":"600"}],"display":["48px",{"lineHeight":"56px","letterSpacing":"-0.02em","fontWeight":"700"}],"headline-lg-mobile":["24px",{"lineHeight":"32px","letterSpacing":"-0.01em","fontWeight":"600"}],"label-sm":["11px",{"lineHeight":"14px","fontWeight":"500"}],"title-md":["16px",{"lineHeight":"24px","fontWeight":"600"}],"display-mobile":["32px",{"lineHeight":"40px","letterSpacing":"-0.01em","fontWeight":"700"}],"body-md":["14px",{"lineHeight":"22px","fontWeight":"400"}],"body-lg":["16px",{"lineHeight":"26px","fontWeight":"400"}],"headline-lg":["32px",{"lineHeight":"40px","letterSpacing":"-0.015em","fontWeight":"600"}]}}}};</script>
+  <meta name="_csrf" th:content="${_csrf.token}">
+  <meta name="_csrf_header" th:content="${_csrf.headerName}">
+  <style>
+    .visually-hidden-input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .choose-file-button {
+        display: inline-block;
+        padding: 8px 14px;
+        border: 1px solid #aaa;
+        border-radius: 6px;
+        cursor: pointer;
+        background: #fff;
+    }
+
+    .preview-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 12px;
+    }
+    .preview-remove {
+    margin-top: 6px;
+    border: 0;
+    background: transparent;
+    color: #b42318;
+    cursor: pointer;
+}
+    .preview-item {
+        width: 130px;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background: #fff;
+    }
+
+    .preview-item img,
+    .preview-file {
+        width: 112px;
+        height: 90px;
+        border-radius: 5px;
+    }
+
+    .preview-item img {
+        display: block;
+        object-fit: cover;
+    }
+
+    .preview-file {
+        display: grid;
+        place-items: center;
+        background: #f1f3f5;
+        color: #555;
+    }
+
+    .preview-name {
+        margin-top: 6px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        font-size: 12px;
+    }
+
+    .field-error {
+        color: #c00;
+    }
+  </style>
+</head>
+<body class="bg-surface font-body-md text-body-md text-on-surface antialiased">
+<div th:replace="~{fragments/header :: header}"></div>
+<main class="w-full pt-[70px] min-h-screen bg-surface"><div class="flex flex-col w-full">
+  <!-- Dynamic Notification / Top Breadcrumb & Status Ribbon -->
+<!--  <div class="w-full bg-surface-container-low py-space-sm px-margin">-->
+<!--    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-space-sm font-label-md text-label-md">-->
+<!--      <div class="flex items-center gap-space-xs text-on-surface-variant">-->
+<!--        <a class="hover:text-primary transition-colors" data-path="trang-chu" href="#">Trang chủ</a>-->
+<!--        <span class="material-symbols-outlined text-[14px]">chevron_right</span>-->
+<!--        <a class="hover:text-primary transition-colors" data-path="kenh-nguoi-ban" href="#">Kênh đối tác</a>-->
+<!--        <span class="material-symbols-outlined text-[14px]">chevron_right</span>-->
+<!--        <span class="text-primary font-semibold">Đăng ký trở thành đối tác bán hàng</span>-->
+<!--      </div>-->
+<!--      <div class="flex items-center gap-space-xs bg-secondary-fixed text-on-secondary-fixed px-3 py-1 rounded-full">-->
+<!--        <span class="material-symbols-outlined text-[16px]">shield</span>-->
+<!--        <span class="">Hồ sơ bảo mật Spring Security ID: VF-USR-88421</span>-->
+<!--      </div>-->
+<!--    </div>-->
+<!--  </div>-->
+  <!-- Hero Header & Benefits Banner -->
+<!--  <section class="w-full bg-gradient-to-b from-surface-container-low to-surface py-space-xl px-margin">-->
+<!--    <div class="max-w-7xl mx-auto">-->
+<!--      <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-center">-->
+<!--        &lt;!&ndash; Text & Headline &ndash;&gt;-->
+<!--        <div class="lg:col-span-7 flex flex-col gap-space-md">-->
+<!--          <div class="inline-flex items-center gap-space-xs bg-primary/10 text-primary px-3 py-1 rounded-full w-fit">-->
+<!--            <span class="material-symbols-outlined text-[18px]">verified</span>-->
+<!--            <span class="font-label-md text-label-md uppercase tracking-wide">Cổng Đăng Ký Đại Lý &amp; Nhà Vườn 2024</span>-->
+<!--          </div>-->
+<!--          <h1 class="font-display text-display text-on-surface leading-tight">-->
+<!--            Đăng ký trở thành đối tác bán hàng <span class="text-primary">VietFresh Hub</span>-->
+<!--          </h1>-->
+<!--          <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">-->
+<!--            Kết nối trực tiếp nông sản tươi sạch từ nhà vườn &amp; cơ sở kinh doanh tới hơn <strong class="text-on-surface font-semibold">45.000 khách hàng</strong> và hệ thống chuỗi cửa hàng tiện lợi trên toàn quốc.-->
+<!--          </p>-->
+<!--          &lt;!&ndash; Key Metrics / Trust Badges &ndash;&gt;-->
+<!--          <div class="grid grid-cols-3 gap-space-sm pt-space-sm">-->
+<!--            <div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col gap-1">-->
+<!--              <span class="font-display text-[28px] leading-none text-primary font-bold">0đ</span>-->
+<!--              <span class="font-label-md text-label-md text-on-surface-variant">Phí mở gian hàng</span>-->
+<!--            </div>-->
+<!--            <div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col gap-1">-->
+<!--              <span class="font-display text-[28px] leading-none text-secondary font-bold">120+</span>-->
+<!--              <span class="font-label-md text-label-md text-on-surface-variant">Hợp tác xã đối tác</span>-->
+<!--            </div>-->
+<!--            <div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col gap-1">-->
+<!--              <span class="font-display text-[28px] leading-none text-tertiary-container font-bold">24/7</span>-->
+<!--              <span class="font-label-md text-label-md text-on-surface-variant">Kho lạnh &amp; Logistics</span>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--        </div>-->
+<!--        &lt;!&ndash; Visual Hero Card &ndash;&gt;-->
+<!--        <div class="lg:col-span-5 relative">-->
+<!--          <div class="relative rounded-2xl overflow-hidden shadow-xl bg-surface-container-high aspect-[4/3]">-->
+<!--            <img class="w-full h-full object-cover" data-alt="Modern Vietnamese high-tech farm warehouse with neatly organized crates of fresh organic green vegetables, juicy citrus oranges and ripe dragon fruits, vibrant morning sunlight, clean natural aesthetic with professional farmers" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpA2Gl6B2tuF6aeDcMat3BFRmmfj1u9wI5mCiWyqsJNJR-Z4CqCdbYB-GeTwacIozxMNlf67Ip-EgYWPqR05ejqArTlsj6PnfVRlpO_2Bqg1He5LdiNz7jBPdqLsOvGmW8KyoxcyoI5dv08rXQpmHmzuEXOnliPnTJwVL2nChzgYWMm2s5rPm9Wbrbz7OOZbt7glmrIbx3PM6I0a4CyIKOsAKOUS7F5amKZRJCn4RncWxEHoOigHHm">-->
+<!--            <div class="absolute inset-0 bg-gradient-to-t from-on-surface/80 via-transparent to-transparent flex flex-col justify-end p-space-lg text-on-primary">-->
+<!--              <span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary-fixed">Mạng lưới phân phối tin cậy</span>-->
+<!--              <p class="font-headline-sm text-headline-sm">Chắp cánh thương hiệu Nông sản Việt vươn xa</p>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--          &lt;!&ndash; Decorative Floating Card &ndash;&gt;-->
+<!--          <div class="absolute -bottom-4 -left-4 bg-surface-container-lowest p-space-md rounded-xl shadow-lg flex items-center gap-space-sm hidden sm:flex">-->
+<!--            <div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">-->
+<!--              <span class="material-symbols-outlined">local_shipping</span>-->
+<!--            </div>-->
+<!--            <div class="flex flex-col">-->
+<!--              <span class="font-title-md text-title-md text-on-surface font-semibold">Tự động kết nối vận chuyển</span>-->
+<!--              <span class="font-label-sm text-label-sm text-on-surface-variant">Giao hoả tốc bảo quản mát 2h</span>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--        </div>-->
+<!--      </div>-->
+<!--      &lt;!&ndash; 4 Stepper / Onboarding Timeline &ndash;&gt;-->
+<!--      <div class="mt-space-xl pt-space-md bg-surface-container-lowest rounded-2xl p-space-lg shadow-sm">-->
+<!--        <div class="flex flex-col md:flex-row items-stretch justify-between gap-space-md">-->
+<!--          &lt;!&ndash; Step 1 &ndash;&gt;-->
+<!--          <div class="flex-1 flex gap-space-sm items-start relative">-->
+<!--            <div class="w-10 h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center font-bold font-title-md shrink-0 shadow-md">-->
+<!--              1-->
+<!--            </div>-->
+<!--            <div class="flex flex-col">-->
+<!--              <span class="font-title-md text-title-md text-on-surface font-bold">Nộp hồ sơ trực tuyến</span>-->
+<!--              <p class="font-label-md text-label-md text-on-surface-variant mt-0.5">Kê khai thông tin cơ sở và đính kèm giấy chứng nhận năng lực.</p>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--          <div class="hidden md:flex items-center text-outline-variant">-->
+<!--            <span class="material-symbols-outlined text-[20px]">arrow_forward</span>-->
+<!--          </div>-->
+<!--          &lt;!&ndash; Step 2 &ndash;&gt;-->
+<!--          <div class="flex-1 flex gap-space-sm items-start">-->
+<!--            <div class="w-10 h-10 rounded-xl bg-surface-container text-on-surface-variant flex items-center justify-center font-bold font-title-md shrink-0">-->
+<!--              2-->
+<!--            </div>-->
+<!--            <div class="flex flex-col">-->
+<!--              <span class="font-title-md text-title-md text-on-surface font-bold">Ban quản trị xét duyệt</span>-->
+<!--              <p class="font-label-md text-label-md text-on-surface-variant mt-0.5">Thẩm định chứng nhận VietGAP / ATTP trong 1-2 ngày làm việc.</p>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--          <div class="hidden md:flex items-center text-outline-variant">-->
+<!--            <span class="material-symbols-outlined text-[20px]">arrow_forward</span>-->
+<!--          </div>-->
+<!--          &lt;!&ndash; Step 3 &ndash;&gt;-->
+<!--          <div class="flex-1 flex gap-space-sm items-start">-->
+<!--            <div class="w-10 h-10 rounded-xl bg-surface-container text-on-surface-variant flex items-center justify-center font-bold font-title-md shrink-0">-->
+<!--              3-->
+<!--            </div>-->
+<!--            <div class="flex flex-col">-->
+<!--              <span class="font-title-md text-title-md text-on-surface font-bold">Cấp quyền Store Manager</span>-->
+<!--              <p class="font-label-md text-label-md text-on-surface-variant mt-0.5">Kích hoạt tài khoản quản trị gian hàng và thiết lập cửa hàng.</p>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--          <div class="hidden md:flex items-center text-outline-variant">-->
+<!--            <span class="material-symbols-outlined text-[20px]">arrow_forward</span>-->
+<!--          </div>-->
+<!--          &lt;!&ndash; Step 4 &ndash;&gt;-->
+<!--          <div class="flex-1 flex gap-space-sm items-start">-->
+<!--            <div class="w-10 h-10 rounded-xl bg-surface-container text-on-surface-variant flex items-center justify-center font-bold font-title-md shrink-0">-->
+<!--              4-->
+<!--            </div>-->
+<!--            <div class="flex flex-col">-->
+<!--              <span class="font-title-md text-title-md text-on-surface font-bold">Đăng bán &amp; Nhận đơn</span>-->
+<!--              <p class="font-label-md text-label-md text-on-surface-variant mt-0.5">Tiếp cận nguồn mua buôn B2B và đơn hàng lẻ hằng ngày.</p>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--        </div>-->
+<!--      </div>-->
+<!--    </div>-->
+<!--  </section>-->
+  <!-- Main Registration Form Section -->
+  <section class="w-full py-space-xl px-margin">
+    <div class="max-w-5xl mx-auto">
+      <form id="sellerApplicationForm"
+            th:action="@{/customer/apply}"
+            th:object="${sellerApplicationForm}"
+            method="post"
+            enctype="multipart/form-data"
+            novalidate>
+        <div id="uploadedDocumentFields">
+          <div th:if="${#fields.hasGlobalErrors()}" class="mb-4 rounded-lg bg-error-container p-3 text-on-error-container">
+            <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+          </div>
+          <!-- CARD 1: THÔNG TIN TÀI KHOẢN ĐĂNG KÝ (READ-ONLY) -->
+          <div class="bg-surface-container-lowest rounded-2xl p-space-lg md:p-space-xl shadow-sm flex flex-col gap-space-lg">
+            <div class="flex flex-col md:flex-row md:items-center justify-between pb-space-md border-b-0 gap-space-xs">
+              <div class="flex items-center gap-space-sm">
+                <div class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+                  <span class="material-symbols-outlined">badge</span>
+                </div>
+                <div>
+                  <h2 class="font-headline-sm text-headline-sm text-on-surface">1. Thông Tin Tài Khoản Đăng Ký</h2>
+                  <p class="font-label-md text-label-md text-on-surface-variant">Dữ liệu định danh được đồng bộ trực tiếp từ phiên đăng nhập an toàn</p>
+                </div>
+              </div>
+              <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-low text-on-surface-variant text-label-sm font-label-sm w-fit">
+                <span class="material-symbols-outlined text-[16px] text-outline">lock</span>
+                <span class="">Chế độ đọc (Read-only)</span>
+              </div>
+            </div>
+            <!-- Alert Box -->
+            <!-- Fields Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+              <!-- Full Name -->
+              <div class="flex flex-col gap-1.5">
+                <label class="font-title-md text-title-md text-on-surface flex items-center justify-between">
+                  <span class="">Họ và tên người đại diện</span>
+                  <span class="material-symbols-outlined text-[16px] text-outline" title="Tự động trích xuất">lock</span>
+                </label>
+                <div class="relative">
+                  <input class="w-full h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-title-md text-title-md cursor-not-allowed select-none opacity-90 focus:outline-none" disabled="" readonly="" type="text" th:value="${applicant.fullName}">
+                  <span class="material-symbols-outlined text-outline absolute right-3 top-3 text-[18px]">verified</span>
+                </div>
+                <span class="font-label-sm text-label-sm text-outline">Tự động trích xuất từ tài khoản hiện tại</span>
+              </div>
+              <!-- Email -->
+              <div class="flex flex-col gap-1.5">
+                <label class="font-title-md text-title-md text-on-surface flex items-center justify-between">
+                  <span class="">Email liên hệ</span>
+                  <span class="material-symbols-outlined text-[16px] text-outline">lock</span>
+                </label>
+                <div class="relative">
+                  <input class="w-full h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-title-md text-title-md cursor-not-allowed select-none opacity-90 focus:outline-none" disabled="" readonly="" type="email" th:value="${applicant.email}">
+                  <span class="material-symbols-outlined text-outline absolute right-3 top-3 text-[18px]">mail</span>
+                </div>
+                <span class="font-label-sm text-label-sm text-outline">Nhận thông báo xét duyệt hồ sơ</span>
+              </div>
+              <!-- Phone -->
+              <div class="flex flex-col gap-1.5">
+                <label class="font-title-md text-title-md text-on-surface flex items-center justify-between">
+                  <span class="">Số điện thoại chính</span>
+                  <span class="material-symbols-outlined text-[16px] text-outline">lock</span>
+                </label>
+                <div class="relative">
+                  <input class="w-full h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-title-md text-title-md cursor-not-allowed select-none opacity-90 focus:outline-none" disabled="" readonly="" type="tel" th:value="${applicant.phone}">
+                  <span class="material-symbols-outlined text-primary absolute right-3 top-3 text-[18px]">check_circle</span>
+                </div>
+                <span class="font-label-sm text-label-sm text-secondary font-medium">Đã xác thực OTP</span>
+              </div>
+            </div>
+          </div>
+          <!-- CARD 2: THÔNG TIN DOANH NGHIỆP / CƠ SỞ KINH DOANH -->
+          <div class="bg-surface-container-lowest rounded-2xl p-space-lg md:p-space-xl shadow-sm flex flex-col gap-space-lg">
+<!--            <div class="flex flex-col md:flex-row md:items-center justify-between pb-space-sm border-b border-surface-container-low gap-space-xs"><div class="flex items-center gap-space-sm"><div class="w-10 h-10 rounded-xl bg-secondary-container flex items-center justify-center text-on-secondary-container shadow-sm"><span class="material-symbols-outlined text-[22px]">storefront</span></div><div><div class="flex items-center gap-2"><h2 class="font-headline-sm text-headline-sm text-on-surface">2. Thông Tin Doanh Nghiệp &amp; Cơ Sở Sản Xuất</h2><span class="hidden sm:inline-block px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-[11px] font-semibold">Bắt buộc</span></div><p class="font-label-md text-label-md text-on-surface-variant mt-0.5">Khai báo pháp nhân đại diện hoặc chủ thể hợp tác xã nông nghiệp</p></div></div>-->
+<!--            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-low text-on-surface-variant text-label-sm font-label-sm w-fit border border-surface-container">-->
+<!--              <span class="material-symbols-outlined text-[15px] text-secondary">database</span>-->
+<!--              <span class="">Bảng lưu trữ: <code class="font-mono font-semibold text-primary">dbo.seller_applications</code></span>-->
+<!--            </div>-->
+<!--            </div>-->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-space-lg">
+
+              <!-- Tên cơ sở kinh doanh -->
+              <div class="flex flex-col gap-2">
+                <label
+                        class="font-title-md text-title-md text-on-surface flex items-center gap-1"
+                        for="businessName">
+                  <span>Tên cơ sở kinh doanh / HTX</span>
+                  <span class="text-error font-bold">*</span>
+                </label>
+
+                <div class="relative">
+      <span class="material-symbols-outlined absolute left-3.5 top-1/2
+                   -translate-y-1/2 text-outline text-[20px] pointer-events-none">
+        apartment
+      </span>
+
+                  <input
+                          type="text"
+                          th:field="*{businessName}"
+                          maxlength="200"
+                          id="businessName"
+                          placeholder="Ví dụ: HTX Rau sạch VietFresh"
+                          required
+                          class="w-full rounded-xl border border-outline-variant bg-surface
+                 py-3 pl-11 pr-4 text-base text-on-surface
+                 placeholder:text-outline shadow-sm
+                 transition duration-200
+                 hover:border-primary/60
+                 focus:border-primary focus:outline-none
+                 focus:ring-4 focus:ring-primary/10"
+                          th:classappend="${#fields.hasErrors('businessName')}
+                          ? ' border-error focus:border-error focus:ring-error/10' : ''">
+                </div>
+
+                <p
+                        id="businessNameError"
+                        class="text-error text-sm"
+                        th:if="${#fields.hasErrors('businessName')}"
+                        th:errors="*{businessName}">
+                </p>
+              </div>
+
+              <!-- Mã số thuế -->
+              <div class="flex flex-col gap-2">
+                <label
+                        class="font-title-md text-title-md text-on-surface flex items-center gap-2"
+                        for="taxCode">
+                  <span>Mã số thuế doanh nghiệp (MST)</span>
+                  <span class="font-label-sm text-[11px] text-on-surface-variant font-normal">
+        (Tùy chọn)
+      </span>
+                </label>
+
+                <div class="relative">
+      <span class="material-symbols-outlined absolute left-3.5 top-1/2
+                   -translate-y-1/2 text-outline text-[20px] pointer-events-none">
+        receipt_long
+      </span>
+
+                  <input
+                          type="text"
+                          id="taxCode"
+                          th:field="*{taxCode}"
+                          maxlength="50"
+                          placeholder="Ví dụ: 0123456789"
+                          class="w-full rounded-xl border border-outline-variant bg-surface
+                 py-3 pl-11 pr-4 text-base text-on-surface
+                 placeholder:text-outline shadow-sm
+                 transition duration-200
+                 hover:border-primary/60
+                 focus:border-primary focus:outline-none
+                 focus:ring-4 focus:ring-primary/10"
+                          th:classappend="${#fields.hasErrors('taxCode')}
+                          ? ' border-error focus:border-error focus:ring-error/10' : ''">
+                </div>
+
+                <p
+                        class="text-error text-sm"
+                        th:if="${#fields.hasErrors('taxCode')}"
+                        th:errors="*{taxCode}">
+                </p>
+
+                <span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
+      <span class="material-symbols-outlined text-[14px] text-outline">pin</span>
+      <span>Không bắt buộc với hộ kinh doanh cá thể.</span>
+    </span>
+              </div>
+
+            </div>
+
+          </div>
+          <!-- CARD 3: KHU VỰC TẢI LÊN GIẤY TỜ XÁC MINH -->
+          <div class="bg-surface-container-lowest rounded-2xl p-space-lg md:p-space-xl shadow-sm flex flex-col gap-space-lg">
+            <div class="flex flex-col md:flex-row md:items-center justify-between pb-space-xs gap-space-xs">
+              <div class="flex items-center gap-space-sm">
+                <div class="w-9 h-9 rounded-lg bg-tertiary-fixed flex items-center justify-center text-tertiary">
+                  <span class="material-symbols-outlined">folder_shared</span>
+                </div>
+                <div>
+                  <h2 class="font-headline-sm text-headline-sm text-on-surface">3. Tài Liệu Xác Minh Năng Lực &amp; Pháp Lý</h2>
+
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 font-label-sm text-label-sm text-outline">
+                <span class="material-symbols-outlined text-[16px]">info</span>
+                <span class="">Chấp nhận: PDF, JPG, PNG (Tối đa 10MB/tài liệu)</span>
+              </div>
+            </div>
+            <div class="flex flex-col gap-space-lg">
+              <!-- DOCUMENT 1: IDENTITY_CARD -->
+              <div class="flex flex-col gap-space-xs p-space-md rounded-xl bg-surface-container-low">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center font-bold">A</span>
+                    <span class="font-title-md text-title-md text-on-surface font-semibold">Giấy tờ tùy thân người đại diện </span>
+                    <span class="text-error font-bold">*</span>
+                  </div>
+                  <span class="font-label-sm text-label-sm text-secondary bg-secondary-fixed/50 px-2 py-0.5 rounded">CCCD / Hộ chiếu 2 mặt</span>
+                </div>
+                <p class="font-body-md text-body-md text-on-surface-variant">Bản chụp sắc nét rõ 4 góc, không lóa sáng hoặc mất thông tin số định danh.</p>
+                <!-- Uploaded Item Sample -->
+                <!--              <label for="identityCard">CCCD / Hộ chiếu</label>-->
+                <!--              <input type="file"-->
+                <!--                     id="identityCard" name="identityCard"-->
+                <!--                     accept=".pdf,.jpg,.jpeg,.png"-->
+                <!--                     required>-->
+                <!--              <p class="text-error text-sm" th:if="${#fields.hasErrors('identityCard')}" th:errors="*{identityCard}"></p>-->
+                <div class="upload-field">
+                  <input type="file"
+                         th:field="*{identityCard}"
+                         id="identityCard"
+                         class="visually-hidden-input js-preview-file"
+                         accept="image/*"
+                         required>
+
+                  <p id="identityCardRequiredError"
+                     class="field-error"
+                     role="alert"
+                     hidden></p>
+
+                  <label class="choose-file-button" for="identityCard">
+                    Chọn ảnh giấy tờ tùy thân
+                  </label>
+
+                  <div id="identityCard-preview" class="preview-list"></div>
+                  <p class="field-error"
+                     th:if="${#fields.hasErrors('identityCard')}"
+                     th:errors="*{identityCard}"></p>
+                </div>
+              <!-- DOCUMENT 2: BUSINESS_LICENSE / VIETGAP -->
+              <div class="flex flex-col gap-space-xs p-space-md rounded-xl bg-surface-container-low">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center font-bold">B</span>
+                    <span class="font-title-md text-title-md text-on-surface font-semibold">Giấy phép Đăng Ký Kinh Doanh </span>
+                    <span class="text-error font-bold">*</span>
+                  </div>
+                  <span class="font-label-sm text-label-sm text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded">Tài liệu bắt buộc</span>
+                </div>
+                <p class="font-body-md text-body-md text-on-surface-variant">Giấy phép đăng ký kinh doanh, chứng nhận VietGAP, GlobalGAP, OCOP hoặc Giấy chứng nhận đủ điều kiện ATTP còn hạn hiệu lực.</p>
+                <!-- Uploaded Progress State Item -->
+                <!--              <label for="businessLicense">Giấy phép kinh doanh / VietGAP</label>-->
+                <!--              <input type="file"-->
+                <!--                     id="businessLicense" name="businessLicense"-->
+                <!--                     accept=".pdf,.jpg,.jpeg,.png"-->
+                <!--                     required>-->
+                <!--              <p class="text-error text-sm" th:if="${#fields.hasErrors('businessLicense')}" th:errors="*{businessLicense}"></p>-->
+                <div class="upload-field">
+                  <input type="file"
+                         th:field="*{businessLicense}"
+                         id="businessLicense"
+                         class="visually-hidden-input js-preview-file"
+                         accept="image/*,.pdf"
+                         required>
+
+                  <p id="businessLicenseRequiredError"
+                     class="field-error"
+                     role="alert"
+                     hidden></p>
+
+                  <label class="choose-file-button" for="businessLicense">
+                    Chọn giấy phép
+                  </label>
+
+                  <div id="businessLicense-preview" class="preview-list"></div>
+                  <p class="field-error"
+                     th:if="${#fields.hasErrors('businessLicense')}"
+                     th:errors="*{businessLicense}"></p>
+                </div>
+                <!-- Secondary Drag & Drop Zone for Multi-files -->
+                <!--              <div class="mt-space-xs p-space-md rounded-xl bg-surface-container-lowest flex flex-col items-center justify-center text-center cursor-pointer hover:bg-surface-container-low transition-colors group">-->
+                <!--                <div class="w-12 h-12 rounded-full bg-surface-container group-hover:bg-primary/10 flex items-center justify-center text-on-surface-variant group-hover:text-primary transition-colors mb-2">-->
+                <!--                  <span class="material-symbols-outlined text-[28px]">cloud_upload</span>-->
+                <!--                </div>-->
+                <!--                <p class="font-title-md text-title-md text-on-surface font-semibold">Kéo thả thêm chứng chỉ phụ hoặc bấm để duyệt tệp</p>-->
+                <!--                <p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Hỗ trợ chứng nhận kiểm định chất lượng, test dư lượng thuốc BVTV nếu có</p>-->
+                <!--                <input class="hidden" id="additionalCertificates" name="additionalCertificates" accept=".pdf,.jpg,.jpeg,.png" multiple type="file">-->
+                <!--                <p class="text-error text-sm" th:if="${#fields.hasErrors('additionalCertificates')}" th:errors="*{additionalCertificates}"></p>-->
+                <!--              </div>-->
+
+              </div>
+              <!-- DOCUMENT 3: OPTIONAL FARM/FACILITY PHOTOS -->
+
+            </div>
+          </div>
+          <!-- CARD 4: CAM KẾT & GỬI HỒ SƠ -->
+          <div class="bg-surface-container-lowest rounded-2xl p-space-lg md:p-space-xl shadow-sm flex flex-col gap-space-lg">
+            <div class="flex items-center gap-space-sm">
+              <div class="w-9 h-9 rounded-lg bg-primary-fixed text-on-primary-fixed flex items-center justify-center">
+                <span class="material-symbols-outlined">gavel</span>
+              </div>
+              <div>
+                <h2 class="font-headline-sm text-headline-sm text-on-surface">4. Điều Khoản Hoạt Động &amp; Cam Kết Nông Sản Sạch</h2>
+                <p class="font-label-md text-label-md text-on-surface-variant">Xác nhận tuân thủ quy chuẩn kinh doanh nông sản có trách nhiệm</p>
+              </div>
+            </div>
+            <!-- Pending Status System Alert -->
+
+            <!-- Legal Agreement Checkboxes -->
+            <div class="flex flex-col gap-space-sm pt-space-xs">
+              <label class="flex items-start gap-space-sm cursor-pointer p-space-sm rounded-lg hover:bg-surface-container-low transition-colors">
+                <input class="w-5 h-5 mt-0.5 accent-primary shrink-0 rounded" th:field="*{legalAgree}" required type="checkbox">
+                <span class="font-body-md text-body-md text-on-surface leading-snug">
+                Tôi cam kết nguồn gốc xuất xứ nông sản minh bạch, đạt tiêu chuẩn an toàn thực phẩm hoặc tiêu chuẩn hữu cơ công bố; chịu trách nhiệm pháp lý cao nhất về tính xác thực của các giấy tờ đính kèm.
+              </span>
+              </label>
+              <p class="text-error text-sm" th:if="${#fields.hasErrors('legalAgree')}" th:errors="*{legalAgree}"></p>
+              <label class="flex items-start gap-space-sm cursor-pointer p-space-sm rounded-lg hover:bg-surface-container-low transition-colors">
+                <input class="w-5 h-5 mt-0.5 accent-primary shrink-0 rounded" th:field="*{policyAgree}" required type="checkbox">
+                <span class="font-body-md text-body-md text-on-surface leading-snug">
+                Tôi đã đọc, hiểu rõ và đồng ý toàn bộ <a class="text-primary underline font-medium" href="#">Quy chế hoạt động sàn giao dịch VietFresh Hub</a> cùng <a class="text-primary underline font-medium" href="#">Chính sách thu hộ COD &amp; chiết khấu đối tác</a>.
+              </span>
+              </label>
+              <p class="text-error text-sm" th:if="${#fields.hasErrors('policyAgree')}" th:errors="*{policyAgree}"></p>
+            </div>
+            <!-- Action Buttons Bar -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-md border-t border-surface-container-low">
+              <button class="w-full sm:w-auto px-space-lg py-3 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-title-md text-title-md flex items-center justify-center gap-space-xs transition-colors" type="button">
+                <span class="material-symbols-outlined text-[20px]">drafts</span>
+                <span class="">Lưu hồ sơ nháp</span>
+              </button>
+              <div class="w-full sm:w-auto flex items-center gap-space-sm">
+                <a class="w-1/2 sm:w-auto px-space-md py-3 rounded-lg text-on-surface-variant hover:text-on-surface font-title-md text-title-md text-center transition-colors" data-path="trang-chu" href="#">
+                  Hủy bỏ
+                </a>
+                <button class="w-full sm:w-auto px-8 py-3.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-title-md text-title-md font-bold flex items-center justify-center gap-space-sm shadow-md transition-all transform active:scale-95" type="submit">
+                  <span class="material-symbols-outlined text-[22px]">send</span>
+                  <span class="">Nộp Hồ Sơ Đăng Ký Đối Tác</span>
+                </button>
+                <div id="uploadProgressPanel"
+                     class="hidden rounded-xl bg-surface-container-low p-4">
+                  <progress id="uploadProgress"
+                            value="0"
+                            max="100"
+                            class="w-full"></progress>
+                  <p id="uploadStatus" class="mt-2 text-sm">
+                    Đang chuẩn bị gửi hồ sơ...
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+      </form>
+    </div>
+  </section>
+  <!-- Help & Support Desk Callout -->
+<!--  <section class="w-full bg-surface-container-low py-space-xl px-margin mb-space-xl">-->
+<!--    <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-space-lg">-->
+<!--      <div class="flex items-center gap-space-md">-->
+<!--        <div class="w-14 h-14 rounded-2xl bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0">-->
+<!--          <span class="material-symbols-outlined text-[32px]">support_agent</span>-->
+<!--        </div>-->
+<!--        <div class="flex flex-col">-->
+<!--          <h3 class="font-headline-sm text-headline-sm text-on-surface">Cần hỗ trợ hướng dẫn chuẩn bị giấy tờ VietGAP?</h3>-->
+<!--          <p class="font-body-md text-body-md text-on-surface-variant">Chuyên viên nông học &amp; tư vấn pháp lý của VietFresh Hub luôn sẵn sàng hỗ trợ nhà vườn 1-1 miễn phí.</p>-->
+<!--        </div>-->
+<!--      </div>-->
+<!--      <div class="flex items-center gap-space-sm shrink-0">-->
+<!--        <a class="px-5 py-2.5 rounded-lg bg-surface-container-lowest text-primary font-title-md text-title-md font-semibold flex items-center gap-2 hover:bg-surface-bright shadow-sm transition-colors" href="tel:19008868">-->
+<!--          <span class="material-symbols-outlined text-[20px]">call</span>-->
+<!--          <span class="">1900 8868 (Phím 2)</span>-->
+<!--        </a>-->
+<!--      </div>-->
+<!--    </div>-->
+<!--  </section>-->
+  <!-- Client Script for Interactive UX -->
+  <script>
+    document.querySelectorAll(".js-preview-file").forEach(input => {
+
+        const preview = document.getElementById(input.id + "-preview");
+        let selectedFiles = [];
+        let objectUrls = [];
+
+        function syncInputFiles() {
+            const dataTransfer = new DataTransfer();
+            selectedFiles.forEach(file => dataTransfer.items.add(file));
+            input.files = dataTransfer.files;
+        }
+
+        function renderPreview() {
+            objectUrls.forEach(url => URL.revokeObjectURL(url));
+            objectUrls = [];
+            preview.replaceChildren();
+
+            selectedFiles.forEach((file, index) => {
+                const item = document.createElement("div");
+                item.className = "preview-item";
+
+                if (file.type.startsWith("image/")) {
+                    const img = document.createElement("img");
+                    const url = URL.createObjectURL(file);
+
+                    objectUrls.push(url);
+                    img.src = url;
+                    img.alt = file.name;
+                    item.appendChild(img);
+                } else {
+                    const fileLabel = document.createElement("div");
+                    fileLabel.className = "preview-file";
+                    fileLabel.textContent =
+                        file.type === "application/pdf" ? "PDF" : "Tệp";
+                    item.appendChild(fileLabel);
+                }
+
+                const name = document.createElement("div");
+                name.className = "preview-name";
+                name.textContent = file.name;
+                item.appendChild(name);
+
+                const removeButton = document.createElement("button");
+                removeButton.type = "button";
+                removeButton.className = "preview-remove";
+                removeButton.textContent = "Xóa";
+                removeButton.addEventListener("click", () => {
+                    selectedFiles.splice(index, 1);
+                    syncInputFiles();
+                    renderPreview();
+                });
+                item.appendChild(removeButton);
+
+                preview.appendChild(item);
+            });
+        }
+
+        input.addEventListener("change", () => {
+    const error = document.getElementById(input.id + "RequiredError");
+
+    if (error && input.files.length > 0) {
+      error.hidden = true;
+      error.textContent = "";
+    }
+            const newlySelectedFiles = Array.from(input.files || []);
+
+            // Trường multiple thì cộng file mới vào danh sách cũ.
+            // Trường chỉ nhận một file thì thay bằng file vừa chọn.
+            let files = input.multiple
+                ? [...selectedFiles, ...newlySelectedFiles]
+                : newlySelectedFiles;
+
+            const maxFiles = input.multiple
+                ? Number(input.dataset.maxFiles || 5)
+                : 1;
+
+            if (files.length > maxFiles) {
+                alert(`Trường này chỉ cho phép tối đa ${maxFiles} file.`);
+                files = files.slice(0, maxFiles);
+            }
+
+            selectedFiles = files;
+            syncInputFiles();
+            renderPreview();
+        });
+    });
+     const applicationForm =
+      document.getElementById("sellerApplicationForm");
+
+  if (applicationForm) {
+    applicationForm.addEventListener("submit", function (event) {
+  const requiredFiles = [
+    {
+      input: document.getElementById("identityCard"),
+      error: document.getElementById("identityCardRequiredError"),
+      message: "Vui lòng tải giấy tờ tùy thân."
+    },
+    {
+      input: document.getElementById("businessLicense"),
+      error: document.getElementById("businessLicenseRequiredError"),
+      message: "Vui lòng tải giấy phép kinh doanh hoặc chứng nhận."
+    }
+  ];
+
+  const missingFile = requiredFiles.find(
+    item => !item.input.files || item.input.files.length === 0
+  );
+
+  if (missingFile) {
+    event.preventDefault();
+    missingFile.error.textContent = missingFile.message;
+    missingFile.error.hidden = false;
+    missingFile.input.closest(".upload-field").scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+    return;
+  }
+
+  requiredFiles.forEach(item => {
+    item.error.hidden = true;
+    item.error.textContent = "";
+  });
+
+  event.preventDefault();
+
+
+      const panel = document.getElementById("uploadProgressPanel");
+      const progress = document.getElementById("uploadProgress");
+      const status = document.getElementById("uploadStatus");
+      const submitButton =
+          applicationForm.querySelector('button[type="submit"]');
+
+      panel.classList.remove("hidden");
+      submitButton.disabled = true;
+
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", applicationForm.action);
+
+      // Phần trăm này đo trình duyệt gửi dữ liệu tới Spring Boot.
+      xhr.upload.addEventListener("progress", function (e) {
+        if (!e.lengthComputable) {
+          status.textContent = "Đang gửi file lên Spring Boot...";
+          return;
+        }
+
+        const percent = Math.floor((e.loaded / e.total) * 100);
+        progress.value = percent;
+        status.textContent =
+            `Đang gửi file lên Spring Boot: ${percent}%`;
+      });
+
+      // 100% ở đây mới chỉ có nghĩa Spring đã nhận request.
+      // Spring vẫn cần upload các file lên Cloudinary.
+      xhr.upload.addEventListener("load", function () {
+        progress.value = 100;
+        status.textContent =
+            "Đang xử lý tài liệu...";
+      });
+
+      xhr.onload = function () {
+        const responseUrl = new URL(
+            xhr.responseURL || applicationForm.action,
+            window.location.href
+        );
+
+        if (
+            xhr.status >= 200 &&
+            xhr.status < 400 &&
+            responseUrl.pathname === "/customer/apply/success"
+        ) {
+          window.location.assign(responseUrl.href);
+          return;
+        }
+
+        if (xhr.status >= 200 && xhr.status < 400) {
+          // Controller trả lại form kèm lỗi validation/upload.
+          document.open();
+          document.write(xhr.responseText);
+          document.close();
+          return;
+        }
+
+        status.textContent =
+            "Gửi hồ sơ thất bại. Vui lòng thử lại.";
+        submitButton.disabled = false;
+      };
+
+      xhr.onerror = function () {
+        status.textContent =
+            "Mất kết nối trong lúc gửi hồ sơ. Vui lòng thử lại.";
+        submitButton.disabled = false;
+      };
+
+      // FormData giữ nguyên file multipart và token CSRF có trong form.
+      xhr.send(new FormData(applicationForm));
+    });
+  }
+  </script>
+</div></main>
+<div th:replace="~{fragments/footer :: footer}"></div>
+
+</body>
+</html>
