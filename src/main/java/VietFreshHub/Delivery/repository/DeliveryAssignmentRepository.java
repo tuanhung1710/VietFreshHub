@@ -61,8 +61,11 @@ public interface DeliveryAssignmentRepository extends JpaRepository<DeliveryAssi
     List<DeliveryAssignment> findByDeliveryStaff_UserIdAndStatusInOrderByAssignedAtAscAssignmentIdAsc(
             Long userId, List<DeliveryAssignmentStatus> statuses);
 
-    @EntityGraph(attributePaths = {"delivery", "delivery.shopOrder", "delivery.shopOrder.order",
-            "delivery.shopOrder.order.orderAddress"})
+    @EntityGraph(attributePaths = {
+            "delivery",
+            "delivery.shopOrder",
+            "delivery.shopOrder.order"
+    })
     Optional<DeliveryAssignment> findByAssignmentIdAndDeliveryStaff_UserIdAndStatusIn(
             Long assignmentId, Long userId, List<DeliveryAssignmentStatus> statuses);
 }

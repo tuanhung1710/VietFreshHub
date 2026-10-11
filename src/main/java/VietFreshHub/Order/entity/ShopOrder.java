@@ -48,16 +48,10 @@ public class ShopOrder {
     }
 
     public void markOutForDelivery() {
-        if (!"READY_FOR_DELIVERY".equals(this.status)) {
-            throw new IllegalStateException("Chỉ có thể bắt đầu giao hàng cho đơn hàng sẵn sàng giao hàng.");
-        }
         this.status = "OUT_FOR_DELIVERY";
     }
 
     public void markCompleted() {
-        if (!"OUT_FOR_DELIVERY".equals(this.status)) {
-            throw new IllegalStateException("Chỉ có thể hoàn tất đơn hàng đang giao hàng.");
-        }
         this.status = "COMPLETED";
     }
 }

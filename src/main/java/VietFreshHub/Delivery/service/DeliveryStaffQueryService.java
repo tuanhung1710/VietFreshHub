@@ -11,6 +11,7 @@ import VietFreshHub.Delivery.repository.DeliveryAssignmentRepository;
 import VietFreshHub.Order.entity.Order;
 import VietFreshHub.Order.entity.OrderAddress;
 import VietFreshHub.Order.entity.ShopOrder;
+import VietFreshHub.Order.service.OrderService;
 import VietFreshHub.Shop.entity.ShopLocation;
 import VietFreshHub.Shop.service.ShopService;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class DeliveryStaffQueryService {
 
     private final DeliveryAssignmentRepository deliveryAssignmentRepository;
     private final AuthService authService;
+    private final OrderService orderService;
     private final ShopService shopService;
 
     @Transactional(readOnly = true)
@@ -76,7 +78,7 @@ public class DeliveryStaffQueryService {
         Delivery delivery = assignment.getDelivery();
         ShopOrder shopOrder = delivery.getShopOrder();
         Order order = shopOrder.getOrder();
-        OrderAddress address = order.getOrderAddress();
+        OrderAddress address = orderService.getOrderAddress(order.getOrderId());
         DeliveryLocationResponse pickupLocation = shopService.findLocationByShopId(shopOrder.getShopId())
                 .map(this::toDeliveryLocation)
                 .orElse(null);
@@ -109,16 +111,16 @@ public class DeliveryStaffQueryService {
         }
 
         return new DeliveryLocationResponse(
-                address.getProvinceId(),
+                null,
                 address.getProvince(),
-                address.getDistrictId(),
+                null,
                 address.getDistrict(),
-                address.getWardId(),
+                null,
                 address.getWard(),
                 address.getAddressLine(),
-                address.getFormattedAddress(),
-                address.getLatitude(),
-                address.getLongitude()
+                null,
+                null,
+                null
         );
     }
 
