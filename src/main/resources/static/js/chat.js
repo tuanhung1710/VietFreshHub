@@ -50,7 +50,7 @@
         if (renderedMessageIds.has(message.messageId)) return;
         renderedMessageIds.add(message.messageId);
         document.getElementById("welcomeMessage")?.remove();
-        const isMine = message.mine === true;
+        const isMine = Number(message.senderUserId) === currentUserId;
         const row = document.createElement("div");
         row.className = `message-row${isMine ? " mine" : ""}`;
         const bubble = document.createElement("article");
