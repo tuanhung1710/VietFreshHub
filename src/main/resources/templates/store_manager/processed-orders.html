@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Lịch sử đơn đã xử lý</title>
+    <style>
+        table {
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+        }
+    </style>
+    <style th:replace="~{store_manager/order-filters :: styles}"></style>
+</head>
+<body>
+<a th:href="@{/seller}">← Quay lại cửa hàng</a>
+<h1>LỊCH SỬ ĐƠN ĐÃ XỬ LÝ</h1>
+<div th:replace="~{store_manager/order-filters :: filters('processed', '/seller/processed-orders', true, true, ${totalElements})}"></div>
+<table>
+    <thead>
+    <tr>
+        <th scope="col">STT</th>
+        <th scope="col">Mã đơn hàng</th>
+        <th scope="col">Khách hàng</th>
+        <th scope="col">Ngày đặt hàng</th>
+        <th scope="col">Số tiền</th>
+        <th scope="col">Trạng thái đơn hàng</th>
+        <th scope="col">Trạng thái thanh toán</th>
+        <th scope="col">Chi tiết</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:if="${#lists.isEmpty(processedOrders)}">
+        <td colspan="8">Hiện không có đơn hàng đã xử lý.</td>
+    </tr>
+    <tr th:each="order, row : ${processedOrders}">
+        <td th:text="${pageOffset + row.index + 1}"></td>
+        <td th:text="${order.orderCode}"></td>
+        <td th:text="${order.customerName}"></td>
+        <td th:text="${#temporals.format(order.placedAt, 'dd-MM-yyyy HH:mm')}"></td>
+        <td th:text="${#numbers.formatDecimal(order.totalAmount, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></td>
+        <td th:text="${order.orderStatusLabel}"></td>
+        <td th:switch="${order.paymentStatus}">
+            <span th:case="'UNPAID'">Chưa thanh toán</span>
+            <span th:case="'PAID'">Đã thanh toán</span>
+            <span th:case="'PENDING'">Đang chờ thanh toán</span>
+            <span th:case="'FAILED'">Thanh toán thất bại</span>
+            <span th:case="*" th:text="${order.paymentStatus}"></span>
+        </td>
+        <td>
+            <a th:href="@{/seller/orders/{shopOrderId}(shopOrderId=${order.shopOrderId})}">Xem</a>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<nav th:replace="~{store_manager/order-filters :: pagination('/seller/processed-orders')}"></nav>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/product-inventory :: head('Nhật ký kho','inventory')}"></head>
+<body><header th:replace="~{fragments/product-inventory :: nav('inventory')}"></header>
+<main class="container vf-main">
+<a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{/seller/inventory}">← Kho hàng</a>
+<h1>Nhật ký biến động kho</h1><p class="text-body-secondary mb-4">Ghi nhận nhập, giữ đơn, trả giữ, bán, điều chỉnh và hủy hàng thực tế. Thời gian hiển thị theo Việt Nam.</p>
+<form class="card p-3 mb-4" th:action="@{/seller/inventory/journal}" method="get">
+<input type="hidden" name="variant" th:if="${variant!=null}" th:value="${variant}">
+<div class="row g-3 align-items-end">
+<div class="col-md-6 col-xl-3"><label class="form-label" for="journal-q">Tìm kiếm</label><input class="form-control" id="journal-q" name="q" th:value="${q}" placeholder="Sản phẩm, SKU, lô"></div>
+<div class="col-md-6 col-xl-2"><label class="form-label" for="journal-type">Loại</label><select class="form-select" id="journal-type" name="type"><option value="">Tất cả</option><option th:each="t : ${T(VietFreshHub.Inventory.enums.StockTransactionType).values()}" th:value="${t.name()}" th:text="${t.name()=='RESTOCK'?'Nhập kho':t.name()=='RESERVE'?'Giữ cho đơn':t.name()=='RELEASE'?'Trả giữ':t.name()=='SALE'?'Bán hàng':t.name()=='RETURN'?'Hoàn hàng':t.name()=='ADJUSTMENT'?'Điều chỉnh':t.name()=='EXPIRED'?'Hủy hết hạn':'Hư hỏng'}" th:selected="${type==t.name()}"></option></select></div>
+<div class="col-md-6 col-xl-2"><label class="form-label" for="journal-from">Từ ngày</label><input class="form-control" id="journal-from" type="date" name="from" th:value="${from}"></div>
+<div class="col-md-6 col-xl-2"><label class="form-label" for="journal-to">Đến ngày</label><input class="form-control" id="journal-to" type="date" name="to" th:value="${to}"></div>
+<div class="col-6 col-xl-2"><label class="form-label" for="journal-size">Mỗi trang</label><select class="form-select" id="journal-size" name="size"><option th:each="n : ${ {5,10,20} }" th:value="${n}" th:text="${n}" th:selected="${events.size==n}"></option></select></div>
+<div class="col-6 col-xl-1"><button type="submit" class="btn btn-success w-100">Lọc</button></div>
+</div></form>
+<div class="card overflow-hidden mb-3"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+<thead class="table-light"><tr><th scope="col">Thời gian</th><th scope="col">SKU / lô</th><th scope="col">Loại</th><th scope="col">Biến động</th><th scope="col">Người thao tác</th><th scope="col">Lý do / tham chiếu</th></tr></thead>
+<tbody><tr th:each="e : ${events.content}">
+<td class="text-nowrap small" th:text="${#temporals.format(e.event.createdAt.plusHours(7),'dd/MM/yyyy HH:mm:ss')}"></td>
+<td><strong th:text="${e.sku}"></strong><small class="d-block text-body-secondary" th:text="${e.productName+' · '+e.batchCode}"></small></td>
+<td><span class="badge bg-secondary-subtle text-secondary-emphasis" th:text="${e.event.transactionType.name()=='RESTOCK'?'Nhập kho':e.event.transactionType.name()=='RESERVE'?'Giữ cho đơn':e.event.transactionType.name()=='RELEASE'?'Trả giữ':e.event.transactionType.name()=='SALE'?'Bán hàng':e.event.transactionType.name()=='RETURN'?'Hoàn hàng':e.event.transactionType.name()=='ADJUSTMENT'?'Điều chỉnh':e.event.transactionType.name()=='EXPIRED'?'Hủy hết hạn':'Hư hỏng'}"></span></td>
+<td class="fw-semibold text-nowrap" th:classappend="${e.event.quantity>0?'text-success':'text-danger'}" th:text="${(e.event.quantity>0?'+':'')+e.event.quantity}"></td>
+<td th:text="${e.event.createdBy==null?'Hệ thống':'#'+e.event.createdBy}"></td>
+<td><span th:text="${e.event.note}"></span><small class="d-block text-body-secondary" th:text="${e.event.referenceType==null?'':e.event.referenceType+' #'+e.event.referenceId}"></small></td>
+</tr><tr th:if="${events.empty}"><td colspan="6" class="text-center text-body-secondary py-5">Chưa có giao dịch phù hợp.</td></tr></tbody>
+</table></div></div>
+<nav class="d-flex flex-wrap align-items-center justify-content-between gap-3" aria-label="Trang nhật ký">
+<a class="btn btn-outline-secondary btn-sm" th:if="${events.hasPrevious()}" th:href="@{/seller/inventory/journal(page=${events.number},size=${events.size},q=${q},variant=${variant},type=${type},from=${from},to=${to})}">← Trước</a>
+<span class="small text-body-secondary" th:text="${'Trang '+(events.number+1)+' / '+T(java.lang.Math).max(1,events.totalPages)+' · '+events.totalElements+' giao dịch'}"></span>
+<a class="btn btn-outline-secondary btn-sm" th:if="${events.hasNext()}" th:href="@{/seller/inventory/journal(page=${events.number+2},size=${events.size},q=${q},variant=${variant},type=${type},from=${from},to=${to})}">Sau →</a>
+</nav></main></body></html>
+
