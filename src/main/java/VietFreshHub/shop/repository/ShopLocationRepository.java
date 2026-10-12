@@ -1,6 +1,6 @@
-package VietFreshHub.Shop.repository;
+package VietFreshHub.shop.repository;
 
-import VietFreshHub.Shop.entity.ShopLocation;
+import VietFreshHub.shop.entity.ShopLocation;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

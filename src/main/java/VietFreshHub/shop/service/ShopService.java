@@ -1,10 +1,10 @@
-package VietFreshHub.Shop.service;
+package VietFreshHub.shop.service;
 
 import VietFreshHub.shop.entity.ShopMember;
 import VietFreshHub.shop.repository.ShopMemberRepository;
 import VietFreshHub.auth.repository.UserRepository;
-import VietFreshHub.Shop.entity.ShopLocation;
-import VietFreshHub.Shop.repository.ShopLocationRepository;
+import VietFreshHub.shop.entity.ShopLocation;
+import VietFreshHub.shop.repository.ShopLocationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;

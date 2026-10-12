@@ -1,6 +1,6 @@
 package VietFreshHub.coupon.controller;
 
-import VietFreshHub.Shop.service.ShopService;
+import VietFreshHub.shop.service.ShopService;
 import VietFreshHub.coupon.dto.CouponForm;
 import VietFreshHub.coupon.dto.CouponResponse;
 import VietFreshHub.coupon.entity.CouponStatus;

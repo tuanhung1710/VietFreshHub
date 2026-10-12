@@ -1,6 +1,6 @@
-package VietFreshHub.Shop.controller;
+package VietFreshHub.shop.controller;
 
-import VietFreshHub.Order.service.OrderService;
+import VietFreshHub.order.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.ui.Model;

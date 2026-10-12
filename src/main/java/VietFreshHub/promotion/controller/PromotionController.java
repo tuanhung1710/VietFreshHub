@@ -1,6 +1,6 @@
 package VietFreshHub.promotion.controller;
 
-import VietFreshHub.Shop.service.ShopService;
+import VietFreshHub.shop.service.ShopService;
 import VietFreshHub.promotion.dto.PromotionForm;
 import VietFreshHub.promotion.dto.PromotionResponse;
 import VietFreshHub.promotion.entity.DiscountType;
