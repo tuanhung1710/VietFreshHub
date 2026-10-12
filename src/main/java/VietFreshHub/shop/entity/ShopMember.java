@@ -1,4 +1,4 @@
-package VietFreshHub.shop.entity;
+package VietFreshHub.Shop.entity;
 
 import VietFreshHub.auth.entity.User;
 import jakarta.persistence.Column;

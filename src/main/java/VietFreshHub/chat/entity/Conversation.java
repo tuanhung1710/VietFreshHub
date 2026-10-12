@@ -1,7 +1,7 @@
 package VietFreshHub.chat.entity;
 
 import VietFreshHub.auth.entity.User;
-import VietFreshHub.shop.entity.Shop;
+import VietFreshHub.Shop.entity.Shop;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

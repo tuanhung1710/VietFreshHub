@@ -1,7 +1,7 @@
 package VietFreshHub.Shop.service;
 
-import VietFreshHub.shop.entity.ShopMember;
-import VietFreshHub.shop.repository.ShopMemberRepository;
+import VietFreshHub.Shop.entity.ShopMember;
+import VietFreshHub.Shop.repository.ShopMemberRepository;
 import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.Shop.entity.ShopLocation;
 import VietFreshHub.Shop.repository.ShopLocationRepository;

@@ -1,6 +1,6 @@
-package VietFreshHub.shop.repository;
+package VietFreshHub.Shop.repository;
 
-import VietFreshHub.shop.entity.ShopMember;
+import VietFreshHub.Shop.entity.ShopMember;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

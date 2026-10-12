@@ -1,4 +1,4 @@
-package VietFreshHub.shop.entity;
+package VietFreshHub.Shop.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

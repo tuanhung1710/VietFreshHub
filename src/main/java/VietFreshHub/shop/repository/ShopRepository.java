@@ -1,6 +1,6 @@
-package VietFreshHub.shop.repository;
+package VietFreshHub.Shop.repository;
 
-import VietFreshHub.shop.entity.Shop;
+import VietFreshHub.Shop.entity.Shop;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
