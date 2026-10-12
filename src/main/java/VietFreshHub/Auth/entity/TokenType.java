@@ -1,4 +1,4 @@
-package VietFreshHub.auth.entity;
+package VietFreshHub.Auth.entity;
 
 public enum TokenType {
     PASSWORD_RESET,

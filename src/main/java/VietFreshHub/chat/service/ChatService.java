@@ -1,8 +1,8 @@
 package VietFreshHub.chat.service;
 
-import VietFreshHub.auth.entity.User;
-import VietFreshHub.auth.repository.UserRepository;
-import VietFreshHub.auth.repository.UserRoleRepository;
+import VietFreshHub.Auth.entity.User;
+import VietFreshHub.Auth.repository.UserRepository;
+import VietFreshHub.Auth.repository.UserRoleRepository;
 import VietFreshHub.chat.dto.ChatConversationView;
 import VietFreshHub.chat.dto.ChatMessageView;
 import VietFreshHub.chat.dto.ChatShopOption;

@@ -1,7 +1,7 @@
-package VietFreshHub.auth.repository;
+package VietFreshHub.Auth.repository;
 
-import VietFreshHub.auth.entity.UserRole;
-import VietFreshHub.auth.entity.UserRoleId;
+import VietFreshHub.Auth.entity.UserRole;
+import VietFreshHub.Auth.entity.UserRoleId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

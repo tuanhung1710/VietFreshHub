@@ -1,6 +1,6 @@
 package VietFreshHub.sellerapplication.service;
 
-import VietFreshHub.auth.entity.User;
+import VietFreshHub.Auth.entity.User;
 import VietFreshHub.sellerapplication.dto.SellerApplicationForm;
 import VietFreshHub.sellerapplication.entity.DocumentVerificationStatus;
 import VietFreshHub.sellerapplication.entity.SellerApplication;

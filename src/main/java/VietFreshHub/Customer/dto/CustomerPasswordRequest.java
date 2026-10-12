@@ -1,4 +1,4 @@
-package VietFreshHub.customer.dto;
+package VietFreshHub.Customer.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

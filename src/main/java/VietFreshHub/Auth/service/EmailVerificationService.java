@@ -1,7 +1,7 @@
-package VietFreshHub.auth.service;
+package VietFreshHub.Auth.service;
 
-import VietFreshHub.auth.dto.PendingRegistration;
-import VietFreshHub.auth.dto.RegisterRequest;
+import VietFreshHub.Auth.dto.PendingRegistration;
+import VietFreshHub.Auth.dto.RegisterRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;

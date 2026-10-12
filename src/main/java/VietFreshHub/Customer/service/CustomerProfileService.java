@@ -1,8 +1,8 @@
-package VietFreshHub.customer.service;
+package VietFreshHub.Customer.service;
 
-import VietFreshHub.auth.entity.User;
-import VietFreshHub.auth.repository.UserRepository;
-import VietFreshHub.customer.dto.CustomerProfileRequest;
+import VietFreshHub.Auth.entity.User;
+import VietFreshHub.Auth.repository.UserRepository;
+import VietFreshHub.Customer.dto.CustomerProfileRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

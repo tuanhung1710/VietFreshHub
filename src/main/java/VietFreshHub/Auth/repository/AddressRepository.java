@@ -1,6 +1,6 @@
-package VietFreshHub.auth.repository;
+package VietFreshHub.Auth.repository;
 
-import VietFreshHub.auth.entity.Address;
+import VietFreshHub.Auth.entity.Address;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.Optional;

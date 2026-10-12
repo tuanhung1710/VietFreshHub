@@ -1,6 +1,6 @@
 package VietFreshHub.Order.entity;
 
-import VietFreshHub.auth.entity.User;
+import VietFreshHub.Auth.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

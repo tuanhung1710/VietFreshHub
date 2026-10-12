@@ -1,4 +1,4 @@
-package VietFreshHub.auth.entity;
+package VietFreshHub.Auth.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

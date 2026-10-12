@@ -1,8 +1,8 @@
 package VietFreshHub.security;
 
-import VietFreshHub.auth.repository.UserRepository;
-import VietFreshHub.auth.repository.UserRoleRepository;
-import VietFreshHub.auth.service.Oidc_UserService;
+import VietFreshHub.Auth.repository.UserRepository;
+import VietFreshHub.Auth.repository.UserRoleRepository;
+import VietFreshHub.Auth.service.Oidc_UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;

@@ -1,7 +1,7 @@
-package VietFreshHub.customer.controller;
+package VietFreshHub.Customer.controller;
 
-import VietFreshHub.customer.dto.CustomerPasswordRequest;
-import VietFreshHub.customer.service.CustomerPasswordService;
+import VietFreshHub.Customer.dto.CustomerPasswordRequest;
+import VietFreshHub.Customer.service.CustomerPasswordService;
 import jakarta.validation.Valid;
 import org.springframework.ui.Model;
 import org.springframework.security.core.Authentication;

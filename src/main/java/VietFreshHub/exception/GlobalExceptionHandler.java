@@ -1,6 +1,6 @@
 package VietFreshHub.exception;
 
-import VietFreshHub.auth.exception.RegistrationException;
+import VietFreshHub.Auth.exception.RegistrationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;

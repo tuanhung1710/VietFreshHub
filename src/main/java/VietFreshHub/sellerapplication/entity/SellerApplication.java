@@ -1,6 +1,6 @@
 package VietFreshHub.sellerapplication.entity;
 
-import VietFreshHub.auth.entity.User;
+import VietFreshHub.Auth.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

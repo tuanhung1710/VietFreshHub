@@ -1,4 +1,4 @@
-package VietFreshHub.auth.dto;
+package VietFreshHub.Auth.dto;
 
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;

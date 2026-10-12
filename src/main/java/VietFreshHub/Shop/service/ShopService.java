@@ -2,7 +2,7 @@ package VietFreshHub.Shop.service;
 
 import VietFreshHub.Shop.entity.ShopMember;
 import VietFreshHub.Shop.repository.ShopMemberRepository;
-import VietFreshHub.auth.repository.UserRepository;
+import VietFreshHub.Auth.repository.UserRepository;
 import VietFreshHub.Shop.entity.ShopLocation;
 import VietFreshHub.Shop.repository.ShopLocationRepository;
 import lombok.RequiredArgsConstructor;

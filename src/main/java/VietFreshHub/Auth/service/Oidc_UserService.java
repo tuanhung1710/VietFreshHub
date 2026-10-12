@@ -1,7 +1,7 @@
-package VietFreshHub.auth.service;
+package VietFreshHub.Auth.service;
 
-import VietFreshHub.auth.entity.User;
-import VietFreshHub.auth.repository.UserRoleRepository;
+import VietFreshHub.Auth.entity.User;
+import VietFreshHub.Auth.repository.UserRoleRepository;
 import VietFreshHub.security.Oidc_User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;

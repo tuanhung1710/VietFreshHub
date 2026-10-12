@@ -1,7 +1,7 @@
 package VietFreshHub.Delivery.service;
 
-import VietFreshHub.auth.entity.User;
-import VietFreshHub.auth.service.AuthService;
+import VietFreshHub.Auth.entity.User;
+import VietFreshHub.Auth.service.AuthService;
 import VietFreshHub.Delivery.entity.Delivery;
 import VietFreshHub.Delivery.entity.DeliveryAssignment;
 import VietFreshHub.Delivery.entity.DeliveryAssignmentStatus;

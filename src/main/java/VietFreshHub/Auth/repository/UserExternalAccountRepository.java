@@ -1,6 +1,6 @@
-package VietFreshHub.auth.repository;
+package VietFreshHub.Auth.repository;
 
-import VietFreshHub.auth.entity.UserExternalAccount;
+import VietFreshHub.Auth.entity.UserExternalAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

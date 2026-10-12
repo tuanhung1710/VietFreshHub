@@ -1,8 +1,8 @@
-package VietFreshHub.customer.service;
+package VietFreshHub.Customer.service;
 
-import VietFreshHub.auth.entity.User;
-import VietFreshHub.auth.repository.UserRepository;
-import VietFreshHub.customer.dto.CustomerPasswordRequest;
+import VietFreshHub.Auth.entity.User;
+import VietFreshHub.Auth.repository.UserRepository;
+import VietFreshHub.Customer.dto.CustomerPasswordRequest;
 import VietFreshHub.security.Oidc_User;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;

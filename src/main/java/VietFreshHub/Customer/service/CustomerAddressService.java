@@ -1,10 +1,10 @@
-package VietFreshHub.customer.service;
+package VietFreshHub.Customer.service;
 
-import VietFreshHub.auth.entity.Address;
-import VietFreshHub.auth.entity.User;
-import VietFreshHub.auth.repository.AddressRepository;
-import VietFreshHub.auth.repository.UserRepository;
-import VietFreshHub.customer.dto.CustomerAddressRequest;
+import VietFreshHub.Auth.entity.Address;
+import VietFreshHub.Auth.entity.User;
+import VietFreshHub.Auth.repository.AddressRepository;
+import VietFreshHub.Auth.repository.UserRepository;
+import VietFreshHub.Customer.dto.CustomerAddressRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;

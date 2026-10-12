@@ -1,6 +1,6 @@
 package VietFreshHub.Delivery.service;
 
-import VietFreshHub.auth.service.AuthService;
+import VietFreshHub.Auth.service.AuthService;
 import VietFreshHub.Delivery.dto.AssignedDeliverySummary;
 import VietFreshHub.Delivery.dto.DeliveryDetailResponse;
 import VietFreshHub.Delivery.dto.DeliveryLocationResponse;

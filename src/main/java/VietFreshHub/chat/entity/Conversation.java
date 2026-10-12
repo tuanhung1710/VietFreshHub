@@ -1,6 +1,6 @@
 package VietFreshHub.chat.entity;
 
-import VietFreshHub.auth.entity.User;
+import VietFreshHub.Auth.entity.User;
 import VietFreshHub.Shop.entity.Shop;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

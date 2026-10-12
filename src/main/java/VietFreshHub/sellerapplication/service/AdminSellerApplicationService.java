@@ -1,10 +1,10 @@
 package VietFreshHub.sellerapplication.service;
 
-import VietFreshHub.auth.entity.Role;
-import VietFreshHub.auth.entity.User;
-import VietFreshHub.auth.repository.RoleRepository;
-import VietFreshHub.auth.repository.UserRepository;
-import VietFreshHub.auth.repository.UserRoleGrantRepository;
+import VietFreshHub.Auth.entity.Role;
+import VietFreshHub.Auth.entity.User;
+import VietFreshHub.Auth.repository.RoleRepository;
+import VietFreshHub.Auth.repository.UserRepository;
+import VietFreshHub.Auth.repository.UserRoleGrantRepository;
 import VietFreshHub.sellerapplication.dto.SellerApplicationAdminDetail;
 import VietFreshHub.sellerapplication.dto.SellerApplicationAdminRow;
 import VietFreshHub.sellerapplication.entity.DocumentVerificationStatus;

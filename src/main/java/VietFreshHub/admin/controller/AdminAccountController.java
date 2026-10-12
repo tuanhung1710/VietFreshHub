@@ -2,7 +2,7 @@ package VietFreshHub.admin.controller;
 
 import VietFreshHub.admin.dto.AdminAccountRow;
 import VietFreshHub.admin.service.AdminAccountService;
-import VietFreshHub.auth.entity.Role;
+import VietFreshHub.Auth.entity.Role;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;

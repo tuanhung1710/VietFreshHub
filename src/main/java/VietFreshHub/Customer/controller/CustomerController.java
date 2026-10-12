@@ -1,7 +1,7 @@
-package VietFreshHub.customer.controller;
+package VietFreshHub.Customer.controller;
 
-import VietFreshHub.customer.dto.CustomerProfileRequest;
-import VietFreshHub.customer.service.CustomerProfileService;
+import VietFreshHub.Customer.dto.CustomerProfileRequest;
+import VietFreshHub.Customer.service.CustomerProfileService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;

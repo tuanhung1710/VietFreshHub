@@ -1,7 +1,7 @@
-package VietFreshHub.auth.repository;
+package VietFreshHub.Auth.repository;
 
-import VietFreshHub.auth.entity.PasswordResetToken;
-import VietFreshHub.auth.entity.TokenType;
+import VietFreshHub.Auth.entity.PasswordResetToken;
+import VietFreshHub.Auth.entity.TokenType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.Optional;
