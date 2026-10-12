@@ -1,8 +1,8 @@
 package VietFreshHub.chat.service;
 
-import VietFreshHub.Auth.entity.User;
-import VietFreshHub.Auth.repository.UserRepository;
-import VietFreshHub.Auth.repository.UserRoleRepository;
+import VietFreshHub.auth.entity.User;
+import VietFreshHub.auth.repository.UserRepository;
+import VietFreshHub.auth.repository.UserRoleRepository;
 import VietFreshHub.chat.dto.ChatConversationView;
 import VietFreshHub.chat.dto.ChatMessageView;
 import VietFreshHub.chat.dto.ChatShopOption;
@@ -10,10 +10,10 @@ import VietFreshHub.chat.entity.ChatMessage;
 import VietFreshHub.chat.entity.Conversation;
 import VietFreshHub.chat.repository.ChatMessageRepository;
 import VietFreshHub.chat.repository.ConversationRepository;
-import VietFreshHub.Shop.entity.Shop;
-import VietFreshHub.Shop.entity.ShopMember;
-import VietFreshHub.Shop.repository.ShopMemberRepository;
-import VietFreshHub.Shop.repository.ShopRepository;
+import VietFreshHub.shop.entity.Shop;
+import VietFreshHub.shop.entity.ShopMember;
+import VietFreshHub.shop.repository.ShopMemberRepository;
+import VietFreshHub.shop.repository.ShopRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Limit;

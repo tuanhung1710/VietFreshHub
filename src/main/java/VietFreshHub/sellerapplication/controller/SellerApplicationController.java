@@ -1,7 +1,7 @@
 package VietFreshHub.sellerapplication.controller;
 
-import VietFreshHub.Auth.entity.User;
-import VietFreshHub.Auth.repository.UserRepository;
+import VietFreshHub.auth.entity.User;
+import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.sellerapplication.dto.SellerApplicationForm;
 import VietFreshHub.sellerapplication.service.SellerApplicationService;
 import jakarta.validation.Valid;
