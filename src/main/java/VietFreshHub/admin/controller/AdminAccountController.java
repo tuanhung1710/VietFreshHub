@@ -25,6 +25,11 @@ public class AdminAccountController {
         this.service = service;
     }
 
+    @GetMapping({"", "/"})
+    public String adminHome() {
+        return "redirect:/admin/accounts";
+    }
+    
     @GetMapping("/accounts")
     public String showAccounts(
             @RequestParam(defaultValue = "") String keyword,

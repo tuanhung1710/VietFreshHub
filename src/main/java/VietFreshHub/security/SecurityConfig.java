@@ -14,8 +14,10 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean
@@ -49,10 +51,22 @@ public class SecurityConfig {
                             "/verify-email/resend", "/error",
                     "/css/**", "/js/**", "/images/**","/oauth2/**", "/login/oauth2/**"
             ).permitAll()
-             .requestMatchers("/admin/**").hasRole("ADMIN")
-                    .requestMatchers("/store_manager/**").hasRole("STORE_MANAGER")
-                    .requestMatchers("/delivery/**").hasRole("DELIVERY_STAFF")
-                    .requestMatchers("/customer/**").hasRole("CUSTOMER")
+                    .requestMatchers("/admin", "/admin/**")
+                    .hasRole("ADMIN")
+
+                    .requestMatchers(
+                            "/seller", "/seller/**",
+                            "/manager", "/manager/**",
+                            "/store_manager", "/store_manager/**"
+                    ).hasRole("STORE_MANAGER")
+
+                    .requestMatchers("/delivery", "/delivery/**")
+                    .hasRole("DELIVERY_STAFF")
+
+                    .requestMatchers(
+                            "/home", "/customer", "/customer/**"
+                    ).hasRole("CUSTOMER")
+
                     .anyRequest().authenticated();
         });
         http.oauth2Login(oauth2 -> oauth2
@@ -60,7 +74,7 @@ public class SecurityConfig {
                 .userInfoEndpoint(userInfo -> userInfo
                         .oidcUserService(oidcUserService)
                 )
-                .defaultSuccessUrl("/customer/home", true)
+                .defaultSuccessUrl("/", true)
                 .failureUrl("/login?oauthError=true")
         );
 
