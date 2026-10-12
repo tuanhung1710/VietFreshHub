@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/product-inventory :: head(${row.product.name},'product')}"></head>
+<body>
+<header th:replace="~{fragments/product-inventory :: nav('product')}"></header>
+<main class="container vf-main">
+<a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{/seller/products}">← Sản phẩm</a>
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+<div><h1 th:text="${row.product.name}"></h1><p class="small text-body-secondary mb-0" th:text="${row.categoryName}"></p></div>
+<div class="d-flex flex-wrap gap-2" th:if="${row.product.status.name()!='DELETED'}"><a class="btn btn-outline-secondary" th:href="@{/seller/products/{id}/edit(id=${row.product.productId})}">Sửa thông tin</a><a class="btn btn-success" th:href="@{/seller/products/{id}/variants/new(id=${row.product.productId})}">+ Thêm SKU</a></div>
+</div>
+<div th:replace="~{fragments/product-inventory :: messages}"></div>
+<section class="card p-4 mb-4">
+<div class="row g-4">
+<div class="col-sm-3 col-lg-2" th:if="${row.imageUrl!=null}"><img class="img-fluid rounded border w-100" th:src="${row.imageUrl}" alt="Ảnh sản phẩm"></div>
+<div class="col">
+<div class="d-flex flex-wrap gap-2 mb-2">
+<span th:replace="~{fragments/product-inventory :: productStatus(${row})}"></span>
+<span class="badge border" th:classappend="${row.product.approvalStatus.name()=='APPROVED'?'bg-success-subtle text-success-emphasis':row.product.approvalStatus.name()=='REJECTED'?'bg-danger-subtle text-danger-emphasis':'bg-warning-subtle text-warning-emphasis'}" th:text="${row.product.approvalStatus.name()=='APPROVED'?'Đã duyệt':row.product.approvalStatus.name()=='REJECTED'?'Bị từ chối':'Chờ duyệt'}"></span>
+<span class="badge bg-info-subtle text-info-emphasis border" th:if="${row.product.requiresPreparationCheck}">Kiểm tra trước đóng gói</span>
+</div>
+<p class="small text-body-secondary mb-2" th:text="${'slug: '+row.product.slug}"></p>
+<p class="description mb-3" th:text="${row.product.description}"></p>
+<div class="small text-body-secondary d-flex flex-wrap gap-3 mb-3">
+<span th:text="${'Thêm: '+#temporals.format(row.product.createdAt.plusHours(7),'dd/MM/yyyy')}"></span>
+<span th:if="${row.approvedByName!=null}" th:text="${'Duyệt bởi: '+row.approvedByName}"></span>
+<span th:if="${row.product.approvedAt!=null}" th:text="${'Lúc: '+#temporals.format(row.product.approvedAt.plusHours(7),'dd/MM/yyyy')}"></span>
+</div>
+<p class="alert alert-info small mb-3" th:if="${row.product.requiresPreparationCheck}" th:text="${'Hướng dẫn chuẩn bị: '+row.product.preparationNote}"></p>
+</div></div>
+<form class="row g-3 align-items-end mt-2 border-top pt-2" th:if="${row.product.status.name()!='DELETED'}" th:action="@{/seller/products/{id}/status(id=${row.product.productId})}" method="post" data-confirm="Xác nhận đổi trạng thái sản phẩm?">
+<div class="col-md-3"><label class="form-label" for="product-status">Trạng thái kinh doanh</label><select class="form-select" id="product-status" name="status" aria-describedby="approval-help"><option value="ACTIVE" th:selected="${row.product.status.name()=='ACTIVE'}" th:disabled="${row.product.approvalStatus.name()!='APPROVED'}">Mở bán (cần được duyệt)</option><option value="INACTIVE" th:selected="${row.product.status.name()=='INACTIVE'}">Ngừng bán</option><option value="DELETED">Lưu trữ</option></select></div>
+<div class="col-md-6"><label class="form-label" for="product-reason">Lý do <span class="text-danger">*</span></label><input class="form-control" id="product-reason" name="reason" maxlength="900" required></div>
+<div class="col-md-3"><button type="submit" class="btn btn-outline-success w-100">Cập nhật</button></div>
+</form>
+<p class="small text-body-secondary mt-3 mb-0" id="approval-help">Admin duyệt sản phẩm cùng các SKU; SKU không có lượt duyệt riêng. Shop chỉ mở bán sản phẩm sau khi được duyệt.</p>
+<p class="alert alert-warning small mt-3 mb-0" th:if="${row.product.approvalStatus.name()!='APPROVED'&&row.product.status.name()!='DELETED'}">Sản phẩm chưa được duyệt nên các SKU chưa bán cho khách, kể cả khi đã bật SKU.</p>
+</section>
+<section class="card p-4 mb-4" th:each="v : ${row.variants}">
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+<div class="d-flex align-items-center gap-3"><img class="thumb rounded border" th:if="${v.variant.thumbnailUrl!=null}" th:src="${v.variant.thumbnailUrl}" alt="Ảnh quy cách bán"><div><h2 class="h5 mb-1" th:text="${v.variant.variantName}"></h2><small class="text-body-secondary" th:text="${v.variant.sku}"></small><span class="badge ms-2" th:classappend="${v.variant.status.name()=='ACTIVE'?'bg-success-subtle text-success-emphasis':'bg-secondary-subtle text-secondary-emphasis'}" th:text="${v.variant.status.name()=='ACTIVE'?'Đã bật':(v.variant.status.name()=='OUT_OF_STOCK'?'Hết hàng':(v.variant.status.name()=='DELETED'?'Đã lưu trữ':'Tạm dừng'))}"></span></div></div>
+<div class="d-flex flex-wrap gap-2" th:if="${row.product.status.name()!='DELETED'&&v.variant.status.name()!='DELETED'}"><a class="btn btn-outline-secondary btn-sm" th:href="@{/seller/products/{p}/variants/{v}/edit(p=${row.product.productId},v=${v.variant.variantId})}">Sửa SKU</a><a class="btn btn-success btn-sm" th:href="@{/seller/inventory/products/{p}/variants/{v}/restock(p=${row.product.productId},v=${v.variant.variantId})}">+ Nhập lô</a></div>
+</div>
+<div class="d-flex flex-wrap align-items-center gap-3 mb-3"><p class="h5 text-success mb-0" th:text="${#numbers.formatDecimal(v.variant.price,0,'POINT',0,'COMMA')+' ₫ / '+v.variant.unit}"></p><small class="text-body-secondary" th:if="${v.variant.compareAtPrice!=null}" th:text="${'Giá gốc tham chiếu: '+#numbers.formatDecimal(v.variant.compareAtPrice,0,'POINT',0,'COMMA')+' ₫'}"></small><span class="badge bg-warning-subtle text-warning-emphasis" th:if="${v.lowStock()}">Tồn thấp</span></div>
+<p th:if="${v.offerPrice!=null}" class="alert alert-success small" th:text="${'Giá cận hạn '+#numbers.formatDecimal(v.offerPrice,0,'POINT',0,'COMMA')+' ₫ · '+v.offerQuantity+' '+v.variant.unit+' có thể bán với giá này'}"></p>
+<div class="row g-3 mb-3">
+<div class="col-6 col-xl-3"><div class="border rounded-3 p-3 bg-body-tertiary"><small class="d-block text-body-secondary">Trong kho</small><strong th:text="${v.physical+' '+v.variant.unit}"></strong></div></div>
+<div class="col-6 col-xl-3"><div class="border rounded-3 p-3 bg-body-tertiary"><small class="d-block text-body-secondary">Giữ cho đơn</small><strong th:text="${v.reserved+' '+v.variant.unit}"></strong></div></div>
+<div class="col-6 col-xl-3"><div class="border rounded-3 p-3 bg-body-tertiary"><small class="d-block text-body-secondary">Tồn khả dụng</small><strong class="text-success" th:text="${v.available+' '+v.variant.unit}"></strong></div></div>
+<div class="col-6 col-xl-3"><div class="border rounded-3 p-3 bg-body-tertiary"><small class="d-block text-body-secondary">Hết hạn / khóa chưa giữ</small><strong th:text="${v.unavailable+' '+v.variant.unit}"></strong></div></div>
+</div>
+<div class="d-flex flex-wrap gap-3 small mb-3"><a class="text-success" th:href="@{/seller/inventory(q=${v.variant.sku})}">Xem các lô →</a><a class="text-success" th:href="@{/seller/inventory/journal(variant=${v.variant.variantId})}">Nhật ký SKU →</a><a class="text-success" th:href="@{/seller/products/{p}/variants/{v}/prices(p=${row.product.productId},v=${v.variant.variantId})}">Lịch sử giá →</a></div>
+<form class="row g-3 align-items-end border-top pt-2" th:if="${row.product.status.name()!='DELETED'&&v.variant.status.name()!='DELETED'}" th:action="@{/seller/products/{p}/variants/{v}/status(p=${row.product.productId},v=${v.variant.variantId})}" method="post" data-confirm="Xác nhận thay đổi trạng thái SKU?">
+<div class="col-md-3"><label class="form-label" th:for="${'sku-status-'+v.variant.variantId}">Trạng thái SKU</label><select class="form-select" th:id="${'sku-status-'+v.variant.variantId}" name="status"><option value="ACTIVE" th:selected="${v.variant.status.name()=='ACTIVE'||v.variant.status.name()=='OUT_OF_STOCK'}">Bật SKU</option><option value="INACTIVE" th:selected="${v.variant.status.name()=='INACTIVE'}">Tạm dừng SKU</option><option value="DELETED">Lưu trữ SKU</option></select></div>
+<div class="col-md-6"><label class="form-label" th:for="${'sku-reason-'+v.variant.variantId}">Lý do <span class="text-danger">*</span></label><input class="form-control" th:id="${'sku-reason-'+v.variant.variantId}" name="reason" maxlength="900" required></div>
+<div class="col-md-3"><button type="submit" class="btn btn-outline-secondary w-100">Cập nhật</button></div>
+</form><p class="small text-body-secondary mt-3 mb-0">Bật SKU để sử dụng quy cách này khi sản phẩm đã được duyệt và mở bán. Bật SKU không gửi yêu cầu duyệt riêng.</p></section>
+</main>
+<script defer th:src="@{/js/product/product.js}"></script>
+</body></html>
+

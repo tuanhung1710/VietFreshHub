@@ -253,16 +253,16 @@ public class AuthController {
         );
 
         if (hasAuthority(authentication, "ROLE_ADMIN")) {
-            return "/admin/admin";
+            return "/admin";
         }
         if (hasAuthority(authentication, "ROLE_STORE_MANAGER")) {
-            return "/store_manager/shop";
+            return "/seller";
         }
         if (hasAuthority(authentication, "ROLE_DELIVERY_STAFF")) {
-            return "/delivery/delivery";
+            return "/delivery";
         }
         if (hasAuthority(authentication, "ROLE_CUSTOMER")) {
-            return "/customer/home";
+            return "/home";
         }
 
         log.warn("Không nhận diện được role của user={}", authentication.getName());
@@ -273,5 +273,10 @@ public class AuthController {
         return authentication.getAuthorities().stream()
                 .anyMatch(authority ->
                         authority.getAuthority().equals(role));
+    }
+
+    @GetMapping("/home")
+    public String customerHome() {
+        return "redirect:/customer/home";
     }
 }

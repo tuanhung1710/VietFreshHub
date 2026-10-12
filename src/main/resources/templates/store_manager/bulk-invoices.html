@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>In hóa đơn</title>
+    <style>
+        body {
+            max-width: 900px;
+            margin: 24px auto;
+            padding: 0 16px;
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+        }
+
+        .invoice-close {
+            display: block;
+            width: 36px;
+            height: 36px;
+            margin: 0 0 12px auto;
+            padding: 4px;
+            border: 1px solid black;
+            background: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .invoice-controls {
+            margin-top: 24px;
+            text-align: center;
+        }
+
+        .invoice-controls button {
+            padding: 8px 16px;
+        }
+
+        .invoice {
+            margin-top: 24px;
+            border: 1px solid black;
+        }
+
+        .invoice header, .invoice section {
+            padding: 16px;
+        }
+
+        .invoice header {
+            text-align: center;
+        }
+
+        .invoice-brand {
+            margin: 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .invoice h2 {
+            margin: 0;
+        }
+
+        .invoice-metadata {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            text-align: left;
+        }
+
+        .invoice-metadata p {
+            margin: 16px 0 0;
+            overflow-wrap: anywhere;
+        }
+
+        .invoice section {
+            margin: 0;
+            border-top: 1px solid black;
+        }
+
+        .invoice h3 {
+            margin: 0 0 12px;
+        }
+
+        .invoice-receiver p {
+            margin: 8px 0;
+            overflow-wrap: anywhere;
+        }
+
+        .invoice table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .invoice th, .invoice td {
+            border: 1px solid black;
+            padding: 8px;
+            overflow-wrap: anywhere;
+        }
+
+        .money {
+            text-align: right;
+        }
+
+        .invoice td:nth-child(4) {
+            text-align: center;
+        }
+
+        .total {
+            text-align: right;
+            font-weight: bold;
+        }
+
+        @page {
+            size: A4;
+            margin: 12mm;
+        }
+
+        @media print {
+            body {
+                max-width: none;
+                margin: 0;
+                padding: 0;
+                font-size: 11pt;
+            }
+
+            .invoice-close, .invoice-controls {
+                display: none;
+            }
+
+            .invoice {
+                margin-top: 0;
+                break-after: page;
+            }
+
+            .invoice:last-of-type {
+                break-after: auto;
+            }
+
+            .invoice header, .invoice-receiver, .invoice tr, .invoice .total {
+                break-inside: avoid;
+            }
+
+            .invoice thead {
+                display: table-header-group;
+            }
+
+            .invoice th, .invoice td {
+                padding: 6px;
+            }
+
+            .invoice .total {
+                break-before: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+<button type="button" class="invoice-close" onclick="window.history.back()" aria-label="Đóng hóa đơn">×</button>
+<article class="invoice" th:each="orderDetail : ${invoices}">
+    <header>
+        <p class="invoice-brand">VIETFRESH HUB</p>
+        <h2>HÓA ĐƠN</h2>
+        <div class="invoice-metadata">
+            <p>Mã đơn hàng: <span th:text="${orderDetail.orderCode}"></span></p>
+            <p>Ngày đặt: <span th:text="${orderDetail.placedAt == null ? '—' : #temporals.format(orderDetail.placedAt, 'dd-MM-yyyy HH:mm')}"></span></p>
+        </div>
+    </header>
+    <section class="invoice-receiver">
+        <h3>THÔNG TIN NHẬN HÀNG</h3>
+        <p th:if="${orderDetail.deliveryAddress == null}">Không có thông tin địa chỉ giao hàng.</p>
+        <p>Người nhận: <span th:text="${orderDetail.recipientName ?: '—'}"></span></p>
+        <p>SĐT: <span th:text="${orderDetail.phone ?: '—'}"></span></p>
+        <p>Địa chỉ: <span th:text="${orderDetail.deliveryAddress ?: '—'}"></span></p>
+    </section>
+    <section>
+        <h3>CHI TIẾT ĐƠN HÀNG</h3>
+        <table>
+            <thead>
+            <tr>
+                <th scope="col">Sản phẩm</th>
+                <th scope="col">Phân loại</th>
+                <th scope="col">Đơn giá</th>
+                <th scope="col">Số lượng</th>
+                <th scope="col">Thành tiền</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${#lists.isEmpty(orderDetail.items)}">
+                <td colspan="5">Không có sản phẩm trong đơn.</td>
+            </tr>
+            <tr th:each="item : ${orderDetail.items}">
+                <td th:text="${item.productName}"></td>
+                <td th:text="${item.variantName}"></td>
+                <td class="money" th:text="${#numbers.formatDecimal(item.unitPrice, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></td>
+                <td th:text="${item.quantity}"></td>
+                <td class="money" th:text="${#numbers.formatDecimal(item.totalAmount, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></td>
+            </tr>
+            </tbody>
+        </table>
+        <p class="total">TỔNG CỘNG:
+            <span th:text="${#numbers.formatDecimal(orderDetail.totalAmount, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></span>
+        </p>
+    </section>
+</article>
+<div class="invoice-controls">
+    <button type="button" onclick="window.print()">IN HÓA ĐƠN</button>
+</div>
+</body>
+</html>

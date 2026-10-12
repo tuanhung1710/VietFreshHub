@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/product-inventory :: head(${productId==null?'Thêm sản phẩm':'Sửa sản phẩm'},'product')}"></head>
+<body>
+<header th:replace="~{fragments/product-inventory :: nav('product')}"></header>
+<main class="container vf-main narrow">
+<a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{/seller/products}">← Sản phẩm</a>
+<div class="mb-4"><h1 th:text="${productId==null?'Thêm sản phẩm':'Sửa thông tin sản phẩm'}"></h1><p class="text-body-secondary mb-0">Sản phẩm mới và thông tin sửa sẽ gửi Admin duyệt trước khi bán.</p></div>
+<form th:object="${form}" th:action="${productId==null}?@{/seller/products}:@{/seller/products/{id}/edit(id=${productId})}" method="post" class="form-stack">
+<div th:replace="~{fragments/product-inventory :: errors}"></div>
+<section class="card p-4 mb-4" id="product-basic">
+<h2 class="h5 mb-1">Thông tin cơ bản</h2><p class="small text-body-secondary mb-4">Ảnh và tên giúp khách hàng nhận biết sản phẩm của shop.</p>
+<div class="row g-3">
+<label class="col-12 form-label" for="name">Tên sản phẩm <span class="text-danger">*</span><input class="form-control mt-1" id="name" th:field="*{name}" maxlength="250" placeholder="Ví dụ: Xoài Cát Hòa Lộc" required><small class="field-error text-danger" th:errors="*{name}"></small></label>
+<label class="col-md-6 form-label" for="categoryId">Danh mục <span class="text-danger">*</span><select class="form-select mt-1" id="categoryId" th:field="*{categoryId}" required><option value="">Chọn danh mục</option><option th:each="c : ${categories}" th:value="${c.categoryId}" th:text="${c.parentCategoryId==null?c.name:'↳ '+c.name}"></option></select></label>
+<div class="col-md-6 image-picker">
+<label class="form-label w-100" for="imageUrl">Ảnh sản phẩm <span class="text-danger">*</span><input id="imageUrl" class="form-control mt-1 image-url product-image" th:field="*{imageUrl}" maxlength="1000" placeholder="Dán URL ảnh hoặc tải ảnh" required></label>
+<label class="form-label small text-body-secondary w-100">Tải JPG/PNG ≤ 1 MB<input class="form-control form-control-sm image-upload" type="file" accept="image/jpeg,image/png"></label>
+<img class="image-preview rounded border mt-2" th:src="*{imageUrl}" alt="Xem trước ảnh sản phẩm" th:style="*{imageUrl==null?'display:none':''}">
+</div>
+<label class="col-12 form-label" for="description">Mô tả sản phẩm<textarea class="form-control mt-1" id="description" th:field="*{description}" rows="4" maxlength="20000" placeholder="Xuất xứ, hương vị, độ chín và cách bảo quản…"></textarea></label>
+</div></section>
+<section class="card p-4 mb-4" id="product-sales" th:if="${productId==null}">
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2"><h2 class="h5 mb-0">Thông tin bán hàng</h2><button type="button" id="add-variant" class="btn btn-outline-success btn-sm">+ Thêm SKU</button></div>
+<p class="small text-body-secondary mb-4">Mỗi SKU có ảnh, giá, đơn vị và tồn riêng. Số lượng được tính theo đơn vị của từng SKU.</p>
+<div id="variant-rows" class="d-flex flex-column gap-3">
+<section class="variant-row border rounded-3 p-3 bg-body-tertiary" th:each="v,s : *{variants}" th:attr="data-index=${s.index}">
+<div class="d-flex justify-content-between align-items-center mb-3"><h3 class="h6 mb-0" th:text="${'SKU '+(s.index+1)}"></h3><button class="remove-variant btn btn-outline-danger btn-sm" type="button">Bỏ dòng</button></div>
+<div class="row g-3">
+<label class="col-md-6 form-label">Tên quy cách <span class="text-danger">*</span><input class="form-control mt-1" th:field="*{variants[__${s.index}__].variantName}" maxlength="200" placeholder="Ví dụ: Hộp 500g" required></label>
+<label class="col-md-6 form-label">Mã SKU (tự động)<input class="form-control mt-1 sku-input" th:field="*{variants[__${s.index}__].sku}" maxlength="100" placeholder="Tự sinh khi lưu" readonly><small class="d-block text-body-secondary mt-1">Mỗi phân loại có mã riêng, giữ nguyên khi sửa thông tin.</small></label>
+<div class="col-12 image-picker">
+<label class="form-label w-100">Ảnh SKU <span class="text-danger">*</span><input class="form-control mt-1 image-url" th:field="*{variants[__${s.index}__].thumbnailUrl}" maxlength="1000" required></label>
+<div class="d-flex flex-wrap align-items-end gap-2"><label class="form-label mb-0 flex-grow-1 small text-body-secondary">Tải JPG/PNG ≤ 1 MB<input class="form-control form-control-sm image-upload" type="file" accept="image/jpeg,image/png"></label><button type="button" class="copy-image btn btn-outline-secondary btn-sm">Dùng ảnh SP</button></div>
+<img class="image-preview rounded border mt-2" th:src="${v.thumbnailUrl}" alt="Xem trước ảnh SKU" th:style="${v.thumbnailUrl==null?'display:none':''}">
+</div>
+<label class="col-md-6 form-label">Giá bán (VND) <span class="text-danger">*</span><input class="form-control mt-1" type="number" min="10000" step="1" th:field="*{variants[__${s.index}__].price}" required></label>
+<label class="col-md-6 form-label">Giá gốc tham chiếu (VND)<input class="form-control mt-1" type="number" min="0" step="1" th:field="*{variants[__${s.index}__].compareAtPrice}"></label>
+<label class="col-md-4 form-label">Đơn vị <span class="text-danger">*</span><select class="form-select mt-1" th:field="*{variants[__${s.index}__].unit}"><option th:each="unit : ${units}" th:value="${unit}" th:text="${unit}"></option></select></label>
+<label class="col-md-4 form-label">Khối lượng / đơn vị (kg)<input class="form-control mt-1" type="number" min="0.001" step="0.001" th:field="*{variants[__${s.index}__].weight}"></label>
+<label class="col-md-4 form-label">Ngưỡng cảnh báo tồn<input class="form-control mt-1" type="number" min="0" step="1" th:field="*{variants[__${s.index}__].lowStockThreshold}" required></label>
+<div class="col-12"><label class="form-check-label d-flex align-items-center gap-2"><input class="form-check-input no-stock m-0" type="checkbox" th:field="*{variants[__${s.index}__].noInitialStock}"> Chưa nhập hàng</label></div>
+</div>
+<div class="initial-stock row g-3 mt-2 border-top pt-2">
+<div class="col-12"><h4 class="h6 mb-0">Lô nhập ban đầu</h4></div>
+<label class="col-md-6 form-label">Số lượng ban đầu <span class="text-danger">*</span><input class="form-control mt-1 initial-quantity" type="number" min="1" step="1" th:field="*{variants[__${s.index}__].initialQuantity}"></label>
+<label class="col-md-6 form-label">Mã lô (tự động)<input class="form-control mt-1" th:field="*{variants[__${s.index}__].batchCode}" maxlength="100" placeholder="Tự sinh khi lưu" readonly><small class="d-block text-body-secondary mt-1">Mã riêng cho mỗi lần nhập, giữ nguyên khi sửa lô.</small></label>
+<label class="col-md-4 form-label">Ngày nhập <span class="text-danger">*</span><input class="form-control mt-1" type="date" th:field="*{variants[__${s.index}__].receivedDate}" th:max="${today}"></label>
+<label class="col-md-4 form-label">Hạn dùng <span class="text-danger">*</span><input class="form-control mt-1" type="date" th:field="*{variants[__${s.index}__].expiryDate}" th:min="${today}"></label>
+<label class="col-md-4 form-label">Giá vốn / đơn vị (VND)<input class="form-control mt-1" type="number" min="0" step="0.01" th:field="*{variants[__${s.index}__].costPrice}"></label>
+</div></section></div></section>
+<section class="card p-4 mb-4" id="product-other">
+<h2 class="h5 mb-3">Thiết lập khác</h2>
+<div class="form-check mb-3"><input class="form-check-input" id="requiresPreparationCheck" type="checkbox" th:field="*{requiresPreparationCheck}"><label class="form-check-label" for="requiresPreparationCheck">Cần kiểm tra trước khi đóng gói</label><p class="small text-body-secondary mb-0">Phù hợp với trái cây cần xác nhận độ chín hoặc hộp quà cần kiểm tra thành phần.</p></div>
+<label class="form-label w-100" for="preparationNote">Hướng dẫn chuẩn bị<textarea class="form-control mt-1" id="preparationNote" th:field="*{preparationNote}" rows="2" maxlength="1000"></textarea></label>
+</section>
+<section class="card p-4 mb-4" th:if="${productId!=null}"><label class="form-label" for="reason">Lý do sửa <span class="text-danger">*</span><input class="form-control mt-1" id="reason" th:field="*{reason}" maxlength="900" required></label><p class="small text-body-secondary mb-0">Để sửa từng SKU hoặc nhập hàng, dùng trang chi tiết sản phẩm.</p></section>
+<div class="sticky-actions bg-white border rounded-3 p-3 d-flex flex-wrap align-items-center justify-content-between gap-3">
+<span class="small text-body-secondary">Sản phẩm chỉ mở bán sau khi được duyệt.</span><div class="d-flex gap-2"><a class="btn btn-outline-secondary" th:href="@{/seller/products}">Hủy</a><button type="submit" class="btn btn-success" th:text="${productId==null?'Tạo và gửi duyệt':'Lưu và gửi lại duyệt'}"></button></div>
+</div></form></main>
+<script defer th:src="@{/js/product/product.js}"></script>
+</body></html>
+

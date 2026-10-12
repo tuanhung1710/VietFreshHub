@@ -16,7 +16,7 @@
     <aside class="chat-sidebar">
         <header class="sidebar-header">
             <a class="back-link" th:if="${chatMode == 'customer'}" th:href="@{/customer/home}">← Trang chủ</a>
-            <a class="back-link" th:if="${chatMode == 'shop'}" th:href="@{/store_manager/shop}">← Quản lý cửa hàng</a>
+            <a class="back-link" th:if="${chatMode == 'shop'}" th:href="@{/seller}">← Quản lý cửa hàng</a>
             <h1>Tin nhắn</h1>
             <p th:if="${chatMode == 'customer'}">Trao đổi trực tiếp với cửa hàng</p>
             <p th:if="${chatMode == 'shop'}">Trao đổi với khách hàng của cửa hàng</p>
