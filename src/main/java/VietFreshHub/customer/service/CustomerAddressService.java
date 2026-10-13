@@ -49,8 +49,12 @@ public class CustomerAddressService {
         address.setRecipientName(request.getRecipientName().trim());
         address.setPhone(request.getPhone().trim());
         address.setProvince(request.getProvince().trim());
-        address.setDistrict(request.getDistrict().trim());
+        address.setProvinceId(request.getProvinceId());
+        String district = request.getDistrict();
+        address.setDistrict(district == null || district.isBlank() ? null : district.trim());
+        address.setDistrictId(null);
         address.setWard(request.getWard().trim());
+        address.setWardId(request.getWardId());
         address.setAddressLine(request.getAddressLine().trim());
         address.setIsDefault(request.isDefault());
         addressRepository.save(address);
@@ -97,8 +101,10 @@ public class CustomerAddressService {
         request.setRecipientName(address.getRecipientName());
         request.setPhone(address.getPhone());
         request.setProvince(address.getProvince());
+        request.setProvinceId(address.getProvinceId());
         request.setDistrict(address.getDistrict());
         request.setWard(address.getWard());
+        request.setWardId(address.getWardId());
         request.setAddressLine(address.getAddressLine());
         request.setDefault(Boolean.TRUE.equals(address.getIsDefault()));
         return request;

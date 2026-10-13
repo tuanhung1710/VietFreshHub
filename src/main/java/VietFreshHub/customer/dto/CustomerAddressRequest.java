@@ -1,6 +1,7 @@
 package VietFreshHub.customer.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public class CustomerAddressRequest {
@@ -19,13 +20,17 @@ public class CustomerAddressRequest {
     @Size(max = 100, message = "Tỉnh/thành phố tối đa 100 ký tự.")
     private String province;
 
-    @NotBlank(message = "Vui lòng nhập quận/huyện.")
-    @Size(max = 100, message = "Quận/huyện tối đa 100 ký tự.")
+    @NotNull(message = "Vui lòng chọn tỉnh/thành phố.")
+    private Integer provinceId;
+
     private String district;
 
     @NotBlank(message = "Vui lòng nhập phường/xã.")
     @Size(max = 100, message = "Phường/xã tối đa 100 ký tự.")
     private String ward;
+
+    @NotNull(message = "Vui lòng chọn phường/xã.")
+    private Integer wardId;
 
     @NotBlank(message = "Vui lòng nhập địa chỉ cụ thể.")
     @Size(max = 500, message = "Địa chỉ cụ thể tối đa 500 ký tự.")
@@ -65,6 +70,14 @@ public class CustomerAddressRequest {
         this.province = province;
     }
 
+    public Integer getProvinceId() {
+        return provinceId;
+    }
+
+    public void setProvinceId(Integer provinceId) {
+        this.provinceId = provinceId;
+    }
+
     public String getDistrict() {
         return district;
     }
@@ -79,6 +92,14 @@ public class CustomerAddressRequest {
 
     public void setWard(String ward) {
         this.ward = ward;
+    }
+
+    public Integer getWardId() {
+        return wardId;
+    }
+
+    public void setWardId(Integer wardId) {
+        this.wardId = wardId;
     }
 
     public String getAddressLine() {
