@@ -95,10 +95,26 @@
                         Mở giấy tờ
                     </button>
                     <span th:if="${document.fileUrl == null}" class="text-sm text-rose-700">Không tạo được liên kết. Kiểm tra Cloudinary cloud name.</span>
-                    <form th:if="${applicationDetail.status.name() == 'PENDING' or applicationDetail.status.name() == 'UNDER_REVIEW'}"
+                    <form th:if="${(applicationDetail.status.name() == 'PENDING'
+          or applicationDetail.status.name() == 'UNDER_REVIEW')
+          and document.verificationStatus.name() == 'PENDING'}"
+
                           method="post" th:action="@{/admin/seller-applications/{appId}/documents/{docId}/verify(appId=${applicationDetail.applicationId},docId=${document.documentId})}">
-                        <button th:disabled="${document.verificationStatus.name() == 'VERIFIED'}"
+                        <button th:disabled="${document.verificationStatus.name() != 'PENDING'}"
                                 class="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300">Đánh dấu hợp lệ</button>
+                    </form>
+                    <form th:if="${(applicationDetail.status.name() == 'PENDING'
+          or applicationDetail.status.name() == 'UNDER_REVIEW')
+          and document.verificationStatus.name() == 'PENDING'}"
+                          method="post"
+                          th:action="@{/admin/seller-applications/{appId}/documents/{docId}/reject(
+          appId=${applicationDetail.applicationId},
+          docId=${document.documentId}
+      )}">
+                        <button th:disabled="${document.verificationStatus.name() != 'PENDING'}"
+                                class="rounded-lg bg-rose-700 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-800">
+                            Từ chối giấy tờ
+                        </button>
                     </form>
                 </div>
             </article>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Thông tin cá nhân | VietFresh Hub')}"></head>
+<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col">
+<div th:replace="~{fragments/header :: header}"></div>
+
+<main class="w-full pt-20 bg-surface flex-1">
+    <section class="max-w-[960px] mx-auto px-margin py-space-lg">
+        <a th:href="@{/customer/home}" class="text-primary hover:underline">← Trang khách hàng</a>
+        <div class="mt-space-md mb-space-lg">
+            <p class="text-label-md text-primary font-semibold">TÀI KHOẢN CỦA TÔI</p>
+            <h1 class="mt-2 text-3xl font-bold">Thông tin cá nhân</h1>
+            <p class="mt-2 text-on-surface-variant">Cập nhật thông tin liên hệ để thuận tiện khi mua sắm.</p>
+        </div>
+
+        <div th:if="${successMessage}" class="mb-space-md rounded-lg bg-green-50 px-4 py-3 text-green-800" role="status" th:text="${successMessage}"></div>
+
+        <div class="mb-space-md grid gap-3 sm:grid-cols-2">
+            <a th:href="@{/customer/addresses}" class="rounded-xl border border-outline-variant bg-surface-container-lowest p-space-md font-semibold hover:border-primary">
+                Quản lý địa chỉ giao hàng →
+            </a>
+            <a th:href="@{/customer/password}" class="rounded-xl border border-outline-variant bg-surface-container-lowest p-space-md font-semibold hover:border-primary">
+                Đổi mật khẩu →
+            </a>
+        </div>
+
+        <form th:action="@{/customer/profile}" th:object="${profile}" method="post"
+              class="rounded-xl border border-outline-variant bg-surface-container-lowest p-space-lg shadow-sm">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+            <div class="mb-space-md">
+                <label for="email" class="mb-2 block font-semibold">Email</label>
+                <input id="email" type="email" th:value="${profile.email}" readonly
+                       class="w-full rounded-lg border border-outline-variant bg-surface-container-low px-4 py-3 text-on-surface-variant">
+                <p class="mt-1 text-sm text-on-surface-variant">Email hiện chưa thể thay đổi tại trang này.</p>
+            </div>
+
+            <div class="mb-space-md">
+                <label for="fullName" class="mb-2 block font-semibold">Họ và tên</label>
+                <input id="fullName" type="text" th:field="*{fullName}" maxlength="150" required
+                       autocomplete="name"
+                       class="w-full rounded-lg border border-outline-variant bg-surface px-4 py-3 focus:border-primary focus:outline-none">
+                <p th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}" class="mt-1 text-sm text-red-700"></p>
+            </div>
+
+            <div class="mb-space-lg">
+                <label for="phone" class="mb-2 block font-semibold">Số điện thoại</label>
+                <input id="phone" type="tel" th:field="*{phone}" maxlength="30" autocomplete="tel"
+                       class="w-full rounded-lg border border-outline-variant bg-surface px-4 py-3 focus:border-primary focus:outline-none">
+                <p th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}" class="mt-1 text-sm text-red-700"></p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+                <button type="submit" class="rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary hover:opacity-90">
+                    Lưu thay đổi
+                </button>
+                <a th:href="@{/customer/home}" class="rounded-lg border border-outline-variant px-5 py-3 font-semibold hover:bg-surface-container">
+                    Hủy
+                </a>
+            </div>
+        </form>
+    </section>
+</main>
+
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

@@ -1,9 +1,23 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/storefront :: head('Trái cây tươi')}"></head><body>
-<header th:replace="~{fragments/storefront :: header}"></header>
-<main class="container page marketplace-page">
-    <div th:replace="~{fragments/storefront :: messages}"></div>
+<head th:replace="~{fragments/head :: head('Trang chủ | VietFresh Hub')}"></head>
+<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col">
+<div th:replace="~{fragments/header :: header}"></div>
+<main class="w-full pt-24 bg-surface flex-1">
+    <style>@import url('/css/storefront.css');</style>
+    <section class="max-w-[1280px] mx-auto px-margin py-space-md" aria-label="Tiện ích khách hàng">
+        <div class="flex flex-wrap items-center gap-3">
+            <a th:href="@{/customer/chat}" class="rounded-lg bg-green-700 px-5 py-3 font-semibold text-white">Tin nhắn với cửa hàng</a>
+            <a th:href="@{/cart}" class="rounded-lg bg-green-600 px-5 py-3 font-semibold text-white">Giỏ hàng</a>
+            <a th:href="@{/customer/orders}" class="rounded-lg bg-green-600 px-5 py-3 font-semibold text-white">Đơn hàng của tôi</a>
+            <form th:action="@{/logout}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button type="submit" class="rounded-lg border px-5 py-3 font-semibold">Đăng xuất</button>
+            </form>
+        </div>
+    </section>
+    <div class="container page marketplace-page">
+        <div th:replace="~{fragments/storefront :: messages}"></div>
     <section th:if="${#strings.isEmpty(keyword)}" class="market-hero" aria-label="Khám phá trái cây">
         <div class="hero-copy"><span class="hero-kicker">VIETFRESH HUB · TRÁI CÂY THEO MÙA</span>
             <h1>Trái cây tươi<br>cho mỗi ngày.</h1>
@@ -51,4 +65,8 @@
             <a th:if="${productPage.hasNext()}" class="button secondary" th:href="@{/home(page=${productPage.number + 2},keyword=${keyword})}">Trang tiếp →</a>
         </nav>
     </section>
-</main><footer th:replace="~{fragments/storefront :: footer}"></footer></body></html>
+    </div>
+</main>
+<div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

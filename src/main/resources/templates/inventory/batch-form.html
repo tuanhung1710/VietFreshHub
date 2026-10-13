@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/product-inventory :: head('Xử lý lô hàng','inventory')}"></head>
+<body><header th:replace="~{fragments/product-inventory :: nav('inventory')}"></header>
+<main class="container vf-main narrow">
+<a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{/seller/inventory}">← Kho hàng</a>
+<h1 th:text="${action=='edit'?'Sửa thông tin lô':action=='adjust'?'Điều chỉnh tồn':action=='dispose'?'Hủy hàng hết hạn':'Giá cận hạn'}"></h1>
+<p class="text-body-secondary mb-4" th:text="${row.batch.batchCode+' · Trong kho '+row.batch.quantityOnHand+' · Giữ đơn '+row.batch.reservedQuantity+' · Bán được '+row.available}"></p>
+<form class="card p-4 form-stack" th:object="${form}" th:action="@{/seller/inventory/batches/{id}/{action}(id=${batchId},action=${action})}" method="post" th:attr="data-confirm=${action=='dispose'?'Xác nhận đã hủy thực tế lượng hàng hết hạn này?':''}">
+<div th:replace="~{fragments/product-inventory :: errors}"></div>
+<div class="row g-3" th:if="${action=='edit'}">
+<input type="hidden" name="quantity" value="1">
+<label class="col-md-6 form-label" for="batchCode">Mã lô<input class="form-control mt-1" id="batchCode" th:field="*{batchCode}" maxlength="100" readonly><small class="d-block text-body-secondary mt-1">Mã lô được giữ nguyên khi sửa thông tin.</small></label>
+<label class="col-md-6 form-label" for="costPrice">Giá vốn (VND/đơn vị)<input class="form-control mt-1" id="costPrice" type="number" min="0" step="0.01" th:field="*{costPrice}"></label>
+<label class="col-md-6 form-label" for="receivedDate">Ngày nhập <span class="text-danger">*</span><input class="form-control mt-1" id="receivedDate" type="date" th:field="*{receivedDate}" th:max="${today}" required></label>
+<label class="col-md-6 form-label" for="expiryDate">Hạn dùng <span class="text-danger">*</span><input class="form-control mt-1" id="expiryDate" type="date" th:field="*{expiryDate}" required></label>
+<p class="col-12 small text-body-secondary mb-0">Thao tác này giữ nguyên số lượng. Lô hết hạn không được sửa hạn dùng.</p>
+</div>
+<label class="form-label" th:if="${action=='adjust'||action=='dispose'}" for="quantity"><span th:text="${action=='adjust'?'Lượng thay đổi (+ tăng / − giảm)':'Số lượng đã hủy'}"></span><span class="text-danger"> *</span><input class="form-control mt-1" id="quantity" type="number" step="1" th:min="${action=='dispose'?1:null}" th:field="*{quantity}" required></label>
+<p class="alert alert-warning small mb-0" th:if="${action=='dispose'}">Chỉ hủy lượng chưa giữ cho đơn. Phần giữ đơn phải được người phụ trách đơn xử lý trước.</p>
+<div class="row g-3" th:if="${action=='markdown'}">
+<label class="col-md-6 form-label" for="price">Giá cận hạn (VND/đơn vị) <span class="text-danger">*</span><input class="form-control mt-1" id="price" type="number" min="10000" step="1" th:field="*{price}" required></label>
+<label class="col-md-6 form-label" for="endDate">Kết thúc ưu đãi <span class="text-danger">*</span><input class="form-control mt-1" id="endDate" type="date" th:field="*{endDate}" th:min="${today}" th:max="${row.batch.expiryDate}" required></label>
+<p class="col-12 small text-body-secondary mb-0">Giá lô thấp hơn giá SKU, áp dụng khi còn hàng bán được và trong 7 ngày trước hạn dùng. Giá gốc SKU được giữ nguyên.</p>
+</div>
+<label class="form-label mt-3" for="reason">Lý do <span class="text-danger">*</span><input class="form-control mt-1" id="reason" th:field="*{reason}" maxlength="900" required></label>
+<div class="d-flex gap-2 mt-3"><button type="submit" class="btn btn-success">Lưu thao tác</button><a class="btn btn-outline-secondary" th:href="@{/seller/inventory}">Hủy</a></div>
+</form></main>
+<script defer th:src="@{/js/inventory/inventory.js}"></script>
+</body></html>
+
