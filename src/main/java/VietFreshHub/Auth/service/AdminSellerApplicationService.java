@@ -305,7 +305,7 @@ public class AdminSellerApplicationService {
     }
 
     private String format(LocalDateTime dateTime) {
-        return dateTime == null ? "—" : dateTime.format(DATE_FORMAT);
+        return dateTime == null ? "—" : dateTime.atOffset(ZoneOffset.UTC).atZoneSameInstant(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).format(DATE_FORMAT);
     }
 
     private String statusLabel(SellerApplicationStatus status) {

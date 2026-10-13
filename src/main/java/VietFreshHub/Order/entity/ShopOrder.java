@@ -26,5 +26,6 @@ public class ShopOrder {
     @Column(name="ready_at") private LocalDateTime readyAt;
     @Column(name="completed_at") private LocalDateTime completedAt;
     @Column(name="cancelled_at") private LocalDateTime cancelledAt;
+    @Column(name="shipping_distance_meters", precision=12, scale=1) private BigDecimal shippingDistanceMeters;
     @OneToMany(mappedBy="shopOrder") private List<OrderItem> items=new ArrayList<>();
 }

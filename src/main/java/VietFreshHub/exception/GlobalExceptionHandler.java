@@ -1,94 +1,51 @@
 package VietFreshHub.exception;
 
 import VietFreshHub.Auth.exception.RegistrationException;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-import java.time.LocalDateTime;
-
-@Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
-
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class ErrorResponse {
-        private int status;
-        private String error;
-        private String message;
-        private LocalDateTime timestamp;
-    }
-
     @ExceptionHandler(RegistrationException.class)
-    public String handleRegistrationException(
-            RegistrationException ex,
-            RedirectAttributes redirectAttributes) {
-        redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+    public String handleRegistrationException(RegistrationException ex, RedirectAttributes flash) {
+        flash.addFlashAttribute("errorMessage", ex.getMessage());
         return "redirect:/register";
     }
-
-    @ExceptionHandler(OutOfStockException.class)
-    public ResponseEntity<ErrorResponse> handleOutOfStockException(OutOfStockException ex) {
-        log.warn("Stock validation failed: {}", ex.getMessage());
-        ErrorResponse response = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "INSUFFICIENT_STOCK",
-                ex.getMessage(),
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-    }
-
     @ExceptionHandler(ResourceNotFoundException.class)
-    public Object handleResourceNotFoundException(ResourceNotFoundException ex, jakarta.servlet.http.HttpServletRequest request) {
-        log.warn("Resource not found: {}", ex.getMessage());
-        if (!request.getRequestURI().startsWith(request.getContextPath() + "/api/")) {
-            org.springframework.web.servlet.ModelAndView view = new org.springframework.web.servlet.ModelAndView("error/not-found");
-            view.setStatus(HttpStatus.NOT_FOUND);
-            view.addObject("message", ex.getMessage());
-            return view;
-        }
-        ErrorResponse response = new ErrorResponse(
-                HttpStatus.NOT_FOUND.value(),
-                "RESOURCE_NOT_FOUND",
-                ex.getMessage(),
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    public ModelAndView handleResourceNotFoundException(ResourceNotFoundException ex) {
+        return errorView("error/not-found", HttpStatus.NOT_FOUND, ex.getMessage());
     }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidInput(IllegalArgumentException ex) {
-        return ResponseEntity.badRequest().body(new ErrorResponse(400, "INVALID_INPUT", ex.getMessage(), LocalDateTime.now()));
+    @ExceptionHandler({OutOfStockException.class, IllegalArgumentException.class})
+    public ModelAndView handleInvalidInput(RuntimeException ex) {
+        return errorView("error/bad-request", HttpStatus.BAD_REQUEST, ex.getMessage());
     }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
-        String errorMessage = ex.getBindingResult().getAllErrors().isEmpty()
-                ? "Validation failed"
-                : ex.getBindingResult().getAllErrors().get(0).getDefaultMessage();
-        
-        ErrorResponse response = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "INVALID_INPUT",
-                errorMessage,
-                LocalDateTime.now()
-        );
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    @ExceptionHandler(BindException.class)
+    public ModelAndView handleValidationException(BindException ex) {
+        String message = ex.getBindingResult().getAllErrors().isEmpty()
+                ? "Thông tin không hợp lệ. Vui lòng kiểm tra lại."
+                : ex.getBindingResult().getAllErrors().getFirst().getDefaultMessage();
+        return errorView("error/bad-request", HttpStatus.BAD_REQUEST, message);
     }
-
+    @ExceptionHandler({MethodArgumentTypeMismatchException.class, MissingServletRequestParameterException.class})
+    public ModelAndView handleMalformedRequest(Exception ex) {
+        return errorView("error/bad-request", HttpStatus.BAD_REQUEST,
+                "Thông tin yêu cầu không hợp lệ hoặc còn thiếu. Vui lòng kiểm tra lại.");
+    }
     @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<Void> handleNoResource(NoResourceFoundException ex) {
-        return ResponseEntity.notFound().build();
+    public ModelAndView handleNoResource(NoResourceFoundException ex) {
+        return errorView("error/not-found", HttpStatus.NOT_FOUND, "Không tìm thấy trang bạn yêu cầu.");
+    }
+    private ModelAndView errorView(String template, HttpStatus status, String message) {
+        ModelAndView view = new ModelAndView(template);
+        view.setStatus(status);
+        view.addObject("message", message);
+        return view;
     }
 }

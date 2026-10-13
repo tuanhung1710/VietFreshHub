@@ -1,12 +1,10 @@
 package VietFreshHub.Auth.entity;
 
-
 import VietFreshHub.Auth.entity.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDateTime;
@@ -63,7 +61,12 @@ public class SellerApplicationStatusHistory {
     @Column(name = "note", length = 1000)
     private String note;
 
-    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @PrePersist
+    void initializeUtcTimestamps() {
+        var now = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+        if (createdAt == null) createdAt = now;
+    }
 }

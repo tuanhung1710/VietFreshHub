@@ -92,7 +92,7 @@ public class CartServiceImpl implements CartService {
                 .previousPrice(item.getUnitPriceSnapshot()).priceChanged(variant.getPrice().compareTo(item.getUnitPriceSnapshot()) != 0)
                 .itemSubtotal(variant.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .availableStock(stock).status(variant.getStatus()).purchasable(purchasable).quantityEditable(eligible && stock > 0).availabilityMessage(message)
-                .imageUrl(variant.getProduct().getImageUrl()).productName(variant.getProduct().getName())
+                .imageUrl(variant.getDisplayImageUrl()).productName(variant.getProduct().getName())
                 .shopId(variant.getProduct().getShop().getShopId()).shopName(variant.getProduct().getShop().getShopName()).build();
     }
 

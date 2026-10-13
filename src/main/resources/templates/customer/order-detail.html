@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/storefront :: head('Đơn hàng của bạn')}"></head><body>
+<head th:replace="~{fragments/order-pages :: head('Đơn hàng của bạn')}"></head><body>
 <header th:replace="~{fragments/storefront :: header}"></header>
-<main class="container page">
+<main class="container page order-detail-page">
     <div th:replace="~{fragments/storefront :: messages}"></div>
     <p><a th:href="@{/customer/orders}">← Đơn hàng của tôi</a></p>
     <section th:if="${confirmation}" class="order-success" role="status"><span class="success-check" aria-hidden="true">✓</span><div><h1>Đặt hàng thành công</h1><p>Đơn hàng đã được ghi nhận. Xem trạng thái của từng cửa hàng bên dưới.</p></div></section>
@@ -11,24 +11,42 @@
     <div class="checkout-layout">
         <div class="checkout-sections">
             <section class="panel"><h2>Địa chỉ nhận hàng</h2><strong th:text="${order.recipientName}"></strong><p class="muted" th:text="${order.phone}"></p><p class="muted" th:text="${order.addressText}"></p></section>
-            <section class="panel"><h2>Sản phẩm đã đặt</h2>
+            <section class="panel"><h2>Sản phẩm đã đặt</h2><p th:if="${#lists.isEmpty(order.shops)}" class="muted">Chưa có thông tin đơn cửa hàng.</p>
                 <section th:each="shop : ${order.shops}" class="checkout-shop">
                     <div class="order-shop-heading"><h3 th:text="${shop.shopName}"></h3><span class="order-state" th:text="${shop.statusLabel}"></span></div>
-                    <article th:each="item : ${shop.items}" class="checkout-line"><img th:src="${item.imageUrl}" th:alt="${item.productName}" width="64" height="64">
+                    <p class="shop-order-reference muted" th:text="'Đơn cửa hàng #' + ${shop.shopOrderId}"></p>
+                    <article th:each="item : ${shop.items}" class="checkout-line"><img th:if="${item.imageUrl != null}" th:src="${item.imageUrl}" th:alt="${item.productName}" width="64" height="64"><span th:if="${item.imageUrl == null}" class="order-item-placeholder">Không có ảnh</span>
                         <div><strong th:text="${item.productName}"></strong><p class="muted" th:text="${item.variantName} + ' · Số lượng ' + ${item.quantity}"></p>
-                            <span class="muted" th:text="${#numbers.formatInteger(item.unitPrice,0,'POINT')} + ' ₫ / sản phẩm'"></span></div>
-                        <span class="price" th:text="${#numbers.formatInteger(item.totalAmount,0,'POINT')} + ' ₫'"></span>
+                            <span class="order-item-sku" th:text="'SKU: ' + ${item.sku}"></span>
+                            <span class="muted" th:text="${#numbers.formatDecimal(item.unitPrice,1,'POINT',item.unitPrice.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')}  + ' ₫ / sản phẩm'"></span><p th:if="${item.discountAmount.signum() > 0}" class="order-item-discount" th:text="'Giảm giá dòng hàng: ' + ${#numbers.formatDecimal(item.discountAmount,1,'POINT',item.discountAmount.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></p></div>
+                        <span class="price" th:text="${#numbers.formatDecimal(item.totalAmount,1,'POINT',item.totalAmount.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></span>
                     </article>
-                    <p class="shop-shipping muted">Phí giao từ cửa hàng: <strong th:text="${#numbers.formatInteger(shop.shippingFee,0,'POINT')} + ' ₫'"></strong></p>
+                    <div class="order-shop-totals">
+                        <div class="summary-line"><span>Tiền sản phẩm của cửa hàng</span><strong th:text="${#numbers.formatDecimal(shop.subtotal,1,'POINT',shop.subtotal.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></strong></div>
+                        <div th:if="${shop.discountTotal.signum() > 0}" class="summary-line"><span>Giảm giá của cửa hàng</span><strong th:text="'− ' + ${#numbers.formatDecimal(shop.discountTotal,1,'POINT',shop.discountTotal.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></strong></div>
+                        <div class="summary-line"><span>Phí giao từ cửa hàng</span><strong th:text="${#numbers.formatDecimal(shop.shippingFee,1,'POINT',shop.shippingFee.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></strong></div>
+                        <div class="summary-line order-shop-total"><span>Tổng đơn cửa hàng</span><strong th:text="${#numbers.formatDecimal(shop.totalAmount,1,'POINT',shop.totalAmount.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></strong></div>
+                    </div>
                 </section>
             </section>
         </div>
-        <aside class="panel summary"><h2>Thông tin thanh toán</h2><p><strong th:text="${actions != null ? actions.paymentMethodLabel : 'Thanh toán khi nhận hàng (COD)'}"></strong></p><p class="order-state" th:text="${order.statusLabel == 'Đã hủy' ? 'Đơn đã hủy' : order.paymentStatusLabel}"></p>
-            <div class="summary-line"><span>Tiền sản phẩm</span><strong th:text="${#numbers.formatInteger(order.subtotal,0,'POINT')} + ' ₫'"></strong></div>
-            <div th:if="${order.discountTotal.signum() > 0}" class="summary-line"><span>Giảm giá</span><strong th:text="${#numbers.formatInteger(order.discountTotal,0,'POINT')} + ' ₫'"></strong></div>
-            <div class="summary-line"><span>Phí giao hàng</span><strong th:text="${#numbers.formatInteger(order.shippingFee,0,'POINT')} + ' ₫'"></strong></div>
-            <div class="summary-line summary-total"><span>Tổng thanh toán</span><strong class="price" th:text="${#numbers.formatInteger(order.grandTotal,0,'POINT')} + ' ₫'"></strong></div>
+        <aside class="panel summary"><h2>Thông tin thanh toán</h2><p class="muted">Trạng thái thanh toán của đơn</p><p class="order-state" th:text="${order.paymentStatusLabel}"></p>
+            <div class="summary-line"><span>Tiền sản phẩm</span><strong th:text="${#numbers.formatDecimal(order.subtotal,1,'POINT',order.subtotal.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></strong></div>
+            <div th:if="${order.discountTotal.signum() > 0}" class="summary-line"><span>Giảm giá</span><strong th:text="'− ' + ${#numbers.formatDecimal(order.discountTotal,1,'POINT',order.discountTotal.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></strong></div>
+            <div class="summary-line"><span>Phí giao hàng</span><strong th:text="${#numbers.formatDecimal(order.shippingFee,1,'POINT',order.shippingFee.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></strong></div>
+            <div class="summary-line summary-total"><span>Tổng thanh toán</span><strong class="price" th:text="${#numbers.formatDecimal(order.grandTotal,1,'POINT',order.grandTotal.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></strong></div>
             <p class="muted" th:text="'Đặt lúc ' + ${#temporals.format(order.placedAt,'HH:mm dd/MM/yyyy')}"></p>
+            <section class="payment-records" aria-label="Các bản ghi thanh toán">
+                <h3>Giao dịch thanh toán</h3>
+                <p th:if="${#lists.isEmpty(order.payments)}" class="muted">Chưa có bản ghi thanh toán.</p>
+                <article th:each="payment : ${order.payments}" class="payment-record">
+                    <strong th:text="${payment.methodName}"></strong>
+                    <p class="muted" th:text="'Giao dịch #' + ${payment.paymentId} + ' · ' + ${payment.methodCode}"></p>
+                    <p class="payment-state" th:attr="data-state=${payment.status}" th:text="${payment.statusLabel}"></p>
+                    <p th:text="'Số tiền: ' + ${#numbers.formatDecimal(payment.amount,1,'POINT',payment.amount.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></p>
+                    <p th:if="${payment.paidAt != null}" class="muted" th:text="'Ghi nhận thanh toán lúc ' + ${#temporals.format(payment.paidAt,'HH:mm dd/MM/yyyy')}"></p>
+                </article>
+            </section>
             <a th:if="${confirmation}" class="button full" th:href="@{/customer/orders/{id}(id=${order.orderId})}">Xem chi tiết đơn</a>
             <a class="button secondary full" th:href="@{/home}">Tiếp tục mua sắm</a>
             <a class="button secondary full" th:href="@{/customer/orders/{id}/tracking(id=${order.orderId})}">Theo dõi đơn hàng</a>

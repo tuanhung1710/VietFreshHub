@@ -1,7 +1,5 @@
 package VietFreshHub.Product.service.impl;
 import VietFreshHub.Product.service.CatalogService;
-import VietFreshHub.Auth.entity.SellerApplicationStatus;
-import VietFreshHub.Auth.repository.SellerApplicationRepository;
 import VietFreshHub.Inventory.repository.InventoryBatchRepository;
 import VietFreshHub.Product.dto.CatalogProductResponse;
 import VietFreshHub.Product.entity.*;
@@ -16,13 +14,15 @@ import java.util.List;
 public class CatalogServiceImpl implements CatalogService {
     private final ProductRepository products;
     private final ProductVariantRepository variants;
-    private final SellerApplicationRepository applications;
     private final InventoryBatchRepository inventory;
     public boolean isVisible(Product p) {
-        return p != null && "ACTIVE".equals(p.getStatus()) && "APPROVED".equals(p.getApprovalStatus())
-                && p.getShop() != null && "ACTIVE".equals(p.getShop().getStatus()) && p.getShop().getApplicationId() != null
-                && applications.findById(p.getShop().getApplicationId()).map(a -> a.getStatus() == SellerApplicationStatus.APPROVED).orElse(false);
+        if (p == null || !"ACTIVE".equals(p.getStatus()) || !"APPROVED".equals(p.getApprovalStatus())
+                || p.getShop() == null || !"ACTIVE".equals(p.getShop().getStatus())) return false;
+        var activeIds = VietFreshHub.Product.service.CatalogCategoryPolicy.activeIds(products.findCatalogCategories());
+        return p.getCategories().stream().anyMatch(c -> activeIds.contains(c.getCategoryId()))
+                && p.getVariants().stream().anyMatch(v -> "ACTIVE".equals(v.getStatus()) || "OUT_OF_STOCK".equals(v.getStatus()));
     }
+
     public boolean isPurchasable(ProductVariant v) {
         return v != null && "ACTIVE".equals(v.getStatus()) && isVisible(v.getProduct())
                 && "OPEN".equals(v.getProduct().getShop().getAvailabilityStatus());
@@ -56,7 +56,7 @@ public class CatalogServiceImpl implements CatalogService {
         return toResponse(p, variantId, stocks);
     }
     private CatalogProductResponse toResponse(Product p, Long selectedId, java.util.Map<Long, Integer> stocks) {
-        var options = p.getVariants().stream().filter(v -> !"DELETED".equals(v.getStatus())).map(v -> {
+        var options = p.getVariants().stream().filter(v -> "ACTIVE".equals(v.getStatus()) || "OUT_OF_STOCK".equals(v.getStatus())).map(v -> {
             int available = stocks.getOrDefault(v.getVariantId(), 0);
             return CatalogProductResponse.VariantResponse.builder().variantId(v.getVariantId()).variantName(v.getVariantName())
                     .sku(v.getSku()).price(v.getPrice()).status(v.getStatus()).availableStock(available)
@@ -66,7 +66,8 @@ public class CatalogServiceImpl implements CatalogService {
                 .findFirst().orElse(options.isEmpty() ? null : options.getFirst())
                 : options.stream().filter(v -> selectedId.equals(v.getVariantId())).findFirst().orElseThrow(this::notFound);
         return CatalogProductResponse.builder().productId(p.getProductId()).name(p.getName()).slug(p.getSlug())
-                .description(p.getDescription()).imageUrl(p.getImageUrl()).shopName(p.getShop().getShopName())
+                .description(p.getDescription()).imageUrl(selected == null ? p.getImageUrl() : p.getVariants().stream()
+                        .filter(v -> v.getVariantId().equals(selected.getVariantId())).findFirst().map(ProductVariant::getDisplayImageUrl).orElse(p.getImageUrl())).shopName(p.getShop().getShopName())
                 .variants(options).selectedVariant(selected).build();
     }
     private ResourceNotFoundException notFound() { return new ResourceNotFoundException("Sản phẩm không còn được bán hoặc đường dẫn không hợp lệ."); }

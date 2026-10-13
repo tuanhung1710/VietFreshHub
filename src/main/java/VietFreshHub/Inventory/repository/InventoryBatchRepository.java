@@ -16,7 +16,7 @@ public interface InventoryBatchRepository extends JpaRepository<InventoryBatch, 
      */
     @Query("SELECT COALESCE(SUM(CAST(b.quantityOnHand AS long) - b.reservedQuantity), 0) " +
            "FROM InventoryBatch b WHERE b.variant.variantId = :variantId " +
-           "AND b.expiryDate IS NOT NULL AND b.expiryDate >= :today")
+           "AND b.status = 'ACTIVE' AND (b.expiryDate IS NULL OR b.expiryDate >= :today)")
     Long findAvailableStock(@Param("variantId") Long variantId, @Param("today") java.time.LocalDate today);
 
     default Integer getAvailableStockByVariantId(Long variantId) {
@@ -25,7 +25,7 @@ public interface InventoryBatchRepository extends JpaRepository<InventoryBatch, 
     }
 
     @Query("SELECT b.variant.variantId, SUM(CAST(b.quantityOnHand AS long) - b.reservedQuantity) FROM InventoryBatch b "
-            + "WHERE b.variant.variantId IN :variantIds AND b.expiryDate IS NOT NULL AND b.expiryDate >= :today "
+            + "WHERE b.variant.variantId IN :variantIds AND b.status = 'ACTIVE' AND (b.expiryDate IS NULL OR b.expiryDate >= :today) "
             + "GROUP BY b.variant.variantId")
     java.util.List<Object[]> findAvailableStockForVariants(@Param("variantIds") java.util.List<Long> variantIds,
                                                           @Param("today") java.time.LocalDate today);

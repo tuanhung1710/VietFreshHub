@@ -1,6 +1,5 @@
 package VietFreshHub.Order.controller;
 import VietFreshHub.Auth.service.CurrentCustomerService;
-import VietFreshHub.Cart.service.CartService;
 import VietFreshHub.Order.service.CustomerOrderQueryService;
 import VietFreshHub.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +14,6 @@ import org.springframework.http.HttpStatus;
 public class CustomerOrderDetailsController {
     private final CurrentCustomerService currentCustomer;
     private final CustomerOrderQueryService orders;
-    private final CartService carts;
     private final VietFreshHub.Order.service.CustomerOrderService lifecycle;
     @GetMapping("/{orderId}")
     public String detail(@PathVariable Long orderId,Authentication authentication,Model model) {
@@ -28,7 +26,7 @@ public class CustomerOrderDetailsController {
     private String render(Long orderId,Authentication authentication,Model model,boolean confirmation) {
         Long customerId=currentCustomer.requireCustomerId(authentication);
         model.addAttribute("order",orders.getDetails(customerId,orderId));
-        model.addAttribute("cart",carts.getActiveCart(customerId));
+        model.addAttribute("cartBadgeTotal",orders.getCartBadgeTotal(customerId));
         model.addAttribute("confirmation",confirmation);
         model.addAttribute("actions",lifecycle.actions(customerId,orderId));
         return "customer/order-detail";

@@ -6,8 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -39,11 +37,21 @@ public class CartItem {
     @Column(name = "unit_price_snapshot", nullable = false, precision = 18, scale = 2)
     private BigDecimal unitPriceSnapshot;
 
-    @CreationTimestamp
     @Column(name = "added_at", nullable = false, updatable = false)
     private LocalDateTime addedAt;
 
-    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @PrePersist
+    void initializeUtcTimestamps() {
+        var now = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+        if (addedAt == null) addedAt = now;
+        if (updatedAt == null) updatedAt = now;
+    }
+
+    @PreUpdate
+    void updateUtcTimestamps() {
+        updatedAt = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+    }
 }

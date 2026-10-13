@@ -17,6 +17,8 @@ public class OrderDeliveryView {
     @Column(name="picked_up_at") private LocalDateTime pickedUpAt;
     @Column(name="delivered_at") private LocalDateTime deliveredAt;
     @Nationalized @Column(name="failure_reason",length=1000) private String failureReason;
+    @Column(name="redelivery_requested_at") private LocalDateTime redeliveryRequestedAt;
+    @Column(name="redelivery_scheduled_at") private LocalDateTime redeliveryScheduledAt;
     @Column(name="created_at",nullable=false) private LocalDateTime createdAt;
     @Column(name="updated_at",nullable=false) private LocalDateTime updatedAt;
 }

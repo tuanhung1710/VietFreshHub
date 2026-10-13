@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDateTime;
@@ -42,7 +41,18 @@ public class PasswordResetToken {
     @Column(name = "used_at")
     private LocalDateTime usedAt;
 
-    @CreationTimestamp
+    @Column(name = "token_type", nullable = false, length = 30)
+    private String tokenType = "PASSWORD_RESET";
+
+    @Column(name = "attempt_count", nullable = false)
+    private Integer attemptCount = 0;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @PrePersist
+    void initializeUtcTimestamps() {
+        var now = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+        if (createdAt == null) createdAt = now;
+    }
 }

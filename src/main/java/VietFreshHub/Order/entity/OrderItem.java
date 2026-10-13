@@ -20,5 +20,11 @@ public class OrderItem {
     @Column(name="unit_price", nullable=false, precision=18, scale=2) private BigDecimal unitPrice;
     @Column(nullable=false) private Integer quantity;
     @Column(name="discount_amount", nullable=false, precision=18, scale=2) private BigDecimal discountAmount=BigDecimal.ZERO;
+    // SQL Server trigger owns preparation snapshots; never overwrite them on updates.
+    @org.hibernate.annotations.ColumnDefault("0")
+    @Column(name="requires_preparation_check_snapshot", nullable=false, insertable=false, updatable=false)
+    private boolean requiresPreparationCheckSnapshot;
+    @Nationalized @Column(name="preparation_note_snapshot", length=1000, insertable=false, updatable=false)
+    private String preparationNoteSnapshot;
     @Column(name="total_amount", nullable=false, precision=18, scale=2) private BigDecimal totalAmount;
 }

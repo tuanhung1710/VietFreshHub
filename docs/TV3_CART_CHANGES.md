@@ -1,5 +1,8 @@
 # Hoàn thiện nền tảng giỏ hàng TV3
 
+> Cập nhật 13/10/2026: đối chiếu schema nhóm mới xem [DATABASE_ALIGNMENT_2026-10-13.md](DATABASE_ALIGNMENT_2026-10-13.md). Các quy ước cũ về batch_code, loại lô NULL expiry và suy luận allocation chỉ từ journal bên dưới là ghi nhận lịch sử; code hiện dùng status lô và stock_allocations theo schema mới.
+
+
 Ngày: 08/10/2026. Giữ Java 21 và Spring Boot 3.4.1 theo pom.xml hiện tại. Không chạy DDL hoặc ghi vào SQL Server trong quá trình kiểm chứng.
 
 ## Hành vi đã thay đổi

@@ -51,6 +51,10 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
+        if (users.existsByEmailIgnoreCase("admin@demo.vietfresh.invalid")) {
+            log.info("Group SQL seed detected; preserving it without adding Java demo fixtures.");
+            return;
+        }
         if(paymentMethods.findByMethodCode("COD").isEmpty()) {
             var cod=new VietFreshHub.Payment.entity.PaymentMethod(); cod.setMethodCode("COD");
             cod.setName("Thanh toán khi nhận hàng (COD)"); paymentMethods.save(cod);
@@ -167,23 +171,32 @@ public class DataInitializer implements CommandLineRunner {
         Shop shop = new Shop(); shop.setShopName(name); shop.setApplicationId(application.getApplicationId());
         shop.setDescription("Cửa hàng giả định dùng để kiểm thử VietFresh Hub."); shop.setStatus("ACTIVE");
         shop.setAvailabilityStatus(availability);
+        if (!approved) shop.setStatus("INACTIVE");
         return shops.save(shop);
     }
     private Product createProduct(Shop shop, String name, String slug, String description, User admin) {
-        Product product = new Product(); product.setShop(shop); product.setName(name); product.setSlug(slug);
-        product.setDescription(description); product.setStatus("ACTIVE"); product.setApprovalStatus("APPROVED");
+        Product product = new Product(); product.setStatus("ACTIVE"); product.setShop(shop); product.setName(name); product.setSlug(slug);
+        product.setDescription(description); product.setStatus("INACTIVE"); product.setApprovalStatus("PENDING");
         product.setApprovedBy(admin.getUserId()); product.setApprovedAt(LocalDateTime.now(ZoneOffset.UTC).withNano(0));
         demoCategories.entrySet().stream().filter(entry -> slug.contains(entry.getKey())).findFirst()
                 .ifPresent(entry -> product.getCategories().add(entry.getValue()));
         return products.save(product);
     }
     private ProductVariant createVariant(Product product, String sku, String name, BigDecimal price, String status) {
-        ProductVariant variant = new ProductVariant(); variant.setProduct(product); variant.setSku(sku);
+        ProductVariant variant = new ProductVariant(); variant.setUnit("kg"); variant.setThumbnailUrl("/images/buoi-da-xanh.jpg"); variant.setProduct(product); variant.setSku(sku);
         variant.setVariantName(name); variant.setPrice(price); variant.setStatus(status); variant.setLowStockThreshold(5);
-        return variants.save(variant);
+        variant.setThumbnailUrl(product.getImageUrl());
+        ProductVariant saved = variants.save(variant);
+        entityManager.flush();
+        product.getVariants().add(saved);
+        if (product.getVariants().stream().anyMatch(v -> "ACTIVE".equals(v.getStatus()) || "OUT_OF_STOCK".equals(v.getStatus()))) {
+            product.setApprovalStatus("APPROVED"); product.setStatus("ACTIVE");
+            entityManager.flush();
+        }
+        return saved;
     }
     private void createBatch(ProductVariant variant, String code, int stock, int reserved, LocalDate expiry) {
-        InventoryBatch batch = new InventoryBatch(); batch.setVariant(variant); batch.setBatchCode(code);
+        InventoryBatch batch = new InventoryBatch(); batch.setVariant(variant);
         batch.setQuantityOnHand(stock); batch.setReservedQuantity(reserved); batch.setExpiryDate(expiry);
         batches.save(batch);
     }

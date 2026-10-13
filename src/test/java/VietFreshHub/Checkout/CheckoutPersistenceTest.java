@@ -84,11 +84,11 @@ class CheckoutPersistenceTest {
                 app.setStatus(SellerApplicationStatus.APPROVED); em.persist(app);
                 Shop shop=new Shop(); shop.setShopName("Shop "+i); shop.setApplicationId(app.getApplicationId()); em.persist(shop);
                 Category category=new Category(); category.setName("Trái cây "+i); category.setSlug("fruit-"+i); em.persist(category);
-                Product product=new Product(); product.setShop(shop); product.setName(i==0 ? "Bưởi gốc" : "Xoài");
+                Product product=new Product(); product.setStatus("ACTIVE"); product.setShop(shop); product.setName(i==0 ? "Bưởi gốc" : "Xoài");
                 product.setSlug("fruit-"+i); product.setApprovalStatus("APPROVED"); product.getCategories().add(category); em.persist(product);
-                ProductVariant variant=new ProductVariant(); variant.setProduct(product); variant.setSku("TEST-CHECKOUT-"+i);
-                variant.setVariantName("Hộp 1kg"); variant.setPrice(new BigDecimal(i==0 ? "79000" : "65000")); em.persist(variant);
-                InventoryBatch batch=new InventoryBatch(); batch.setVariant(variant); batch.setBatchCode("FRESH-"+i);
+                ProductVariant variant=new ProductVariant(); variant.setUnit("kg"); variant.setThumbnailUrl("/images/buoi-da-xanh.jpg"); variant.setProduct(product); variant.setSku("TEST-CHECKOUT-"+i);
+                product.getVariants().add(variant); variant.setVariantName("Hộp 1kg"); variant.setPrice(new BigDecimal(i==0 ? "79000" : "65000")); em.persist(variant);
+                InventoryBatch batch=new InventoryBatch(); batch.setVariant(variant);
                 batch.setQuantityOnHand(10); batch.setExpiryDate(LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).plusDays(10)); em.persist(batch);
                 CartItem item=new CartItem(); item.setCart(cart); item.setVariant(variant); item.setQuantity(i==0 ? 2 : 1);
                 item.setUnitPriceSnapshot(variant.getPrice()); em.persist(item); cart.getItems().add(item);
@@ -115,7 +115,7 @@ class CheckoutPersistenceTest {
     private CheckoutRequest request(CheckoutDraft draft,Long address) { var r=new CheckoutRequest(); r.setAddressId(address); r.setCheckoutToken(draft.token()); return r; }
     private long count(String table) { return jdbc.queryForObject("select count(*) from dbo."+table,Long.class); }
     private int reserved(Long batchId) { return jdbc.queryForObject("select reserved_quantity from dbo.inventory_batches where batch_id=?",Integer.class,batchId); }
-    private void assertNoOrder() { assertEquals(0,count("orders")); assertEquals(0,count("payments")); assertEquals(0,count("inventory_transactions")); }
+    private void assertNoOrder() { assertEquals(0,count("stock_allocations")); assertEquals(0,count("orders")); assertEquals(0,count("payments")); assertEquals(0,count("inventory_transactions")); }
 
     @Test void createsMultiShopOrderSnapshotsAndPendingCod() {
         var draft=draft(buyerId); var result=checkout.confirm(buyerId,draft,request(draft,addressId));
@@ -177,8 +177,7 @@ class CheckoutPersistenceTest {
     @Test void allocatesEarlierExpiryFirstAndRecordsEachOrderItemBatch() {
         Long[] earlyId={null};
         tx.executeWithoutResult(status -> {
-            InventoryBatch early=new InventoryBatch(); early.setVariant(em.getReference(ProductVariant.class,firstVariantId));
-            early.setBatchCode("EARLY"); early.setQuantityOnHand(1); early.setExpiryDate(LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).plusDays(1));
+            InventoryBatch early=new InventoryBatch(); early.setVariant(em.getReference(ProductVariant.class,firstVariantId)); early.setQuantityOnHand(1); early.setExpiryDate(LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).plusDays(1));
             em.persist(early); earlyId[0]=early.getBatchId();
         });
         var draft=draft(buyerId); checkout.confirm(buyerId,draft,request(draft,addressId));
@@ -267,9 +266,59 @@ class CheckoutPersistenceTest {
         form.setRecipientName(" "); assertThrows(CheckoutException.class,() -> checkoutAddresses.create(otherBuyerId,form));
     }
     @AfterEach void cleanupIsolatedH2Database() {
-        for(String table:List.of("delivery_status_history","deliveries","payments","order_status_history","order_addresses","order_items","shop_orders","orders",
+        for(String table:List.of("delivery_status_history","deliveries","payments","order_status_history","order_addresses","stock_allocations","order_items","shop_orders","orders",
                 "inventory_transactions","cart_items","carts","inventory_batches","product_categories","product_variants","products",
                 "categories","shops","seller_applications","addresses","users","payment_methods")) jdbc.update("delete from dbo."+table);
+    }
+
+    @Test void checkoutStoresAllocationsAndCancellationReleasesThemWithSignedAudit() {
+        var placed=placeOrder(); assertEquals(2,count("stock_allocations"));
+        assertEquals(3,jdbc.queryForObject("select sum(quantity) from dbo.stock_allocations where status='RESERVED'",Integer.class));
+        customerOrders.cancel(buyerId,placed.orderId(),"");
+        assertEquals(2,jdbc.queryForObject("select count(*) from dbo.stock_allocations where status='RELEASED'",Integer.class));
+        assertEquals(-3,jdbc.queryForObject("select sum(quantity) from dbo.inventory_transactions where transaction_type='RELEASE'",Integer.class));
+    }
+    @Test void missingAllocationCannotFreeStockFromAuditAlone() {
+        var placed=placeOrder(); jdbc.update("delete from dbo.stock_allocations where batch_id=?",firstBatchId);
+        assertThrows(VietFreshHub.Order.exception.CustomerOrderException.class,() -> customerOrders.cancel(buyerId,placed.orderId(),""));
+        assertEquals(2,reserved(firstBatchId)); assertEquals(1,reserved(secondBatchId));
+        assertEquals(0,jdbc.queryForObject("select count(*) from dbo.inventory_transactions where transaction_type='RELEASE'",Integer.class));
+    }
+    @Test void soldAllocationCannotBeReleasedEvenWhenOrderStatusIsStale() {
+        var placed=placeOrder(); jdbc.update("update dbo.stock_allocations set status='SOLD' where batch_id=?",firstBatchId);
+        assertThrows(VietFreshHub.Order.exception.CustomerOrderException.class,() -> customerOrders.cancel(buyerId,placed.orderId(),""));
+        assertEquals(2,reserved(firstBatchId)); assertEquals(1,reserved(secondBatchId));
+    }
+    @Test void blockedBatchAfterReviewCannotBeReserved() {
+        var draft=draft(buyerId); tx.executeWithoutResult(status -> em.find(InventoryBatch.class,firstBatchId).setStatus("BLOCKED"));
+        assertThrows(CheckoutException.class,() -> checkout.confirm(buyerId,draft,request(draft,addressId)));
+        assertNoOrder(); assertEquals(0,reserved(firstBatchId));
+    }
+    @Test void undatedBatchIsSellableAndAllocatedAfterDatedBatch() {
+        tx.executeWithoutResult(status -> {
+            em.find(InventoryBatch.class,firstBatchId).setQuantityOnHand(1);
+            var undated=new InventoryBatch(); undated.setVariant(em.getReference(ProductVariant.class,firstVariantId));
+            undated.setQuantityOnHand(5); em.persist(undated);
+        });
+        var placed=placeOrder(); assertEquals(1,reserved(firstBatchId));
+        assertEquals(3,count("stock_allocations"));
+        assertEquals(1,jdbc.queryForObject("select sum(a.quantity) from dbo.stock_allocations a join dbo.inventory_batches b on b.batch_id=a.batch_id where b.expiry_date is null",Integer.class));
+    }
+    @Test void addressWithoutDistrictPreservesCoordinatesInOrderSnapshot() {
+        tx.executeWithoutResult(status -> {
+            var address=em.find(Address.class,addressId); address.setDistrict(null); address.setProvinceId(79); address.setWardId(10);
+            address.setFormattedAddress("Đường gốc, Dịch Vọng, Hà Nội"); address.setLatitude(new BigDecimal("21.010000")); address.setLongitude(new BigDecimal("105.800000"));
+        });
+        var placed=placeOrder();
+        assertFalse(orderQueries.getDetails(buyerId,placed.orderId()).addressText().contains("null"));
+        assertEquals(79,jdbc.queryForObject("select province_id from dbo.order_addresses where order_id=?",Integer.class,placed.orderId()));
+        assertEquals(new BigDecimal("21.010000"),jdbc.queryForObject("select latitude from dbo.order_addresses where order_id=?",BigDecimal.class,placed.orderId()));
+    }
+    @Test void newAddressMayOmitDistrict() {
+        var form=new CheckoutAddressRequest(); form.setCheckoutToken("a".repeat(32)); form.setRecipientName("Người nhận");
+        form.setPhone("0901234567"); form.setProvince("Hà Nội"); form.setWard("Dịch Vọng"); form.setAddressLine("Đường mới");
+        Long created=checkoutAddresses.create(buyerId,form);
+        assertNull(jdbc.queryForObject("select district from dbo.addresses where address_id=?",String.class,created));
     }
     private CheckoutResult placeOrder() { var draft=draft(buyerId); return checkout.confirm(buyerId,draft,request(draft,addressId)); }
     @Test void cancellationReleasesOnlyThisOrderAndIsIdempotent() {

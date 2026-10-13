@@ -14,7 +14,14 @@ public class OrderAddress {
     @Nationalized @Column(name="recipient_name", nullable=false, length=150) private String recipientName;
     @Nationalized @Column(nullable=false, length=30) private String phone;
     @Nationalized @Column(nullable=false, length=100) private String province;
-    @Nationalized @Column(nullable=false, length=100) private String district;
+    @Nationalized @Column(length=100) private String district;
     @Nationalized @Column(nullable=false, length=100) private String ward;
     @Nationalized @Column(name="address_line", nullable=false, length=500) private String addressLine;
+
+    @Column(name="province_id") private Integer provinceId;
+    @Column(name="district_id") private Integer districtId;
+    @Column(name="ward_id") private Integer wardId;
+    @Nationalized @Column(name="formatted_address", length=1000) private String formattedAddress;
+    @Column(precision=9, scale=6) private java.math.BigDecimal latitude;
+    @Column(precision=10, scale=6) private java.math.BigDecimal longitude;
 }

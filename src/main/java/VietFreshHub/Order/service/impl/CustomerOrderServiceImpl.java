@@ -50,17 +50,27 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
 
     @Override @Transactional(readOnly=true)
     public Page<OrderListRow> history(Long customerId,OrderFilterRequest filter) {
-        if(filter.getPage()<1 || filter.getPage()>10000 || filter.getKeyword()==null || filter.getKeyword().length()>100 || !filter.isDateRangeValid())
+        if(filter==null || filter.getPage()<1 || filter.getPage()>10000 || filter.getKeyword()==null
+                || filter.getKeyword().length()>100 || !filter.isDateRangeValid() || !filter.isDatabaseDateRangeValid())
             throw new CustomerOrderException("Bộ lọc đơn hàng không hợp lệ.");
         Order.Status status;
-        try { status=filter.getStatus()==null || filter.getStatus().isBlank() ? null : Order.Status.valueOf(filter.getStatus()); }
+        String statusText=filter.getStatus()==null ? "" : filter.getStatus().trim();
+        try { status=statusText.isEmpty() ? null : Order.Status.valueOf(statusText); }
         catch(IllegalArgumentException ex) { throw new CustomerOrderException("Trạng thái lọc không hợp lệ."); }
+        filter.setKeyword(filter.getKeyword().trim()); filter.setStatus(statusText);
         ZoneId zone=ZoneId.of("Asia/Ho_Chi_Minh");
         LocalDateTime from=filter.getFromDate()==null ? null : LocalDateTime.ofInstant(filter.getFromDate().atStartOfDay(zone).toInstant(),ZoneOffset.UTC);
+        // DATETIME2 cannot bind year zero, which can occur at VN midnight on 0001-01-01.
+        if(from!=null && from.getYear()<1) from=LocalDateTime.of(1,1,1,0,0);
         LocalDateTime until=filter.getToDate()==null ? null : LocalDateTime.ofInstant(filter.getToDate().plusDays(1).atStartOfDay(zone).toInstant(),ZoneOffset.UTC);
-        return orders.findHistory(customerId,status,filter.getKeyword().trim(),from,until,
-                PageRequest.of(filter.getPage()-1,10,Sort.by(Sort.Order.desc("placedAt"),Sort.Order.desc("orderId"))));
+        var sort=Sort.by(Sort.Order.desc("placedAt"),Sort.Order.desc("orderId"));
+        var page=orders.findHistory(customerId,status,filter.getKeyword(),from,until,PageRequest.of(filter.getPage()-1,10,sort));
+        if(page.getTotalElements()==0) return Page.empty(PageRequest.of(0,10,sort));
+        if(page.getNumber()>=page.getTotalPages())
+            return orders.findHistory(customerId,status,filter.getKeyword(),from,until,PageRequest.of(page.getTotalPages()-1,10,sort));
+        return page;
     }
+
     @Override @Transactional(readOnly=true)
     public OrderActionsResponse actions(Long customerId,Long orderId) {
         Order order=owned(customerId,orderId); var children=shopOrders.findByOrderOrderIdOrderByShopOrderIdAsc(orderId);

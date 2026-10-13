@@ -1,11 +1,9 @@
 package VietFreshHub.Auth.entity;
 
-
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDateTime;
@@ -53,10 +51,15 @@ public class SellerApplicationDocument {
     private DocumentVerificationStatus verificationStatus =
             DocumentVerificationStatus.PENDING;
 
-    @CreationTimestamp
     @Column(name = "uploaded_at", nullable = false, updatable = false)
     private LocalDateTime uploadedAt;
 
     @Column(name = "verified_at")
     private LocalDateTime verifiedAt;
+
+    @PrePersist
+    void initializeUtcTimestamps() {
+        var now = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+        if (uploadedAt == null) uploadedAt = now;
+    }
 }

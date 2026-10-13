@@ -11,7 +11,7 @@ public class CheckoutAddressRequest {
     private String phone;
     @NotBlank(message="Vui lòng nhập tỉnh hoặc thành phố.") @Size(max=100,message="Tỉnh/thành phố tối đa 100 ký tự.")
     private String province;
-    @NotBlank(message="Vui lòng nhập quận/huyện.") @Size(max=100,message="Quận/huyện tối đa 100 ký tự.")
+    @Size(max=100,message="Quận/huyện tối đa 100 ký tự.")
     private String district;
     @NotBlank(message="Vui lòng nhập phường/xã.") @Size(max=100,message="Phường/xã tối đa 100 ký tự.")
     private String ward;

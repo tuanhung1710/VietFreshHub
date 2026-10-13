@@ -1,5 +1,8 @@
 # Kế hoạch triển khai tiếp TV3
 
+> Cập nhật 13/10/2026: đối chiếu schema nhóm mới xem [DATABASE_ALIGNMENT_2026-10-13.md](DATABASE_ALIGNMENT_2026-10-13.md). Các quy ước cũ về batch_code, loại lô NULL expiry và suy luận allocation chỉ từ journal bên dưới là ghi nhận lịch sử; code hiện dùng status lô và stock_allocations theo schema mới.
+
+
 Ngày rà soát: 08/10/2026. Phạm vi: FE-04, FE-05.1, FE-05.2, FE-06 và phần giám sát đơn/thanh toán FE-013.3–FE-013.4. Bước 1 và checkout COD ở Bước 2 đã triển khai; xem TV3_CART_CHANGES.md và TV3_CHECKOUT_COD.md. Các mục hiện trạng/lỗi dưới đây giữ lại ảnh chụp lúc rà soát ban đầu.
 
 ## Căn cứ và quy ước

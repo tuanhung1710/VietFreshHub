@@ -1,5 +1,8 @@
 # Checkout COD TV3
 
+> Cập nhật 13/10/2026: đối chiếu schema nhóm mới xem [DATABASE_ALIGNMENT_2026-10-13.md](DATABASE_ALIGNMENT_2026-10-13.md). Các quy ước cũ về batch_code, loại lô NULL expiry và suy luận allocation chỉ từ journal bên dưới là ghi nhận lịch sử; code hiện dùng status lô và stock_allocations theo schema mới.
+
+
 Triển khai ngày 08/10/2026 theo FE-05.1 và phần tạo đơn COD của FE-06. Giữ Java 21, Boot 3.4.1, MVC/Thymeleaf, JPA và HTTP session. Không chạy migration hoặc đổi schema SQL Server.
 
 ## Luồng đã có

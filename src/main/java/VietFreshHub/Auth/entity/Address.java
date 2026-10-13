@@ -4,9 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Nationalized;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -39,7 +37,7 @@ public class Address {
     private String province;
 
     @Nationalized
-    @Column(nullable = false, length = 100)
+    @Column(length = 100)
     private String district;
 
     @Nationalized
@@ -53,11 +51,28 @@ public class Address {
     @Column(name = "is_default", nullable = false)
     private Boolean isDefault = false;
 
-    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @PrePersist
+    void initializeUtcTimestamps() {
+        var now = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+        if (createdAt == null) createdAt = now;
+        if (updatedAt == null) updatedAt = now;
+    }
+
+    @PreUpdate
+    void updateUtcTimestamps() {
+        updatedAt = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+    }
+
+    @Column(name="province_id") private Integer provinceId;
+    @Column(name="district_id") private Integer districtId;
+    @Column(name="ward_id") private Integer wardId;
+    @Nationalized @Column(name="formatted_address", length=1000) private String formattedAddress;
+    @Column(precision=9, scale=6) private java.math.BigDecimal latitude;
+    @Column(precision=10, scale=6) private java.math.BigDecimal longitude;
 }

@@ -23,12 +23,27 @@ public class CustomerOrderController {
     private final CurrentCustomerService currentCustomer;
     private final CustomerOrderService orders;
     private final CartService carts;
+    private final VietFreshHub.Order.service.CustomerOrderQueryService readOrders;
     @GetMapping
     public String history(@Valid @ModelAttribute("filter") OrderFilterRequest filter,BindingResult errors,Authentication authentication,Model model) {
         Long customerId=currentCustomer.requireCustomerId(authentication);
-        if(errors.hasErrors()) model.addAttribute("filterError","Bộ lọc không hợp lệ. Kiểm tra trang, mã đơn, trạng thái và khoảng ngày.");
-        model.addAttribute("orderPage",orders.history(customerId,errors.hasErrors()?new OrderFilterRequest():filter));
-        model.addAttribute("cart",carts.getActiveCart(customerId));
+        model.addAttribute("invalidFilter",errors.hasErrors());
+        if(errors.hasErrors()) {
+            model.addAttribute("filterError","Bộ lọc không hợp lệ. Vui lòng sửa các thông tin bên dưới rồi lọc lại.");
+            model.addAttribute("filterMessages",errors.getAllErrors().stream().map(error -> {
+                if(error instanceof org.springframework.validation.FieldError field && field.isBindingFailure())
+                    return "page".equals(field.getField()) ? "Trang phải là số nguyên hợp lệ." : "Ngày lọc phải có định dạng yyyy-MM-dd.";
+                return error.getDefaultMessage();
+            }).toList());
+            model.addAttribute("orderPage",org.springframework.data.domain.Page.empty());
+        } else {
+            int requestedPage=filter.getPage();
+            var page=orders.history(customerId,filter);
+            model.addAttribute("orderPage",page);
+            if(requestedPage!=page.getNumber()+1)
+                model.addAttribute("pageNotice","Trang yêu cầu không còn tồn tại. Đang hiển thị trang " + (page.getNumber()+1) + ".");
+        }
+        model.addAttribute("cartBadgeTotal",readOrders.getCartBadgeTotal(customerId));
         java.util.Map<String,String> options=new java.util.LinkedHashMap<>();
         for(var status:Order.Status.values()) options.put(status.name(),OrderLabels.order(status));
         model.addAttribute("statusOptions",options);

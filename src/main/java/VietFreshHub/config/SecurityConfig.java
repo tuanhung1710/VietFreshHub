@@ -45,9 +45,9 @@ public class SecurityConfig {
                     "/css/**", "/js/**", "/images/**"
             ).permitAll()
                     .requestMatchers(org.springframework.http.HttpMethod.GET,
-                            "/home", "/customer/home", "/product-detail", "/product-detail/**",
-                            "/api/products/variants/*/stock").permitAll()
-                    .requestMatchers("/cart", "/cart/**", "/api/carts/**", "/customer/**").hasRole("CUSTOMER")
+                            "/home", "/customer/home", "/product-detail", "/product-detail/**"
+                            ).permitAll()
+                    .requestMatchers("/cart", "/cart/**", "/customer/**").hasRole("CUSTOMER")
              .requestMatchers("/admin/**").hasRole("ADMIN")
                     .requestMatchers("/manager/**").hasRole("STORE_MANAGER")
                     .requestMatchers("/store_manager/**").hasRole("STORE_MANAGER")
@@ -63,13 +63,7 @@ public class SecurityConfig {
         // Chuyển người chưa đăng nhập về trang login
         http.exceptionHandling(exception -> {
             exception.authenticationEntryPoint(
-                    (request, response, authenticationException) -> {
-                        if (request.getRequestURI().startsWith(request.getContextPath() + "/api/")) {
-                            response.sendError(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
-                        } else {
-                            new LoginUrlAuthenticationEntryPoint("/login").commence(request, response, authenticationException);
-                        }
-                    }
+                    new LoginUrlAuthenticationEntryPoint("/login")
             );
         });
 

@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' | VietFresh Hub'"></title>
+    <link rel="stylesheet" th:href="@{/css/storefront.css}">
+    <link rel="stylesheet" th:href="@{/css/customer-orders.css}">
+    <script defer th:src="@{/js/cart.js}"></script>
+</head>
+</html>

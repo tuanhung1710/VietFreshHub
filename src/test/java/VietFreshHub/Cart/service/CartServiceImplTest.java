@@ -37,7 +37,7 @@ class CartServiceImplTest {
         user = new User(); user.setUserId(7L); user.setStatus("ACTIVE");
         cart = new Cart(); cart.setCartId(100L); cart.setUser(user);
         Shop shop = new Shop(); shop.setShopId(2L); shop.setShopName("Shop A");
-        Product product = new Product(); product.setShop(shop); product.setName("Bưởi"); product.setSlug("buoi");
+        Product product = new Product(); product.setStatus("ACTIVE"); product.setShop(shop); product.setName("Bưởi"); product.setSlug("buoi");
         variant = new ProductVariant(); variant.setVariantId(10L); variant.setProduct(product);
         variant.setVariantName("Hộp 1kg"); variant.setStatus("ACTIVE"); variant.setPrice(new BigDecimal("150000.00"));
     }

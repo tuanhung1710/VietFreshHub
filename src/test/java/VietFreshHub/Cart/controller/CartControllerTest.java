@@ -20,7 +20,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest({CartController.class,CustomerCartViewController.class})
+@WebMvcTest(CustomerCartViewController.class)
 @Import(SecurityConfig.class)
 class CartControllerTest {
     @Autowired MockMvc mvc;
@@ -33,34 +33,38 @@ class CartControllerTest {
         when(carts.getActiveCart(7L)).thenReturn(CartDto.builder().userId(7L).totalItems(0).totalAmount(BigDecimal.ZERO).build());
     }
     @Test void cartRequiresLogin() throws Exception { mvc.perform(get("/cart")).andExpect(status().is3xxRedirection()).andExpect(redirectedUrlPattern("**/login")); verifyNoInteractions(carts); }
-    @Test void apiRequiresLogin() throws Exception { mvc.perform(get("/api/carts/active")).andExpect(status().isUnauthorized()); verifyNoInteractions(carts); }
-    @Test void otherRoleCannotReadCart() throws Exception { mvc.perform(get("/cart").with(user("manager").roles("STORE_MANAGER"))).andExpect(status().isForbidden()); verifyNoInteractions(carts); }
-    @Test void csrfRequiredForApi() throws Exception {
-        mvc.perform(post("/api/carts/items").with(user("customer").roles("CUSTOMER")).contentType("application/json")
-                .content("{\"variantId\":10,\"quantity\":2}")).andExpect(status().isForbidden());
-        verify(carts,never()).addToCart(anyLong(),any());
-    }
-    @Test void clientHeaderCannotSelectAnotherUser() throws Exception {
-        when(carts.addToCart(eq(7L),any())).thenReturn(AddToCartResponse.builder().quantity(2).message("Đã thêm sản phẩm vào giỏ hàng.").build());
-        mvc.perform(post("/api/carts/items").with(user("buyer@example.com").roles("CUSTOMER")).with(csrf())
-                .header("X-User-Id","999").contentType("application/json").content("{\"variantId\":10,\"quantity\":2}"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.quantity").value(2));
-        verify(carts).addToCart(eq(7L),any()); verify(carts,never()).addToCart(eq(999L),any());
-    }
-    @Test void invalidApiQuantityRejected() throws Exception {
-        mvc.perform(post("/api/carts/items").with(user("customer").roles("CUSTOMER")).with(csrf()).contentType("application/json")
-                .content("{\"variantId\":10,\"quantity\":-1}")).andExpect(status().isBadRequest()).andExpect(jsonPath("$.error").value("INVALID_INPUT"));
-        verify(carts,never()).addToCart(anyLong(),any());
-    }
-    @Test void apiMissingProductReturnsJson404() throws Exception {
-        when(carts.addToCart(eq(7L),any())).thenThrow(new ResourceNotFoundException("Sản phẩm không còn được bán."));
-        mvc.perform(post("/api/carts/items").with(user("customer").roles("CUSTOMER")).with(csrf()).contentType("application/json")
-                .content("{\"variantId\":10,\"quantity\":1}")).andExpect(status().isNotFound()).andExpect(jsonPath("$.error").value("RESOURCE_NOT_FOUND"));
-    }
     @Test void mvcUsesDtoValidation() throws Exception {
         mvc.perform(post("/cart/add").with(user("customer").roles("CUSTOMER")).with(csrf()).param("variantId","10").param("quantity","-1"))
                 .andExpect(redirectedUrl("/cart")).andExpect(flash().attributeExists("errorMessage"));
         verify(carts,never()).addToCart(anyLong(),any());
+    }
+    @Test void otherRoleCannotReadCart() throws Exception {
+        mvc.perform(get("/cart").with(user("manager").roles("STORE_MANAGER"))).andExpect(status().isForbidden());
+        verifyNoInteractions(carts);
+    }
+    @Test void csrfRequiredForForm() throws Exception {
+        mvc.perform(post("/cart/add").with(user("buyer").roles("CUSTOMER"))
+                .param("variantId","10").param("quantity","2")).andExpect(status().isForbidden());
+        verifyNoInteractions(carts);
+    }
+    @Test void clientCannotSelectAnotherCustomer() throws Exception {
+        mvc.perform(post("/cart/add").with(user("buyer").roles("CUSTOMER")).with(csrf())
+                .header("X-User-Id","999").param("userId","999").param("variantId","10").param("quantity","2"))
+                .andExpect(redirectedUrl("/cart")).andExpect(flash().attributeExists("successMessage"));
+        verify(carts).addToCart(eq(7L),argThat(form -> form.getVariantId()==10L && form.getQuantity()==2));
+        verify(carts,never()).addToCart(eq(999L),any());
+    }
+    @Test void unavailableProductShowsFlashAndPreservesDetailFlow() throws Exception {
+        when(carts.addToCart(eq(7L),any())).thenThrow(new ResourceNotFoundException("Sản phẩm không còn được bán."));
+        mvc.perform(post("/cart/add").with(user("buyer").roles("CUSTOMER")).with(csrf())
+                .param("variantId","10").param("quantity","2").param("redirect","detail"))
+                .andExpect(redirectedUrl("/product-detail/10")).andExpect(flash().attribute("requestedQuantity",2))
+                .andExpect(flash().attribute("errorMessage","Sản phẩm không còn được bán."));
+    }
+    @Test void invalidParameterRendersHtmlError() throws Exception {
+        mvc.perform(get("/product-detail/invalid")).andExpect(status().isBadRequest())
+                .andExpect(view().name("error/bad-request")).andExpect(content().contentTypeCompatibleWith("text/html"));
+        verifyNoInteractions(catalog);
     }
     @Test void nonNumericQuantityShowsVietnameseMessage() throws Exception {
         mvc.perform(post("/cart/add").with(user("customer").roles("CUSTOMER")).with(csrf()).param("variantId","10").param("quantity","invalid"))
@@ -75,10 +79,6 @@ class CartControllerTest {
         mvc.perform(post("/cart/update").with(user("customer").roles("CUSTOMER")).with(csrf()).param("variantId","10").param("quantity","-1"))
                 .andExpect(redirectedUrl("/cart")).andExpect(flash().attributeExists("errorMessage"));
         verify(carts,never()).updateCartItemQuantity(anyLong(),anyLong(),anyInt()); verify(carts,never()).removeCartItem(anyLong(),anyLong());
-    }
-    @Test void publicStockEndpointAccessible() throws Exception {
-        when(carts.getVariantStock(10L)).thenReturn(StockCheckResponse.builder().variantId(10L).availableStock(2).purchasable(true).build());
-        mvc.perform(get("/api/products/variants/10/stock")).andExpect(status().isOk()).andExpect(jsonPath("$.availableStock").value(2));
     }
     @Test void cartPageRendersEmptyStateWithoutBrokenCheckoutLink() throws Exception {
         var result=mvc.perform(get("/cart").with(user("customer").roles("CUSTOMER"))).andExpect(status().isOk())

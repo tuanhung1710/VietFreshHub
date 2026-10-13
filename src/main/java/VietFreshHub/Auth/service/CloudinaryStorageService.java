@@ -68,6 +68,10 @@ public class CloudinaryStorageService {
             String resourceType,
             String format
     ) {
+        // file_url in the group seed is a complete URL; uploaded private assets store a public ID.
+        if (publicId != null && publicId.startsWith("https://")) {
+            return publicId;
+        }
         try {
             long expiresAt = Instant.now().plusSeconds(600).getEpochSecond();
 

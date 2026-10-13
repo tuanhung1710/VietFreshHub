@@ -48,24 +48,27 @@ class CartPersistenceTest {
         SellerApplication application = new SellerApplication(); application.setUser(user); application.setBusinessName("Shop");
         application.setStatus(SellerApplicationStatus.APPROVED); em.persist(application);
         Shop shop = new Shop(); shop.setShopName("Shop"); shop.setApplicationId(application.getApplicationId()); em.persist(shop);
-        Product product = new Product(); product.setName("Bưởi"); product.setSlug("buoi"); product.setShop(shop);
-        product.setApprovalStatus("APPROVED"); em.persist(product);
-        variant = new ProductVariant(); variant.setProduct(product); variant.setSku("B-1"); variant.setVariantName("1kg");
-        variant.setPrice(new BigDecimal("150000")); em.persist(variant); em.flush();
+        Product product = new Product(); product.setStatus("ACTIVE"); product.setName("Bưởi"); product.setSlug("buoi"); product.setShop(shop);
+        product.setApprovalStatus("APPROVED");
+        var category = new VietFreshHub.Product.entity.Category(); category.setName("Trái cây"); category.setSlug("fruit"); em.persist(category);
+        product.getCategories().add(category); em.persist(product);
+        variant = new ProductVariant(); variant.setUnit("kg"); variant.setThumbnailUrl("/images/buoi-da-xanh.jpg"); variant.setProduct(product); variant.setSku("B-1"); variant.setVariantName("1kg");
+        variant.setPrice(new BigDecimal("150000")); em.persist(variant); product.getVariants().add(variant); em.flush();
     }
-    private void batch(String code, LocalDate expiry, int onHand, int reserved) {
-        InventoryBatch b = new InventoryBatch(); b.setVariant(variant); b.setBatchCode(code); b.setExpiryDate(expiry);
-        b.setQuantityOnHand(onHand); b.setReservedQuantity(reserved); em.persist(b); em.flush();
+    private InventoryBatch batch(String code, LocalDate expiry, int onHand, int reserved) {
+        InventoryBatch b = new InventoryBatch(); b.setVariant(variant); b.setExpiryDate(expiry);
+        b.setQuantityOnHand(onHand); b.setReservedQuantity(reserved); em.persist(b); em.flush(); return b;
     }
-    @Test void stockExcludesExpiredAndUndatedBatchesAndSubtractsReservations() {
+    @Test void stockExcludesExpiredAndBlockedButIncludesUndatedBatches() {
         LocalDate day=LocalDate.of(2026,10,8);
         batch("expired",day.minusDays(1),100,0); batch("unknown",null,100,0);
+        batch("blocked",day.plusDays(2),200,0).setStatus("BLOCKED"); em.flush();
         batch("today",day,5,2); batch("future",day.plusDays(1),7,1);
-        assertEquals(9L,inventory.findAvailableStock(variant.getVariantId(),day));
+        assertEquals(109L,inventory.findAvailableStock(variant.getVariantId(),day));
         var bulk=inventory.findAvailableStockForVariants(java.util.List.of(variant.getVariantId()),day);
-        assertEquals(1,bulk.size()); assertEquals(9L,((Number)bulk.getFirst()[1]).longValue());
+        assertEquals(1,bulk.size()); assertEquals(109L,((Number)bulk.getFirst()[1]).longValue());
     }
-    @Test void visibleCatalogQueryRequiresSellerApproval() {
+    @Test void visibleCatalogQueryRequiresProductApproval() {
         assertEquals(1,products.findVisibleCatalog(org.springframework.data.domain.PageRequest.of(0,12)).getTotalElements());
         variant.getProduct().setApprovalStatus("PENDING"); em.flush();
         assertTrue(products.findVisibleCatalog(org.springframework.data.domain.PageRequest.of(0,12)).isEmpty());
@@ -82,8 +85,11 @@ class CartPersistenceTest {
         assertEquals(Integer.MAX_VALUE,inventory.getAvailableStockByVariantId(variant.getVariantId()));
     }
     @Test void catalogPaginationReturnsOnlyRequestedPage() {
-        Product second=new Product(); second.setName("Xoài"); second.setSlug("xoai"); second.setShop(variant.getProduct().getShop());
-        second.setApprovalStatus("APPROVED"); em.persist(second); em.flush();
+        Product second=new Product(); second.setStatus("ACTIVE"); second.setName("Xoài"); second.setSlug("xoai"); second.setShop(variant.getProduct().getShop());
+        second.setApprovalStatus("APPROVED"); second.getCategories().addAll(variant.getProduct().getCategories()); em.persist(second);
+        ProductVariant extra = new ProductVariant(); extra.setProduct(second); extra.setSku("EXTRA"); extra.setVariantName("1kg");
+        extra.setUnit("kg"); extra.setThumbnailUrl("/images/buoi-da-xanh.jpg"); extra.setPrice(new BigDecimal("65000")); em.persist(extra);
+        second.getVariants().add(extra); em.flush();
         var page=products.findVisibleCatalog(org.springframework.data.domain.PageRequest.of(0,1));
         assertEquals(1,page.getContent().size()); assertEquals(2,page.getTotalElements()); assertTrue(page.hasNext());
     }
@@ -133,5 +139,33 @@ class CartPersistenceTest {
                 em.getEntityManager().createQuery("delete from User").executeUpdate();
             });
         }
+    }
+
+    @Test void inactiveAncestorHidesCatalogAndDisablesPurchase() {
+        var parent=new VietFreshHub.Product.entity.Category(); parent.setName("Gốc"); parent.setSlug("root"); em.persist(parent);
+        variant.getProduct().getCategories().iterator().next().setParentCategoryId(parent.getCategoryId()); em.flush();
+        assertTrue(catalog.isVisible(variant.getProduct())); parent.setStatus("INACTIVE"); em.flush();
+        assertFalse(catalog.isPurchasable(variant));
+        assertTrue(products.findVisibleCatalog(org.springframework.data.domain.PageRequest.of(0,12)).isEmpty());
+    }
+    @Test void activeShopWithoutApplicationStillUsesPublicCatalogRule() {
+        variant.getProduct().getShop().setApplicationId(null); em.flush();
+        assertTrue(catalog.isPurchasable(variant));
+        assertEquals(1,products.findVisibleCatalog(org.springframework.data.domain.PageRequest.of(0,12)).getTotalElements());
+    }
+    @Test void productAndVariantImagesComeFromDatabase() {
+        var image=new VietFreshHub.Product.entity.ProductImage(); image.setProduct(variant.getProduct()); image.setPrimary(true);
+        image.setImageUrl("https://example.invalid/product.jpg"); em.persist(image); variant.getProduct().getImages().add(image);
+        variant.setThumbnailUrl("https://example.invalid/variant.jpg"); em.flush();
+        assertEquals("https://example.invalid/product.jpg",variant.getProduct().getImageUrl());
+        assertEquals("https://example.invalid/variant.jpg",catalog.getProduct(variant.getVariantId(),null,null).getImageUrl());
+    }
+    @Test void timestampsUseUtcRegardlessOfHostTimezone() {
+        var original=java.util.TimeZone.getDefault();
+        try {
+            java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Pacific/Honolulu"));
+            var customer=new User(); customer.setEmail("utc@example.invalid"); customer.setFullName("UTC"); em.persist(customer); em.flush();
+            assertTrue(Math.abs(java.time.Duration.between(customer.getCreatedAt(),java.time.LocalDateTime.now(java.time.ZoneOffset.UTC)).getSeconds())<5);
+        } finally { java.util.TimeZone.setDefault(original); }
     }
 }

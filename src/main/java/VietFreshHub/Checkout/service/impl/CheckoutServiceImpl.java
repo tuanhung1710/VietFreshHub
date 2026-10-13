@@ -68,7 +68,8 @@ public class CheckoutServiceImpl implements CheckoutService {
         CartDto cart=selectCart(cartService.getActiveCart(customerId),selectedItemIds);
         var options=addresses.findByUserUserIdOrderByIsDefaultDescAddressIdAsc(customerId).stream()
                 .map(a -> new CheckoutPreview.AddressOption(a.getAddressId(),a.getRecipientName(),a.getPhone(),
-                        a.getAddressLine()+", "+a.getWard()+", "+a.getDistrict()+", "+a.getProvince(),a.getIsDefault())).toList();
+                        java.util.stream.Stream.of(a.getAddressLine(),a.getWard(),a.getDistrict(),a.getProvince())
+                                .filter(part -> part!=null && !part.isBlank()).collect(Collectors.joining(", ")),a.getIsDefault())).toList();
         BigDecimal fee=shipping.feePerShop();
         long shopCount=cart.getItems().stream().map(CartItemDto::getShopId).distinct().count();
         BigDecimal shippingTotal=fee==null ? null : fee.multiply(BigDecimal.valueOf(shopCount));
@@ -199,7 +200,10 @@ public class CheckoutServiceImpl implements CheckoutService {
     private OrderAddress snapshotAddress(Order order,Address address) {
         OrderAddress snapshot=new OrderAddress(); snapshot.setOrder(order); snapshot.setRecipientName(address.getRecipientName());
         snapshot.setPhone(address.getPhone()); snapshot.setProvince(address.getProvince()); snapshot.setDistrict(address.getDistrict());
-        snapshot.setWard(address.getWard()); snapshot.setAddressLine(address.getAddressLine()); return snapshot;
+        snapshot.setWard(address.getWard()); snapshot.setAddressLine(address.getAddressLine());
+        snapshot.setProvinceId(address.getProvinceId()); snapshot.setDistrictId(address.getDistrictId()); snapshot.setWardId(address.getWardId());
+        snapshot.setFormattedAddress(address.getFormattedAddress()); snapshot.setLatitude(address.getLatitude()); snapshot.setLongitude(address.getLongitude());
+        return snapshot;
     }
     private String fingerprint(CartDto cart) {
         StringBuilder canonical=new StringBuilder(String.valueOf(cart.getCartId()));

@@ -62,7 +62,7 @@
                     <div><label for="recipient-name">Tên người nhận</label><input id="recipient-name" th:field="*{recipientName}" autocomplete="name" maxlength="150" required><small th:errors="*{recipientName}"></small></div>
                     <div><label for="recipient-phone">Số điện thoại</label><input id="recipient-phone" th:field="*{phone}" type="tel" autocomplete="tel" maxlength="30" required><small th:errors="*{phone}"></small></div>
                     <div><label for="address-province">Tỉnh/thành phố</label><input id="address-province" th:field="*{province}" autocomplete="address-level1" maxlength="100" required><small th:errors="*{province}"></small></div>
-                    <div><label for="address-district">Quận/huyện</label><input id="address-district" th:field="*{district}" autocomplete="address-level2" maxlength="100" required><small th:errors="*{district}"></small></div>
+                    <div><label for="address-district">Quận/huyện</label><input id="address-district" th:field="*{district}" autocomplete="address-level2" maxlength="100"><small th:errors="*{district}"></small></div>
                     <div><label for="address-ward">Phường/xã</label><input id="address-ward" th:field="*{ward}" autocomplete="address-level3" maxlength="100" required><small th:errors="*{ward}"></small></div>
                     <div><label for="address-line">Số nhà, tên đường</label><input id="address-line" th:field="*{addressLine}" autocomplete="address-line1" maxlength="500" required><small th:errors="*{addressLine}"></small></div>
                 </div>

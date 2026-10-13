@@ -1,13 +1,10 @@
 package VietFreshHub.Auth.entity;
 
-
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Nationalized;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -53,7 +50,6 @@ public class SellerApplication {
     @Column(name = "status", nullable = false, length = 30)
     private SellerApplicationStatus status = SellerApplicationStatus.PENDING;
 
-    @CreationTimestamp
     @Column(name = "submitted_at", nullable = false, updatable = false)
     private LocalDateTime submittedAt;
 
@@ -71,7 +67,6 @@ public class SellerApplication {
     @Column(name = "rejection_reason", length = 1000)
     private String rejectionReason;
 
-    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
@@ -89,4 +84,16 @@ public class SellerApplication {
             cascade = CascadeType.PERSIST
     )
     private List<SellerApplicationStatusHistory> statusHistories = new ArrayList<>();
+
+    @PrePersist
+    void initializeUtcTimestamps() {
+        var now = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+        if (submittedAt == null) submittedAt = now;
+        if (updatedAt == null) updatedAt = now;
+    }
+
+    @PreUpdate
+    void updateUtcTimestamps() {
+        updatedAt = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+    }
 }

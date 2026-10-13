@@ -13,4 +13,14 @@ public class OrderFilterRequest {
     @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) private LocalDate toDate;
     @AssertTrue(message="Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.")
     public boolean isDateRangeValid() { return fromDate==null || toDate==null || !toDate.isBefore(fromDate); }
+    @AssertTrue(message="Ngày lọc phải nằm trong khoảng năm 0001 đến 9999.")
+    public boolean isDatabaseDateRangeValid() {
+        return validDate(fromDate) && validDate(toDate);
+    }
+    private boolean validDate(LocalDate date) {
+        return date==null || (date.getYear()>=1 && date.getYear()<=9999);
+    }
+    public boolean hasFilters() {
+        return (keyword!=null && !keyword.isBlank()) || (status!=null && !status.isBlank()) || fromDate!=null || toDate!=null;
+    }
 }

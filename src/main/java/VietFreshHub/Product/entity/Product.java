@@ -6,9 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Nationalized;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -45,10 +43,27 @@ public class Product {
     @Transient
     private String imageUrl;
 
+    @OneToMany(mappedBy = "product")
+    @org.hibernate.annotations.BatchSize(size = 16)
+    private List<ProductImage> images = new ArrayList<>();
+
+    @Column(name = "requires_preparation_check", nullable = false)
+    private boolean requiresPreparationCheck;
+
+    @Nationalized @Column(name = "preparation_note", length = 1000)
+    private String preparationNote;
+
     public String getImageUrl() {
         if (this.imageUrl != null && !this.imageUrl.isBlank()) {
             return this.imageUrl;
         }
+        var primary = images.stream().filter(i -> i.getVariant() == null && i.isPrimary())
+                .sorted(java.util.Comparator.comparing(ProductImage::getSortOrder).thenComparing(ProductImage::getImageId))
+                .map(ProductImage::getImageUrl).findFirst();
+        if (primary.isPresent()) return primary.get();
+        var thumbnail = variants.stream().map(ProductVariant::getThumbnailUrl)
+                .filter(url -> url != null && !url.isBlank()).findFirst();
+        if (thumbnail.isPresent()) return thumbnail.get();
         if (slug != null) {
             String s = slug.toLowerCase();
             if (s.contains("buoi")) return "/images/buoi-da-xanh.jpg";
@@ -67,7 +82,7 @@ public class Product {
     }
 
     @Column(nullable = false, length = 30)
-    private String status = "ACTIVE";
+    private String status = "INACTIVE";
 
     @Column(name = "approval_status", nullable = false, length = 30)
     private String approvalStatus = "PENDING";
@@ -78,11 +93,9 @@ public class Product {
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
-    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
@@ -94,4 +107,16 @@ public class Product {
     @JoinTable(schema = "dbo", name = "product_categories",
             joinColumns = @JoinColumn(name = "product_id"), inverseJoinColumns = @JoinColumn(name = "category_id"))
     private java.util.Set<Category> categories = new java.util.LinkedHashSet<>();
+
+    @PrePersist
+    void initializeUtcTimestamps() {
+        var now = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+        if (createdAt == null) createdAt = now;
+        if (updatedAt == null) updatedAt = now;
+    }
+
+    @PreUpdate
+    void updateUtcTimestamps() {
+        updatedAt = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+    }
 }

@@ -5,6 +5,8 @@ import VietFreshHub.Checkout.entity.CheckoutStockMovement;
 import VietFreshHub.Checkout.exception.CheckoutException;
 import VietFreshHub.Checkout.port.InventoryReservationPort;
 import VietFreshHub.Inventory.entity.InventoryBatch;
+import VietFreshHub.Inventory.entity.StockAllocation;
+import VietFreshHub.Order.entity.OrderItem;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
@@ -29,18 +31,21 @@ public class JpaInventoryReservationAdapter implements InventoryReservationPort 
                 throw new CheckoutException("Yêu cầu giữ kho không hợp lệ.");
             }
             List<InventoryBatch> batches=em.createQuery("select b from InventoryBatch b where b.variant.variantId=:variantId "
-                            +"and b.expiryDate is not null and b.expiryDate>=:today order by b.batchId",InventoryBatch.class)
+                            +"and b.status='ACTIVE' and (b.expiryDate is null or b.expiryDate>=:today) order by b.batchId",InventoryBatch.class)
                     .setParameter("variantId",line.variantId()).setParameter("today",today)
                     .setLockMode(LockModeType.PESSIMISTIC_WRITE).getResultList();
             long available=batches.stream().mapToLong(b -> (long)b.getQuantityOnHand()-b.getReservedQuantity()).sum();
             if(available<line.quantity()) throw new CheckoutException("Một sản phẩm không còn đủ hàng. Vui lòng kiểm tra lại giỏ.");
             int remaining=line.quantity();
             // Lock by primary key first; then allocate the earliest-expiring sellable batches.
-            for(InventoryBatch batch:batches.stream().sorted(Comparator.comparing(InventoryBatch::getExpiryDate)
+            for(InventoryBatch batch:batches.stream().sorted(Comparator.comparing(InventoryBatch::getExpiryDate, Comparator.nullsLast(Comparator.naturalOrder()))
                     .thenComparing(InventoryBatch::getBatchId)).toList()) {
                 int reserved=Math.min(remaining,batch.getQuantityOnHand()-batch.getReservedQuantity());
                 if(reserved<=0) continue;
                 batch.setReservedQuantity(batch.getReservedQuantity()+reserved);
+                StockAllocation allocation = new StockAllocation();
+                allocation.setOrderItem(em.getReference(OrderItem.class,line.orderItemId()));
+                allocation.setBatch(batch); allocation.setQuantity(reserved); em.persist(allocation);
                 CheckoutStockMovement movement=new CheckoutStockMovement();
                 movement.setVariant(batch.getVariant()); movement.setBatch(batch); movement.setTransactionType("RESERVE");
                 movement.setQuantity(reserved); movement.setReferenceType("ORDER_ITEM"); movement.setReferenceId(line.orderItemId());

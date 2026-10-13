@@ -25,7 +25,7 @@ public class CheckoutAddressServiceImpl implements CheckoutAddressService {
         em.refresh(customer,LockModeType.PESSIMISTIC_WRITE);
         if(!"ACTIVE".equals(customer.getStatus())) throw new CheckoutException("Tài khoản không còn được phép thêm địa chỉ.");
         Address address=new Address(); address.setUser(customer); address.setRecipientName(form.getRecipientName().trim());
-        address.setPhone(form.getPhone().trim()); address.setProvince(form.getProvince().trim()); address.setDistrict(form.getDistrict().trim());
+        address.setPhone(form.getPhone().trim()); address.setProvince(form.getProvince().trim()); address.setDistrict(form.getDistrict()==null || form.getDistrict().isBlank() ? null : form.getDistrict().trim());
         address.setWard(form.getWard().trim()); address.setAddressLine(form.getAddressLine().trim());
         address.setIsDefault(addresses.findByUserUserIdOrderByIsDefaultDescAddressIdAsc(customerId).isEmpty());
         em.persist(address); return address.getAddressId();
