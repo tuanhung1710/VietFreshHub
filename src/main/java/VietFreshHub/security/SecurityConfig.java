@@ -64,7 +64,7 @@ public class SecurityConfig {
                     .hasRole("DELIVERY_STAFF")
 
                     .requestMatchers(
-                            "/home", "/customer", "/customer/**"
+                            "/home", "/customer", "/customer/**", "/cart", "/cart/**", "/product-detail", "/product-detail/**"
                     ).hasRole("CUSTOMER")
 
                     .anyRequest().authenticated();

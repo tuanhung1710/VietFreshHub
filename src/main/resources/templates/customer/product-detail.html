@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/storefront :: head(${product.name})}"></head><body>
+<header th:replace="~{fragments/storefront :: header}"></header>
+<main class="container page">
+    <p><a th:href="@{/home}">← Tiếp tục mua sắm</a></p>
+    <div th:replace="~{fragments/storefront :: messages}"></div>
+    <article class="detail-grid"><img class="detail-image" th:src="${product.imageUrl}" th:alt="${product.name}">
+        <section class="panel"><p class="eyebrow" th:text="${product.shopName}"></p><h1 th:text="${product.name}"></h1>
+            <p class="description muted" th:text="${product.description}"></p>
+            <h2>Chọn phân loại</h2>
+            <div class="variant-list" aria-label="Phân loại sản phẩm">
+                <a th:each="v : ${variants}" class="variant-option" th:classappend="${v.variantId == variantId} ? 'selected'"
+                   th:aria-current="${v.variantId == variantId} ? 'true' : 'false'"
+                   th:href="@{/product-detail/{id}(id=${v.variantId})}">
+                    <span th:text="${v.variantName}"></span><span th:unless="${v.purchasable}"> · Chưa khả dụng</span>
+                </a>
+            </div>
+            <div th:if="${selectedVariant != null}">
+                <p class="price detail-price" th:text="${#numbers.formatInteger(selectedVariant.price,0,'POINT')} + ' ₫'"></p>
+                <p th:if="${purchasable}" class="muted" th:text="'Còn ' + ${availableStock} + ' sản phẩm có thể mua.'"></p>
+                <p th:unless="${purchasable}" class="item-error">Phân loại này hiện chưa thể đặt mua. Bạn có thể chọn phân loại khác hoặc quay lại sau.</p>
+                <form th:if="${purchasable and #authorization.expression('hasRole(''CUSTOMER'')')}" th:action="@{/cart/add}" method="post" class="detail-form">
+                    <input type="hidden" name="variantId" th:value="${variantId}"><input type="hidden" name="redirect" value="detail">
+                    <label for="quantity">Số lượng</label>
+                    <input id="quantity" type="number" name="quantity" min="1" th:max="${availableStock}"
+                           th:value="${requestedQuantity != null ? requestedQuantity : 1}" required>
+                    <button class="button full" type="submit">Thêm vào giỏ hàng</button>
+                </form>
+                <a th:if="${purchasable and #authorization.expression('!isAuthenticated()')}" class="button full" th:href="@{/login(continue=${'/product-detail/' + variantId})}">Đăng nhập để thêm vào giỏ</a>
+                <p th:if="${purchasable and #authorization.expression('isAuthenticated() and !hasRole(''CUSTOMER'')')}" class="muted">Mua hàng bằng tài khoản khách hàng.</p>
+                <p class="muted">Giỏ hàng không giữ hàng. Tồn kho được kiểm tra lại khi bạn đặt hàng.</p>
+            </div>
+            <p th:if="${selectedVariant == null}" class="muted">Cửa hàng chưa có phân loại để bán.</p>
+        </section>
+    </article>
+</main><footer th:replace="~{fragments/storefront :: footer}"></footer></body></html>
