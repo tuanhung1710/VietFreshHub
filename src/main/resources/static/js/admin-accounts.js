@@ -22,7 +22,9 @@
         description: option.dataset.roleDescription || ''
     }));
     const roleLabels = new Map(roleOptions.map(role => [role.name, role.label]));
-    const displayRoleName = roleName => roleLabels.get(roleName) || roleName;
+    const displayRoleName = roleName => roleName === 'ROLE_ADMIN'
+        ? 'Quản trị viên'
+        : roleLabels.get(roleName) || roleName;
 
     function showToast(message) {
         const toast = document.getElementById('toast');
@@ -80,9 +82,7 @@
     }
 
     function openDetails(account) {
-        const statusText = account.status === 'ACTIVE' ? 'Active'
-            : account.status === 'INACTIVE' ? 'Inactive'
-                : account.status === 'BLOCKED' ? 'Blocked' : 'Deleted · chỉ xem';
+        const statusText = account.status === 'ACTIVE' ? 'Active' : 'Inactive';
         const content = `
             <div class="detail-hero"><span class="account-avatar">${escapeHtml(account.name.trim().split(/\s+/).slice(-2).map(part => part[0] || '').join('').toUpperCase())}</span>
                 <div><h3>${escapeHtml(account.name)}</h3><p>${escapeHtml(account.email)}</p></div></div>
@@ -96,7 +96,7 @@
             </div>
             <p class="detail-section-label">VAI TRÒ HIỆN CÓ</p>
             <div class="role-list">${account.roleNames ? account.roleNames.split(', ').map(role => `<span class="role-chip">${escapeHtml(displayRoleName(role))}</span>`).join('') : '<span class="muted">Chưa có vai trò</span>'}</div>`;
-        const actions = account.status === 'DELETED' ? [] : [
+        const actions = [
             { name: 'edit', label: 'Sửa hồ sơ' },
             { name: 'roles', label: 'Đổi vai trò', primary: true },
             { name: 'status', label: 'Đổi trạng thái' }
@@ -120,16 +120,18 @@
         const options = roleOptions.map(role => `
             <label class="role-option"><input type="checkbox" name="roleIds" value="${escapeHtml(role.id)}" ${selectedIds.has(role.id) ? 'checked' : ''}>
                 <span><strong>${escapeHtml(role.label)}</strong><small>${escapeHtml(role.description)}</small></span></label>`).join('');
-        const content = `<form id="account-action-form" method="post"><div class="role-options">${options}</div>
-            <p class="inline-warning">Vai trò Quản lý cửa hàng chỉ được cấp cho tài khoản có hồ sơ người bán đã được phê duyệt. Tài khoản đã xóa chỉ đọc.</p></form>`;
+        const adminRole = account.roleNames.split(', ').includes('ROLE_ADMIN')
+            ? '<div class="role-option"><span><strong>Quản trị viên</strong><small>Role Admin được bảo vệ và không thể chỉnh sửa tại đây.</small></span></div>'
+            : '';
+        const content = `<form id="account-action-form" method="post"><div class="role-options">${options}${adminRole}</div>
+            <p class="inline-warning">Không thể gán role Quản trị viên tại đây. Vai trò Quản lý cửa hàng chỉ được cấp sau khi hồ sơ người bán được phê duyệt.</p></form>`;
         openModal(account, `MÃ TÀI KHOẢN #${account.id}`, 'Điều chỉnh vai trò', content, account.rolesUrl, ['Lưu vai trò']);
     }
 
     function openStatus(account) {
         const statuses = [
             ['ACTIVE', 'Active', 'Có thể đăng nhập và sử dụng hệ thống.'],
-            ['INACTIVE', 'Inactive', 'Tạm ngưng hoạt động.'],
-            ['BLOCKED', 'Blocked', 'Bị chặn đăng nhập bởi quản trị viên.']
+            ['INACTIVE', 'Inactive', 'Tạm ngưng hoạt động.']
         ];
         const choices = statuses.map(([value, label, description]) => `
             <label class="status-choice"><input type="radio" name="status" value="${value}" ${account.status === value ? 'checked' : ''}>

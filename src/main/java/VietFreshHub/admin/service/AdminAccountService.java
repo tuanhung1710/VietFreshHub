@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -36,12 +37,17 @@ public class AdminAccountService {
     private static final int PAGE_SIZE = 10;
     private static final String ACTIVE = "ACTIVE";
     private static final String INACTIVE = "INACTIVE";
-    private static final String BLOCKED = "BLOCKED";
+    private static final String LEGACY_BLOCKED = "BLOCKED";
     private static final String DELETED = "DELETED";
     private static final String ADMIN_ROLE = "ROLE_ADMIN";
+    private static final Set<String> ASSIGNABLE_ROLE_NAMES = Set.of(
+            "ROLE_CUSTOMER",
+            "ROLE_DELIVERY_STAFF",
+            "ROLE_STORE_MANAGER"
+    );
     private static final String STORE_MANAGER_ROLE = "ROLE_STORE_MANAGER";
-    private static final Set<String> DISPLAY_STATUSES = Set.of(ACTIVE, INACTIVE, BLOCKED, DELETED);
-    private static final Set<String> CHANGEABLE_STATUSES = Set.of(ACTIVE, INACTIVE, BLOCKED);
+    private static final Set<String> DISPLAY_STATUSES = Set.of(ACTIVE, INACTIVE);
+    private static final Set<String> CHANGEABLE_STATUSES = Set.of(ACTIVE, INACTIVE);
 
     private final UserRepository userRepository;
     private final UserRoleRepository userRoleRepository;
@@ -82,12 +88,13 @@ public class AdminAccountService {
     }
 
     public AdminAccountStats getStats() {
+        long activeCount = userRepository.countByStatus(ACTIVE);
+        long inactiveCount = userRepository.countByStatus(INACTIVE)
+                + userRepository.countByStatus(LEGACY_BLOCKED);
         return new AdminAccountStats(
-                userRepository.count(),
-                userRepository.countByStatus(ACTIVE),
-                userRepository.countByStatus(INACTIVE),
-                userRepository.countByStatus(BLOCKED),
-                userRepository.countByStatus(DELETED)
+                activeCount + inactiveCount,
+                activeCount,
+                inactiveCount
         );
     }
 
@@ -125,7 +132,7 @@ public class AdminAccountService {
         requireEditable(user);
         String newStatus = requestedStatus == null ? "" : requestedStatus.trim().toUpperCase(Locale.ROOT);
         if (!CHANGEABLE_STATUSES.contains(newStatus)) {
-            throw new IllegalArgumentException("Chỉ được chuyển trạng thái sang ACTIVE, INACTIVE hoặc BLOCKED.");
+            throw new IllegalArgumentException("Chỉ được chuyển trạng thái sang ACTIVE hoặc INACTIVE.");
         }
         if (newStatus.equals(user.getStatus())) {
             return;
@@ -145,13 +152,21 @@ public class AdminAccountService {
     public void updateRoles(Long userId, List<Integer> requestedRoleIds) {
         User user = lockUser(userId);
         requireEditable(user);
-        if (requestedRoleIds == null || requestedRoleIds.isEmpty()) {
-            throw new IllegalArgumentException("Tài khoản cần có ít nhất một role.");
-        }
+        List<UserRole> currentLinks = userRoleRepository.findAllByUser_UserId(userId);
+        Set<Integer> currentIds = currentLinks.stream()
+                .map(link -> link.getId().getRoleId())
+                .collect(Collectors.toSet());
+        Set<String> currentNames = currentLinks.stream()
+                .map(link -> link.getRole().getRoleName())
+                .collect(Collectors.toSet());
 
-        Set<Integer> selectedIds = new HashSet<>(requestedRoleIds);
-        if (selectedIds.size() != requestedRoleIds.size()) {
+        List<Integer> requestedIds = requestedRoleIds == null ? List.of() : requestedRoleIds;
+        Set<Integer> selectedIds = new HashSet<>(requestedIds);
+        if (selectedIds.size() != requestedIds.size()) {
             throw new IllegalArgumentException("Danh sách role không hợp lệ.");
+        }
+        if (selectedIds.isEmpty() && !currentNames.contains(ADMIN_ROLE)) {
+            throw new IllegalArgumentException("Tài khoản cần có ít nhất một role.");
         }
 
         List<Role> selectedRoles = roleRepository.findAllById(selectedIds);
@@ -159,10 +174,20 @@ public class AdminAccountService {
             throw new IllegalArgumentException("Một hoặc nhiều role không còn tồn tại.");
         }
 
-        List<UserRole> currentLinks = userRoleRepository.findAllByUser_UserId(userId);
-        Set<Integer> currentIds = currentLinks.stream().map(link -> link.getId().getRoleId()).collect(java.util.stream.Collectors.toSet());
-        Set<String> currentNames = currentLinks.stream().map(link -> link.getRole().getRoleName()).collect(java.util.stream.Collectors.toSet());
-        Set<String> selectedNames = selectedRoles.stream().map(Role::getRoleName).collect(java.util.stream.Collectors.toSet());
+        Set<String> selectedNames = selectedRoles.stream()
+                .map(Role::getRoleName)
+                .collect(Collectors.toSet());
+        if (!ASSIGNABLE_ROLE_NAMES.containsAll(selectedNames)) {
+            throw new IllegalArgumentException("Chỉ được gán các role CUSTOMER, DELIVERY_STAFF hoặc STORE_MANAGER.");
+        }
+
+        // Admin is a protected role: it cannot be assigned or removed from this form.
+        if (currentNames.contains(ADMIN_ROLE)) {
+            currentLinks.stream()
+                    .filter(link -> ADMIN_ROLE.equals(link.getRole().getRoleName()))
+                    .map(link -> link.getId().getRoleId())
+                    .forEach(selectedIds::add);
+        }
 
         if (selectedNames.contains(STORE_MANAGER_ROLE)
                 && !currentNames.contains(STORE_MANAGER_ROLE)
@@ -170,13 +195,6 @@ public class AdminAccountService {
                         userId, SellerApplicationStatus.APPROVED
                 )) {
             throw new IllegalStateException("Role STORE_MANAGER chỉ được cấp sau khi hồ sơ người bán được phê duyệt.");
-        }
-
-        if (ACTIVE.equals(user.getStatus())
-                && currentNames.contains(ADMIN_ROLE)
-                && !selectedNames.contains(ADMIN_ROLE)
-                && userRepository.countOtherUsersWithRoleAndStatus(ACTIVE, ADMIN_ROLE, userId) == 0) {
-            throw new IllegalStateException("Không thể gỡ role admin của admin ACTIVE cuối cùng.");
         }
 
         List<UserRole> removedLinks = currentLinks.stream()
@@ -207,6 +225,11 @@ public class AdminAccountService {
 
         return (root, query, builder) -> {
             List<Predicate> predicates = new ArrayList<>();
+            predicates.add(builder.or(
+                    builder.equal(root.get("status"), ACTIVE),
+                    builder.equal(root.get("status"), INACTIVE),
+                    builder.equal(root.get("status"), LEGACY_BLOCKED)
+            ));
             if (!normalizedKeyword.isEmpty()) {
                 predicates.add(builder.or(
                         builder.like(builder.lower(root.get("fullName")), searchPattern),
@@ -215,7 +238,14 @@ public class AdminAccountService {
                 ));
             }
             if (!"ALL".equals(selectedStatus)) {
-                predicates.add(builder.equal(root.get("status"), selectedStatus));
+                if (INACTIVE.equals(selectedStatus)) {
+                    predicates.add(builder.or(
+                            builder.equal(root.get("status"), INACTIVE),
+                            builder.equal(root.get("status"), LEGACY_BLOCKED)
+                    ));
+                } else {
+                    predicates.add(builder.equal(root.get("status"), selectedStatus));
+                }
             }
             if (!"ALL".equals(selectedRole)) {
                 Subquery<Integer> roleQuery = query.subquery(Integer.class);
@@ -251,7 +281,7 @@ public class AdminAccountService {
                 user.getFullName(),
                 user.getEmail(),
                 user.getPhone(),
-                user.getStatus(),
+                ACTIVE.equals(user.getStatus()) ? ACTIVE : INACTIVE,
                 user.getCreatedAt(),
                 user.getEmailVerifiedAt(),
                 List.copyOf(roleIds.getOrDefault(user.getUserId(), List.of())),

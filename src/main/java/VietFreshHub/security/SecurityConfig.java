@@ -48,6 +48,7 @@ public class SecurityConfig {
         http.authorizeHttpRequests(authorize -> {
             authorize.requestMatchers(
                     "/", "/login", "/register", "/verify-email",
+                            "/forgot-password", "/reset-password",
                             "/verify-email/resend", "/error",
                     "/css/**", "/js/**", "/images/**","/oauth2/**", "/login/oauth2/**"
             ).permitAll()

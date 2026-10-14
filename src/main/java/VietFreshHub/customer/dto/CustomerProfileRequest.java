@@ -7,6 +7,8 @@ public class CustomerProfileRequest {
 
     private String email;
 
+    private String avatarUrl;
+
     @NotBlank(message = "Vui lòng nhập họ và tên.")
     @Size(max = 150, message = "Họ và tên tối đa 150 ký tự.")
     private String fullName;
@@ -20,6 +22,14 @@ public class CustomerProfileRequest {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
     }
 
     public String getFullName() {

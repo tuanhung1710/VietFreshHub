@@ -52,14 +52,6 @@
                th:href="@{/admin/accounts(keyword=${keyword},role=${selectedRole},status='INACTIVE',page=1)}">
                 <span class="summary-icon icon-inactive" aria-hidden="true">Ⅱ</span><span class="summary-copy"><span>Inactive</span><strong th:text="${stats.inactive}">0</strong></span>
             </a>
-            <a class="summary-card" th:classappend="${selectedStatus == 'BLOCKED'} ? ' selected' : ''"
-               th:href="@{/admin/accounts(keyword=${keyword},role=${selectedRole},status='BLOCKED',page=1)}">
-                <span class="summary-icon icon-blocked" aria-hidden="true">⊘</span><span class="summary-copy"><span>Blocked</span><strong th:text="${stats.blocked}">0</strong></span>
-            </a>
-            <a class="summary-card" th:classappend="${selectedStatus == 'DELETED'} ? ' selected' : ''"
-               th:href="@{/admin/accounts(keyword=${keyword},role=${selectedRole},status='DELETED',page=1)}">
-                <span class="summary-icon icon-deleted" aria-hidden="true">⌫</span><span class="summary-copy"><span>Đã xóa · chỉ xem</span><strong th:text="${stats.deleted}">0</strong></span>
-            </a>
         </section>
 
         <section class="accounts-panel" aria-labelledby="accounts-title">
@@ -86,8 +78,6 @@
                         <option value="ALL" th:selected="${selectedStatus == 'ALL'}">Tất cả trạng thái</option>
                         <option value="ACTIVE" th:selected="${selectedStatus == 'ACTIVE'}">Active</option>
                         <option value="INACTIVE" th:selected="${selectedStatus == 'INACTIVE'}">Inactive</option>
-                        <option value="BLOCKED" th:selected="${selectedStatus == 'BLOCKED'}">Blocked</option>
-                        <option value="DELETED" th:selected="${selectedStatus == 'DELETED'}">Deleted · chỉ xem</option>
                     </select>
                 </label>
                 <input type="hidden" name="page" value="1">
@@ -105,16 +95,13 @@
                                 th:text="${#strings.isEmpty(account.fullName) ? '?' : #strings.substring(account.fullName, 0, 1)}">A</span><div><div class="account-name" th:text="${account.fullName}">Nguyễn An</div><div class="account-email"><span th:text="${account.email}">an@example.com</span><span th:if="${account.phone != null}" th:text="| · ${account.phone}|"></span></div></div></div></td>
                         <td><div class="role-list"><span class="role-chip" th:each="roleName : ${account.roleNames}" th:classappend="${roleName == 'ROLE_ADMIN'} ? ' role-admin' : (${roleName == 'ROLE_STORE_MANAGER'} ? ' role-store' : '')" th:text="${roleName == 'ROLE_ADMIN' ? 'Quản trị viên' : (roleName == 'ROLE_CUSTOMER' ? 'Khách hàng' : (roleName == 'ROLE_DELIVERY_STAFF' ? 'Nhân viên giao hàng' : (roleName == 'ROLE_STORE_MANAGER' ? 'Quản lý cửa hàng' : roleName)))}">Khách hàng</span><span th:if="${#lists.isEmpty(account.roleNames)}" class="muted">Chưa có vai trò</span></div></td>
                         <td><span class="status-pill" th:classappend="${' status-' + #strings.toLowerCase(account.status)}"
-                                  th:text="${account.status == 'ACTIVE' ? 'Active' : (account.status == 'INACTIVE' ? 'Inactive' : (account.status == 'BLOCKED' ? 'Blocked' : 'Deleted'))}">Active</span></td>
+                                  th:text="${account.status == 'ACTIVE' ? 'Active' : 'Inactive'}">Active</span></td>
                         <td class="date-cell" th:text="${#temporals.format(account.createdAt, 'dd/MM/yyyy')}">08/10/2026</td>
                         <td><div class="row-actions">
                             <button class="table-action" type="button" data-action="details">Chi tiết</button>
-                            <th:block th:if="${account.status != 'DELETED'}">
-                                <button class="table-action primary" type="button" data-action="edit">Sửa hồ sơ</button>
-                                <button class="table-action" type="button" data-action="roles">Đổi vai trò</button>
-                                <button class="table-action" type="button" data-action="status">Trạng thái</button>
-                            </th:block>
-                            <span class="read-only-label" th:if="${account.status == 'DELETED'}">Chỉ xem</span>
+                            <button class="table-action primary" type="button" data-action="edit">Sửa hồ sơ</button>
+                            <button class="table-action" type="button" data-action="roles">Đổi vai trò</button>
+                            <button class="table-action" type="button" data-action="status">Trạng thái</button>
                         </div></td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(accounts)}"><td colspan="5"><div class="empty-state"><span aria-hidden="true">⌕</span><strong>Không tìm thấy tài khoản</strong><p>Thử thay đổi từ khóa hoặc bộ lọc.</p></div></td></tr>
@@ -134,13 +121,13 @@
             </footer>
         </section>
 
-        <p class="demo-disclaimer"><strong>Ghi chú:</strong> Trạng thái DELETED được hiển thị để tra cứu và không thể chỉnh sửa. Tài khoản bị BLOCKED/INACTIVE hoặc thay đổi role sẽ cần đăng nhập lại để quyền mới có hiệu lực.</p>
+        <p class="demo-disclaimer"><strong>Ghi chú:</strong> Tài khoản Inactive hoặc thay đổi role sẽ cần đăng nhập lại để quyền mới có hiệu lực.</p>
     </main>
 
     <div id="role-options-source" hidden>
-        <div data-role-option th:each="availableRole : ${roles}"
+        <div data-role-option th:each="availableRole : ${roles}" th:if="${availableRole.roleName != 'ROLE_ADMIN'}"
              th:attr="data-role-id=${availableRole.roleId},data-role-name=${availableRole.roleName},data-role-description=${availableRole.description}"
-             th:text="${availableRole.roleName == 'ROLE_ADMIN' ? 'Quản trị viên' : (availableRole.roleName == 'ROLE_CUSTOMER' ? 'Khách hàng' : (availableRole.roleName == 'ROLE_DELIVERY_STAFF' ? 'Nhân viên giao hàng' : (availableRole.roleName == 'ROLE_STORE_MANAGER' ? 'Quản lý cửa hàng' : availableRole.roleName)))}">Khách hàng</div>
+             th:text="${availableRole.roleName == 'ROLE_CUSTOMER' ? 'Khách hàng' : (availableRole.roleName == 'ROLE_DELIVERY_STAFF' ? 'Nhân viên giao hàng' : (availableRole.roleName == 'ROLE_STORE_MANAGER' ? 'Quản lý cửa hàng' : availableRole.roleName))}">Khách hàng</div>
     </div>
 
     <div class="modal-backdrop" id="modal-backdrop" hidden>

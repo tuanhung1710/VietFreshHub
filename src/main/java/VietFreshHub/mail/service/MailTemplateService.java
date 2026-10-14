@@ -40,6 +40,30 @@ public class MailTemplateService {
         );
     }
 
+    public void sendPasswordReset(
+            String recipientEmail,
+            String recipientName,
+            String resetUrl,
+            int expiresInMinutes
+    ) {
+        Context context = new Context(Locale.forLanguageTag("vi"));
+        context.setVariable("recipientName", recipientName);
+        context.setVariable("resetUrl", resetUrl);
+        context.setVariable("expiresInMinutes", expiresInMinutes);
+
+        send(
+                recipientEmail,
+                "Đặt lại mật khẩu VietFresh Hub",
+                "mail/password-reset",
+                context,
+                "Xin chào " + recipientName + ",\n\n"
+                        + "Bạn vừa yêu cầu đặt lại mật khẩu VietFresh Hub. Mở liên kết sau để tạo mật khẩu mới: "
+                        + resetUrl + "\n\n"
+                        + "Liên kết có hiệu lực trong " + expiresInMinutes
+                        + " phút và chỉ sử dụng được một lần. Nếu bạn không yêu cầu thao tác này, hãy bỏ qua email."
+        );
+    }
+
     public void sendSellerApplicationApproved(
             String recipientEmail,
             String recipientName,

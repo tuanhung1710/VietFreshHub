@@ -4,13 +4,17 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import javax.imageio.ImageIO;
 
 @Service
 @RequiredArgsConstructor
@@ -27,11 +31,66 @@ public class CloudinaryStorageService {
 
     private final Cloudinary cloudinary;
 
+    @Value("${cloudinary.cloud-name}")
+    private String cloudName;
+
     public record UploadedAsset(
             String publicId,
             String resourceType,
             String format
     ) {}
+
+    public record UploadedAvatar(String secureUrl, String publicId) {}
+
+    public UploadedAvatar uploadPublicAvatar(MultipartFile file) {
+        validateAvatar(file);
+        String generatedPublicId = "vietfresh/avatars/" + UUID.randomUUID();
+        try {
+            Map<?, ?> result = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "resource_type", "image",
+                            "type", "upload",
+                            "public_id", generatedPublicId,
+                            "overwrite", false
+                    )
+            );
+            String secureUrl = (String) result.get("secure_url");
+            String publicId = (String) result.get("public_id");
+            if (secureUrl == null || publicId == null) {
+                throw new IOException("Cloudinary không trả về đủ thông tin ảnh đại diện");
+            }
+            return new UploadedAvatar(secureUrl, publicId);
+        } catch (IOException | RuntimeException exception) {
+            log.warn("Cloudinary avatar upload failed: sizeBytes={}", file.getSize());
+            throw new IllegalStateException("Không thể tải ảnh đại diện lên. Vui lòng thử lại.", exception);
+        }
+    }
+
+    public void deleteUploadedAvatar(String publicId) {
+        if (publicId == null || !publicId.startsWith("vietfresh/avatars/")) {
+            return;
+        }
+        try {
+            cloudinary.uploader().destroy(
+                    publicId,
+                    ObjectUtils.asMap(
+                            "resource_type", "image",
+                            "type", "upload",
+                            "invalidate", true
+                    )
+            );
+        } catch (Exception exception) {
+            log.warn("Could not remove an unused Cloudinary avatar asset.");
+        }
+    }
+
+    public void deleteManagedAvatarByUrl(String avatarUrl) {
+        String publicId = extractManagedAvatarPublicId(avatarUrl);
+        if (publicId != null) {
+            deleteUploadedAvatar(publicId);
+        }
+    }
 
     public UploadedAsset uploadPrivate(
             MultipartFile file,
@@ -87,6 +146,54 @@ public class CloudinaryStorageService {
 
     public void validateUpload(MultipartFile file, boolean imagesOnly) {
         validate(file, imagesOnly);
+    }
+
+    private void validateAvatar(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Bạn chưa chọn ảnh đại diện.");
+        }
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new IllegalArgumentException("Ảnh đại diện không được vượt quá 5 MB.");
+        }
+        String contentType = file.getContentType();
+        if (!"image/jpeg".equals(contentType) && !"image/png".equals(contentType)) {
+            throw new IllegalArgumentException("Ảnh đại diện chỉ chấp nhận định dạng JPG hoặc PNG.");
+        }
+        try (InputStream inputStream = file.getInputStream()) {
+            var image = ImageIO.read(inputStream);
+            if (image == null || (long) image.getWidth() * image.getHeight() > 40_000_000L) {
+                throw new IllegalArgumentException("File tải lên không phải ảnh JPG/PNG hợp lệ.");
+            }
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("Không thể đọc ảnh đại diện.", exception);
+        }
+    }
+
+    private String extractManagedAvatarPublicId(String avatarUrl) {
+        if (avatarUrl == null || avatarUrl.isBlank() || cloudName == null || cloudName.isBlank()) {
+            return null;
+        }
+        try {
+            URI uri = URI.create(avatarUrl);
+            String expectedPrefix = "/" + cloudName + "/image/upload/";
+            if (!"https".equalsIgnoreCase(uri.getScheme())
+                    || !"res.cloudinary.com".equalsIgnoreCase(uri.getHost())
+                    || !uri.getPath().startsWith(expectedPrefix)) {
+                return null;
+            }
+
+            String assetPath = uri.getPath().substring(expectedPrefix.length());
+            if (assetPath.matches("v\\d+/.*")) {
+                assetPath = assetPath.substring(assetPath.indexOf('/') + 1);
+            }
+            int extensionIndex = assetPath.lastIndexOf('.');
+            if (extensionIndex >= 0) {
+                assetPath = assetPath.substring(0, extensionIndex);
+            }
+            return assetPath.startsWith("vietfresh/avatars/") ? assetPath : null;
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
     }
     public String createPrivateDownloadUrl(
             String publicId,

@@ -109,7 +109,7 @@ public class AdminAccountController {
     private String normalizeStatusFilter(String status) {
         if (status == null || status.isBlank()) return "ALL";
         String normalized = status.trim().toUpperCase(java.util.Locale.ROOT);
-        return Set.of("ALL", "ACTIVE", "INACTIVE", "BLOCKED", "DELETED").contains(normalized)
+        return Set.of("ALL", "ACTIVE", "INACTIVE").contains(normalized)
                 ? normalized : "ALL";
     }
 
