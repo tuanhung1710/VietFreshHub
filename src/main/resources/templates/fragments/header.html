@@ -8,7 +8,7 @@
   </div>
   <div class="h-20 max-w-[1280px] mx-auto px-margin flex items-center justify-between gap-space-lg">
     <div class="flex items-center gap-space-md shrink-0"><img alt="VietFresh Hub Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCoee1aQxiSWv--WD0wwWrihEh5Q7BqMermSiCv4RPI9UClurYSjjlcSO0o3qWnCVwtn86xWqMBhy9UlCebehpUbdSjGL-DdOYPTIDxyJy0vw5FsudiEnBNufXggJ8sZhbN1EmrlXp482O626r6K-_SwIRR4MUrHtiErUZ_SVIhiF4tlgAqFpHPgHXieHK3hnG1xhZAi5YV_gsvAznVdoSNgMRVzR2JPdvvz4nU7FN9JbvKauJVIoz7">
-      <a class="flex flex-col" data-path="home" href="#">
+      <a class="flex flex-col" data-path="home" th:href="@{/home}">
         <span class="font-title-md text-title-md text-primary tracking-tight">VIETFRESH HUB</span>
         <span class="font-label-sm text-label-sm text-on-surface-variant tracking-wider uppercase"><br>
         </span>
@@ -25,9 +25,9 @@
         <span class="material-symbols-outlined text-2xl">notifications</span>
         <span class="absolute top-0.5 right-0.5 min-w-[20px] h-[20px] px-1 bg-tertiary text-on-tertiary text-label-sm font-label-md rounded-full flex items-center justify-center">2</span>
       </a>
-      <a class="relative flex items-center justify-center p-2 rounded-full hover:bg-surface-container hover:text-on-surface text-on-surface-variant transition-colors" data-path="gio-hang" href="#" title="Giỏ hàng">
+      <a class="relative flex items-center justify-center p-2 rounded-full hover:bg-surface-container hover:text-on-surface text-on-surface-variant transition-colors" data-path="gio-hang" th:href="@{/cart}" title="Giỏ hàng">
         <span class="material-symbols-outlined text-2xl">shopping_cart</span>
-        <span class="absolute 0 top-0.5 right-0.5 min-w-[20px] h-[20px] px-1 bg-tertiary text-on-tertiary text-label-sm font-label-md rounded-full flex items-center justify-center">3</span></a>
+        <span class="absolute 0 top-0.5 right-0.5 min-w-[20px] h-[20px] px-1 bg-tertiary text-on-tertiary text-label-sm font-label-md rounded-full flex items-center justify-center" th:text="${cart != null ? cart.totalItems : 0}">0</span></a>
       <div class="h-6 w-px bg-outline-variant hidden sm:block"></div>
       <div class="flex items-center gap-space-sm">
         <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">

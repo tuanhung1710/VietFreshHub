@@ -13,6 +13,8 @@ public interface ShopRepository extends JpaRepository<Shop, Long> {
 
     List<Shop> findAllByStatusOrderByShopNameAsc(String status);
 
+    Optional<Shop> findByShopName(String shopName);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from Shop s where s.shopId = :shopId")
     Optional<Shop> findByShopIdForUpdate(@Param("shopId") Long shopId);

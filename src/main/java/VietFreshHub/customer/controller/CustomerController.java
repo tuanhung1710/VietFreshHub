@@ -23,11 +23,6 @@ public class CustomerController {
         this.customerProfileService = customerProfileService;
     }
 
-    @GetMapping("/home")
-    public String home() {
-        return "customer/home";
-    }
-
     @GetMapping("/profile")
     public String profile(Authentication authentication, Model model) {
         model.addAttribute("profile", customerProfileService.getProfile(authentication.getName()));

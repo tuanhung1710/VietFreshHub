@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Thông tin không hợp lệ | VietFresh Hub</title>
+    <link rel="stylesheet" th:href="@{/css/storefront.css}">
+</head>
+<body><main class="container page"><section class="panel empty">
+    <p class="eyebrow">VietFresh Hub</p><h1>Vui lòng kiểm tra lại thông tin</h1>
+    <p class="muted" th:text="${message}"></p>
+    <a class="button" th:href="@{/cart}">Về giỏ hàng</a>
+    <a class="button" th:href="@{/home}">Khám phá sản phẩm</a>
+</section></main></body>
+</html>
