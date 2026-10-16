@@ -17,7 +17,7 @@
 
 <body class="bg-light">
 <main class="container py-4" style="max-width: 900px;">
-    <a th:href="@{/manager/promotions}"
+    <a th:href="@{/seller/promotions}"
        class="btn btn-outline-secondary mb-3">
         Quay lại danh sách
     </a>
@@ -30,8 +30,8 @@
         : 'Tạo chương trình khuyến mãi'}">
             </h1>
             <form th:action="${promotionId != null}
-          ? @{/manager/promotions/{id}/edit(id=${promotionId})}
-          : @{/manager/promotions}"
+          ? @{/seller/promotions/{id}/edit(id=${promotionId})}
+          : @{/seller/promotions}"
                   th:object="${promotionForm}"
                   method="post">
 
@@ -180,7 +180,7 @@
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 border-top pt-3">
-                    <a th:href="@{/manager/promotions}"
+                    <a th:href="@{/seller/promotions}"
                        class="btn btn-outline-secondary">
                         Hủy
                     </a>

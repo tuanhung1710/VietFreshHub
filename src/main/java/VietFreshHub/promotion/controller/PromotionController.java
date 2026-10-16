@@ -17,7 +17,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/manager/promotions")
+@RequestMapping("/seller/promotions")
 public class PromotionController {
 
     private final PromotionService promotionService;
@@ -32,7 +32,7 @@ public class PromotionController {
                 promotionService.getByShop(shopId)
         );
 
-        return "store_manager/promotions/promotion-list";
+        return "promotions/promotion-list";
     }
 
     @ModelAttribute("discountTypes")
@@ -45,7 +45,7 @@ public class PromotionController {
         shopService.getManagedShopId(authentication);
 
         model.addAttribute("promotionForm", new PromotionForm());
-        return "store_manager/promotions/promotion-form";
+        return "promotions/promotion-form";
     }
 
     @PostMapping
@@ -58,7 +58,7 @@ public class PromotionController {
         Long shopId = shopService.getManagedShopId(authentication);
 
         if (bindingResult.hasErrors()) {
-            return "store_manager/promotions/promotion-form";
+            return "promotions/promotion-form";
         }
 
         promotionService.create(shopId, form);
@@ -68,7 +68,7 @@ public class PromotionController {
                 "Tạo chương trình khuyến mãi thành công."
         );
 
-        return "redirect:/manager/promotions";
+        return "redirect:/seller/promotions";
     }
     @GetMapping("/{id}/edit")
     public String showEditForm(
@@ -87,7 +87,7 @@ public class PromotionController {
                     "errorMessage",
                     "Chỉ được sửa chương trình đang tắt."
             );
-            return "redirect:/manager/promotions";
+            return "redirect:/seller/promotions";
         }
 
         PromotionForm form = new PromotionForm();
@@ -103,7 +103,7 @@ public class PromotionController {
         model.addAttribute("promotionForm", form);
         model.addAttribute("promotionId", promotionId);
 
-        return "store_manager/promotions/promotion-form";
+        return "promotions/promotion-form";
     }
     @PostMapping("/{id}/edit")
     public String update(
@@ -124,13 +124,13 @@ public class PromotionController {
                     "errorMessage",
                     "Chỉ được sửa chương trình đang tắt."
             );
-            return "redirect:/manager/promotions";
+            return "redirect:/seller/promotions";
         }
 
         model.addAttribute("promotionId", promotionId);
 
         if (bindingResult.hasErrors()) {
-            return "store_manager/promotions/promotion-form";
+            return "promotions/promotion-form";
         }
 
         try {
@@ -141,7 +141,7 @@ public class PromotionController {
                     "Không thể sửa chương trình ở trạng thái hiện tại. "
                             + "Vui lòng quay lại danh sách để kiểm tra."
             );
-            return "store_manager/promotions/promotion-form";
+            return "promotions/promotion-form";
         }
 
         redirectAttributes.addFlashAttribute(
@@ -149,7 +149,7 @@ public class PromotionController {
                 "Cập nhật chương trình khuyến mãi thành công."
         );
 
-        return "redirect:/manager/promotions";
+        return "redirect:/seller/promotions";
     }
     @PostMapping("/{id}/activate")
     public String activate(
@@ -173,7 +173,7 @@ public class PromotionController {
             );
         }
 
-        return "redirect:/manager/promotions";
+        return "redirect:/seller/promotions";
     }
 
     @PostMapping("/{id}/deactivate")
@@ -198,6 +198,6 @@ public class PromotionController {
             );
         }
 
-        return "redirect:/manager/promotions";
+        return "redirect:/seller/promotions";
     }
 }

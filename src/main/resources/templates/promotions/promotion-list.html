@@ -63,7 +63,7 @@
                 Quản lý coupon
             </a>
 
-            <a th:href="@{/manager/promotions/new}"
+            <a th:href="@{/seller/promotions/new}"
                class="btn btn-success d-inline-flex align-items-center gap-2">
                 <i class="bi bi-plus-lg"></i>
                 Tạo khuyến mãi
@@ -170,13 +170,13 @@
                     <td class="text-center">
                         <div class="d-flex justify-content-center gap-2">
                             <a th:if="${promotion.status.name() == 'INACTIVE'}"
-                               th:href="@{/manager/promotions/{id}/edit(id=${promotion.promotionId})}"
+                               th:href="@{/seller/promotions/{id}/edit(id=${promotion.promotionId})}"
                                class="btn btn-outline-success btn-sm">
                                 Sửa
                             </a>
 
                             <form th:if="${promotion.status.name() == 'INACTIVE'}"
-                                  th:action="@{/manager/promotions/{id}/activate(id=${promotion.promotionId})}"
+                                  th:action="@{/seller/promotions/{id}/activate(id=${promotion.promotionId})}"
                                   method="post"
                                   class="m-0">
                                 <button type="submit" class="btn btn-success btn-sm">
@@ -185,7 +185,7 @@
                             </form>
 
                             <form th:if="${promotion.status.name() == 'ACTIVE'}"
-                                  th:action="@{/manager/promotions/{id}/deactivate(id=${promotion.promotionId})}"
+                                  th:action="@{/seller/promotions/{id}/deactivate(id=${promotion.promotionId})}"
                                   method="post"
                                   class="m-0"
                                   onsubmit="return confirm('Bạn muốn tắt chương trình khuyến mãi này?');">
