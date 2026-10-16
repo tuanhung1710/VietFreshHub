@@ -1,0 +1,462 @@
+.vf-inventory-card{padding:0}
+.vf-inventory-controls-card{border-radius:12px;margin-bottom:10px;box-shadow:none}
+.vf-inventory-card.vf-inventory-controls-card>.vf-list-controls{border-radius:inherit}
+.vf-inventory-results-card{border-radius:12px}
+.vf-activity-filter-grid{display:grid;grid-template-columns:minmax(180px,1fr) auto auto 140px 140px;gap:12px;align-items:end}
+.vf-activity-filter-grid>div{min-width:0}
+.vf-activity-filter-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
+@media(max-width:1199px){.vf-activity-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.vf-activity-search{grid-column:1/-1}}
+@media(max-width:575px){.vf-activity-filter-actions>.small{flex-basis:100%}}
+.vf-inventory-section-head{padding:14px 16px 0}
+.vf-inventory-section-head h2{font-size:17px;margin-bottom:6px}
+.vf-inventory-section-head p{font-size:12px}
+.vf-inventory-filters{display:flex;gap:10px;flex-wrap:wrap;padding:12px 16px;min-width:0}
+.vf-inventory-filters>.form-select{width:auto;flex:1;min-width:160px;max-width:100%}
+.vf-inventory-search{flex:1.8;min-width:250px;width:auto;max-width:100%}
+
+.vf-inventory-card > .vf-list-controls {
+    margin-bottom: 0;
+    border-radius: 12px 12px 0 0;
+}
+
+/* Group related fields so every column and action fits the available desktop width. */
+.vf-inventory-table,
+.vf-batch-table,
+.vf-inventory-journal-table,
+.vf-inventory-audit-table,
+.vf-inventory-allocation-table{table-layout:fixed;width:100%;min-width:0}
+.vf-col-name {
+    width: 34%;
+}
+
+.vf-col-quantity {
+    width: 12%;
+}
+
+.vf-col-sale {
+    width: 12%;
+}
+
+.vf-col-batches {
+    width: 9%;
+}
+
+.vf-col-actions {
+    width: 21%;
+}
+.vf-inventory-table th,
+.vf-batch-table th,
+.vf-inventory-journal-table th,
+.vf-inventory-audit-table th,
+.vf-inventory-allocation-table th{font-size:12px;white-space:normal;color:#64748b;line-height:1.4}
+.vf-inventory-table-wrap > .vf-inventory-table > thead > tr > th {background:#f5f8fa}
+.vf-inventory-table td,
+.vf-batch-table td,
+.vf-inventory-journal-table td,
+.vf-inventory-audit-table td,
+.vf-inventory-allocation-table td{overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.vf-inventory-table td,
+.vf-batch-table td,
+.vf-inventory-journal-table td,
+.vf-inventory-audit-table td,
+.vf-inventory-allocation-table td{font-size:13px}
+.vf-inventory-table > :not(caption) > * > *,
+.vf-batch-table > :not(caption) > * > *,
+.vf-inventory-journal-table > :not(caption) > * > *,
+.vf-inventory-audit-table > :not(caption) > * > *,
+.vf-inventory-allocation-table > :not(caption) > * > *{padding:12px 10px}
+.vf-table-number{text-align:right}
+.vf-inventory-table > thead > tr > th:not(:first-child):not(:last-child),
+.vf-batch-table th:nth-child(3),
+.vf-batch-table th:nth-child(4),
+.vf-batch-table th:nth-child(5),
+.vf-inventory-journal-table th:nth-child(4),
+.vf-inventory-allocation-table th:nth-child(2){text-align:right}
+.vf-table-actions .btn,
+.vf-inventory-row-actions .btn,
+.batch-actions .btn{max-width:100%;white-space:normal}
+.vf-inventory-product-name{display:flex;align-items:center;gap:12px;min-width:0}
+.vf-inventory-product-name>div{min-width:0;flex:1}
+.vf-inventory-cover{width:48px;height:48px;object-fit:cover;border-radius:9px;flex-shrink:0;background:#fafaf9}
+.vf-inventory-product-name strong{font-weight:650;font-size:13px;display:block;overflow-wrap:anywhere}
+.vf-inventory-product-name small{font-size:12px;margin-top:3px;overflow-wrap:anywhere}
+.vf-inventory-product-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:3px;line-height:1.5}
+.vf-inventory-product-meta small{display:inline;margin:0!important}
+.vf-inventory-product-meta .badge{white-space:nowrap}
+.vf-meta-separator{font-size:11px;color:#cbd5e1}
+.vf-inventory-filter-footer{align-items:center;flex-wrap:wrap;gap:8px 16px;margin-top:10px}
+.vf-inventory-filters .vf-inventory-filter-footer .vf-inventory-archive{flex:0 1 auto;order:0;margin:0;padding:0;font-size:12px}
+.vf-inventory-filter-footer>[data-vf-live-summary="count"]{margin-left:auto;text-align:right}
+.vf-inventory-variant-meta span{display:block}
+.vf-variant-cover{width:36px;height:36px;object-fit:cover;border-radius:7px;flex-shrink:0}
+.vf-inventory-product-row td{padding-top:17px!important;padding-bottom:17px!important}
+.vf-inventory-product-row{--bs-table-bg:#fff}
+.vf-inventory-variants{border-left:3px solid #bbf7d0}
+.vf-inventory-variant-row{--bs-table-bg:#f8fafc}
+.vf-inventory-variant-row td:first-child{padding-left:16px}
+.vf-inventory-variant-row strong{font-size:12px;font-weight:600}
+.vf-collapse-row>td{padding:0!important;border:0!important}
+.vf-inventory-row-actions{min-width:0}
+.vf-inventory-row-actions>.btn{flex-shrink:1}
+.vf-inventory-panel{padding:20px 24px;background:#f1f5f9;border-bottom:1px solid #e2e8f0;min-width:0}
+.vf-inventory-panel h3{font-size:14px;margin-bottom:6px}
+.vf-inventory-panel-heading>div{min-width:0;flex:1 1 320px}
+.vf-inventory-panel-heading>.btn{flex-shrink:0}
+.vf-batch-table-wrap{border:1px solid #e2e8f0;border-radius:9px;background:#fff}
+.vf-batch-table .badge,
+.vf-inventory-journal-table .badge,
+.vf-inventory-audit-table .badge{white-space:normal;line-height:1.4}
+.vf-batch-table td{vertical-align:top}
+.vf-batch-col-id{width:16%}
+.vf-batch-col-expiry{width:20%}
+.vf-batch-col-quantity{width:12%}
+.vf-batch-col-available{width:12%}
+.vf-batch-col-actions{width:28%}
+.vf-cell-line{display:block}
+.vf-cell-line + .vf-cell-line{margin-top:8px}
+.vf-cell-line small{margin-top:0}
+.batch-actions{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.batch-actions>.btn{flex-shrink:1}
+.vf-batch-extra{padding:12px;margin-top:10px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;min-width:0}
+
+/* Labeled batch actions stay compact; fixed Popper positioning keeps menus outside table scrollers. */
+.vf-batch-actions,
+.vf-batch-detail-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-width:0;max-width:100%}
+.vf-batch-actions>.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;max-width:100%;white-space:normal}
+.vf-batch-actions>.dropdown{flex:0 0 auto;max-width:100%}
+.vf-batch-more{display:inline-flex;align-items:center;justify-content:center;width:34px;min-height:34px;padding:6px}
+.vf-batch-more::after{display:none}
+.vf-batch-action-menu{width:min(17rem,calc(100vw - 24px));min-width:0;max-width:calc(100vw - 24px);padding:6px;z-index:1040;font-size:13px}
+.vf-batch-action-menu .dropdown-item{display:flex;align-items:center;gap:8px;min-height:36px;padding:8px;border-radius:5px;white-space:normal;overflow-wrap:anywhere}
+.vf-batch-action-menu .dropdown-item .vf-icon{width:16px;height:16px;flex:0 0 16px}
+.vf-batch-action-menu .dropdown-item span{min-width:0;flex:1}
+.vf-batch-detail-actions{justify-content:flex-end}
+
+@media(pointer:coarse){
+    .vf-batch-actions>.btn,
+    .vf-batch-more,
+    .vf-batch-action-menu .dropdown-item{min-height:44px}
+    .vf-batch-more{width:44px}
+}
+
+/* Both histories use the same time cell; identifiers and notes wrap within their columns. */
+.vf-history-col-time{width:18%}
+.vf-journal-col-product{width:25%}
+.vf-journal-col-type{width:18%}
+.vf-journal-col-quantity{width:16%}
+.vf-journal-col-note{width:23%}
+.vf-audit-col-action{width:24%}
+.vf-audit-col-entity{width:24%}
+.vf-audit-col-reason{width:34%}
+.vf-history-time-content,
+.vf-history-time-content > span,
+.vf-history-time-content > small{display:block}
+.vf-history-time-content > small{font-size:12px}
+.vf-history-note{white-space:pre-wrap;overflow-wrap:anywhere}
+.vf-allocation-col-id{width:45%}
+.vf-allocation-col-quantity{width:20%}
+.vf-allocation-col-status{width:35%}
+
+/* Forms and toolbars can shrink without making the whole page scroll. */
+.vf-inventory-main>.card,
+.vf-inventory-main .table-responsive,
+.vf-inventory-form,
+.vf-inventory-filter-form{min-width:0;max-width:100%}
+.vf-inventory-main>p,
+.vf-inventory-toolbar,
+.vf-inventory-form .form-label,
+.vf-inventory-form .small,
+.vf-inventory-form .alert,
+.vf-batch-extra .form-label{overflow-wrap:anywhere}
+.vf-inventory-toolbar{min-width:0;max-width:100%}
+.vf-inventory-toolbar>.btn{flex-shrink:0}
+.vf-inventory-form .row>*,
+.vf-inventory-filter-form .row>*{min-width:0}
+.vf-inventory-form .form-control,
+.vf-inventory-filter-form .form-control,
+.vf-inventory-filter-form .form-select,
+.vf-batch-extra .form-control{min-width:0;max-width:100%}
+.vf-inventory-form-actions{min-width:0}
+/* Batch information: compact heading and aligned label/value pairs. */
+.batch-summary {
+    max-width: 520px;
+    margin: 0 auto 24px;
+    text-align: left;
+}
+
+.batch-summary > p {
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.batch-summary h1 {
+    margin-bottom: 4px;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.batch-summary h2 {
+    margin-bottom: 0 !important;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--vf-muted);
+}
+
+.batch-summary dl {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px 24px;
+    margin: 18px 0 0;
+    padding-top: 18px;
+    border-top: 1px solid var(--vf-border);
+}
+
+.batch-summary dt,
+.batch-summary dd {
+    width: auto;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.batch-summary dt {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--vf-muted);
+}
+
+.batch-summary dd {
+    font-size: 14px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+@media screen and (max-width:767px){.vf-inventory-section-head{padding:16px 16px 0}.vf-inventory-filters{padding:16px;gap:8px}.vf-inventory-search{width:100%;flex-basis:100%;min-width:0}.vf-inventory-filters>.form-select{min-width:120px}.vf-inventory-panel{padding:16px}}
+@media print{.batch-summary{box-shadow:none;border:0;margin:0 auto;break-inside:avoid}}
+
+@media screen and (max-width: 575px) {
+    .vf-inventory-filters > .form-select {
+        flex-basis: 100%;
+        width: 100%;
+    }
+}
+
+/* Small screens show labeled rows; reading stock and reaching actions needs no sideways scrolling. */
+@media screen and (max-width: 767px) {
+    .vf-inventory-table,
+    .vf-batch-table,
+    .vf-inventory-journal-table,
+    .vf-inventory-audit-table,
+    .vf-inventory-allocation-table,
+    .vf-inventory-main table tbody,
+    .vf-inventory-main table tr {
+        display: block;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .vf-inventory-main table colgroup {
+        display: none;
+    }
+
+    .vf-inventory-main table thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+    }
+
+    .vf-inventory-main table tbody > tr:not(.vf-collapse-row) {
+        padding: 8px 0;
+        border-bottom: 1px solid var(--vf-border);
+    }
+
+    .vf-inventory-main table td {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        border: 0;
+        padding: 8px 14px !important;
+    }
+
+    .vf-inventory-main table td[data-label] {
+        display: grid;
+        grid-template-columns: minmax(0, 42%) minmax(0, 1fr);
+        gap: 4px 12px;
+        align-items: start;
+    }
+
+    .vf-inventory-main table td[data-label]::before {
+        content: attr(data-label);
+        grid-column: 1;
+        grid-row: 1;
+        color: #64748b;
+        font-weight: 600;
+        text-align: left;
+        line-height: 1.4;
+    }
+
+    .vf-inventory-main table td[data-label] > * {
+        grid-column: 2;
+        min-width: 0;
+    }
+
+    .vf-inventory-main table td.vf-table-identity,
+    .vf-inventory-main table td.vf-table-actions,
+    .vf-inventory-main table td.vf-batch-dates-cell {
+        display: block;
+    }
+
+    .vf-inventory-main table td.vf-table-actions::before {
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    .vf-inventory-main table td.vf-batch-dates-cell::before {
+        display: none;
+    }
+
+    .vf-batch-dates-cell .vf-cell-line {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .vf-batch-dates-cell .vf-cell-line > span {
+        min-width: 0;
+        text-align: right;
+    }
+
+    .vf-inventory-main .vf-collapse-row > td {
+        padding: 0 !important;
+    }
+
+    .vf-inventory-variants {
+        border-left: 0;
+    }
+
+    .vf-inventory-panel {
+        padding: 14px;
+    }
+
+    .vf-inventory-panel-heading > .btn {
+        max-width: 100%;
+        white-space: normal !important;
+    }
+
+    .vf-batch-extra {
+        margin-top: 8px;
+    }
+
+    .vf-history-time-content > small {
+        margin-top: 0;
+    }
+}
+
+/* The inventory list keeps all three levels on the same column tracks. */
+.vf-list-page .vf-inventory-card .vf-inventory-table,
+.vf-list-page .vf-inventory-card .vf-batch-table {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+}
+.vf-list-page .vf-inventory-card .vf-inventory-table-wrap > .vf-inventory-table {min-width:1040px}
+.vf-list-page .vf-inventory-card .vf-inventory-variants,
+.vf-list-page .vf-inventory-card .vf-batch-table {min-width:0}
+.vf-list-page .vf-inventory-card .vf-col-name {width:auto}
+.vf-list-page .vf-inventory-card .vf-col-quantity,
+.vf-list-page .vf-inventory-card .vf-col-sale {width:112px}
+.vf-list-page .vf-inventory-card .vf-col-batches {width:100px}
+.vf-list-page .vf-inventory-card .vf-col-actions {width:230px}
+.vf-list-page .vf-inventory-card .vf-inventory-table-wrap {overflow-x:auto;overscroll-behavior-x:contain}
+.vf-list-page .vf-inventory-card .vf-inventory-variants {border-left:0;box-shadow:inset 3px 0 #bbf7d0}
+.vf-list-page .vf-inventory-card .vf-inventory-lot-list {padding:10px 0 0;margin:0}
+.vf-list-page .vf-inventory-card .vf-inventory-lot-list > .vf-inventory-panel-heading,
+.vf-list-page .vf-inventory-card .vf-inventory-lot-list > p {margin-left:16px;margin-right:16px}
+.vf-list-page .vf-inventory-card .vf-inventory-panel-heading > div {flex-basis:0}
+.vf-list-page .vf-inventory-card .vf-batch-table-wrap {border:0;border-radius:0;overflow:visible}
+.vf-list-page .vf-inventory-card .vf-inventory-table colgroup,
+.vf-list-page .vf-inventory-card .vf-batch-table colgroup {display:table-column-group}
+.vf-list-page .vf-inventory-card .vf-inventory-table tbody,
+.vf-list-page .vf-inventory-card .vf-batch-table tbody {display:table-row-group}
+.vf-list-page .vf-inventory-card .vf-inventory-table tr,
+.vf-list-page .vf-inventory-card .vf-batch-table tr {display:table-row;padding:0;border-bottom:0}
+.vf-list-page .vf-inventory-card .vf-inventory-table td,
+.vf-list-page .vf-inventory-card .vf-batch-table td {
+    display:table-cell;
+    width:auto;
+    padding:10px 8px!important;
+    vertical-align:middle;
+}
+.vf-list-page .vf-inventory-card .vf-inventory-table th,
+.vf-list-page .vf-inventory-card .vf-batch-table th {padding:10px 8px;white-space:nowrap}
+.vf-list-page .vf-inventory-card .vf-inventory-table th:nth-child(n+2):nth-child(-n+5),
+.vf-list-page .vf-inventory-card .vf-batch-table th:nth-child(n+2):nth-child(-n+5) {text-align:right}
+.vf-list-page .vf-inventory-card td[data-label]::before {display:none;content:none}
+.vf-list-page .vf-inventory-card .vf-table-number {white-space:nowrap;text-align:right}
+.vf-list-page .vf-inventory-card .vf-collapse-row > td {padding:0!important}
+.vf-list-page .vf-inventory-card .vf-inventory-variant-row > td:first-child {padding-left:16px!important}
+.vf-list-page .vf-inventory-card .vf-batch-table td:first-child {padding-left:64px!important}
+.vf-list-page .vf-inventory-card .vf-inventory-product-row > td {padding-top:14px!important;padding-bottom:14px!important}
+.vf-list-page .vf-inventory-card .vf-inventory-row-actions,
+.vf-list-page .vf-inventory-card .vf-batch-actions {flex-wrap:nowrap!important;gap:8px;min-width:max-content}
+.vf-list-page .vf-inventory-card .vf-table-actions .btn,
+.vf-list-page .vf-inventory-card .vf-inventory-row-actions > .btn,
+.vf-list-page .vf-inventory-card .vf-batch-actions > .btn {white-space:nowrap!important;flex-shrink:0;max-width:none}
+.vf-list-page .vf-inventory-card .vf-batch-identity-heading {display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.vf-list-page .vf-inventory-card .vf-batch-dates-cell {display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.vf-list-page .vf-inventory-card .vf-batch-dates-cell .vf-cell-line {display:inline-flex;justify-content:flex-start;gap:6px;margin:0;white-space:nowrap}
+.vf-list-page .vf-inventory-card .vf-batch-dates-cell .vf-cell-line > span {text-align:left}
+
+@media screen and (max-width:767px) {
+    /* Override the history-card layout only for the inventory list. */
+    .vf-list-page .vf-inventory-card .vf-inventory-table-wrap > .vf-inventory-table > thead {
+        position:relative;
+        display:table-header-group;
+        width:auto;
+        height:auto;
+        clip:auto;
+        overflow:visible;
+    }
+    .vf-list-page .vf-inventory-card .vf-inventory-table td,
+    .vf-list-page .vf-inventory-card .vf-batch-table td {border-bottom:1px solid var(--vf-border)}
+    .vf-list-page .vf-inventory-card .vf-collapse-row > td {border:0}
+    .vf-list-page .vf-inventory-card .vf-inventory-panel-heading > .btn {white-space:nowrap!important}
+}
+
+/* Compact desktop row; smaller viewports keep room for labeled inputs. */
+.vf-inventory-filters{align-items:end}
+.vf-inventory-filters .vf-inventory-search{flex:1 0 100%;width:100%;min-width:0}
+.vf-inventory-filters.vf-shared-filters{display:block;padding:10px 14px}
+.vf-shared-filters .form-label{display:block;margin-bottom:4px}
+.vf-shared-filters .vf-inventory-archive{order:0;grid-column:auto;margin:0;padding-bottom:8px}
+.vf-inventory-field{flex:1;min-width:150px}
+.vf-inventory-field label{display:block;font-size:13px;margin-bottom:6px}
+.vf-inventory-archive{flex:1 0 100%;font-size:13px;order:1}
+.vf-inventory-product-name a{color:inherit;text-decoration:none}
+.vf-inventory-product-name a:hover{text-decoration:underline}
+@media(max-width:575.98px){.vf-inventory-field{flex-basis:100%;min-width:0}}
+
+@media(min-width:1200px){
+    .vf-inventory-filters .vf-inventory-search{flex:1 1 260px;width:auto;min-width:260px;margin-bottom:0}
+    .vf-inventory-filters .vf-inventory-category{flex:0 0 180px;min-width:0}
+    .vf-inventory-filters .vf-inventory-stock{flex:0 0 140px;min-width:0}
+    .vf-inventory-filters .vf-inventory-expiry{flex:0 0 150px;min-width:0}
+    .vf-inventory-filters>.btn{flex-shrink:0}
+}
+
+@media(min-width:768px){
+    .vf-inventory-filters{display:grid;grid-template-columns:minmax(120px,1fr) minmax(110px,.65fr) minmax(100px,.5fr) minmax(110px,.55fr) auto auto;gap:8px 10px}
+    .vf-inventory-filters .vf-inventory-search{width:auto;min-width:0;margin-bottom:0}
+    .vf-inventory-filters .vf-inventory-field{min-width:0}
+    .vf-inventory-filters .vf-inventory-field label{font-size:12px;margin-bottom:4px}
+    .vf-inventory-filters .vf-inventory-archive{grid-column:1/-1;grid-row:2;margin:0;font-size:12px}
+}

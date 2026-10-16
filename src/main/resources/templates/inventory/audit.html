@@ -1,17 +1,117 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/product-inventory :: head('Lịch sử thao tác','inventory')}"></head>
-<body><header th:replace="~{fragments/product-inventory :: nav('inventory')}"></header>
-<main class="container vf-main">
-<a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{/seller/inventory}">← Kho hàng</a>
-<h1>Lịch sử thao tác</h1><p class="text-body-secondary mb-4">Các thay đổi thông tin, giá, trạng thái và biến động kho của cửa hàng.</p>
-<div class="card overflow-hidden mb-3"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
-<thead class="table-light"><tr><th scope="col">Thời gian</th><th scope="col">Thao tác</th><th scope="col">Đối tượng</th><th scope="col">Người thao tác</th><th scope="col">Lý do</th></tr></thead>
-<tbody><tr th:each="a : ${events.content}"><td class="small text-nowrap" th:text="${#temporals.format(a.createdAt.plusHours(7),'dd/MM/yyyy HH:mm:ss')}"></td><td th:text="${a.action}"></td><td class="text-nowrap" th:text="${a.entityType+' #'+a.entityId}"></td><td th:text="${'#'+a.actorId}"></td><td th:text="${a.reason}"></td></tr><tr th:if="${events.empty}"><td colspan="5" class="text-center text-body-secondary py-5">Chưa có lịch sử thao tác.</td></tr></tbody>
-</table></div></div>
-<nav class="d-flex flex-wrap align-items-center justify-content-between gap-3" aria-label="Trang lịch sử">
-<a class="btn btn-outline-secondary btn-sm" th:if="${events.hasPrevious()}" th:href="@{/seller/inventory/audit(page=${events.number},size=${events.size})}">← Trước</a>
-<span class="small text-body-secondary" th:text="${'Trang '+(events.number+1)+' / '+T(java.lang.Math).max(1,events.totalPages)}"></span>
-<a class="btn btn-outline-secondary btn-sm" th:if="${events.hasNext()}" th:href="@{/seller/inventory/audit(page=${events.number+2},size=${events.size})}">Sau →</a>
-</nav></main></body></html>
+    <head th:replace="~{fragments/product-inventory :: head('Nhật ký hoạt động','inventory')}"></head>
+    <body>
+        <header th:replace="~{fragments/product-inventory :: nav('inventory')}"></header>
+        <div class="vf-workspace">
+        <main class="container vf-main vf-inventory-main">
+            <a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{/seller/inventory}">
+                ← Quản lý tồn kho
+            </a>
+            <h1>Nhật ký hoạt động</h1>
+            <p class="text-body-secondary mb-4">Theo dõi các thay đổi về sản phẩm và tồn kho của cửa hàng. Thời gian hiển thị theo giờ Việt Nam.</p>
+            <form class="card p-3 mb-4 vf-inventory-filter-form" th:action="@{/seller/inventory/audit}" method="get">
+                <input type="hidden" name="size" th:value="${events.size}">
+                <div class="vf-activity-filter-grid">
+                    <div class="vf-activity-search">
+                        <label class="form-label" for="activity-q">Tìm kiếm</label>
+                        <input class="form-control" id="activity-q" name="q" th:value="${activityFilters.q}"
+                               placeholder="Nội dung, sản phẩm, SKU hoặc mã lô" maxlength="200">
+                    </div>
+                    <div>
+                        <label class="form-label" for="activity-action">Loại hoạt động</label>
+                        <select class="form-select" id="activity-action" data-vf-fit-select="250" name="action">
+                            <option value="">Tất cả hoạt động</option>
+                            <option th:each="a : ${activityActions}" th:value="${a.key}" th:text="${a.value}"
+                                    th:selected="${activityFilters.action == a.key}"></option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="activity-entity">Đối tượng</label>
+                        <select class="form-select" id="activity-entity" data-vf-fit-select="180" name="entity">
+                            <option value="">Tất cả đối tượng</option>
+                            <option th:each="e : ${activityEntities}" th:value="${e.key}" th:text="${e.value}"
+                                    th:selected="${activityFilters.entity == e.key}"></option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="activity-from">Từ ngày</label>
+                        <input class="form-control" id="activity-from" type="date" name="from"
+                               th:value="${activityFilters.from}" th:max="${activityFilters.to}">
+                    </div>
+                    <div>
+                        <label class="form-label" for="activity-to">Đến ngày</label>
+                        <input class="form-control" id="activity-to" type="date" name="to"
+                               th:value="${activityFilters.to}" th:min="${activityFilters.from}">
+                    </div>
+                </div>
+                <div class="vf-activity-filter-actions">
+                    <span class="small text-secondary" th:text="${events.totalElements + ' bản ghi phù hợp'}"></span>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-success">Áp dụng</button>
+                        <a class="btn btn-light" th:href="@{/seller/inventory/audit(size=${events.size})}">Xóa bộ lọc</a>
+                    </div>
+                </div>
+            </form>
+<div class="card mb-3">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 vf-inventory-audit-table" aria-label="Nhật ký hoạt động">
+                        <colgroup>
+                            <col class="vf-history-col-time">
+                            <col class="vf-audit-col-action">
+                            <col class="vf-audit-col-entity">
+                            <col class="vf-audit-col-reason">
+                        </colgroup>
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Thời gian</th>
+                                <th scope="col">Hoạt động</th>
+                                <th scope="col">Nội dung liên quan</th>
+                                <th scope="col">Lý do / Thông tin liên quan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="vf-history-row" th:each="a : ${events.content}">
+                                <td class="vf-history-time-cell" data-label="Thời gian">
+                                    <time th:replace="~{fragments/product-inventory :: historyTime(${a.event.createdAt})}"></time>
+                                </td>
+                                <td data-label="Hoạt động">
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis" th:text="${a.actionLabel}"></span>
+                                </td>
+                                <td data-label="Nội dung liên quan">
+                                    <strong th:text="${a.entityLabel}"></strong>
+                                </td>
+                                <td data-label="Lý do / Thông tin liên quan">
+                                    <span class="vf-history-note"
+                                          th:if="${a.event.reason!=null&&!#strings.isEmpty(#strings.trim(a.event.reason))}"
+                                          th:text="${a.event.reason}"></span>
+                                    <span class="text-body-secondary"
+                                          th:unless="${a.event.reason!=null&&!#strings.isEmpty(#strings.trim(a.event.reason))}">—</span>
+                                </td>
+                            </tr>
+                            <tr th:if="${events.empty}">
+                                <td colspan="4" class="text-center text-body-secondary py-5">
+                                    <h2 class="h6" th:text="${activityFilters.active ? 'Không tìm thấy hoạt động phù hợp' : 'Chưa có hoạt động'}"></h2>
+                                    <p class="mb-0" th:text="${activityFilters.active ? 'Thử đổi từ khóa hoặc xóa bộ lọc để xem thêm hoạt động.' : 'Các thay đổi về sản phẩm và tồn kho sẽ hiển thị tại đây.'}"></p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="vf-pagination-panel">
+                <nav th:replace="~{fragments/product-inventory :: pagination(${events}, @{/seller/inventory/audit(page=${events.number},size=${events.size},q=${activityFilters.q},action=${activityFilters.action},entity=${activityFilters.entity},from=${activityFilters.from},to=${activityFilters.to})}, @{/seller/inventory/audit(page=${events.number+2},size=${events.size},q=${activityFilters.q},action=${activityFilters.action},entity=${activityFilters.entity},from=${activityFilters.from},to=${activityFilters.to})}, 'Phân trang lịch sử hoạt động', 'bản ghi')}"></nav>
+                <form class="vf-page-size" th:action="@{/seller/inventory/audit}" method="get">
+                    <input type="hidden" name="q" th:value="${activityFilters.q}">
+                    <input type="hidden" name="action" th:value="${activityFilters.action}">
+                    <input type="hidden" name="entity" th:value="${activityFilters.entity}">
+                    <input type="hidden" name="from" th:value="${activityFilters.from}">
+                    <input type="hidden" name="to" th:value="${activityFilters.to}">
+                    <th:block th:replace="~{fragments/product-inventory :: pageSize(${events}, 'audit-size', 'Bản ghi mỗi trang')}"></th:block>
+                </form>
+            </div>
+        </main>
 
+        </div>
+    </body>
+</html>

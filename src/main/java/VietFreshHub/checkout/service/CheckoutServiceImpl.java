@@ -12,7 +12,7 @@ import VietFreshHub.cart.repository.CartRepository;
 import VietFreshHub.cart.service.CartService;
 import VietFreshHub.checkout.dto.*;
 import VietFreshHub.exception.CheckoutException;
-import VietFreshHub.inventory.service.InventoryReservationService;
+import VietFreshHub.checkout.service.InventoryReservationService;
 import VietFreshHub.checkout.service.ShippingQuoteService;
 import VietFreshHub.checkout.repository.CheckoutAddressRepository;
 import VietFreshHub.checkout.service.CheckoutService;
@@ -25,9 +25,9 @@ import VietFreshHub.order.service.OrderPlacedEvent;
 import VietFreshHub.order.repository.OrderRepository;
 import VietFreshHub.payment.entity.Payment;
 import VietFreshHub.payment.repository.PaymentMethodRepository;
-import VietFreshHub.product.entity.Product;
-import VietFreshHub.product.entity.ProductVariant;
-import VietFreshHub.product.service.CatalogService;
+import VietFreshHub.catalog.entity.CatalogProduct;
+import VietFreshHub.catalog.entity.CatalogVariant;
+import VietFreshHub.catalog.service.CatalogService;
 import VietFreshHub.shop.entity.Shop;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
@@ -141,7 +141,7 @@ public class CheckoutServiceImpl implements CheckoutService {
             shopOrder.setTotalAmount(money(shopSubtotal.add(fee))); em.persist(shopOrder);
             shopOrderIds.add(shopOrder.getShopOrderId());
             for(CartItem line:lines) {
-                ProductVariant variant=line.getVariant(); OrderItem item=new OrderItem(); item.setShopOrder(shopOrder);
+                CatalogVariant variant=line.getVariant(); OrderItem item=new OrderItem(); item.setShopOrder(shopOrder);
                 item.setVariant(variant); item.setProductNameSnapshot(variant.getProduct().getName());
                 item.setVariantNameSnapshot(variant.getVariantName()); item.setSkuSnapshot(variant.getSku());
                 item.setUnitPrice(variant.getPrice()); item.setQuantity(line.getQuantity()); item.setTotalAmount(money(lineTotal(line)));
@@ -163,10 +163,10 @@ public class CheckoutServiceImpl implements CheckoutService {
 
     private void lockCatalog(List<CartItem> selected) {
         var variants=selected.stream().map(CartItem::getVariant).collect(Collectors.toMap(
-                ProductVariant::getVariantId,Function.identity(),(a,b)->a,TreeMap::new));
-        var products=variants.values().stream().map(ProductVariant::getProduct).collect(Collectors.toMap(
-                Product::getProductId,Function.identity(),(a,b)->a,TreeMap::new));
-        var shops=products.values().stream().map(Product::getShop).collect(Collectors.toMap(
+                CatalogVariant::getVariantId,Function.identity(),(a,b)->a,TreeMap::new));
+        var products=variants.values().stream().map(CatalogVariant::getProduct).collect(Collectors.toMap(
+                CatalogProduct::getProductId,Function.identity(),(a,b)->a,TreeMap::new));
+        var shops=products.values().stream().map(CatalogProduct::getShop).collect(Collectors.toMap(
                 Shop::getShopId,Function.identity(),(a,b)->a,TreeMap::new));
         shops.values().forEach(shop -> em.refresh(shop,LockModeType.PESSIMISTIC_READ));
         shops.values().stream().map(Shop::getApplicationId).filter(Objects::nonNull).distinct().sorted()

@@ -1,6 +1,6 @@
 package VietFreshHub.order.entity;
 
-import VietFreshHub.product.entity.ProductVariant;
+import VietFreshHub.catalog.entity.CatalogVariant;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,7 +14,7 @@ public class OrderItem {
     @Id @GeneratedValue(strategy=GenerationType.IDENTITY) @Column(name="order_item_id") private Long orderItemId;
     @ManyToOne(fetch=FetchType.LAZY, optional=false) @JoinColumn(name="shop_order_id", nullable=false) private ShopOrder shopOrder;
     @Column(name="shop_order_id", insertable=false, updatable=false) private Long shopOrderId;
-    @ManyToOne(fetch=FetchType.LAZY, optional=false) @JoinColumn(name="variant_id", nullable=false) private ProductVariant variant;
+    @ManyToOne(fetch=FetchType.LAZY, optional=false) @JoinColumn(name="variant_id", nullable=false) private CatalogVariant variant;
     @Nationalized @Column(name="product_name_snapshot", nullable=false, length=250) private String productNameSnapshot;
     @Nationalized @Column(name="variant_name_snapshot", nullable=false, length=200) private String variantNameSnapshot;
     @Column(name="sku_snapshot", nullable=false, length=100) private String skuSnapshot;

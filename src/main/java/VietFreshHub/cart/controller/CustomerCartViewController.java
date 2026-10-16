@@ -2,7 +2,7 @@ package VietFreshHub.cart.controller;
 import VietFreshHub.auth.service.CurrentCustomerService;
 import VietFreshHub.cart.dto.*;
 import VietFreshHub.cart.service.CartService;
-import VietFreshHub.product.service.CatalogService;
+import VietFreshHub.catalog.service.CatalogService;
 import VietFreshHub.exception.OutOfStockException;
 import VietFreshHub.exception.ResourceNotFoundException;
 import jakarta.validation.Valid;

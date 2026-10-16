@@ -1,61 +1,546 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/product-inventory :: head('Quản lý tồn kho','inventory')}"></head>
-<body><div th:replace="~{fragments/product-inventory :: nav('inventory')}"></div>
-<main class="container vf-main">
-  <div class="page-heading"><div><h1>Quản lý tồn kho</h1><p class="text-secondary">Theo dõi số lượng theo từng phân loại hàng và lô nhập.</p></div><div class="d-flex flex-wrap gap-2"><a class="btn btn-outline-secondary" th:href="@{/seller/inventory(stock='expired')}">Cảnh báo hạn sử dụng</a><a class="btn btn-outline-secondary" th:href="@{/seller/inventory/journal}"><svg class="vf-icon me-1"><use href="#vf-history"/></svg>Lịch sử thay đổi</a><a class="btn btn-light" th:href="@{/seller/inventory/audit}">Lịch sử thao tác</a></div></div>
-  <div th:replace="~{fragments/product-inventory :: messages}"></div>
-  <section class="card vf-inventory-card">
-    <div class="vf-inventory-section-head"><h2>Danh sách tồn kho</h2><p class="text-secondary mb-0" th:text="${rows.totalElements+' sản phẩm · Số lượng tính theo đơn vị của từng SKU.'}"></p></div>
-    <form class="vf-inventory-filters" th:action="@{/seller/inventory}" method="get">
-      <label class="input-group vf-inventory-search"><span class="input-group-text bg-white"><svg class="vf-icon"><use href="#vf-search"/></svg></span><input class="form-control" name="q" th:value="${q}" placeholder="Tìm tên sản phẩm, SKU hoặc mã lô" aria-label="Tìm trong kho"></label>
-      <select class="form-select" name="category" aria-label="Lọc danh mục"><option value="">Tất cả danh mục</option><option th:each="c : ${categories}" th:value="${c.categoryId}" th:text="${c.name}" th:selected="${c.categoryId==category}"></option></select>
-      <select class="form-select" name="stock" aria-label="Lọc trạng thái kho"><option value="">Tất cả tồn kho</option><option value="low" th:selected="${stock=='low'}">Sắp hết hàng</option><option value="near" th:selected="${stock=='near'}">Có lô sắp hết hạn</option><option value="expired" th:selected="${stock=='expired'}">Có lô đã hết hạn</option><option value="archived" th:selected="${stock=='archived'}">Đã lưu trữ, còn tồn</option></select>
-      <input type="hidden" name="size" th:value="${rows.size}"><button class="btn btn-success" type="submit">Lọc</button><a class="btn btn-light" th:href="@{/seller/inventory}">Đặt lại</a>
-    </form>
-    <div class="vf-empty" th:if="${rows.empty}"><svg class="vf-icon vf-empty-icon"><use href="#vf-box"/></svg><h2>Không tìm thấy sản phẩm</h2><p class="text-secondary">Thử đổi từ khóa hoặc bộ lọc kho.</p><a class="btn btn-outline-success" th:href="@{/seller/products/new}">+ Thêm sản phẩm</a></div>
-    <div class="table-responsive vf-inventory-table-wrap" th:if="${!rows.empty}">
-      <table class="table align-middle mb-0 vf-inventory-table" aria-label="Sản phẩm và tồn kho">
-        <colgroup><col class="vf-col-name"><col class="vf-col-sku"><col class="vf-col-unit"><col class="vf-col-quantity"><col class="vf-col-quantity"><col class="vf-col-sale"><col class="vf-col-batches"><col class="vf-col-actions"></colgroup>
-        <thead><tr><th>Sản phẩm / Phân loại hàng</th><th>SKU</th><th>Đơn vị</th><th>Tồn kho</th><th>Đang giữ</th><th>Có thể bán</th><th>Số lô</th><th>Thao tác</th></tr></thead>
-        <tbody><th:block th:each="r : ${rows.content}" th:with="vs=${r.inventoryVariants()},single=${vs.size()==1?vs[0]:null}">
-          <tr class="vf-inventory-product-row">
-            <td><div class="vf-inventory-product-name"><img class="vf-inventory-cover" th:src="${r.imageUrl!=null?r.imageUrl:'/images/product/product-placeholder.svg'}" th:alt="${r.product.name}" th:attr="data-fallback=@{/images/product/product-placeholder.svg}"><div><strong th:text="${r.product.name}"></strong><small th:text="${vs.size()+' phân loại hàng'}"></small><span class="badge vf-badge-gray" th:if="${r.product.status.name()=='DELETED'}">Đã lưu trữ</span><div th:if="${r.hasExpired()}"><span class="badge vf-badge-red">Có lô hết hạn</span></div><div th:if="${r.hasNearExpiry()}"><span class="badge vf-badge-yellow">Có lô sắp hết hạn</span></div></div></div></td>
-            <td class="text-secondary">—</td><td th:text="${single==null?'—':single.variant.unit}"></td><td th:text="${single==null?'—':single.physical}"></td><td th:text="${single==null?'—':single.reserved}"></td><td><small class="text-secondary" th:if="${single==null}">Theo phân loại</small><strong th:if="${single!=null}" th:text="${single.available}"></strong></td><td th:text="${r.batchCount()}"></td>
-            <td><button class="btn btn-sm btn-outline-secondary vf-collapse-toggle collapsed" type="button" data-bs-toggle="collapse" th:attr="data-bs-target=${'#inventory-product-'+r.product.productId},aria-controls=${'inventory-product-'+r.product.productId},aria-label=${'Xem phân loại '+r.product.name}" aria-expanded="false"><svg class="vf-icon"><use href="#vf-chevron"/></svg>Xem phân loại</button></td>
-          </tr>
-          <tr class="vf-collapse-row"><td colspan="8"><div class="collapse" th:id="${'inventory-product-'+r.product.productId}"><table class="table align-middle mb-0 vf-inventory-table vf-inventory-variants" th:attr="aria-label=${'Phân loại hàng '+r.product.name}">
-            <colgroup><col class="vf-col-name"><col class="vf-col-sku"><col class="vf-col-unit"><col class="vf-col-quantity"><col class="vf-col-quantity"><col class="vf-col-sale"><col class="vf-col-batches"><col class="vf-col-actions"></colgroup>
-            <thead class="visually-hidden"><tr><th>Phân loại hàng</th><th>SKU</th><th>Đơn vị</th><th>Tồn kho</th><th>Đang giữ</th><th>Có thể bán</th><th>Số lô</th><th>Thao tác</th></tr></thead>
-            <tbody><th:block th:each="v : ${vs}">
-              <tr class="vf-inventory-variant-row"><td><div class="vf-inventory-product-name"><img class="vf-variant-cover" th:src="${v.variant.thumbnailUrl}" th:alt="${v.variant.variantName}" th:attr="data-fallback=@{/images/product/product-placeholder.svg}"><div><strong th:text="${v.variant.variantName}"></strong><small th:if="${v.variant.status.name()=='DELETED'}">Đã lưu trữ · còn hàng cần xử lý</small></div></div></td>
-                <td class="font-monospace vf-sku-cell" th:text="${v.variant.sku}"></td><td th:text="${v.variant.unit}"></td><td><strong th:text="${v.physical}"></strong></td><td th:text="${v.reserved}"></td><td><strong th:text="${v.available}"></strong><div th:if="${v.lowStock()}"><span class="badge vf-badge-yellow" th:text="${v.available==0?'Hết hàng':'Sắp hết hàng'}"></span></div></td><td th:text="${v.batchCount()}"></td>
-                <td><div class="d-flex flex-wrap gap-2"><button type="button" class="btn btn-sm btn-outline-secondary vf-collapse-toggle collapsed" data-bs-toggle="collapse" th:attr="data-bs-target=${'#inventory-details-'+v.variant.variantId},aria-controls=${'inventory-details-'+v.variant.variantId},aria-label=${'Chi tiết '+v.variant.sku}" aria-expanded="false"><svg class="vf-icon"><use href="#vf-chevron"/></svg>Chi tiết</button><a class="btn btn-sm btn-light" th:if="${r.product.status.name()!='DELETED'&&v.variant.status.name()!='DELETED'}" th:href="@{/seller/inventory/products/{p}/variants/{v}/restock(p=${r.product.productId},v=${v.variant.variantId})}">Nhập kho</a></div></td>
-              </tr>
-              <tr class="vf-collapse-row"><td colspan="8"><div class="collapse" th:id="${'inventory-details-'+v.variant.variantId}"><section class="vf-inventory-panel" th:attr="aria-label=${'Chi tiết tồn kho '+v.variant.sku}">
-                <div class="d-flex justify-content-between align-items-start gap-3 mb-3"><div><h3><svg class="vf-icon me-1"><use href="#vf-box"/></svg>Thông tin lô hàng</h3><p class="text-secondary small mb-0">Có thể bán <strong th:text="${v.available+' '+v.variant.unit}"></strong>. Hàng hết hạn, bị khóa hoặc đang giữ không được tính vào số lượng có thể bán.</p></div><a class="btn btn-sm btn-outline-secondary text-nowrap" th:href="@{/seller/inventory/journal(variant=${v.variant.variantId})}">Nhật ký SKU</a></div>
-                <p class="alert alert-success py-2 small" th:if="${v.offerPrice!=null}" th:text="${'Giá cận hạn '+#numbers.formatDecimal(v.offerPrice,0,'POINT',0,'COMMA')+'₫ / '+v.variant.unit+' · còn '+v.offerQuantity+' '+v.variant.unit}"></p>
-                <p class="text-secondary small" th:if="${v.batches.empty}">Chưa có lô nhập kho.</p>
-                <div class="table-responsive vf-batch-table-wrap" th:if="${!v.batches.empty}"><table class="table table-sm align-middle mb-0 vf-batch-table" th:attr="aria-label=${'Lô hàng của '+v.variant.sku}"><thead><tr><th>Mã lô</th><th>Ngày nhập</th><th>Hạn sử dụng</th><th>Đơn vị</th><th>Tồn kho</th><th>Đang giữ</th><th>Có thể bán</th><th>Thao tác</th></tr></thead><tbody>
-                  <tr th:each="b : ${v.batches}">
-                    <td><strong th:text="${b.batch.batchCode}"></strong><div th:if="${b.expired}"><span class="badge vf-badge-red">Đã hết hạn</span></div><div th:if="${b.batch.status.name()=='BLOCKED'}"><span class="badge vf-badge-gray">Đang khóa</span></div><small th:if="${b.batch.quantityOnHand==0}">Hết hàng</small></td>
-                    <td class="text-nowrap" th:text="${b.batch.receivedAt==null?'—':#temporals.format(b.batch.receivedAt.plusHours(7),'dd/MM/yyyy')}"></td><td class="text-nowrap" th:classappend="${b.expired?'text-danger':(b.nearExpiry?'text-warning-emphasis':'')}" th:text="${b.batch.expiryDate==null?'Chưa có HSD':#temporals.format(b.batch.expiryDate,'dd/MM/yyyy')}"></td><td th:text="${v.variant.unit}"></td><td><strong th:text="${b.batch.quantityOnHand}"></strong></td><td th:text="${b.batch.reservedQuantity}"></td><td th:text="${b.available}"></td>
-                    <td class="vf-batch-actions-cell"><div class="batch-actions"><a class="btn btn-sm btn-outline-secondary" th:href="@{/seller/inventory/batches/{id}/edit(id=${b.batch.batchId})}">Sửa lô</a><a class="btn btn-sm btn-light" th:href="@{/seller/inventory/batches/{id}/label(id=${b.batch.batchId})}">Tem / phân bổ</a><a class="btn btn-sm btn-outline-danger" th:if="${b.expired&&b.batch.quantityOnHand>b.batch.reservedQuantity}" th:href="@{/seller/inventory/batches/{id}/dispose(id=${b.batch.batchId})}">Hủy hàng</a><a class="btn btn-sm btn-light" th:if="${!b.expired&&b.batch.status.name()=='ACTIVE'}" th:href="@{/seller/inventory/batches/{id}/adjust(id=${b.batch.batchId})}">Điều chỉnh</a><a class="btn btn-sm btn-outline-success" th:if="${b.nearExpiry&&b.available>0&&r.published&&v.variant.status.name()=='ACTIVE'}" th:href="@{/seller/inventory/batches/{id}/markdown(id=${b.batch.batchId})}">Giá cận hạn</a></div>
-                      <small class="text-success mt-2" th:if="${b.markdown!=null}" th:text="${'Giá lô '+#numbers.formatDecimal(b.markdown.price,0,'POINT',0,'COMMA')+'₫ đến '+#temporals.format(b.markdown.endDate,'dd/MM/yyyy')}"></small>
-                      <button class="btn btn-sm btn-link p-0 mt-2 text-secondary" type="button" data-bs-toggle="collapse" th:attr="data-bs-target=${'#batch-actions-'+b.batch.batchId},aria-controls=${'batch-actions-'+b.batch.batchId}" aria-expanded="false">Thao tác khác</button>
-                      <div class="collapse" th:id="${'batch-actions-'+b.batch.batchId}"><div class="vf-batch-extra">
-                        <form th:action="@{/seller/inventory/batches/{id}/block(id=${b.batch.batchId})}" method="post" data-confirm="Xác nhận khóa / mở khóa lô? Lượng giữ đơn vẫn giữ nguyên."><input type="hidden" name="blocked" th:value="${b.batch.status.name()!='BLOCKED'}"><label class="form-label" th:for="${'block-reason-'+b.batch.batchId}">Lý do khóa / mở khóa *</label><input class="form-control form-control-sm mb-2" name="reason" th:id="${'block-reason-'+b.batch.batchId}" maxlength="900" required><button class="btn btn-sm btn-outline-secondary" type="submit" th:text="${b.batch.status.name()=='BLOCKED'?'Mở khóa':'Khóa lô'}"></button></form>
-                        <form class="mt-3" th:if="${b.markdown!=null}" th:action="@{/seller/inventory/batches/{id}/cancel-markdown(id=${b.batch.batchId})}" method="post" data-confirm="Xác nhận dừng giá cận hạn cho lô này?"><label class="form-label" th:for="${'markdown-reason-'+b.batch.batchId}">Lý do dừng giá cận hạn *</label><input class="form-control form-control-sm mb-2" name="reason" th:id="${'markdown-reason-'+b.batch.batchId}" maxlength="900" required><button class="btn btn-sm btn-outline-secondary" type="submit">Dừng giá cận hạn</button></form>
-                      </div></div>
-                    </td>
-                  </tr>
-                </tbody></table></div>
-              </section></div></td></tr>
-            </th:block><tr th:if="${vs.empty}"><td colspan="8" class="text-center text-secondary py-4">Chưa có phân loại hàng.</td></tr></tbody>
-          </table></div></td></tr>
-        </th:block></tbody>
-      </table>
-    </div>
-    <nav class="vf-pagination px-4" aria-label="Trang kho"><span class="text-secondary" th:text="${'Trang '+(rows.number+1)+' / '+T(java.lang.Math).max(1,rows.totalPages)+' · '+rows.totalElements+' sản phẩm'}"></span><div class="d-flex align-items-center flex-wrap gap-2"><a class="btn btn-sm btn-outline-secondary" th:if="${rows.hasPrevious()}" th:href="@{/seller/inventory(page=${rows.number},size=${rows.size},q=${q},category=${category},stock=${stock})}">Trang trước</a><a class="btn btn-sm btn-outline-secondary" th:if="${rows.hasNext()}" th:href="@{/seller/inventory(page=${rows.number+2},size=${rows.size},q=${q},category=${category},stock=${stock})}">Trang sau</a><form class="d-flex align-items-center gap-2" th:action="@{/seller/inventory}" method="get"><input type="hidden" name="q" th:value="${q}"><input type="hidden" name="category" th:value="${category}"><input type="hidden" name="stock" th:value="${stock}"><label class="small text-secondary" for="pageSize">Hiển thị</label><select class="form-select form-select-sm w-auto" name="size" id="pageSize"><option th:each="s : ${ {5,10,20} }" th:value="${s}" th:selected="${s==rows.size}" th:text="${s}"></option></select><button class="btn btn-sm btn-light" type="submit">Áp dụng</button></form></div></nav>
-  </section>
-</main><script defer th:src="@{/js/inventory/inventory.js}"></script></body></html>
+
+    <!-- Tài nguyên trang -->
+    <head th:replace="~{fragments/product-inventory :: head('Kho hàng','inventory')}">
+    </head>
+
+    <body>
+        <div th:replace="~{fragments/product-inventory :: nav('inventory')}">
+        </div>
+
+        <!-- Nội dung chính -->
+        <div class="vf-workspace">
+        <main class="container vf-main vf-inventory-main vf-list-page" data-vf-live-list>
+            <div class="page-heading">
+                <div>
+                    <h1>
+                        Kho hàng
+                    </h1>
+                    <p class="text-secondary">
+                        Theo dõi tồn kho theo từng phân loại và lô hàng.
+                    </p>
+                </div>
+                <div class="d-flex flex-wrap gap-2 vf-inventory-toolbar">
+                    <a class="btn btn-outline-secondary" th:href="@{/seller/inventory/journal}">
+                        <svg class="vf-icon me-1">
+                            <use href="#vf-history"/>
+                        </svg>
+                        Biến động kho
+                    </a>
+                    <a class="btn btn-light" th:href="@{/seller/inventory/audit}">
+                        Nhật ký hoạt động
+                    </a>
+                </div>
+            </div>
+            <div data-vf-live-summary="messages">
+            <div th:replace="~{fragments/product-inventory :: messages}">
+            </div>
+            </div>
+
+            <section class="vf-inventory-section">
+                <div class="card vf-inventory-card vf-inventory-controls-card">
+                <!-- Bộ lọc gọn trên mobile; danh sách vẫn cuộn theo trang. -->
+                
+                <div class="vf-list-controls">
+                    <div class="vf-filter-toggle-bar">
+                        <span class="small text-secondary" data-vf-live-summary="compact-count" aria-live="polite" th:text="${rows.totalElements+' sản phẩm'}">
+                        </span>
+                        <button
+                            class="btn btn-sm btn-outline-secondary"
+                            type="button"
+                            data-vf-filter-toggle
+                            aria-controls="inventoryListFilters"
+                            aria-expanded="true"
+                        >
+                            Bộ lọc
+                        </button>
+                    </div>
+                    <div class="vf-filter-panel" id="inventoryListFilters">
+
+
+                        <!-- Biểu mẫu -->
+                        <form class="vf-inventory-filters vf-shared-filters" th:action="@{/seller/inventory}" method="get" data-vf-live-filter>
+                            <input type="hidden" name="size" th:value="${rows.size}">
+                            <input type="hidden" name="variantId" th:value="${inventoryFilters.variantId}">
+                            <div class="vf-catalog-basic-filters">
+                                <div class="vf-catalog-search">
+                                    <label class="form-label" for="inventoryQuery">Tìm kiếm</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><svg class="vf-icon" aria-hidden="true"><use href="#vf-search"/></svg></span>
+                                        <input class="form-control" id="inventoryQuery" name="q" th:value="${q}" maxlength="200" placeholder="Tên sản phẩm, mã sản phẩm hoặc SKU…" aria-label="Tìm sản phẩm trong kho">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="inventoryCategory">Danh mục</label>
+                                    <select class="form-select" id="inventoryCategory" name="category" data-vf-fit-select="220">
+                                        <option value="">Tất cả danh mục</option>
+                                        <option th:each="c : ${categories}" th:value="${c.categoryId}" th:selected="${category == c.categoryId}" th:text="${c.name}"></option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label" for="inventoryStock">Trạng thái</label>
+                                    <select class="form-select" id="inventoryStock" name="stock" data-vf-fit-select="160">
+                                        <option value="" th:selected="${stock == ''}">Tất cả</option>
+                                        <option value="available" th:selected="${stock == 'available'}">Còn hàng</option>
+                                        <option value="low" th:selected="${stock == 'low'}">Sắp hết hàng</option>
+                                        <option value="empty" th:selected="${stock == 'empty'}">Hết hàng</option>
+                                    </select>
+                                </div>
+                                <div class="vf-catalog-filter-buttons">
+                                    <button class="btn btn-outline-success" type="button" data-bs-toggle="collapse" data-bs-target="#inventoryAdvancedFilters" aria-controls="inventoryAdvancedFilters" th:classappend="${!#strings.isEmpty(expiry) ? 'vf-filter-used' : 'collapsed'}" th:attr="aria-expanded=${!#strings.isEmpty(expiry)}">Bộ lọc nâng cao</button>
+                                    <div class="vf-filter-actions">
+                                        <button class="btn btn-success" type="submit" data-vf-filter-submit data-vf-keep-submit="true">Áp dụng</button>
+                                        <a class="btn btn-light" th:href="@{/seller/inventory}" data-vf-clear-filters>Xóa bộ lọc</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="collapse" id="inventoryAdvancedFilters" th:classappend="${!#strings.isEmpty(expiry) ? 'show' : ''}">
+                                <div class="vf-catalog-advanced-grid">
+                                    <div>
+                                        <label class="form-label" for="inventoryExpiry">Hạn sử dụng</label>
+                                        <select class="form-select" id="inventoryExpiry" name="expiry" data-vf-fit-select="180">
+                                            <option value="" th:selected="${expiry == ''}">Tất cả</option>
+                                            <option value="valid" th:selected="${expiry == 'valid'}">Còn hạn</option>
+                                            <option value="near" th:selected="${expiry == 'near'}">Sắp hết hạn</option>
+                                            <option value="expired" th:selected="${expiry == 'expired'}">Đã hết hạn</option>
+                                            <option value="attention" th:if="${expiry == 'attention'}" selected>Sắp hoặc đã hết hạn</option>
+                                        </select>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                            <div class="vf-catalog-filter-footer vf-inventory-filter-footer"><label class="vf-inventory-archive" title="Hiển thị thêm sản phẩm và phân loại ngừng kinh doanh, kể cả khi đã hết tồn kho. Các bộ lọc khác vẫn áp dụng."><input class="form-check-input me-1" type="checkbox" name="archived" value="true" th:checked="${inventoryFilters.archived}"> Bao gồm cả sản phẩm đã ngừng kinh doanh</label><span class="small text-secondary" data-vf-live-summary="count" aria-live="polite" th:text="${rows.totalElements + ' sản phẩm phù hợp'}"></span></div>
+                            <p class="small text-secondary mb-0 mt-1" data-vf-live-summary="stock-note" th:hidden="${#strings.isEmpty(expiry)}">Chỉ hiển thị lô khớp hạn sử dụng. Các số lượng vẫn tính từ toàn bộ lô của từng phân loại.</p>
+                            <p class="small text-secondary mb-0 mt-1" data-vf-live-summary="focus-note" th:hidden="${inventoryFilters.variantId == null}">Đang xem phân loại được chọn từ Sản phẩm. <a th:href="@{/seller/inventory}">Xem toàn bộ kho</a></p>
+                        </form>
+                    </div>
+                </div>
+
+                </div>
+                <div data-vf-list-results>
+                <div class="card vf-inventory-card vf-inventory-results-card">
+                <div class="vf-empty" th:if="${rows.empty}">
+                    <svg class="vf-icon vf-empty-icon">
+                        <use href="#vf-box"/>
+                    </svg>
+                    <h2>
+                        Không tìm thấy sản phẩm
+                    </h2>
+                    <p class="text-secondary">
+                        Thử từ khóa khác hoặc xóa bộ lọc.
+                    </p>
+                    <a class="btn btn-outline-success" th:href="@{/seller/products/new}">
+                        Thêm sản phẩm
+                    </a>
+                </div>
+                <p class="small text-secondary d-lg-none px-3 mt-2 mb-2" th:if="${!rows.empty}">Cuộn ngang bảng để xem đủ các cột và thao tác.</p>
+                <div class="table-responsive vf-inventory-table-wrap" th:if="${!rows.empty}" tabindex="0" aria-label="Bảng tồn kho, có thể cuộn ngang">
+
+                    <!-- Bảng dữ liệu -->
+                    <table
+                        class="table align-middle mb-0 vf-inventory-table"
+                        aria-label="Tồn kho theo sản phẩm"
+                    >
+                        <colgroup>
+                            <col class="vf-col-name">
+                            <col class="vf-col-quantity">
+                            <col class="vf-col-quantity">
+                            <col class="vf-col-sale">
+                            <col class="vf-col-batches">
+                            <col class="vf-col-actions">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>
+                                    Sản phẩm / Phân loại
+                                </th>
+                                <th title="Số lượng thực tế trong kho, gồm hàng đã giữ cho đơn, bị khóa hoặc hết hạn.">
+                                    Tổng tồn kho
+                                </th>
+                                <th title="Số lượng đã giữ cho đơn hàng, chưa xuất kho.">
+                                    Đơn đã đặt
+                                </th>
+                                <th title="Số lượng còn hạn, không bị khóa và chưa giữ cho đơn hàng.">
+                                    Khả dụng
+                                </th>
+                                <th>
+                                    Lô hàng
+                                </th>
+                                <th>
+                                    Thao tác
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <th:block
+                                th:each="r : ${rows.content}"
+                                th:with="vs=${r.inventoryVariants},single=${vs.size()==1?vs[0]:null}"
+                            >
+                                <tr class="vf-inventory-product-row" th:attr="data-product-id=${r.product.productId}">
+                                    <td class="vf-table-identity">
+                                        <div class="vf-inventory-product-name">
+                                            <img
+                                                class="vf-inventory-cover"
+                                                th:src="${r.imageUrl!=null?r.imageUrl:'/images/product/product-placeholder.svg'}"
+                                                th:alt="${r.product.name}"
+                                                th:attr="data-fallback=@{/images/product/product-placeholder.svg}"
+                                            >
+                                            <div>
+                                                <strong><a th:href="@{/seller/products/{id}(id=${r.product.productId})}" th:text="${r.product.name}"></a>
+                                                </strong>
+                                                <div class="vf-inventory-product-meta">
+                                                    <small th:text="${vs.size()+' phân loại' + (vs.size() != r.inventoryVariantTotal ? ' khớp / ' + r.inventoryVariantTotal : '')}"></small>
+                                                    <span class="vf-meta-separator" aria-hidden="true" th:if="${r.expired}">|</span>
+                                                    <span class="badge vf-badge-red" th:if="${r.expired}" title="Có lô còn tồn kho nhưng đã quá hạn.">Có lô hết hạn</span>
+                                                    <span class="vf-meta-separator" aria-hidden="true" th:if="${r.nearExpiry}">|</span>
+                                                    <span class="badge vf-badge-yellow" th:if="${r.nearExpiry}"
+                                                          th:title="${'Có lô còn tồn kho trong ngưỡng nhắc trước hạn ' + r.product.expiryWarningDays + ' ngày đã cấu hình.'}">Có lô sắp hết hạn</span>
+                                                </div>
+                                                <small class="vf-inventory-variant-meta" th:if="${single!=null}">
+                                                    <span class="font-monospace" th:text="${'SKU: '+single.variant.sku}"></span>
+                                                    <span th:text="${'Đơn vị bán: '+single.variant.unit}"></span>
+                                                </small>
+                                                <span
+                                                    class="badge vf-badge-gray"
+                                                    th:if="${r.product.status.name()=='DELETED'}"
+                                                >
+                                                    Ngừng kinh doanh
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    
+                                    <td th:text="${r.inventoryPhysical}" data-label="Tổng tồn kho" class="vf-table-number">
+                                    </td>
+                                    <td th:text="${r.inventoryReserved}" data-label="Chờ xuất kho" class="vf-table-number">
+                                    </td>
+                                    <td data-label="Khả dụng" class="vf-table-number">
+                                        <strong th:text="${r.inventoryAvailable}">
+                                        </strong>
+                                    </td>
+                                    <td th:text="${r.batchCount}" data-label="Lô hàng" class="vf-table-number">
+                                    </td>
+                                    <td data-label="Thao tác" class="vf-table-actions">
+                                        <button
+                                            class="btn btn-sm btn-outline-secondary vf-collapse-toggle" th:classappend="${inventoryFilters.variantId != null ? '' : 'collapsed'}"
+                                            type="button"
+                                            data-bs-toggle="collapse"
+                                            th:attr="data-bs-target=${'#inventory-product-'+r.product.productId},aria-controls=${'inventory-product-'+r.product.productId},aria-label=${'Xem phân loại '+r.product.name}"
+                                            th:attrappend="aria-expanded=${inventoryFilters.variantId != null}"
+                                        >
+                                            <svg class="vf-icon">
+                                                <use href="#vf-chevron"/>
+                                            </svg>
+                                            Xem phân loại
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr class="vf-collapse-row">
+                                    <td colspan="6">
+                                        <div
+                                            class="collapse" th:classappend="${inventoryFilters.variantId != null ? 'show' : ''}"
+                                            th:id="${'inventory-product-'+r.product.productId}"
+                                        >
+
+                                            <table
+                                                class="table align-middle mb-0 vf-inventory-table vf-inventory-variants"
+                                                th:attr="aria-label=${'Phân loại '+r.product.name}"
+                                            >
+                                                <colgroup>
+                                                    <col class="vf-col-name">
+                                                    <col class="vf-col-quantity">
+                                                    <col class="vf-col-quantity">
+                                                    <col class="vf-col-sale">
+                                                    <col class="vf-col-batches">
+                                                    <col class="vf-col-actions">
+                                                </colgroup>
+                                                <thead class="visually-hidden">
+                                                    <tr>
+                                                        <th>
+                                                            Phân loại
+                                                        </th>
+                                                        <th title="Số lượng thực tế trong kho, gồm hàng đã giữ cho đơn, bị khóa hoặc hết hạn.">
+                                                            Tổng tồn kho
+                                                        </th>
+                                                        <th title="Số lượng đã giữ cho đơn hàng, chưa xuất kho.">
+                                                            Đã lên đơn
+                                                        </th>
+                                                        <th title="Số lượng còn hạn, không bị khóa và chưa giữ cho đơn hàng.">
+                                                            Khả dụng
+                                                        </th>
+                                                        <th>
+                                                            Lô hàng
+                                                        </th>
+                                                        <th>
+                                                            Thao tác
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <th:block th:each="v : ${vs}">
+                                                        <tr class="vf-inventory-variant-row">
+                                                            <td class="vf-table-identity">
+                                                                <div class="vf-inventory-product-name">
+                                                                    <img
+                                                                        class="vf-variant-cover"
+                                                                        th:src="${v.variant.thumbnailUrl}"
+                                                                        th:alt="${v.variant.variantName}"
+                                                                        th:attr="data-fallback=@{/images/product/product-placeholder.svg}"
+                                                                    >
+                                                                    <div>
+                                                                        <strong
+                                                                            th:text="${v.variant.variantName}"
+                                                                        >
+                                                                        </strong>
+                                                                        <small class="vf-inventory-variant-meta">
+                                                                            <span class="font-monospace" th:text="${'SKU: '+v.variant.sku}"></span>
+                                                                            <span th:text="${'Đơn vị bán: '+v.variant.unit}"></span><a th:if="${r.product.status.name()!='DELETED' and v.variant.status.name()!='DELETED'}" th:href="@{/seller/products/{p}/variants/{v}/edit(p=${r.product.productId},v=${v.variant.variantId})}">Sửa phân loại</a>
+                                                                        </small>
+                                                                        <small
+                                                                            th:if="${v.variant.status.name()=='DELETED'}"
+                                                                        >
+                                                                            Ngừng kinh doanh
+                                                                        </small>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            
+                                                            <td data-label="Tổng tồn kho" class="vf-table-number">
+                                                                <strong th:text="${v.physical}">
+                                                                </strong>
+                                                            </td>
+                                                            <td th:text="${v.reserved}" data-label="Chờ xuất kho" class="vf-table-number">
+                                                            </td>
+                                                            <td data-label="Khả dụng" class="vf-table-number">
+                                                                <strong th:text="${v.available}">
+                                                                </strong>
+                                                                <div th:if="${v.lowStock or v.available==0}">
+                                                                    <span
+                                                                        class="badge vf-badge-yellow" title="Nhãn được tính theo số lượng khả dụng của phân loại."
+                                                                        th:text="${v.available==0?'Hết hàng':'Sắp hết hàng'}"
+                                                                    >
+                                                                    </span>
+                                                                </div>
+                                                            </td>
+                                                            <td th:text="${v.matchedBatches == null ? v.batchCount : v.inventoryBatches.size() + ' / ' + v.batchCount}" title="Lô khớp bộ lọc / tổng số lô khi có lọc hạn sử dụng" data-label="Lô hàng" class="vf-table-number">
+                                                            </td>
+                                                            <td data-label="Thao tác" class="vf-table-actions">
+                                                                <div class="d-flex flex-wrap gap-2 vf-inventory-row-actions">
+                                                                    <button
+                                                                        type="button"
+                                                                        class="btn btn-sm btn-outline-secondary vf-collapse-toggle" th:classappend="${inventoryFilters.variantId != null ? '' : 'collapsed'}"
+                                                                        data-bs-toggle="collapse"
+                                                                        th:attr="data-bs-target=${'#inventory-details-'+v.variant.variantId},aria-controls=${'inventory-details-'+v.variant.variantId},aria-label=${'Xem lô hàng '+v.variant.sku}"
+                                                                        th:attrappend="aria-expanded=${inventoryFilters.variantId != null}"
+                                                                    >
+                                                                        <svg class="vf-icon">
+                                                                            <use href="#vf-chevron"/>
+                                                                        </svg>
+                                                                        Xem lô hàng
+                                                                    </button>
+                                                                    <a
+                                                                        class="btn btn-sm btn-light"
+                                                                        th:if="${r.product.status.name()!='DELETED'&&v.variant.status.name()!='DELETED'}"
+                                                                        th:href="@{/seller/inventory/products/{p}/variants/{v}/restock(p=${r.product.productId},v=${v.variant.variantId})}"
+                                                                    >
+                                                                        Nhập kho
+                                                                    </a>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr class="vf-collapse-row">
+                                                            <td colspan="6">
+                                                                <div
+                                                                    class="collapse" th:classappend="${inventoryFilters.variantId != null ? 'show' : ''}"
+                                                                    th:id="${'inventory-details-'+v.variant.variantId}"
+                                                                >
+
+                                                                    <section
+                                                                        class="vf-inventory-panel vf-inventory-lot-list"
+                                                                        th:attr="aria-label=${'Chi tiết tồn kho '+v.variant.sku}"
+                                                                    >
+                                                                        <div
+                                                                            class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3 vf-inventory-panel-heading"
+                                                                        >
+                                                                            <div>
+                                                                                <h3>
+                                                                                    <svg class="vf-icon me-1">
+                                                                                        <use href="#vf-box"/>
+                                                                                    </svg>
+                                                                                    Danh sách lô hàng
+                                                                                </h3>
+                                                                                <p
+                                                                                    class="text-secondary small mb-0"
+                                                                                >
+                                                                                    <span th:text="${'Đơn vị bán: '+v.variant.unit}"></span> · Khả dụng
+                                                                                    <strong th:text="${v.available+' '+v.variant.unit}"></strong>.
+                                                                                    Số lượng khả dụng không bao gồm hàng hết hạn, lô bị khóa và hàng đã giữ cho đơn.
+                                                                                </p>
+                                                                            </div>
+                                                                            <a
+                                                                                class="btn btn-sm btn-outline-secondary text-nowrap"
+                                                                                th:href="@{/seller/inventory/journal(variant=${v.variant.variantId})}"
+                                                                            >
+                                                                                Lịch sử tồn kho
+                                                                            </a>
+                                                                        </div>
+                                                                        <p
+                                                                            class="alert alert-success py-2 small"
+                                                                            th:if="${v.offerPrice!=null}"
+                                                                            th:text="${'Giá giảm cho lô cận hạn: '+#numbers.formatDecimal(v.offerPrice,0,'POINT',0,'COMMA')+'₫/'+v.variant.unit+' · Khả dụng: '+v.offerQuantity+' '+v.variant.unit}"
+                                                                        >
+                                                                        </p>
+                                                                        <p
+                                                                            class="text-secondary small"
+                                                                            th:if="${v.inventoryBatches.empty}"
+                                                                        >
+                                                                            Chưa có lô hàng.
+                                                                        </p>
+                                                                        <div
+                                                                            class="vf-batch-table-wrap"
+                                                                            th:if="${!v.inventoryBatches.empty}"
+                                                                        >
+
+                                                                            <table
+                                                                                class="table table-sm align-middle mb-0 vf-batch-table"
+                                                                                th:attr="aria-label=${'Lô hàng của '+v.variant.sku}"
+                                                                            >
+                                                                                <colgroup>
+                                                                                    <col class="vf-col-name">
+                                                                                    <col class="vf-col-quantity">
+                                                                                    <col class="vf-col-quantity">
+                                                                                    <col class="vf-col-sale">
+                                                                                    <col class="vf-col-batches">
+                                                                                    <col class="vf-col-actions">
+                                                                                </colgroup>
+                                                                                <thead class="visually-hidden">
+                                                                                    <tr>
+                                                                                        <th>
+                                                                                            Lô hàng
+                                                                                        </th>
+                                                                                        <th title="Số lượng thực tế trong kho, gồm hàng đã giữ cho đơn, bị khóa hoặc hết hạn.">
+                                                                                            Tổng tồn kho
+                                                                                        </th>
+                                                                                        <th title="Số lượng đã giữ cho đơn hàng, chưa xuất kho.">
+                                                                                            Đã lên đơn
+                                                                                        </th>
+                                                                                        <th title="Số lượng còn hạn, không bị khóa và chưa giữ cho đơn hàng.">
+                                                                                            Có thể bán
+                                                                                        </th>
+                                                                                        <th>
+                                                                                            Lô hàng
+                                                                                        </th>
+                                                                                        <th>
+                                                                                            Thao tác
+                                                                                        </th>
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                    <tr
+                                                                                        th:each="b : ${v.inventoryBatches}"
+                                                                                        th:attr="data-batch-id=${b.batch.batchId}"
+                                                                                    >
+                                                                                        <td class="vf-table-identity vf-batch-identity" data-label="Lô hàng">
+                                                                                            <div class="vf-batch-identity-heading">
+                                                                                                <strong class="text-break" th:text="${b.batch.batchCode}"></strong>
+                                                                                                <button type="button" class="vf-copy-sku" th:attr="data-vf-copy-code=${b.batch.batchCode},aria-label=${'Sao chép mã lô '+b.batch.batchCode}">Sao chép</button>
+                                                                                                <span class="badge" th:classappend="${b.stateTone}" th:text="${b.stateLabel}"
+                                                                                                      th:attr="title=${b.stateTone=='vf-badge-yellow'?'Nhắc trước hạn sử dụng '+b.expiryWarningDays+' ngày theo cài đặt của sản phẩm.':null}"></span>
+                                                                                            </div>
+                                                                                            <div class="vf-batch-dates-cell" data-label="Ngày nhập kho / Hạn sử dụng">
+                                                                                                <span class="vf-cell-line">
+                                                                                                    <small>Ngày nhập kho</small>
+                                                                                                    <span th:text="${b.batch.receivedAt==null?'—':#temporals.format(b.batch.receivedAt.plusHours(7),'dd/MM/yyyy')}"></span>
+                                                                                                </span>
+                                                                                                <span class="vf-cell-line" th:classappend="${b.stateTone=='vf-badge-red'?'text-danger':(b.stateTone=='vf-badge-yellow'?'text-warning-emphasis':'')}">
+                                                                                                    <small>Hạn sử dụng</small>
+                                                                                                    <span th:text="${b.batch.expiryDate==null?'Chưa khai báo hạn sử dụng':#temporals.format(b.batch.expiryDate,'dd/MM/yyyy')}"></span>
+                                                                                                </span>
+                                                                                            </div>
+                                                                                        </td>
+                                                                                        <td data-label="Tổng tồn kho" class="vf-table-number">
+                                                                                            <strong
+                                                                                                th:text="${b.batch.quantityOnHand}"
+                                                                                            >
+                                                                                            </strong>
+                                                                                        </td>
+                                                                                        <td
+                                                                                            th:text="${b.batch.reservedQuantity}"
+                                                                                         data-label="Chờ xuất kho" class="vf-table-number">
+                                                                                        </td>
+                                                                                        <td
+                                                                                            th:text="${b.available}"
+                                                                                         data-label="Khả dụng" class="vf-table-number">
+                                                                                        </td>
+                                                                                        <td class="vf-table-number text-secondary" data-label="Lô hàng" aria-label="Không áp dụng">—</td>
+                                                                                        <td class="vf-table-actions vf-batch-actions-cell" data-label="Thao tác">
+                                                                                            <div th:replace="~{fragments/inventory-actions :: batchActions(${b}, ${r.published&&v.variant.status.name()=='ACTIVE'}, false)}"></div>
+                                                                                            <small class="text-success mt-2 d-block"
+                                                                                                   th:if="${b.markdown!=null&&!b.emptyStock}"
+                                                                                                   th:text="${'Giá giảm: '+#numbers.formatDecimal(b.markdown.price,0,'POINT',0,'COMMA')+'₫ · Kết thúc: '+#temporals.format(b.markdown.endDate,'dd/MM/yyyy')}"></small>
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                </tbody>
+                                                                            </table>
+
+                                                                        </div>
+                                                                    </section>
+
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    </th:block>
+                                                    <tr th:if="${vs.empty}">
+                                                        <td
+                                                            colspan="6"
+                                                            class="text-center text-secondary py-4"
+                                                        >
+                                                            Chưa có phân loại.
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+
+                                        </div>
+                                    </td>
+                                </tr>
+                            </th:block>
+                        </tbody>
+                    </table>
+
+                </div>
+
+                </div>
+
+                <!-- Phân trang -->
+                <div class="vf-pagination-panel">
+                    <nav
+                        th:replace="~{fragments/product-inventory :: pagination(${rows}, @{/seller/inventory(page=${rows.number},size=${rows.size},q=${q},category=${category},stock=${stock},expiry=${expiry},variantId=${inventoryFilters.variantId},archived=${inventoryFilters.archived})}, @{/seller/inventory(page=${rows.number+2},size=${rows.size},q=${q},category=${category},stock=${stock},expiry=${expiry},variantId=${inventoryFilters.variantId},archived=${inventoryFilters.archived})}, 'Phân trang tồn kho', 'sản phẩm')}"
+                    >
+                    </nav>
+
+                    <form
+                        class="vf-page-size"
+                        th:action="@{/seller/inventory}"
+                        method="get"
+                    >
+                        <input type="hidden" name="q" th:value="${q}">
+                        <input type="hidden" name="category" th:value="${category}">
+                        <input type="hidden" name="stock" th:value="${stock}"><input type="hidden" name="expiry" th:value="${expiry}"><input type="hidden" name="variantId" th:value="${inventoryFilters.variantId}"><input type="hidden" name="archived" th:value="${inventoryFilters.archived}">
+                        <th:block th:replace="~{fragments/product-inventory :: pageSize(${rows}, 'pageSize', 'Sản phẩm mỗi trang')}"></th:block>
+                    </form>
+                </div>
+
+                </div>
+            </section>
+
+        </main>
+
+
+        </div>
+
+        <div th:replace="~{fragments/inventory-actions :: actionModal}"></div>
+        <script defer th:src="@{/js/inventory/inventory.js}"></script>
+    </body>
+</html>

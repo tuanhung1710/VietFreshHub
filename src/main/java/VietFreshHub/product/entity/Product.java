@@ -1,91 +1,70 @@
 package VietFreshHub.product.entity;
 
-import VietFreshHub.shop.entity.Shop;
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
+import VietFreshHub.product.enums.ApprovalStatus;
+import VietFreshHub.product.enums.ProductStatus;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 import org.hibernate.annotations.Nationalized;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
+@Entity
+@Table(name = "products", schema = "dbo")
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@Entity
-@Table(schema = "dbo", name = "products")
 public class Product {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "product_id")
     private Long productId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "shop_id", nullable = false)
-    private Shop shop;
+    @Column(name = "shop_id")
+    private Long shopId;
 
     @Nationalized
-    @Column(name = "name", nullable = false, length = 250)
+    @Column(name = "name", length = 250)
     private String name;
 
-    @Column(name = "slug", nullable = false, length = 300)
+    @Column(name = "slug", length = 300)
     private String slug;
 
     @Nationalized
-    @Column(name = "description", columnDefinition = "NVARCHAR(MAX)")
+    @Column(name = "description", length = 20000)
     private String description;
 
-    @Transient
-    private String imageUrl;
+    @Column(name = "status", length = 30)
+    @Enumerated(EnumType.STRING)
+    private ProductStatus status;
 
-    @OneToMany(mappedBy = "product")
-    @org.hibernate.annotations.BatchSize(size = 16)
-    private List<ProductImage> images = new ArrayList<>();
+    @Column(name = "approval_status", length = 30)
+    @Enumerated(EnumType.STRING)
+    private ApprovalStatus approvalStatus;
 
-    @Column(name = "requires_preparation_check", nullable = false)
-    private boolean requiresPreparationCheck;
+    @Column(name = "moderation_blocked", nullable = false)
+    @ColumnDefault("0")
+    private boolean moderationBlocked;
 
-    @Nationalized @Column(name = "preparation_note", length = 1000)
-    private String preparationNote;
+    @Nationalized
+    @Column(name = "moderation_reason", length = 1000)
+    private String moderationReason;
 
-    public String getImageUrl() {
-        if (this.imageUrl != null && !this.imageUrl.isBlank()) {
-            return this.imageUrl;
-        }
-        var primary = images.stream().filter(i -> i.getVariant() == null && i.isPrimary())
-                .sorted(java.util.Comparator.comparing(ProductImage::getSortOrder).thenComparing(ProductImage::getImageId))
-                .map(ProductImage::getImageUrl).findFirst();
-        if (primary.isPresent()) return primary.get();
-        var thumbnail = variants.stream().map(ProductVariant::getThumbnailUrl)
-                .filter(url -> url != null && !url.isBlank()).findFirst();
-        if (thumbnail.isPresent()) return thumbnail.get();
-        if (slug != null) {
-            String s = slug.toLowerCase();
-            if (s.contains("buoi")) return "/images/buoi-da-xanh.jpg";
-            if (s.contains("sau-rieng")) return "/images/sau-rieng.jpg";
-            if (s.contains("xoai")) return "/images/xoai-cat.png";
-            if (s.contains("vai")) return "/images/vai-thieu.png";
-        }
-        if (name != null) {
-            String lower = name.toLowerCase();
-            if (lower.contains("bưởi")) return "/images/buoi-da-xanh.jpg";
-            if (lower.contains("sầu")) return "/images/sau-rieng.jpg";
-            if (lower.contains("xoài")) return "/images/xoai-cat.png";
-            if (lower.contains("vải")) return "/images/vai-thieu.png";
-        }
-        return "/images/buoi-da-xanh.jpg";
-    }
-
-    @Column(nullable = false, length = 30)
-    private String status = "INACTIVE";
-
-    @Column(name = "approval_status", nullable = false, length = 30)
-    private String approvalStatus = "PENDING";
+    // Null preserves ambiguous legacy INACTIVE records instead of inventing seller intent.
+    @Column(name = "seller_hidden")
+    private Boolean sellerHidden;
 
     @Column(name = "approved_by")
     private Long approvedBy;
@@ -93,30 +72,28 @@ public class Product {
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "requires_preparation_check")
+    private Boolean requiresPreparationCheck;
 
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    @Nationalized
+    @Column(name = "preparation_note", length = 1000)
+    private String preparationNote;
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    @org.hibernate.annotations.BatchSize(size = 16)
-    private List<ProductVariant> variants = new ArrayList<>();
+    @Column(name = "expiry_warning_days", nullable = false)
+    @ColumnDefault("3")
+    private Integer expiryWarningDays = 3;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(schema = "dbo", name = "product_categories",
-            joinColumns = @JoinColumn(name = "product_id"), inverseJoinColumns = @JoinColumn(name = "category_id"))
-    private java.util.Set<Category> categories = new java.util.LinkedHashSet<>();
-
-    @PrePersist
-    void initializeUtcTimestamps() {
-        var now = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
-        if (createdAt == null) createdAt = now;
-        if (updatedAt == null) updatedAt = now;
+    public Integer getExpiryWarningDays() {
+        return expiryWarningDays == null ? 3 : expiryWarningDays;
     }
 
-    @PreUpdate
-    void updateUtcTimestamps() {
-        updatedAt = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    @jakarta.persistence.Transient
+    public String getProductCode() {
+        return VietFreshHub.common.BusinessCodes.format("PRD", productId);
     }
 }

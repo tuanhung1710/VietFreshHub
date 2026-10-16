@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div class="vf-batch-actions" th:fragment="batchActions(row, canMarkdown, inDetail)"
+         th:with="showEdit=${(inDetail&&row.canEdit)||row.canEditFromList},showAdjust=${row.canAdjust&&!row.fullyAllocated&&(inDetail||!row.emptyStock)},showMarkdown=${false},showCancel=${row.markdown!=null&&(inDetail||!row.emptyStock)}">
+        <a class="btn btn-sm btn-outline-secondary vf-batch-detail-link" th:if="${!inDetail}"
+           th:href="@{/seller/inventory/batches/{id}/label(id=${row.batch.batchId})}"
+           th:attr="aria-label=${'Chi tiết lô '+row.batch.batchCode}" title="Chi tiết lô">
+            <svg class="vf-icon" aria-hidden="true"><use href="#vf-eye"/></svg>
+            <span>Chi tiết</span>
+        </a>
+        <a class="btn btn-sm btn-outline-secondary" th:if="${inDetail}"
+           th:href="@{/seller/inventory/journal(variant=${row.batch.variantId},batch=${row.batch.batchId})}"
+           th:attr="aria-label=${'Lịch sử tồn kho lô '+row.batch.batchCode}">
+            <svg class="vf-icon" aria-hidden="true"><use href="#vf-history"/></svg>
+            <span>Lịch sử tồn kho</span>
+        </a>
+        <div class="dropdown" th:if="${(inDetail||!row.emptyStock)&&(!inDetail||showEdit||showAdjust||showMarkdown||showCancel||row.canDispose||row.canBlock||row.canUnblock)}">
+            <button class="btn btn-sm btn-light vf-batch-more" type="button" data-bs-toggle="dropdown"
+                    data-bs-config='{"popperConfig":{"strategy":"fixed","modifiers":[{"name":"preventOverflow","options":{"boundary":"viewport","padding":12}},{"name":"offset","options":{"offset":[0,4]}}]},"boundary":"viewport"}'
+                    th:id="${'batch-more-'+row.batch.batchId}"
+                    th:attr="aria-label=${'Thêm thao tác lô '+row.batch.batchCode},aria-controls=${'batch-menu-'+row.batch.batchId}"
+                    aria-expanded="false" title="Thêm thao tác">
+                <svg class="vf-icon" aria-hidden="true"><use href="#vf-more"/></svg>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end vf-batch-action-menu"
+                th:id="${'batch-menu-'+row.batch.batchId}" th:attr="aria-labelledby=${'batch-more-'+row.batch.batchId}">
+                <li th:if="${showEdit}">
+                    <a class="dropdown-item" th:href="@{/seller/inventory/batches/{id}/edit(id=${row.batch.batchId})}">
+                        <svg class="vf-icon" aria-hidden="true"><use href="#vf-edit"/></svg><span>Chỉnh sửa lô</span>
+                    </a>
+                </li>
+                <li th:if="${showAdjust}">
+                    <a class="dropdown-item" th:href="@{/seller/inventory/batches/{id}/adjust(id=${row.batch.batchId})}">
+                        <svg class="vf-icon" aria-hidden="true"><use href="#vf-adjust"/></svg><span>Điều chỉnh tồn kho</span>
+                    </a>
+                </li>
+                <li th:if="${!inDetail}">
+                    <a class="dropdown-item" th:href="@{/seller/inventory/journal(variant=${row.batch.variantId},batch=${row.batch.batchId})}">
+                        <svg class="vf-icon" aria-hidden="true"><use href="#vf-history"/></svg><span>Lịch sử tồn kho</span>
+                    </a>
+                </li>
+                <li th:if="${row.canDispose}">
+                    <a class="dropdown-item text-danger" th:href="@{/seller/inventory/batches/{id}/dispose(id=${row.batch.batchId})}">
+                        <svg class="vf-icon" aria-hidden="true"><use href="#vf-trash"/></svg><span>Ghi nhận hủy hàng hết hạn</span>
+                    </a>
+                </li>
+                <li th:if="${showMarkdown}">
+                    <a class="dropdown-item" th:href="@{/seller/inventory/batches/{id}/markdown(id=${row.batch.batchId})}">
+                        <svg class="vf-icon" aria-hidden="true"><use href="#vf-tag"/></svg><span>Giảm giá lô cận hạn</span>
+                    </a>
+                </li>
+                <li th:if="${row.canBlock||row.canUnblock}">
+                    <button class="dropdown-item" type="button" data-vf-batch-action="block"
+                            th:attr="data-vf-action-url=@{/seller/inventory/batches/{id}/block(id=${row.batch.batchId})},data-vf-batch-id=${row.batch.batchId},data-vf-blocked=${row.canBlock}">
+                        <svg class="vf-icon" aria-hidden="true"><use th:attr="href=${row.canBlock?'#vf-lock':'#vf-unlock'}"/></svg>
+                        <span th:text="${row.canBlock?'Khóa lô':'Mở khóa lô'}"></span>
+                    </button>
+                </li>
+                <li th:if="${showCancel}">
+                    <button class="dropdown-item" type="button" data-vf-batch-action="cancel-markdown"
+                            th:attr="data-vf-action-url=@{/seller/inventory/batches/{id}/cancel-markdown(id=${row.batch.batchId})},data-vf-batch-id=${row.batch.batchId}">
+                        <svg class="vf-icon" aria-hidden="true"><use href="#vf-tag"/></svg><span>Dừng giảm giá lô</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div class="modal fade" id="vfBatchActionModal" th:fragment="actionModal" tabindex="-1"
+         aria-labelledby="vfBatchActionTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form id="vfBatchActionForm" th:action="@{/seller/inventory}" method="post">
+                    <div class="modal-header">
+                        <h2 class="modal-title fs-5" id="vfBatchActionTitle">Thao tác lô</h2>
+                        <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p id="vfBatchActionDescription" class="text-body-secondary"></p>
+                        <input type="hidden" id="vfBatchActionBlocked" name="blocked" value="true">
+                        <label class="form-label" for="vfBatchActionReason">Lý do thay đổi *</label>
+                        <textarea class="form-control" id="vfBatchActionReason" name="reason" rows="3" maxlength="900" required></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Hủy</button>
+                        <button class="btn btn-success" id="vfBatchActionSubmit" type="submit">Xác nhận</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

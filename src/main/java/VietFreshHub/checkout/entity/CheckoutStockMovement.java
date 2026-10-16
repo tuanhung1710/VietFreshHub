@@ -1,7 +1,7 @@
 package VietFreshHub.checkout.entity;
 import VietFreshHub.auth.entity.User;
-import VietFreshHub.inventory.entity.InventoryBatch;
-import VietFreshHub.product.entity.ProductVariant;
+import VietFreshHub.checkout.entity.CheckoutInventoryBatch;
+import VietFreshHub.catalog.entity.CatalogVariant;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,8 +14,8 @@ import java.time.ZoneOffset;
 @Getter @Setter @NoArgsConstructor
 public class CheckoutStockMovement {
     @Id @GeneratedValue(strategy=GenerationType.IDENTITY) @Column(name="transaction_id") private Long transactionId;
-    @ManyToOne(fetch=FetchType.LAZY, optional=false) @JoinColumn(name="variant_id", nullable=false) private ProductVariant variant;
-    @ManyToOne(fetch=FetchType.LAZY) @JoinColumn(name="batch_id") private InventoryBatch batch;
+    @ManyToOne(fetch=FetchType.LAZY, optional=false) @JoinColumn(name="variant_id", nullable=false) private CatalogVariant variant;
+    @ManyToOne(fetch=FetchType.LAZY) @JoinColumn(name="batch_id") private CheckoutInventoryBatch batch;
     @Column(name="transaction_type", nullable=false, length=30) private String transactionType;
     @Column(nullable=false) private Integer quantity;
     @Column(name="reference_type", length=50) private String referenceType;

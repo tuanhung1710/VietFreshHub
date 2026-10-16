@@ -258,7 +258,7 @@
 <body>
 <main>
     <header>
-        <h1>CHI TIẾT ĐƠN HÀNG #<span th:text="${orderDetail.orderCode}"></span></h1>
+        <h1>CHI TIẾT ĐƠN HÀNG <span th:text="${orderDetail.orderCode}"></span></h1>
     </header>
 
     <p>Trạng thái đơn hàng: <strong th:text="${orderDetail.orderStatusLabel}"></strong></p>
@@ -285,7 +285,8 @@
             <h2 id="order-information-heading">THÔNG TIN ĐƠN HÀNG</h2>
             <dl>
                 <dt>Mã đơn hàng</dt>
-                <dd th:text="${orderDetail.orderCode}"></dd>
+                <dd><span th:text="${orderDetail.orderCode}"></span>
+                    <button type="button" th:attr="data-vf-copy-code=${orderDetail.orderCode},aria-label=${'Sao chép mã đơn '+orderDetail.orderCode}">Sao chép</button></dd>
                 <dt>Trạng thái thanh toán</dt>
                 <dd th:text="${orderDetail.paymentStatusLabel}"></dd>
             </dl>
@@ -433,5 +434,6 @@
 
     window.addEventListener('afterprint', closeInvoiceModal);
 </script>
+<script th:src="@{/js/product/module.js}" defer></script>
 </body>
 </html>
