@@ -41,15 +41,15 @@
 
         <section class="summary-grid" aria-label="Tổng quan tài khoản">
             <a class="summary-card" th:classappend="${selectedStatus == 'ALL'} ? ' selected' : ''"
-               th:href="@{/admin/accounts(keyword=${keyword},role=${selectedRole},status='ALL',page=1)}">
+               th:href="@{/admin/accounts(keyword=${keyword},role=${selectedRole},status='ALL',sort=${selectedSort},page=1)}">
                 <span class="summary-icon icon-total" aria-hidden="true">◎</span><span class="summary-copy"><span>Tất cả</span><strong th:text="${stats.total}">0</strong></span>
             </a>
             <a class="summary-card" th:classappend="${selectedStatus == 'ACTIVE'} ? ' selected' : ''"
-               th:href="@{/admin/accounts(keyword=${keyword},role=${selectedRole},status='ACTIVE',page=1)}">
+               th:href="@{/admin/accounts(keyword=${keyword},role=${selectedRole},status='ACTIVE',sort=${selectedSort},page=1)}">
                 <span class="summary-icon icon-active" aria-hidden="true">✓</span><span class="summary-copy"><span>Active</span><strong th:text="${stats.active}">0</strong></span>
             </a>
             <a class="summary-card" th:classappend="${selectedStatus == 'INACTIVE'} ? ' selected' : ''"
-               th:href="@{/admin/accounts(keyword=${keyword},role=${selectedRole},status='INACTIVE',page=1)}">
+               th:href="@{/admin/accounts(keyword=${keyword},role=${selectedRole},status='INACTIVE',sort=${selectedSort},page=1)}">
                 <span class="summary-icon icon-inactive" aria-hidden="true">Ⅱ</span><span class="summary-copy"><span>Inactive</span><strong th:text="${stats.inactive}">0</strong></span>
             </a>
         </section>
@@ -64,6 +64,13 @@
                 <label class="search-box">
                     <span class="visually-hidden">Tìm kiếm tài khoản</span><span class="search-icon" aria-hidden="true">⌕</span>
                     <input id="search-input" type="search" name="keyword" th:value="${keyword}" placeholder="Tìm tên, email hoặc số điện thoại…" autocomplete="off">
+                </label>
+                <label class="select-filter"><span class="visually-hidden">Sắp xếp tài khoản</span>
+                    <select name="sort" aria-label="Sắp xếp tài khoản">
+                        <option value="NEWEST" th:selected="${selectedSort == 'NEWEST'}">Mới nhất</option>
+                        <option value="NAME_ASC" th:selected="${selectedSort == 'NAME_ASC'}">Tên A → Z</option>
+                        <option value="NAME_DESC" th:selected="${selectedSort == 'NAME_DESC'}">Tên Z → A</option>
+                    </select>
                 </label>
                 <label class="select-filter"><span class="visually-hidden">Lọc theo vai trò</span>
                     <select name="role" aria-label="Lọc theo vai trò">
@@ -100,7 +107,9 @@
                         <td><div class="row-actions">
                             <button class="table-action" type="button" data-action="details">Chi tiết</button>
                             <button class="table-action primary" type="button" data-action="edit">Sửa hồ sơ</button>
-                            <button class="table-action" type="button" data-action="roles">Đổi vai trò</button>
+                            <button class="table-action" type="button" data-action="roles"
+                                    th:disabled="${#lists.contains(account.roleNames, 'ROLE_ADMIN')}"
+                                    th:title="${#lists.contains(account.roleNames, 'ROLE_ADMIN')} ? 'Tài khoản ADMIN không thể điều chỉnh role' : null">Đổi vai trò</button>
                             <button class="table-action" type="button" data-action="status">Trạng thái</button>
                         </div></td>
                     </tr>
@@ -112,10 +121,10 @@
             <footer class="table-footer">
                 <span th:text="${accountsPage.totalElements == 0 ? 'Không có kết quả' : 'Hiển thị ' + (accountsPage.number * accountsPage.size + 1) + '–' + (accountsPage.number * accountsPage.size + accountsPage.numberOfElements) + ' trong ' + accountsPage.totalElements + ' tài khoản'}">Hiển thị</span>
                 <div class="pagination" aria-label="Phân trang">
-                    <a th:if="${accountsPage.hasPrevious()}" th:href="@{/admin/accounts(keyword=${keyword},role=${selectedRole},status=${selectedStatus},page=${pageNumber - 1})}" aria-label="Trang trước">←</a>
+                    <a th:if="${accountsPage.hasPrevious()}" th:href="@{/admin/accounts(keyword=${keyword},role=${selectedRole},status=${selectedStatus},sort=${selectedSort},page=${pageNumber - 1})}" aria-label="Trang trước">←</a>
                     <span th:unless="${accountsPage.hasPrevious()}" class="disabled-page" aria-hidden="true">←</span>
                     <span class="page-count" th:text="|${pageNumber} / ${pageCount}|">1 / 1</span>
-                    <a th:if="${accountsPage.hasNext()}" th:href="@{/admin/accounts(keyword=${keyword},role=${selectedRole},status=${selectedStatus},page=${pageNumber + 1})}" aria-label="Trang sau">→</a>
+                    <a th:if="${accountsPage.hasNext()}" th:href="@{/admin/accounts(keyword=${keyword},role=${selectedRole},status=${selectedStatus},sort=${selectedSort},page=${pageNumber + 1})}" aria-label="Trang sau">→</a>
                     <span th:unless="${accountsPage.hasNext()}" class="disabled-page" aria-hidden="true">→</span>
                 </div>
             </footer>

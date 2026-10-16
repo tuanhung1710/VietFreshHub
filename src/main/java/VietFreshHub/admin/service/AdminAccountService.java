@@ -73,18 +73,25 @@ public class AdminAccountService {
             String keyword,
             String status,
             String roleName,
-            int requestedPage
+            int requestedPage,
+            String sortMode
     ) {
         String normalizedStatus = normalizeStatusFilter(status);
         String normalizedRole = normalizeRoleFilter(roleName);
         int pageNumber = Math.max(0, requestedPage - 1);
         Page<User> users = userRepository.findAll(
                 accountFilter(keyword, normalizedStatus, normalizedRole),
-                PageRequest.of(pageNumber, PAGE_SIZE, Sort.by(
-                        Sort.Order.desc("createdAt"), Sort.Order.desc("userId")
-                ))
+                PageRequest.of(pageNumber, PAGE_SIZE, accountSort(sortMode))
         );
         return mapPage(users);
+    }
+
+    private Sort accountSort(String sortMode) {
+        return switch (sortMode) {
+            case "NAME_ASC" -> Sort.by(Sort.Order.asc("fullName"), Sort.Order.asc("userId"));
+            case "NAME_DESC" -> Sort.by(Sort.Order.desc("fullName"), Sort.Order.asc("userId"));
+            default -> Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("userId"));
+        };
     }
 
     public AdminAccountStats getStats() {
@@ -178,15 +185,19 @@ public class AdminAccountService {
                 .map(Role::getRoleName)
                 .collect(Collectors.toSet());
         if (!ASSIGNABLE_ROLE_NAMES.containsAll(selectedNames)) {
-            throw new IllegalArgumentException("Chỉ được gán các role CUSTOMER, DELIVERY_STAFF hoặc STORE_MANAGER.");
+            throw new IllegalArgumentException("Chỉ được chọn các vai trò Khách hàng, Nhân viên giao hàng hoặc Quản lý cửa hàng.");
         }
 
-        // Admin is a protected role: it cannot be assigned or removed from this form.
+        // Admin accounts are immutable from the role editor and cannot gain other roles.
         if (currentNames.contains(ADMIN_ROLE)) {
-            currentLinks.stream()
-                    .filter(link -> ADMIN_ROLE.equals(link.getRole().getRoleName()))
-                    .map(link -> link.getId().getRoleId())
-                    .forEach(selectedIds::add);
+            throw new IllegalStateException("Tài khoản quản trị viên chỉ có vai trò Quản trị viên và không thể điều chỉnh vai trò.");
+        }
+
+        if (selectedNames.contains("ROLE_DELIVERY_STAFF") && selectedNames.size() > 1) {
+            throw new IllegalArgumentException("Nhân viên giao hàng không thể kết hợp với vai trò khác.");
+        }
+        if (selectedNames.contains(STORE_MANAGER_ROLE) && !selectedNames.contains("ROLE_CUSTOMER")) {
+            throw new IllegalArgumentException("Quản lý cửa hàng chỉ có thể cấp thêm cho tài khoản Khách hàng.");
         }
 
         if (selectedNames.contains(STORE_MANAGER_ROLE)
@@ -194,7 +205,7 @@ public class AdminAccountService {
                 && !sellerApplicationRepository.existsByUser_UserIdAndStatus(
                         userId, SellerApplicationStatus.APPROVED
                 )) {
-            throw new IllegalStateException("Role STORE_MANAGER chỉ được cấp sau khi hồ sơ người bán được phê duyệt.");
+            throw new IllegalStateException("Chỉ cấp vai trò Quản lý cửa hàng sau khi hồ sơ người bán được duyệt.");
         }
 
         List<UserRole> removedLinks = currentLinks.stream()
