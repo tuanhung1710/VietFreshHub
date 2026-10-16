@@ -27,7 +27,7 @@
                 align-items-center gap-3 mb-4">
         <h1 class="h3 mb-0">Quản lý coupon</h1>
 
-        <a th:href="@{/manager/coupons/new}" class="btn btn-success">
+        <a th:href="@{/seller/coupons/new}" class="btn btn-success">
             Tạo coupon
         </a>
     </div>
@@ -149,7 +149,7 @@
                     <td>
                         <div class="d-flex flex-wrap gap-2">
                             <a th:if="${coupon.status.name() == 'INACTIVE'}"
-                               th:href="@{/manager/coupons/{id}/edit(
+                               th:href="@{/seller/coupons/{id}/edit(
                                    id=${coupon.couponId}
                                )}"
                                class="btn btn-sm btn-outline-success">
@@ -157,7 +157,7 @@
                             </a>
 
                             <form th:if="${coupon.status.name() == 'INACTIVE'}"
-                                  th:action="@{/manager/coupons/{id}/activate(
+                                  th:action="@{/seller/coupons/{id}/activate(
                                       id=${coupon.couponId}
                                   )}"
                                   method="post"
@@ -169,7 +169,7 @@
                             </form>
 
                             <form th:if="${coupon.status.name() == 'ACTIVE'}"
-                                  th:action="@{/manager/coupons/{id}/deactivate(
+                                  th:action="@{/seller/coupons/{id}/deactivate(
                                       id=${coupon.couponId}
                                   )}"
                                   method="post"
@@ -181,7 +181,7 @@
                             </form>
 
                             <form th:if="${coupon.status.name() != 'DISABLED'}"
-                                  th:action="@{/manager/coupons/{id}/disable(
+                                  th:action="@{/seller/coupons/{id}/disable(
                                       id=${coupon.couponId}
                                   )}"
                                   method="post"

@@ -18,7 +18,7 @@
     <div class="row justify-content-center">
         <div class="col-lg-9 col-xl-8">
 
-            <a th:href="@{/manager/coupons}"
+            <a th:href="@{/seller/coupons}"
                class="btn btn-outline-secondary mb-3">
                 Quay lại danh sách
             </a>
@@ -41,8 +41,8 @@
                     </div>
 
                     <form th:action="${couponId != null}
-                              ? @{/manager/coupons/{id}/edit(id=${couponId})}
-                              : @{/manager/coupons}"
+                              ? @{/seller/coupons/{id}/edit(id=${couponId})}
+                              : @{/seller/coupons}"
                           th:object="${couponForm}"
                           method="post">
 
@@ -208,7 +208,7 @@
 
                         <div class="d-flex justify-content-end
                                     gap-2 border-top pt-3">
-                            <a th:href="@{/manager/coupons}"
+                            <a th:href="@{/seller/coupons}"
                                class="btn btn-outline-secondary">
                                 Hủy
                             </a>
