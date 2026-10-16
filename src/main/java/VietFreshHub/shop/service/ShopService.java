@@ -1,5 +1,9 @@
 package VietFreshHub.shop.service;
 
+import VietFreshHub.shop.entity.ShopLocation;
+import VietFreshHub.shop.repository.ShopLocationRepository;
+import java.util.Optional;
+
 import VietFreshHub.auth.service.AuthService;
 import VietFreshHub.shop.entity.ShopMember;
 import VietFreshHub.shop.repository.ShopMemberRepository;
@@ -12,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class ShopService {
+
+    private final ShopLocationRepository shopLocationRepository;
 
     private final AuthService authService;
     private final ShopMemberRepository shopMemberRepository;
@@ -35,5 +41,10 @@ public class ShopService {
     @Transactional(readOnly = true)
     public String getManagedShopCode(Authentication authentication) {
         return VietFreshHub.common.BusinessCodes.format("SHP", getManagedShopId(authentication));
+    }
+
+@Transactional(readOnly = true)
+    public Optional<ShopLocation> findLocationByShopId(Long shopId) {
+        return shopLocationRepository.findById(shopId);
     }
 }

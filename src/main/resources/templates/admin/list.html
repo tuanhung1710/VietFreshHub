@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hồ sơ đăng ký bán hàng | VietFresh Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-900">
+<main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <header class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">VietFresh Hub · Quản trị</p>
+            <h1 class="mt-2 text-3xl font-bold tracking-tight">Hồ sơ đăng ký bán hàng</h1>
+            <p class="mt-2 text-slate-600">Kiểm tra hồ sơ và giấy tờ trước khi cấp quyền Store Manager.</p>
+        </div>
+        <a th:href="@{/}" class="text-sm font-semibold text-emerald-800 hover:underline">Về trang chủ</a>
+    </header>
+
+    <section class="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <a th:href="@{/admin/seller-applications}" class="rounded-xl border bg-white p-4 shadow-sm hover:border-emerald-400">
+            <p class="text-sm text-slate-500">Tất cả hồ sơ</p>
+            <p class="mt-1 text-2xl font-bold" th:text="${counts['ALL']}">0</p>
+        </a>
+        <a th:href="@{/admin/seller-applications(status='PENDING')}" class="rounded-xl border bg-white p-4 shadow-sm hover:border-amber-400">
+            <p class="text-sm text-slate-500">Chờ tiếp nhận</p>
+            <p class="mt-1 text-2xl font-bold text-amber-700" th:text="${counts['PENDING']}">0</p>
+        </a>
+        <a th:href="@{/admin/seller-applications(status='UNDER_REVIEW')}" class="rounded-xl border bg-white p-4 shadow-sm hover:border-blue-400">
+            <p class="text-sm text-slate-500">Đang thẩm định</p>
+            <p class="mt-1 text-2xl font-bold text-blue-700" th:text="${counts['UNDER_REVIEW']}">0</p>
+        </a>
+        <a th:href="@{/admin/seller-applications(status='APPROVED')}" class="rounded-xl border bg-white p-4 shadow-sm hover:border-emerald-400">
+            <p class="text-sm text-slate-500">Đã phê duyệt</p>
+            <p class="mt-1 text-2xl font-bold text-emerald-700" th:text="${counts['APPROVED']}">0</p>
+        </a>
+        <a th:href="@{/admin/seller-applications(status='REJECTED')}" class="rounded-xl border bg-white p-4 shadow-sm hover:border-rose-400">
+            <p class="text-sm text-slate-500">Đã từ chối</p>
+            <p class="mt-1 text-2xl font-bold text-rose-700" th:text="${counts['REJECTED']}">0</p>
+        </a>
+    </section>
+
+    <section class="overflow-hidden rounded-2xl border bg-white shadow-sm">
+        <div class="flex flex-col gap-3 border-b p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h2 class="text-lg font-semibold">Danh sách hồ sơ</h2>
+                <p class="text-sm text-slate-500" th:text="${#lists.size(applications)} + ' hồ sơ trong bộ lọc này'">0 hồ sơ</p>
+            </div>
+            <form method="get" th:action="@{/admin/seller-applications}" class="flex items-center gap-2">
+                <label for="status" class="text-sm text-slate-600">Trạng thái</label>
+                <select id="status" name="status" onchange="this.form.submit()" class="rounded-lg border-slate-300 text-sm focus:border-emerald-600 focus:ring-emerald-600">
+                    <option value="">Tất cả</option>
+                    <option value="PENDING" th:selected="${selectedStatus != null and selectedStatus.name() == 'PENDING'}">Chờ tiếp nhận</option>
+                    <option value="UNDER_REVIEW" th:selected="${selectedStatus != null and selectedStatus.name() == 'UNDER_REVIEW'}">Đang thẩm định</option>
+                    <option value="APPROVED" th:selected="${selectedStatus != null and selectedStatus.name() == 'APPROVED'}">Đã phê duyệt</option>
+                    <option value="REJECTED" th:selected="${selectedStatus != null and selectedStatus.name() == 'REJECTED'}">Đã từ chối</option>
+                    <option value="CANCELLED" th:selected="${selectedStatus != null and selectedStatus.name() == 'CANCELLED'}">Đã hủy</option>
+                </select>
+            </form>
+        </div>
+
+        <div th:if="${#lists.isEmpty(applications)}" class="p-12 text-center">
+            <p class="font-semibold">Chưa có hồ sơ nào trong trạng thái này.</p>
+            <p class="mt-1 text-sm text-slate-500">Hồ sơ mới gửi sẽ xuất hiện tại đây.</p>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(applications)}" class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+                <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                    <th class="px-5 py-3">Mã hồ sơ</th>
+                    <th class="px-5 py-3">Cơ sở kinh doanh</th>
+                    <th class="px-5 py-3">Người nộp</th>
+                    <th class="px-5 py-3">Mã số thuế</th>
+                    <th class="px-5 py-3">Ngày nộp</th>
+                    <th class="px-5 py-3">Trạng thái</th>
+                    <th class="px-5 py-3 text-right">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                <tr th:each="app : ${applications}" class="hover:bg-emerald-50/40">
+                    <td class="whitespace-nowrap px-5 py-4 font-semibold text-emerald-800" th:text="${'#APP-' + app.applicationId}">#APP-1</td>
+                    <td class="px-5 py-4">
+                        <p class="font-semibold" th:text="${app.businessName}">Tên cơ sở</p>
+                        <p class="mt-1 text-xs text-slate-500" th:text="${app.applicantPhone != null ? app.applicantPhone : 'Chưa có số điện thoại'}">Số điện thoại</p>
+                    </td>
+                    <td class="px-5 py-4">
+                        <p th:text="${app.applicantName}">Người nộp</p>
+                        <p class="mt-1 text-xs text-slate-500" th:text="${app.applicantEmail}">email</p>
+                    </td>
+                    <td class="px-5 py-4" th:text="${app.taxCode != null ? app.taxCode : '—'}">—</td>
+                    <td class="whitespace-nowrap px-5 py-4" th:text="${app.submittedAtLabel}">—</td>
+                    <td class="whitespace-nowrap px-5 py-4">
+                        <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                              th:classappend="${app.status.name() == 'APPROVED'} ? ' bg-emerald-100 text-emerald-800' : (${app.status.name() == 'REJECTED' or app.status.name() == 'CANCELLED'} ? ' bg-rose-100 text-rose-800' : (${app.status.name() == 'UNDER_REVIEW'} ? ' bg-blue-100 text-blue-800' : ' bg-amber-100 text-amber-800'))"
+                              th:text="${app.statusLabel}">Chờ tiếp nhận</span>
+                    </td>
+                    <td class="whitespace-nowrap px-5 py-4 text-right">
+                        <a th:href="@{/admin/seller-applications/{id}(id=${app.applicationId})}"
+                           class="inline-flex items-center rounded-lg bg-emerald-700 px-3 py-2 font-semibold text-white hover:bg-emerald-800">Thẩm định chi tiết</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' | VietFresh Hub'">VietFresh Hub</title>
+    <link rel="stylesheet" th:href="@{/css/storefront.css}">
+    <script defer th:src="@{/js/cart.js}"></script>
+</head>
+<body>
+<header th:fragment="header" class="site-header">
+    <div class="header-strip"><div class="container">Trái cây theo mùa <span>·</span> Nhiều cửa hàng, một giỏ hàng</div></div>
+    <nav class="container nav" aria-label="Điều hướng chính">
+        <a class="brand" th:href="@{/home}"><span aria-hidden="true">❋</span> VietFresh Hub</a>
+        <form class="header-search" th:action="@{/home}" method="get" role="search">
+            <label class="sr-only" for="catalog-search">Tìm kiếm trái cây</label>
+            <input id="catalog-search" name="keyword" type="search" maxlength="100" th:value="${keyword}" placeholder="Bạn đang tìm trái cây gì?">
+            <button type="submit" aria-label="Tìm kiếm"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>
+        </form>
+        <div class="nav-links">
+            <a th:href="@{/cart}" class="cart-link"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h3l3 13h11l3-9H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg> Giỏ hàng <span class="badge" th:text="${cartBadgeTotal != null ? cartBadgeTotal : cart.totalItems}">0</span></a>
+            <a th:if="${#authorization.expression('!isAuthenticated()')}" th:href="@{/login}">Đăng nhập</a>
+            <details th:if="${#authorization.expression('isAuthenticated()')}" class="account-menu"><summary>Tài khoản</summary>
+                <div class="account-dropdown"><span th:text="${#authentication.name}"></span>
+                    <a th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" th:href="@{/customer/orders}">Đơn hàng của tôi</a>
+                    <form th:action="@{/logout}" method="post"><button type="submit">Đăng xuất</button></form></div>
+            </details>
+        </div>
+    </nav>
+    <nav class="container category-nav" aria-label="Nhóm trái cây">
+        <a th:href="@{/home}">Tất cả sản phẩm</a><a th:href="@{/home(keyword='Bưởi')}">Bưởi</a>
+        <a th:href="@{/home(keyword='Sầu riêng')}">Sầu riêng</a><a th:href="@{/home(keyword='Xoài')}">Xoài</a><a th:href="@{/home(keyword='Vải')}">Vải</a>
+    </nav>
+</header>
+<div th:fragment="messages" aria-live="polite" aria-atomic="true">
+    <p th:if="${successMessage != null}" class="notice success" role="status" th:text="${successMessage}"></p>
+    <p th:if="${errorMessage != null}" class="notice error" role="alert" th:text="${errorMessage}"></p>
+</div>
+<footer th:fragment="footer" class="site-footer"><div class="container">© 2026 VietFresh Hub · Trái cây tươi từ các cửa hàng của bạn</div></footer>
+</body>
+</html>

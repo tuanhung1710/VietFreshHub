@@ -6,7 +6,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Nationalized;
-
 import java.time.LocalDateTime;
 
 @Getter
@@ -31,16 +30,14 @@ public class PasswordResetToken {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
-
+    @Column(name = "attempt_count", nullable = false)
+    private int attemptCount = 0;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "token_type", nullable = false, length = 30)
+    private TokenType tokenType = TokenType.PASSWORD_RESET;
     @Nationalized
     @Column(name = "token_hash", nullable = false, length = 500)
     private String tokenHash;
-
-    @Column(name = "token_type", nullable = false, length = 30)
-    private String tokenType = "PASSWORD_RESET";
-
-    @Column(name = "attempt_count", nullable = false)
-    private int attemptCount;
 
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;

@@ -1,0 +1,37 @@
+/* Scoped to customer history/detail; shared storefront and other TV modules stay untouched. */
+.order-history-page .order-filters > div,
+.order-detail-page .checkout-layout > *,
+.order-detail-page .checkout-sections,
+.order-detail-page .checkout-line > div { min-width: 0; }
+.order-history-page .history-order,
+.order-detail-page .panel { overflow-wrap: anywhere; }
+.order-history-page .pagination { flex-wrap: wrap; gap: 12px; }
+.order-history-page .filter-errors { margin: 0; padding-left: 18px; }
+.order-history-page .filter-errors li { margin: 5px 0; }
+.order-history-page .field-error { color: var(--danger); font-size: 12px; display: block; margin-top: 6px; }
+.order-history-page .notice.info { background: #edf5ec; color: var(--green); }
+.order-history-page .history-payment { margin: 7px 0 0; font-size: 13px; }
+.order-detail-page .shop-order-reference { margin: 9px 0 0; font-size: 12px; }
+.order-detail-page .order-shop-heading .order-state { flex-shrink: 0; }
+.order-detail-page .order-item-sku { display: block; font-size: 12px; color: var(--muted); }
+.order-detail-page .order-item-discount { margin-top: 5px; color: var(--green); font-size: 12px; }
+.order-detail-page .order-shop-totals { border-top: 1px dashed var(--line); padding-top: 12px; margin-top: 8px; }
+.order-detail-page .order-shop-totals .summary-line { margin: 8px 0; }
+.order-detail-page .order-shop-total { font-size: 14px; }
+.order-detail-page .payment-records { border-top: 1px solid var(--line); margin-top: 20px; margin-bottom: 20px; padding-top: 18px; }
+.order-detail-page .payment-records h3 { font-size: 15px; }
+.order-detail-page .payment-record { border: 1px solid var(--line); padding: 12px; border-radius: 6px; margin-top: 10px; }
+.order-detail-page .payment-record p { margin: 6px 0; font-size: 12px; }
+.order-detail-page .payment-record strong { font-size: 13px; }
+.order-detail-page .payment-state { color: var(--green); font-weight: 650; }
+.order-detail-page .payment-state[data-state="FAILED"],
+.order-detail-page .payment-state[data-state="CANCELLED"] { color: var(--danger); }
+.order-detail-page .order-item-placeholder { display: grid; place-items: center; width: 64px; height: 64px; border: 1px solid var(--line); border-radius: 5px; color: var(--muted); font-size: 11px; text-align: center; }
+@media(max-width:760px) {
+    .order-detail-page .order-item-placeholder { width: 55px; height: 55px; }
+}
+@media(max-width:430px) {
+    .order-history-page .pagination .button { font-size: 12px; padding: 10px 12px; }
+    .order-history-page .pagination span { flex-basis: 100%; text-align: center; order: 3; }
+    .order-detail-page .order-shop-totals .summary-line { gap: 10px; }
+}
