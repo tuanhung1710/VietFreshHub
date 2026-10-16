@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+    <!-- Tài nguyên trang -->
+    <head th:replace="~{fragments/product-inventory :: head('Biến động kho','inventory')}">
+    </head>
+
+    <body>
+
+        <!-- Điều hướng Seller Portal -->
+        <header th:replace="~{fragments/product-inventory :: nav('inventory')}">
+        </header>
+
+        <!-- Nội dung chính -->
+        <div class="vf-workspace">
+        <main class="container vf-main vf-inventory-main">
+            <a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{/seller/inventory}">
+                ← Quản lý tồn kho
+            </a>
+            <h1>
+                Biến động kho
+            </h1>
+            <p class="text-body-secondary mb-4">
+                Theo dõi nhập kho, giữ hàng cho đơn, giải phóng hàng giữ, xuất bán, nhận hàng hoàn, điều chỉnh và hủy hàng. Thời gian hiển thị theo giờ Việt Nam.
+            </p>
+
+            <div class="d-flex flex-wrap align-items-center gap-3 mb-3" th:if="${batch!=null}">
+                <strong th:text="${'Lịch sử tồn kho lô '+batchCode}"></strong>
+                <a class="text-success" th:href="@{/seller/inventory/batches/{id}/label(id=${batch})}">Chi tiết lô</a>
+                <a class="text-success" th:href="@{/seller/inventory/journal}">Xem tất cả biến động</a>
+            </div>
+
+            <!-- Biểu mẫu -->
+            <form class="card p-3 mb-4 vf-inventory-filter-form" th:action="@{/seller/inventory/journal}" method="get">
+                <input type="hidden" name="size" th:value="${events.size}">
+                <input type="hidden" name="variant" th:if="${variant!=null}" th:value="${variant}">
+                <input type="hidden" name="batch" th:if="${batch!=null}" th:value="${batch}">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-6 col-xl-3">
+                        <label class="form-label" for="journal-q">
+                            Tìm kiếm
+                        </label>
+                        <input
+                            class="form-control"
+                            id="journal-q"
+                            name="q"
+                            th:value="${q}"
+                            placeholder="Tên sản phẩm hoặc SKU"
+                        >
+                    </div>
+                    <div class="col-md-6 col-xl-2">
+                        <label class="form-label" for="journal-type">
+                            Loại biến động
+                        </label>
+                        <select class="form-select" id="journal-type" name="type">
+                            <option value="">
+                                Tất cả biến động
+                            </option>
+                            <option
+                                th:each="t : ${T(VietFreshHub.inventory.enums.StockTransactionType).values()}"
+                                th:value="${t.name()}"
+                                th:text="${t.name()=='RESTOCK'?'Nhập kho':t.name()=='RESERVE'?'Giữ hàng cho đơn':t.name()=='RELEASE'?'Giải phóng hàng giữ':t.name()=='SALE'?'Xuất bán':t.name()=='RETURN'?'Nhập hàng hoàn':t.name()=='ADJUSTMENT'?'Điều chỉnh tồn kho':t.name()=='EXPIRED'?'Hủy hàng hết hạn':'Hàng hư hỏng'}"
+                                th:selected="${type==t.name()}"
+                            >
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 col-xl-2">
+                        <label class="form-label" for="journal-from">
+                            Từ ngày
+                        </label>
+                        <input
+                            class="form-control"
+                            id="journal-from"
+                            type="date"
+                            name="from"
+                            th:value="${from}"
+                        >
+                    </div>
+                    <div class="col-md-6 col-xl-2">
+                        <label class="form-label" for="journal-to">
+                            Đến ngày
+                        </label>
+                        <input class="form-control" id="journal-to" type="date" name="to" th:value="${to}">
+                    </div>
+                    <div class="col-12 col-md-auto col-xl-3 d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-success">
+                            Áp dụng
+                        </button>
+                        <a class="btn btn-light" th:href="@{/seller/inventory/journal(variant=${variant},batch=${batch},size=${events.size})}">Xóa bộ lọc</a>
+                    </div>
+                </div>
+            </form>
+
+            <div class="card mb-3">
+                <div class="table-responsive">
+
+                    <!-- Bảng dữ liệu -->
+                    <table class="table table-hover align-middle mb-0 vf-inventory-journal-table" aria-label="Biến động kho">
+                        <colgroup>
+                            <col class="vf-history-col-time">
+                            <col class="vf-journal-col-product">
+                            <col class="vf-journal-col-type">
+                            <col class="vf-journal-col-quantity">
+                            <col class="vf-journal-col-note">
+                        </colgroup>
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">Thời gian</th>
+                                <th scope="col">
+                                    SKU / Lô hàng
+                                </th>
+                                <th scope="col">
+                                    Loại biến động
+                                </th>
+                                <th scope="col" title="Với Giữ hàng/Giải phóng hàng giữ, số lượng thể hiện thay đổi phần khả dụng. Tổng tồn kho không thay đổi.">
+                                    Số lượng thay đổi
+                                </th>
+                                <th scope="col">
+                                    Lý do / Thông tin liên quan
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="vf-history-row" th:each="e : ${events.content}">
+                                <td class="vf-history-time-cell" data-label="Thời gian">
+                                    <time th:replace="~{fragments/product-inventory :: historyTime(${e.event.createdAt})}"></time>
+                                </td>
+                                <td data-label="SKU / Lô hàng">
+                                    <small class="d-block" th:text="${e.event.transactionCode}"></small>
+                                    <strong th:text="${e.sku}">
+                                    </strong>
+                                    <small
+                                        class="d-block text-body-secondary"
+                                        th:text="${e.productName+' · '+(e.batchCode==null?'—':e.batchCode)}"
+                                    >
+                                    </small>
+                                </td>
+                                <td data-label="Loại biến động">
+                                    <span
+                                        class="badge bg-secondary-subtle text-secondary-emphasis"
+                                        th:text="${e.event.transactionType.name()=='RESTOCK'?'Nhập kho':e.event.transactionType.name()=='RESERVE'?'Giữ hàng cho đơn':e.event.transactionType.name()=='RELEASE'?'Giải phóng hàng giữ':e.event.transactionType.name()=='SALE'?'Xuất bán':e.event.transactionType.name()=='RETURN'?'Nhập hàng hoàn':e.event.transactionType.name()=='ADJUSTMENT'?'Điều chỉnh tồn kho':e.event.transactionType.name()=='EXPIRED'?'Hủy hàng hết hạn':'Hàng hư hỏng'}"
+                                    >
+                                    </span>
+                                </td>
+                                <td
+                                    th:title="${e.event.transactionType.name()=='RESERVE'||e.event.transactionType.name()=='RELEASE'?'Thay đổi số lượng khả dụng do giữ hoặc giải phóng hàng cho đơn. Tổng tồn kho không thay đổi.':'Số lượng tồn kho thay đổi trong giao dịch này.'}"
+                                    class="vf-table-number fw-semibold"
+                                    th:classappend="${e.event.quantity>0?'text-success':'text-danger'}"
+                                    th:text="${(e.event.quantity>0?'+':'')+e.event.quantity}"
+                                    data-label="Số lượng thay đổi"
+                                >
+                                </td>
+                                
+                                <td data-label="Lý do / Thông tin liên quan">
+                                    <span th:text="${e.event.note}">
+                                    </span>
+                                    <small
+                                        class="d-block text-body-secondary"
+                                        th:text="${e.referenceLabel}"
+                                    >
+                                    </small>
+                                </td>
+                            </tr>
+                            <tr th:if="${events.empty}">
+                                <td colspan="5" class="text-center text-body-secondary py-5">
+                                    Không tìm thấy biến động kho phù hợp.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+
+            <div class="vf-pagination-panel">
+                <nav th:replace="~{fragments/product-inventory :: pagination(${events}, @{/seller/inventory/journal(page=${events.number},size=${events.size},q=${q},variant=${variant},batch=${batch},type=${type},from=${from},to=${to})}, @{/seller/inventory/journal(page=${events.number+2},size=${events.size},q=${q},variant=${variant},batch=${batch},type=${type},from=${from},to=${to})}, 'Phân trang biến động kho', 'bản ghi')}"></nav>
+                <form class="vf-page-size" th:action="@{/seller/inventory/journal}" method="get">
+                    <input type="hidden" name="q" th:value="${q}">
+                    <input type="hidden" name="variant" th:if="${variant!=null}" th:value="${variant}">
+                    <input type="hidden" name="batch" th:if="${batch!=null}" th:value="${batch}">
+                    <input type="hidden" name="type" th:value="${type}">
+                    <input type="hidden" name="from" th:value="${from}">
+                    <input type="hidden" name="to" th:value="${to}">
+                    <th:block th:replace="~{fragments/product-inventory :: pageSize(${events}, 'journal-size', 'Bản ghi mỗi trang')}"></th:block>
+                </form>
+            </div>
+
+        </main>
+
+
+        </div>
+
+    </body>
+</html>

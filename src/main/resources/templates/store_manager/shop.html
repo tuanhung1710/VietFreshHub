@@ -1,11 +1,13 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Cửa hàng của tôi · VietFresh Hub</title>
 </head>
 <body>
-<h1>Shop</h1>
+<h1>SHOP</h1>
+<p>Mã shop: <span th:text="${shopCode}"></span>
+<button type="button" th:attr="data-vf-copy-code=${shopCode},aria-label=${'Sao chép mã shop '+shopCode}">Sao chép</button></p>
 <h2>QUẢN LÝ ĐƠN HÀNG</h2>
 <nav aria-label="Quản lý đơn hàng">
     <ul>
@@ -17,5 +19,22 @@
         <li><a th:href="@{/seller/processed-orders}" th:text="${'Lịch sử đơn đã xử lý (' + orderCounts.processedOrders + ')'}">Lịch sử đơn đã xử lý</a></li>
     </ul>
 </nav>
+<h2>QUẢN LÝ SẢN PHẨM VÀ KHO</h2>
+<section th:if="${inventoryAttention.hasAlerts()}" aria-label="Kho cần chú ý">
+    <h3>Kho cần chú ý</h3>
+    <ul>
+        <li th:if="${inventoryAttention.lowVariants > 0}"><a th:href="@{/seller/inventory(stock='low')}" th:text="${inventoryAttention.lowVariants + ' phân loại sắp hết hàng'}"></a></li>
+        <li th:if="${inventoryAttention.nearBatches > 0}"><a th:href="@{/seller/inventory(expiry='near')}" th:text="${inventoryAttention.nearBatches + ' lô sắp hết hạn'}"></a></li>
+        <li th:if="${inventoryAttention.expiredBatches > 0}"><a th:href="@{/seller/inventory(expiry='expired')}" th:text="${inventoryAttention.expiredBatches + ' lô đã hết hạn'}"></a></li>
+    </ul>
+</section>
+<nav aria-label="Sản phẩm và kho">
+    <ul>
+        <li><a th:href="@{/seller/products}">SẢN PHẨM VÀ PHÂN LOẠI</a></li>
+        <li><a th:href="@{/seller/inventory}">KHO HÀNG THEO LÔ</a></li>
+        <li><a th:href="@{/seller/inventory/journal}">NHẬT KÝ KHO</a></li>
+    </ul>
+</nav>
+<script th:src="@{/js/product/module.js}" defer></script>
 </body>
 </html>
