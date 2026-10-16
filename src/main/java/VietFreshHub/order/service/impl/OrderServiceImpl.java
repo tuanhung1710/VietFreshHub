@@ -1,5 +1,6 @@
 package VietFreshHub.order.service.impl;
 
+import VietFreshHub.delivery.service.DeliveryCreationService;
 import VietFreshHub.order.dto.IncomingOrderResponse;
 import VietFreshHub.order.dto.OrderCountsResponse;
 import VietFreshHub.order.dto.OrderDetailResponse;
@@ -15,6 +16,8 @@ import VietFreshHub.order.repository.OrderItemRepository;
 import VietFreshHub.order.repository.ShopOrderRepository;
 import VietFreshHub.order.service.OrderService;
 import VietFreshHub.shop.service.ShopService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Path;
@@ -28,11 +31,13 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -46,6 +51,8 @@ public class OrderServiceImpl implements OrderService {
     private final OrderAddressRepository orderAddressRepository;
     private final OrderItemRepository orderItemRepository;
     private final ShopService shopService;
+    private final DeliveryCreationService deliveryCreationService;
+    private final EntityManager entityManager;
 
     @Override
     @Transactional(readOnly = true)
@@ -129,6 +136,50 @@ public class OrderServiceImpl implements OrderService {
         return orderAddressRepository.findByOrderId(orderId).orElse(null);
     }
 
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void lockOrderForDeliveryCompletion(Long orderId) {
+        Order order = entityManager.find(Order.class, orderId);
+        if (order == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng.");
+        }
+        entityManager.refresh(order, LockModeType.PESSIMISTIC_WRITE);
+        if (order.getStatus() == Order.Status.CANCELLED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Không thể hoàn tất đơn hàng đã hủy.");
+        }
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void completeDeliveredShopOrder(Long shopOrderId, LocalDateTime completedAt) {
+        ShopOrder shopOrder = shopOrderRepository.findById(shopOrderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng."));
+        Order order = shopOrder.getOrder();
+        lockOrderForDeliveryCompletion(order.getOrderId());
+        entityManager.refresh(shopOrder, LockModeType.PESSIMISTIC_WRITE);
+        if (!"OUT_FOR_DELIVERY".equals(shopOrder.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Chỉ có thể hoàn tất đơn hàng đang giao hàng.");
+        }
+        if (completedAt == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Chưa ghi nhận thời gian giao hàng thành công.");
+        }
+
+        shopOrder.markCompleted();
+        if (shopOrder.getCompletedAt() == null) {
+            shopOrder.setCompletedAt(completedAt);
+        }
+        shopOrderRepository.flush();
+        if (shopOrderRepository.existsByOrder_OrderIdAndStatusNot(order.getOrderId(), "COMPLETED")) {
+            order.setStatus(Order.Status.PARTIALLY_COMPLETED);
+            order.setCompletedAt(null);
+        } else {
+            order.setStatus(Order.Status.COMPLETED);
+            if (order.getCompletedAt() == null) {
+                order.setCompletedAt(completedAt);
+            }
+        }
+    }
+
     private OrderDetailResponse toOrderDetailResponse(ShopOrder shopOrder) {
         Order order = shopOrder.getOrder();
         OrderAddress address = orderAddressRepository.findByOrderId(order.getOrderId()).orElse(null);
@@ -190,6 +241,7 @@ public class OrderServiceImpl implements OrderService {
                     "Chỉ có thể đánh dấu sẵn sàng giao hàng cho đơn hàng đang chuẩn bị.");
         }
         shopOrder.markReady();
+        deliveryCreationService.ensureDeliveryForReadyShopOrder(shopOrder);
     }
 
     @Override
@@ -234,6 +286,7 @@ public class OrderServiceImpl implements OrderService {
         }
         for (ShopOrder shopOrder : shopOrders) {
             shopOrder.markReady();
+            deliveryCreationService.ensureDeliveryForReadyShopOrder(shopOrder);
         }
     }
 
@@ -279,10 +332,27 @@ public class OrderServiceImpl implements OrderService {
 
     private List<ShopOrder> getShopOrdersForUpdate(List<Long> shopOrderIds, Authentication authentication) {
         Long shopId = shopService.getManagedShopId(authentication);
+        List<Long> selectedIds = validateSelectedIds(shopOrderIds);
+        TreeSet<Long> orderIds = new TreeSet<>();
+        for (Long shopOrderId : selectedIds) {
+            ShopOrder shopOrder = shopOrderRepository.findById(shopOrderId)
+                    .filter(value -> shopId.equals(value.getShopId()))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            orderIds.add(shopOrder.getOrder().getOrderId());
+        }
+        for (Long orderId : orderIds) {
+            Order order = entityManager.getReference(Order.class, orderId);
+            entityManager.refresh(order, LockModeType.PESSIMISTIC_WRITE);
+            if (order.getStatus() == Order.Status.CANCELLED) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Không thể xử lý đơn hàng đã hủy.");
+            }
+        }
         List<ShopOrder> shopOrders = new ArrayList<>();
-        for (Long shopOrderId : validateSelectedIds(shopOrderIds)) {
-            shopOrders.add(shopOrderRepository.findForUpdateByShopOrderIdAndShopId(shopOrderId, shopId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND)));
+        for (Long shopOrderId : selectedIds) {
+            ShopOrder shopOrder = shopOrderRepository.findForUpdateByShopOrderIdAndShopId(shopOrderId, shopId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            entityManager.refresh(shopOrder, LockModeType.PESSIMISTIC_WRITE);
+            shopOrders.add(shopOrder);
         }
         return shopOrders;
     }
@@ -293,10 +363,22 @@ public class OrderServiceImpl implements OrderService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Số trang không hợp lệ.");
         }
         Specification<ShopOrder> specification = buildOrderSpecification(authentication, filter, view);
+        if (filter.getSort() == null || filter.getSort().isBlank()) {
+            filter.setSort("NEWEST");
+        }
         int pageSize = "all".equals(view) || "processed".equals(view) ? 50 : 15;
-        Pageable pageable = PageRequest.of(page, pageSize,
-                Sort.by(Sort.Direction.DESC, "order.placedAt", "shopOrderId"));
+        Pageable pageable = PageRequest.of(page, pageSize, resolveOrderSort(filter.getSort()));
         return shopOrderRepository.findAll(specification, pageable);
+    }
+
+    private Sort resolveOrderSort(String sort) {
+        return switch (sort) {
+            case "NEWEST" -> Sort.by(Sort.Direction.DESC, "order.placedAt", "shopOrderId");
+            case "OLDEST" -> Sort.by(Sort.Direction.ASC, "order.placedAt", "shopOrderId");
+            case "PRICE_HIGH" -> Sort.by(Sort.Direction.DESC, "totalAmount", "shopOrderId");
+            case "PRICE_LOW" -> Sort.by(Sort.Direction.ASC, "totalAmount", "shopOrderId");
+            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Lựa chọn sắp xếp đơn hàng không hợp lệ.");
+        };
     }
 
     private Specification<ShopOrder> buildOrderSpecification(Authentication authentication, OrderFilterRequest filter,
@@ -410,9 +492,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private ShopOrder getShopOrderForUpdate(Long shopOrderId, Authentication authentication) {
-        Long shopId = shopService.getManagedShopId(authentication);
-        return shopOrderRepository.findForUpdateByShopOrderIdAndShopId(shopOrderId, shopId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return getShopOrdersForUpdate(List.of(shopOrderId), authentication).getFirst();
     }
 
     private String formatDeliveryAddress(OrderAddress address) {

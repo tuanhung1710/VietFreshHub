@@ -4,6 +4,8 @@
     <style th:fragment="styles">
         .order-filter-toolbar {
             display: flex;
+            flex-wrap: wrap;
+            align-items: center;
             gap: 12px;
             max-width: 760px;
             margin: 20px 0;
@@ -14,6 +16,18 @@
             flex: 1;
             min-width: 0;
             gap: 8px;
+        }
+
+        .order-sort-form {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .order-sort-form select {
+            max-width: 100%;
+            font: inherit;
         }
 
         .order-search-form input {
@@ -203,6 +217,24 @@
             <input type="hidden" name="priceRange" th:value="${filter.priceRange}">
             <input th:if="${showStatusFilter}" type="hidden" name="status" th:value="${filter.status}">
             <input th:if="${showPaymentFilter}" type="hidden" name="paymentStatus" th:value="${filter.paymentStatus}">
+            <input type="hidden" name="sort" th:value="${filter.sort}">
+        </form>
+        <form class="order-sort-form" method="get" th:action="@{${filterAction}}">
+            <label for="order-sort">Sắp xếp theo</label>
+            <select id="order-sort" name="sort">
+                <option value="NEWEST" th:selected="${filter.sort == 'NEWEST'}">Ngày đặt hàng: Mới nhất trước</option>
+                <option value="OLDEST" th:selected="${filter.sort == 'OLDEST'}">Ngày đặt hàng: Cũ nhất trước</option>
+                <option value="PRICE_HIGH" th:selected="${filter.sort == 'PRICE_HIGH'}">Giá trị đơn hàng: Cao nhất trước</option>
+                <option value="PRICE_LOW" th:selected="${filter.sort == 'PRICE_LOW'}">Giá trị đơn hàng: Thấp nhất trước</option>
+            </select>
+            <noscript><button class="order-search-button" type="submit">Sắp xếp</button></noscript>
+            <input type="hidden" name="page" value="0">
+            <input type="hidden" name="keyword" th:value="${filter.keyword}">
+            <input type="hidden" name="fromDate" th:value="${filter.fromDate}">
+            <input type="hidden" name="toDate" th:value="${filter.toDate}">
+            <input type="hidden" name="priceRange" th:value="${filter.priceRange}">
+            <input th:if="${showStatusFilter}" type="hidden" name="status" th:value="${filter.status}">
+            <input th:if="${showPaymentFilter}" type="hidden" name="paymentStatus" th:value="${filter.paymentStatus}">
         </form>
         <button id="open-order-filter" class="order-filter-button" type="button"
                 aria-haspopup="dialog" aria-controls="order-filter-dialog">Bộ lọc</button>
@@ -215,6 +247,7 @@
         <form id="order-filter-form" method="get" novalidate th:action="@{${filterAction}}"
               th:attr="data-count-url=@{/seller/orders/filter-count},data-view=${orderView}">
             <input type="hidden" name="keyword" th:value="${filter.keyword}">
+            <input type="hidden" name="sort" th:value="${filter.sort}">
             <fieldset>
                 <legend>Ngày đặt hàng</legend>
                 <div class="order-filter-dates">
@@ -280,7 +313,7 @@
             </fieldset>
             <p id="order-filter-error" class="order-filter-error" role="alert" hidden></p>
             <div class="order-filter-actions">
-                <a class="order-filter-clear" th:href="@{${filterAction}(keyword=${filter.keyword})}">BỎ CHỌN</a>
+                <a class="order-filter-clear" th:href="@{${filterAction}(keyword=${filter.keyword},sort=${filter.sort})}">BỎ CHỌN</a>
                 <button id="apply-order-filter" class="order-filter-apply" type="submit" aria-live="polite"
                         th:text="${resultCount + ' KẾT QUẢ'}">KẾT QUẢ</button>
             </div>
@@ -296,6 +329,10 @@
         const toDateInput = document.getElementById('toDate');
         const fromDateError = document.getElementById('fromDate-error');
         const toDateError = document.getElementById('toDate-error');
+
+        document.getElementById('order-sort').addEventListener('change', event => {
+            event.currentTarget.form.requestSubmit();
+        });
 
         let orderCountRequest;
         let orderCountReady = false;
@@ -427,10 +464,10 @@
 </div>
 <nav th:fragment="pagination(filterAction)" th:if="${totalPages > 1}" aria-label="Phân trang đơn hàng">
     <a th:if="${currentPage > 0}"
-       th:href="@{${filterAction}(page=${currentPage - 1},keyword=${filter.keyword},fromDate=${filter.fromDate},toDate=${filter.toDate},priceRange=${filter.priceRange},status=${filter.status},paymentStatus=${filter.paymentStatus})}">← Trước</a>
+       th:href="@{${filterAction}(page=${currentPage - 1},keyword=${filter.keyword},fromDate=${filter.fromDate},toDate=${filter.toDate},priceRange=${filter.priceRange},status=${filter.status},paymentStatus=${filter.paymentStatus},sort=${filter.sort})}">← Trước</a>
     <span th:text="${'Trang ' + (currentPage + 1) + ' / ' + totalPages}"></span>
     <a th:if="${currentPage + 1 < totalPages}"
-       th:href="@{${filterAction}(page=${currentPage + 1},keyword=${filter.keyword},fromDate=${filter.fromDate},toDate=${filter.toDate},priceRange=${filter.priceRange},status=${filter.status},paymentStatus=${filter.paymentStatus})}">Sau →</a>
+       th:href="@{${filterAction}(page=${currentPage + 1},keyword=${filter.keyword},fromDate=${filter.fromDate},toDate=${filter.toDate},priceRange=${filter.priceRange},status=${filter.status},paymentStatus=${filter.paymentStatus},sort=${filter.sort})}">Sau →</a>
 </nav>
 </body>
 </html>

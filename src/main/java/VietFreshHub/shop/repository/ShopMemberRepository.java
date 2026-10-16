@@ -18,6 +18,21 @@ public interface ShopMemberRepository extends JpaRepository<ShopMember, Long> {
     List<ShopMember> findActiveMembershipsByUserId(@Param("userId") Long userId);
 
     @Query("""
+            select distinct u.userId from ShopMember sm
+            join sm.shop s
+            join sm.user u
+            join u.userRoles ur
+            where s.shopId = :shopId and s.status = 'ACTIVE'
+              and sm.status = 'ACTIVE' and sm.memberRole in ('OWNER', 'MANAGER')
+              and u.status = 'ACTIVE' and ur.role.roleName = 'ROLE_STORE_MANAGER'
+              and (select count(m) from ShopMember m
+                   where m.user = u and m.status = 'ACTIVE'
+                     and m.memberRole in ('OWNER', 'MANAGER') and m.shop.status = 'ACTIVE') = 1
+            order by u.userId
+            """)
+    List<Long> findActiveManagerUserIdsByShopId(@Param("shopId") Long shopId);
+
+    @Query("""
             select count(sm) > 0 from ShopMember sm
             join sm.shop s
             where sm.shop.shopId = :shopId

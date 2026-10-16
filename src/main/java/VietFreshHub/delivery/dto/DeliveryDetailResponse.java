@@ -23,8 +23,12 @@ public class DeliveryDetailResponse {
     private LocalDateTime acceptedAt;
     private LocalDateTime pickedUpAt;
     private LocalDateTime deliveredAt;
-    private LocalDateTime redeliveryRequestedAt;
-    private LocalDateTime redeliveryScheduledAt;
+    private String failureReason;
+    private String returnStatusLabel;
+    private boolean legacyRedelivery;
+    private long remainingOfferSeconds;
+    private String assignmentStatusLabel;
+    private String deliveryStatusLabel;
     private String recipientName;
     private String recipientPhone;
     private DeliveryLocationResponse pickupLocation;

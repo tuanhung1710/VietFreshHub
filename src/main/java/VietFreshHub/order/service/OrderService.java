@@ -9,6 +9,7 @@ import VietFreshHub.order.entity.OrderAddress;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface OrderService {
@@ -32,6 +33,10 @@ public interface OrderService {
     OrderDetailResponse getOrderDetail(Long shopOrderId, Authentication authentication);
 
     OrderAddress getOrderAddress(Long orderId);
+
+    void lockOrderForDeliveryCompletion(Long orderId);
+
+    void completeDeliveredShopOrder(Long shopOrderId, LocalDateTime completedAt);
 
     void confirmOrder(Long shopOrderId, Authentication authentication);
 

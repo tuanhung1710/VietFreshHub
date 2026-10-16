@@ -11,9 +11,9 @@ import VietFreshHub.cart.entity.CartItem;
 import VietFreshHub.cart.repository.CartRepository;
 import VietFreshHub.cart.service.CartService;
 import VietFreshHub.checkout.dto.*;
+import VietFreshHub.customer.service.CustomerAddressService;
 import VietFreshHub.exception.CheckoutException;
 import VietFreshHub.inventory.service.InventoryReservationService;
-import VietFreshHub.checkout.service.ShippingQuoteService;
 import VietFreshHub.checkout.repository.CheckoutAddressRepository;
 import VietFreshHub.checkout.service.CheckoutService;
 import VietFreshHub.order.entity.Order;
@@ -50,11 +50,12 @@ public class CheckoutServiceImpl implements CheckoutService {
     private final CartRepository carts;
     private final CartService cartService;
     private final CheckoutAddressRepository addresses;
+    private final CustomerAddressService customerAddresses;
     private final PaymentMethodRepository paymentMethods;
     private final OrderRepository orders;
     private final CatalogService catalog;
     private final InventoryReservationService inventory;
-    private final ShippingQuoteService shipping;
+    private final CheckoutShippingQuoteService shippingQuotes;
     private final EntityManager em;
     private final ApplicationEventPublisher events;
 
@@ -68,21 +69,38 @@ public class CheckoutServiceImpl implements CheckoutService {
         CartDto cart=selectCart(cartService.getActiveCart(customerId),selectedItemIds);
         var options=addresses.findByUserUserIdOrderByIsDefaultDescAddressIdAsc(customerId).stream()
                 .map(a -> new CheckoutPreview.AddressOption(a.getAddressId(),a.getRecipientName(),a.getPhone(),
-                        java.util.stream.Stream.of(a.getAddressLine(),a.getWard(),a.getDistrict(),a.getProvince())
-                                .filter(part -> part!=null && !part.isBlank()).collect(Collectors.joining(", ")),a.getIsDefault())).toList();
-        BigDecimal fee=shipping.feePerShop();
-        long shopCount=cart.getItems().stream().map(CartItemDto::getShopId).distinct().count();
-        BigDecimal shippingTotal=fee==null ? null : fee.multiply(BigDecimal.valueOf(shopCount));
-        return new CheckoutPreview(cart,options,fee,shippingTotal,
-                shippingTotal==null ? null : cart.getTotalAmount().add(shippingTotal),
-                paymentMethods.findByMethodCodeAndStatus("COD","ACTIVE").isPresent(),fingerprint(cart));
+                        addressText(a),a.getIsDefault(),
+                        customerAddresses.isDeliveryLocationComplete(a))).toList();
+        return new CheckoutPreview(cart,options,null,Map.of(),null,null,
+                paymentMethods.findByMethodCodeAndStatus("COD","ACTIVE").isPresent(),fingerprint(cart),null,false);
+    }
+
+    private String addressText(Address address) {
+        if(address.getFormattedAddress()!=null && !address.getFormattedAddress().isBlank()) {
+            return address.getFormattedAddress();
+        }
+        List<String> parts=new ArrayList<>();
+        if(address.getAddressLine()!=null) {
+            Arrays.stream(address.getAddressLine().split(",")).map(String::strip)
+                    .filter(part -> !part.isBlank()).forEach(parts::add);
+        }
+        for(String part:Arrays.asList(address.getWard(),address.getDistrict(),address.getProvince())) {
+            if(part==null || part.isBlank()) continue;
+            String component=part.strip();
+            if(parts.stream().noneMatch(existing -> existing.equalsIgnoreCase(component))) parts.add(component);
+        }
+        return String.join(", ",parts);
     }
 
     @Override @Transactional
     public CheckoutResult confirm(Long customerId,CheckoutDraft draft,CheckoutRequest request) {
         if(customerId==null || draft==null || request==null || !customerId.equals(draft.customerId())
-                || !Objects.equals(draft.token(),request.getCheckoutToken()) || !draft.token().matches("[0-9a-f]{32}")) {
+                || !Objects.equals(draft.token(),request.getCheckoutToken()) || draft.token()==null
+                || !draft.token().matches("[0-9a-f]{32}")) {
             throw new CheckoutException("Phiên đặt hàng không hợp lệ. Vui lòng tải lại trang.");
+        }
+        if(request.getAddressId()==null || !Objects.equals(request.getAddressId(),draft.addressId())) {
+            throw new CheckoutException("Địa chỉ nhận hàng khác với báo giá. Vui lòng tính lại phí giao hàng trước khi xác nhận.");
         }
         User buyer=users.findByUserIdForUpdate(customerId).orElseThrow(() -> new CheckoutException("Tài khoản không hợp lệ."));
         em.refresh(buyer,LockModeType.PESSIMISTIC_WRITE);
@@ -95,22 +113,25 @@ public class CheckoutServiceImpl implements CheckoutService {
                 .orElseThrow(() -> new CheckoutException("Thanh toán khi nhận hàng hiện chưa khả dụng."));
         em.refresh(method,LockModeType.PESSIMISTIC_READ);
         if(!"ACTIVE".equals(method.getStatus())) throw new CheckoutException("Thanh toán khi nhận hàng hiện chưa khả dụng.");
-        BigDecimal fee=shipping.feePerShop();
-        if(fee==null) throw new CheckoutException("Phí giao hàng chưa được cấu hình. Vui lòng thử lại sau.");
-        if(draft.shippingFeePerShop()==null || fee.compareTo(draft.shippingFeePerShop())!=0) {
-            throw new CheckoutException("Phí giao hàng vừa thay đổi. Vui lòng xem lại tổng tiền trước khi đặt hàng.");
+        Address address;
+        try {
+            address=customerAddresses.getDeliveryAddress(customerId,request.getAddressId());
+        } catch(IllegalArgumentException ex) {
+            throw new CheckoutException(ex.getMessage());
         }
-        Address address=addresses.findByAddressIdAndUserUserId(request.getAddressId(),customerId)
-                .orElseThrow(() -> new CheckoutException("Vui lòng chọn địa chỉ nhận hàng của bạn."));
         em.refresh(address,LockModeType.PESSIMISTIC_WRITE);
         if(!customerId.equals(address.getUser().getUserId())) throw new CheckoutException("Địa chỉ nhận hàng không hợp lệ.");
+        if(!customerAddresses.isDeliveryLocationComplete(address)) {
+            throw new CheckoutException("Địa chỉ nhận hàng chưa đủ thông tin vị trí. Vui lòng cập nhật địa chỉ bằng cách chọn gợi ý VietMap trong mục Địa chỉ giao hàng.");
+        }
         Cart cart=carts.findByUserUserIdAndStatus(customerId,"ACTIVE")
                 .orElseThrow(() -> new CheckoutException("Giỏ hàng đang trống hoặc đã được đặt hàng."));
         if(!Objects.equals(cart.getCartId(),draft.cartId()) || cart.getItems().isEmpty()) {
             throw new CheckoutException("Giỏ hàng đã thay đổi. Vui lòng xem lại trước khi đặt hàng.");
         }
         Set<Long> selection=new HashSet<>(draft.selectedItemIds());
-        if(selection.isEmpty()) throw new CheckoutException("Vui lòng chọn ít nhất một sản phẩm để đặt hàng.");
+        if(selection.isEmpty() || selection.size()!=draft.selectedItemIds().size())
+            throw new CheckoutException("Vui lòng chọn ít nhất một sản phẩm hợp lệ để đặt hàng.");
         List<CartItem> selected=cart.getItems().stream().filter(item -> selection.contains(item.getCartItemId())).toList();
         if(selected.size()!=selection.size()) throw new CheckoutException("Sản phẩm đã chọn không còn trong giỏ. Vui lòng chọn lại.");
         lockCatalog(selected);
@@ -126,7 +147,7 @@ public class CheckoutServiceImpl implements CheckoutService {
         Map<Long,List<CartItem>> groups=selected.stream().collect(Collectors.groupingBy(
                 item -> item.getVariant().getProduct().getShop().getShopId(),TreeMap::new,Collectors.toList()));
         BigDecimal subtotal=selected.stream().map(this::lineTotal).reduce(BigDecimal.ZERO,BigDecimal::add);
-        BigDecimal shippingTotal=money(fee.multiply(BigDecimal.valueOf(groups.size())));
+        BigDecimal shippingTotal=shippingQuotes.validateForConfirmation(draft,address,groups.keySet());
         Order order=new Order(); order.setCustomer(buyer); order.setOrderCode(orderCode);
         order.setSubtotal(money(subtotal)); order.setShippingFee(shippingTotal);
         order.setGrandTotal(money(subtotal.add(shippingTotal))); orders.save(order);
@@ -136,6 +157,9 @@ public class CheckoutServiceImpl implements CheckoutService {
         for(List<CartItem> lines:groups.values()) {
             ShopOrder shopOrder=new ShopOrder(); shopOrder.setOrder(order);
             shopOrder.setShop(lines.getFirst().getVariant().getProduct().getShop());
+            ShopShippingQuote quote=draft.shopQuotes().get(shopOrder.getShopId());
+            BigDecimal fee=quote.shippingFee();
+            shopOrder.setShippingDistanceMeters(shippingQuotes.distanceSnapshot(quote.distanceMeters()));
             BigDecimal shopSubtotal=lines.stream().map(this::lineTotal).reduce(BigDecimal.ZERO,BigDecimal::add);
             shopOrder.setSubtotal(money(shopSubtotal)); shopOrder.setShippingFee(fee);
             shopOrder.setTotalAmount(money(shopSubtotal.add(fee))); em.persist(shopOrder);
@@ -152,7 +176,6 @@ public class CheckoutServiceImpl implements CheckoutService {
         }
         inventory.reserve(reservations,customerId);
         Payment payment=new Payment(); payment.setOrder(order); payment.setPaymentMethod(method); payment.setAmount(order.getGrandTotal());
-        // COD is awaiting collection: no paid_at and no PAID transition at checkout.
         em.persist(payment);
         if(selected.size()==cart.getItems().size()) cart.setStatus("CHECKED_OUT");
         else cart.getItems().removeAll(selected);

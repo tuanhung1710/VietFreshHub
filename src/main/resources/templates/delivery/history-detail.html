@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi tiết lịch sử giao hàng | VIETFRESH HUB</title>
+    <style>
+        body { max-width: 1000px; margin: 24px auto; padding: 0 16px; font-family: Arial, sans-serif; line-height: 1.5; }
+        dt { font-weight: bold; }
+        dd { margin: 0 0 12px; overflow-wrap: anywhere; }
+    </style>
+</head>
+<body>
+<header>
+    <span th:replace="~{fragments/notifications :: bell}"></span>
+    <p><a th:href="@{/delivery/history}">← Lịch sử giao hàng</a></p>
+    <a th:href="@{/delivery}">Đơn giao đang xử lý</a>
+</header>
+<main>
+    <h1>Chi tiết lịch sử giao hàng</h1>
+    <dl>
+        <dt>Mã đơn hàng</dt><dd th:text="${record.orderCode}"></dd>
+        <dt>Mã phân công</dt><dd th:text="${record.assignmentId}"></dd>
+        <dt>Cửa hàng</dt><dd th:text="${record.shopName}"></dd>
+        <dt>Người nhận</dt><dd th:text="${record.recipientName ?: 'Chưa có dữ liệu'}"></dd>
+        <dt>Số điện thoại</dt><dd th:text="${record.recipientPhone ?: 'Chưa có dữ liệu'}"></dd>
+        <dt>Địa chỉ nhận hàng</dt><dd th:text="${record.deliveryAddress ?: 'Chưa có dữ liệu'}"></dd>
+        <dt>Kết quả giao hàng</dt><dd th:text="${record.outcomeLabel}"></dd>
+        <dt>Thời gian giao</dt><dd th:text="${record.localResultAt == null ? 'Không có dữ liệu thời gian' : #temporals.format(record.localResultAt, 'dd/MM/yyyy HH:mm')}"></dd>
+        <dt>Trả hàng</dt><dd th:text="${record.returnLabel}"></dd>
+        <dt>Thanh toán</dt><dd th:text="${record.paymentName}"></dd>
+        <dt>Giá trị đơn</dt><dd th:text="${#numbers.formatDecimal(record.totalAmount, 1, 'POINT', record.totalAmount.stripTrailingZeros().scale() > 0 ? 2 : 0, 'COMMA')} + ' VND'"></dd>
+    </dl>
+</main>
+</body>
+</html>

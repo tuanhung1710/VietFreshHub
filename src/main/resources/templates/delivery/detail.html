@@ -45,6 +45,7 @@
 </head>
 <body>
 <header>
+    <span th:replace="~{fragments/notifications :: bell}"></span>
     <p>VIETFRESH HUB</p>
     <a th:href="@{/delivery}">← Quay lại danh sách phân công</a>
 </header>
@@ -54,9 +55,9 @@
         <h2 id="assignment-heading">THÔNG TIN PHÂN CÔNG</h2>
         <dl>
             <dt>Trạng thái phân công</dt>
-            <dd><strong th:text="${deliveryDetail.assignmentStatus}"></strong></dd>
+            <dd><strong th:text="${deliveryDetail.assignmentStatusLabel}"></strong></dd>
             <dt>Trạng thái giao hàng</dt>
-            <dd><strong th:text="${deliveryDetail.deliveryStatus}"></strong></dd>
+            <dd><strong th:text="${deliveryDetail.deliveryStatusLabel}"></strong></dd>
             <th:block th:if="${deliveryDetail.placedAt != null}">
                 <dt>Thời gian đặt hàng</dt>
                 <dd th:text="${#temporals.format(deliveryDetail.placedAt, 'dd-MM-yyyy HH:mm')}"></dd>
@@ -71,15 +72,14 @@
                 <dt>Thời gian giao hàng thành công</dt>
                 <dd th:text="${#temporals.format(deliveryDetail.deliveredAt, 'dd-MM-yyyy HH:mm')}"></dd>
             </th:block>
-            <th:block th:if="${deliveryDetail.redeliveryRequestedAt != null}">
-                <dt>Thời gian yêu cầu giao lại</dt>
-                <dd th:text="${#temporals.format(deliveryDetail.redeliveryRequestedAt, 'dd-MM-yyyy HH:mm')}"></dd>
-            </th:block>
-            <th:block th:if="${deliveryDetail.redeliveryScheduledAt != null}">
-                <dt>Thời gian hẹn giao lại</dt>
-                <dd th:text="${#temporals.format(deliveryDetail.redeliveryScheduledAt, 'dd-MM-yyyy HH:mm')}"></dd>
+            <th:block th:if="${deliveryDetail.failureReason != null}">
+                <dt>Lý do giao hàng thất bại</dt>
+                <dd th:text="${deliveryDetail.failureReason}"></dd>
             </th:block>
         </dl>
+        <p th:if="${deliveryDetail.legacyRedelivery}">Hồ sơ giao lại cũ chỉ được xem và cần đối soát thủ công. Chức năng giao lại đã ngừng.</p>
+        <p th:if="${deliveryDetail.returnStatusLabel != null}" th:text="${deliveryDetail.returnStatusLabel}"></p>
+        <p th:if="${deliveryDetail.deliveryStatus.name() == 'DELIVERED'}">Đã ghi nhận giao hàng thành công.</p>
     </section>
     <section class="information-card" aria-labelledby="recipient-heading">
         <h2 id="recipient-heading">THÔNG TIN NGƯỜI NHẬN</h2>
@@ -119,36 +119,45 @@
         </div>
     </section>
     <form class="delivery-actions" method="post"
-          th:if="${deliveryDetail.assignmentStatus.name() == 'ASSIGNED' and (deliveryDetail.deliveryStatus.name() == 'ASSIGNED' or deliveryDetail.deliveryStatus.name() == 'REDELIVERY_SCHEDULED')}"
+          th:if="${!deliveryDetail.legacyRedelivery and deliveryDetail.assignmentStatus.name() == 'ASSIGNED' and deliveryDetail.deliveryStatus.name() == 'ASSIGNED'}"
           th:action="@{/delivery/assignments/{assignmentId}/accept(assignmentId=${deliveryDetail.assignmentId})}">
-        <button type="submit">CHẤP NHẬN PHÂN CÔNG</button>
+        <p th:if="${deliveryDetail.assignedAt != null}"
+           th:text="|Hạn chấp nhận (giờ Việt Nam): ${#temporals.format(deliveryDetail.assignedAt.plusSeconds(30), 'dd-MM-yyyy HH:mm:ss')}|"></p>
+        <p th:if="${deliveryDetail.remainingOfferSeconds == 0}">Lời mời đã hết hạn; hệ thống đang thu hồi phân công.</p>
+        <button type="submit" th:disabled="${deliveryDetail.remainingOfferSeconds == 0}">CHẤP NHẬN PHÂN CÔNG</button>
     </form>
     <form class="delivery-actions" method="post"
-          th:if="${deliveryDetail.assignmentStatus.name() == 'ASSIGNED' and deliveryDetail.deliveryStatus.name() == 'REDELIVERY_SCHEDULED'}"
+          th:if="${!deliveryDetail.legacyRedelivery and deliveryDetail.assignmentStatus.name() == 'ASSIGNED' and deliveryDetail.deliveryStatus.name() == 'ASSIGNED'}"
           th:action="@{/delivery/assignments/{assignmentId}/reject(assignmentId=${deliveryDetail.assignmentId})}">
-        <button type="submit">TỪ CHỐI PHÂN CÔNG</button>
+        <button type="submit">TỪ CHỐI ĐƠN</button>
     </form>
     <form class="delivery-actions" method="post"
-          th:if="${deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'ACCEPTED'}"
+          th:if="${!deliveryDetail.legacyRedelivery and deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'ACCEPTED'}"
           th:action="@{/delivery/assignments/{assignmentId}/pickup(assignmentId=${deliveryDetail.assignmentId})}">
         <button type="submit">XÁC NHẬN NHẬN HÀNG</button>
     </form>
     <form class="delivery-actions" method="post"
-          th:if="${deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'PICKED_UP'}"
+          th:if="${!deliveryDetail.legacyRedelivery and deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'PICKED_UP'}"
           th:action="@{/delivery/assignments/{assignmentId}/start-delivery(assignmentId=${deliveryDetail.assignmentId})}">
         <button type="submit">BẮT ĐẦU GIAO HÀNG</button>
     </form>
     <form class="delivery-actions" method="post"
-          th:if="${deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'OUT_FOR_DELIVERY'}"
+          th:if="${!deliveryDetail.legacyRedelivery and deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'OUT_FOR_DELIVERY'}"
           th:action="@{/delivery/assignments/{assignmentId}/delivered(assignmentId=${deliveryDetail.assignmentId})}">
-        <button type="submit">XÁC NHẬN GIAO HÀNG THÀNH CÔNG</button>
+        <button type="submit">GIAO HÀNG THÀNH CÔNG</button>
     </form>
     <form class="delivery-actions" method="post"
-          th:if="${deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'OUT_FOR_DELIVERY'}"
-          th:action="@{/delivery/assignments/{assignmentId}/schedule-redelivery(assignmentId=${deliveryDetail.assignmentId})}">
-        <label for="redeliveryScheduledAt">Thời gian giao lại (UTC)</label>
-        <input type="datetime-local" id="redeliveryScheduledAt" name="redeliveryScheduledAt" required>
-        <button type="submit">HẸN GIAO LẠI</button>
+          th:if="${!deliveryDetail.legacyRedelivery and deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'OUT_FOR_DELIVERY'}"
+          th:action="@{/delivery/assignments/{assignmentId}/failed(assignmentId=${deliveryDetail.assignmentId})}"
+          th:object="${failureRequest}">
+        <details th:open="${#fields.hasAnyErrors()}">
+            <summary>GIAO HÀNG THẤT BẠI</summary>
+            <p th:each="error : ${#fields.globalErrors()}" th:text="${error}" role="alert"></p>
+            <label for="failureReason">Lý do giao hàng thất bại</label>
+            <textarea id="failureReason" th:field="*{failureReason}" maxlength="1000" required rows="4"></textarea>
+            <p th:if="${#fields.hasErrors('failureReason')}" th:errors="*{failureReason}" role="alert"></p>
+            <button type="submit">XÁC NHẬN GIAO HÀNG THẤT BẠI</button>
+        </details>
     </form>
 </main>
 </body>

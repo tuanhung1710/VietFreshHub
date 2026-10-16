@@ -15,21 +15,21 @@ public class CustomerAddressRequest {
     @Size(max = 30, message = "Số điện thoại tối đa 30 ký tự.")
     private String phone;
 
-    @NotBlank(message = "Vui lòng nhập tỉnh/thành phố.")
-    @Size(max = 100, message = "Tỉnh/thành phố tối đa 100 ký tự.")
     private String province;
 
-    @NotBlank(message = "Vui lòng nhập quận/huyện.")
-    @Size(max = 100, message = "Quận/huyện tối đa 100 ký tự.")
     private String district;
 
-    @NotBlank(message = "Vui lòng nhập phường/xã.")
-    @Size(max = 100, message = "Phường/xã tối đa 100 ký tự.")
     private String ward;
 
-    @NotBlank(message = "Vui lòng nhập địa chỉ cụ thể.")
-    @Size(max = 500, message = "Địa chỉ cụ thể tối đa 500 ký tự.")
     private String addressLine;
+
+    private String formattedAddress;
+
+    private boolean locationComplete;
+
+    private String refId;
+
+    private String searchText;
 
     private boolean isDefault;
 
@@ -95,5 +95,37 @@ public class CustomerAddressRequest {
 
     public void setDefault(boolean isDefault) {
         this.isDefault = isDefault;
+    }
+
+    public String getFormattedAddress() {
+        return formattedAddress;
+    }
+
+    public void setFormattedAddress(String formattedAddress) {
+        this.formattedAddress = formattedAddress;
+    }
+
+    public boolean isLocationComplete() {
+        return locationComplete;
+    }
+
+    public void setLocationComplete(boolean locationComplete) {
+        this.locationComplete = locationComplete;
+    }
+
+    public String getRefId() {
+        return refId;
+    }
+
+    public void setRefId(String refId) {
+        this.refId = refId;
+    }
+
+    public String getSearchText() {
+        return searchText;
+    }
+
+    public void setSearchText(String searchText) {
+        this.searchText = searchText;
     }
 }

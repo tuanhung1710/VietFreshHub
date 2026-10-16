@@ -53,7 +53,7 @@
             <form th:action="@{/customer/orders/{id}/reorder(id=${order.orderId})}" method="post" class="order-action-form"><button type="submit" class="button secondary full">Mua lại</button></form>
             <details th:if="${actions != null and actions.cancellable}" class="cancel-order"><summary>Hủy đơn hàng</summary>
                 <form th:action="@{/customer/orders/{id}/cancel(id=${order.orderId})}" method="post">
-                    <p class="muted">Hủy toàn bộ đơn và giải phóng các sản phẩm đã giữ. Không thể hoàn tác thao tác này.</p>
+                    <p class="muted">Bạn chỉ có thể hủy đơn hàng trước khi cửa hàng xác nhận đơn. Thao tác hủy không thể hoàn tác.</p>
                     <label for="cancel-reason">Lý do hủy (không bắt buộc)</label><textarea id="cancel-reason" name="reason" maxlength="500" rows="3" th:text="${cancelReason}"></textarea>
                     <button class="button danger full" type="submit">Xác nhận hủy đơn</button>
                 </form>

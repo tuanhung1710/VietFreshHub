@@ -30,11 +30,27 @@
 </head>
 <body>
 <header>
+    <span th:replace="~{fragments/notifications :: bell}"></span>
     <p>VIETFRESH HUB</p>
 </header>
-<main>
+<main id="delivery-dashboard">
     <h1>ĐƠN GIAO ĐƯỢC PHÂN CÔNG</h1>
+    <p><a th:href="@{/delivery/history}">Lịch sử giao hàng</a></p>
+    <section aria-labelledby="cod-heading">
+        <h2 id="cod-heading">COD giao thành công hôm nay</h2>
+        <p th:text="${#temporals.format(codSummary.date, 'dd/MM/yyyy')}"></p>
+        <p>Số tiền COD dự kiến đã thu hộ (chưa đối soát):
+            <strong th:text="${#numbers.formatDecimal(codSummary.amount, 1, 'POINT', codSummary.amount.stripTrailingZeros().scale() > 0 ? 2 : 0, 'COMMA')} + ' VND'"></strong></p>
+        <p th:text="|Số đơn giao COD thành công: ${codSummary.deliveryCount}|"></p>
+        <p>Số liệu chưa được đối soát tiền mặt.</p>
+        <p th:if="${codSummary.unresolvedCount > 0}"
+           th:text="|Có ${codSummary.unresolvedCount} hồ sơ COD chưa đủ dữ liệu xác định người hoàn tất hoặc phương thức thanh toán; chưa cộng vào tổng.|"></p>
+        <button type="button" disabled>Nộp COD cho sàn</button>
+        <p>Tính năng quyết toán COD chưa được hỗ trợ.</p>
+    </section>
     <p>Xem chi tiết đơn giao hàng để chấp nhận phân công và xác nhận nhận hàng.</p>
+    <p th:text="|Sức chứa đang giữ: ${#lists.size(assignedDeliveries)} / 5 đơn. Lời mời đang chờ cũng giữ một suất.|"></p>
+    <p id="delivery-refresh-status" role="status">Danh sách tự cập nhật mỗi 5 giây. Lời mời có thời hạn 30 giây.</p>
     <p th:if="${#lists.isEmpty(assignedDeliveries)}">Hiện không có đơn giao hàng nào được phân công cho bạn.</p>
     <div class="table-container" th:unless="${#lists.isEmpty(assignedDeliveries)}">
         <table>
@@ -45,16 +61,24 @@
                 <th scope="col">Trạng thái giao hàng</th>
                 <th scope="col">Thời gian phân công</th>
                 <th scope="col">Thời gian chấp nhận</th>
+                <th scope="col">Thời hạn chấp nhận</th>
                 <th scope="col">Chi tiết</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="delivery : ${assignedDeliveries}">
                 <td th:text="${delivery.orderCode}"></td>
-                <td><strong th:text="${delivery.assignmentStatus}"></strong></td>
-                <td><strong th:text="${delivery.deliveryStatus}"></strong></td>
-                <td th:text="${delivery.assignedAt == null ? '—' : #temporals.format(delivery.assignedAt, 'dd-MM-yyyy HH:mm')}"></td>
-                <td th:text="${delivery.acceptedAt == null ? '—' : #temporals.format(delivery.acceptedAt, 'dd-MM-yyyy HH:mm')}"></td>
+                <td><strong th:text="${delivery.assignmentStatusLabel}"></strong></td>
+                <td><strong th:text="${delivery.deliveryStatusLabel}"></strong>
+                    <p th:if="${delivery.legacyRedelivery}">Hồ sơ giao lại cũ; chỉ xem và cần đối soát thủ công.</p>
+                </td>
+                <td th:text="${delivery.assignedAt == null ? 'Chưa ghi nhận' : #temporals.format(delivery.assignedAt, 'dd-MM-yyyy HH:mm:ss')}"></td>
+                <td th:text="${delivery.acceptedAt == null ? 'Chưa chấp nhận' : #temporals.format(delivery.acceptedAt, 'dd-MM-yyyy HH:mm:ss')}"></td>
+                <td>
+                    <span th:if="${delivery.assignmentStatus.name() == 'ASSIGNED' and !delivery.legacyRedelivery}"
+                          th:text="${delivery.remainingOfferSeconds > 0 ? 'Còn ' + delivery.remainingOfferSeconds + ' giây lúc cập nhật' : 'Đã hết hạn'}"></span>
+                    <span th:unless="${delivery.assignmentStatus.name() == 'ASSIGNED' and !delivery.legacyRedelivery}">Không áp dụng</span>
+                </td>
                 <td>
                     <a th:href="@{/delivery/assignments/{assignmentId}(assignmentId=${delivery.assignmentId})}">Xem chi tiết</a>
                 </td>
@@ -63,5 +87,30 @@
         </table>
     </div>
 </main>
+<script>
+    async function refreshAssignments() {
+        if (!document.hidden) {
+            try {
+                const response = await fetch(window.location.pathname, {cache: 'no-store'});
+                if (!response.ok || response.redirected) {
+                    throw new Error('Không thể cập nhật danh sách.');
+                }
+                const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+                const dashboard = page.getElementById('delivery-dashboard');
+                if (dashboard) {
+                    document.getElementById('delivery-dashboard').replaceWith(dashboard);
+                    if (window.vietFreshNotifications) {
+                        window.vietFreshNotifications.updateFrom(page);
+                    }
+                }
+            } catch (error) {
+                document.getElementById('delivery-refresh-status').textContent =
+                    'Chưa tải được danh sách mới. Hệ thống sẽ thử lại sau 5 giây.';
+            }
+        }
+        window.setTimeout(refreshAssignments, 5000);
+    }
+    window.setTimeout(refreshAssignments, 5000);
+</script>
 </body>
 </html>

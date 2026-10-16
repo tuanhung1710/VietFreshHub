@@ -13,7 +13,13 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class DeliveryStatusHistoryWriter {
 
+    public static final String GOODS_RETURN_NOTE_PREFIX = "SHOP_GOODS_RETURN_CONFIRMED assignmentId=";
+
     private final DeliveryStatusHistoryRepository deliveryStatusHistoryRepository;
+
+    public static String goodsReturnConfirmationNote(Long assignmentId) {
+        return GOODS_RETURN_NOTE_PREFIX + assignmentId;
+    }
 
     @Transactional
     public DeliveryStatusHistory record(Delivery delivery, Long changedBy, String note) {

@@ -22,6 +22,7 @@
     <style th:replace="~{store_manager/order-filters :: styles}"></style>
 </head>
 <body>
+<span th:replace="~{fragments/notifications :: bell}"></span>
 <a th:href="@{/seller}">← Quay lại cửa hàng</a>
 <h1 th:text="${pageTitle}">Đơn hàng</h1>
 <div th:replace="~{store_manager/order-filters :: filters(${orderView}, ${filterAction}, ${showStatusFilter}, true, ${totalElements})}"></div>

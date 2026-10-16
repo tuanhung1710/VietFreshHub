@@ -102,9 +102,13 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
     }
     private String cancellationHint(Order order,List<ShopOrder> children,List<Payment> pay,List<OrderDeliveryView> delivery) {
         if(order.getStatus()==Order.Status.CANCELLED) return "Đơn hàng đã được hủy.";
-        if(order.getStatus()!=Order.Status.PENDING && order.getStatus()!=Order.Status.CONFIRMED) return "Đơn đã bắt đầu xử lý, không còn đủ điều kiện hủy.";
-        if(children.isEmpty() || children.stream().anyMatch(c -> !"PENDING".equals(c.getStatus()) && !"CONFIRMED".equals(c.getStatus()) && !"CANCELLED".equals(c.getStatus())))
-            return "Một cửa hàng đã bắt đầu chuẩn bị hàng. Không thể hủy toàn bộ đơn.";
+        if(children.isEmpty()) return "Đơn hàng chưa có thông tin cửa hàng, không thể hủy.";
+        if(children.stream().anyMatch(c -> "CANCELLED".equals(c.getStatus())))
+            return "Một đơn cửa hàng đã được hủy. Không thể hủy lại hoặc hủy một phần đơn này.";
+        if(children.stream().anyMatch(c -> !"PENDING".equals(c.getStatus())))
+            return children.size()==1 ? "Đơn hàng đã được cửa hàng xác nhận nên không thể hủy."
+                    : "Một hoặc nhiều cửa hàng đã xác nhận đơn hàng. Bạn không thể hủy toàn bộ đơn này.";
+        if(order.getStatus()!=Order.Status.PENDING) return "Đơn đã bắt đầu xử lý, không còn đủ điều kiện hủy.";
         if(delivery.stream().anyMatch(d -> !Set.of("UNASSIGNED","ASSIGNED","ACCEPTED","CANCELLED").contains(d.getStatus())))
             return "Đơn đã được lấy hoặc đang giao, không thể hủy.";
         if("PAID".equals(order.getPaymentStatus()) || "PARTIALLY_REFUNDED".equals(order.getPaymentStatus()) || "REFUNDED".equals(order.getPaymentStatus())
@@ -151,13 +155,14 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
             statuses.stream().filter(h -> h.getShopOrder().getShopOrderId().equals(child.getShopOrderId()))
                     .forEach(h -> timeline.add(new OrderTrackingResponse.Event(OrderLabels.local(h.getCreatedAt()),OrderLabels.shop(h.getStatus()),h.getNote(),"ORDER")));
             if(delivery!=null) history.stream().filter(h -> h.getDelivery().getDeliveryId().equals(delivery.getDeliveryId()))
-                    .forEach(h -> timeline.add(new OrderTrackingResponse.Event(OrderLabels.local(h.getCreatedAt()),OrderLabels.delivery(h.getStatus()),h.getNote(),"DELIVERY")));
+                    .forEach(h -> timeline.add(new OrderTrackingResponse.Event(OrderLabels.local(h.getCreatedAt()),OrderLabels.delivery(h.getStatus()),null,"DELIVERY")));
             timeline.sort(Comparator.comparing(OrderTrackingResponse.Event::occurredAt));
             String label="CANCELLED".equals(child.getStatus()) ? "Đơn hàng đã hủy" : delivery==null ? "Chưa chuyển sang giao hàng" : OrderLabels.delivery(delivery.getStatus());
-            return new OrderTrackingResponse.ShopTracking(child.getShopOrderId(),child.getShop().getShopName(),OrderLabels.shop(child.getStatus()),label,
-                    delivery==null ? null : delivery.getFailureReason(),List.copyOf(timeline));
+            String deliveryStatusCode="CANCELLED".equals(child.getStatus()) ? "CANCELLED" : delivery==null ? "UNASSIGNED" : delivery.getStatus();
+            return new OrderTrackingResponse.ShopTracking(child.getShopOrderId(),child.getShop().getShopName(),OrderLabels.shop(child.getStatus()),
+                    child.getStatus(),label,deliveryStatusCode,List.copyOf(timeline));
         }).toList();
-        return new OrderTrackingResponse(orderId,order.getOrderCode(),OrderLabels.order(order.getStatus()),groups);
+        return new OrderTrackingResponse(orderId,order.getOrderCode(),OrderLabels.order(order.getStatus()),order.getStatus().name(),groups);
     }
     private Order owned(Long customerId,Long orderId) { return orders.findByOrderIdAndCustomerUserId(orderId,customerId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng của bạn.")); }

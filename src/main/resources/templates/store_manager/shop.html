@@ -6,10 +6,14 @@
     <title>Quản lý cửa hàng | VietFresh Hub</title>
 </head>
 <body>
+<span th:replace="~{fragments/notifications :: bell}"></span>
 <main>
     <h1>Quản lý cửa hàng</h1>
     <p>Quản lý hoạt động và trao đổi với khách hàng.</p>
     <a th:href="@{/store_manager/chat}">Mở tin nhắn khách hàng</a>
+    <p><a th:href="@{/seller/pickup-location}">Quản lý địa điểm lấy hàng</a></p>
+
+    <p><a th:href="@{/seller/deliveries}">Giám sát giao hàng</a></p>
 
     <h2>QUẢN LÝ ĐƠN HÀNG</h2>
     <nav aria-label="Quản lý đơn hàng">

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Thông báo | VietFresh Hub</title>
+</head>
+<body>
+<header>
+    <a th:href="@{/}">Về trang chính</a>
+    <span th:replace="~{fragments/notifications :: bell}"></span>
+</header>
+<main id="notification-inbox">
+    <h1>Thông báo</h1>
+    <p>Thời gian hiển thị theo giờ Việt Nam. Danh sách tự cập nhật mỗi 10 giây.</p>
+    <p id="notification-refresh-status" role="status"></p>
+    <p th:if="${notificationsPage.empty}">Bạn chưa có thông báo nào.</p>
+    <ul th:unless="${notificationsPage.empty}">
+        <li th:each="notification : ${notificationsPage}">
+            <article>
+                <h2>
+                    <strong th:if="${notification.readAt == null}" th:text="${notification.title}"></strong>
+                    <span th:unless="${notification.readAt == null}" th:text="${notification.title}"></span>
+                </h2>
+                <p th:text="${notification.content}"></p>
+                <p>Ngày nhận: <time th:text="${#temporals.format(notification.createdAt, 'dd/MM/yyyy HH:mm:ss')}"></time></p>
+                <p th:if="${notification.readAt == null}"><strong>Chưa đọc</strong></p>
+                <p th:unless="${notification.readAt == null}"
+                   th:text="|Đã đọc lúc ${#temporals.format(notification.readAt, 'dd/MM/yyyy HH:mm:ss')}|"></p>
+                <p th:if="${notification.entityId != null}" th:switch="${notification.entityType}">
+                    <span th:case="'DELIVERY_ASSIGNMENT'" th:text="|Phân công giao hàng #${notification.entityId}|"></span>
+                    <span th:case="'DELIVERY'" th:text="|Giao hàng #${notification.entityId}|"></span>
+                </p>
+                <p th:if="${notification.hasDetail()}">
+                    <a th:href="@{/notifications/{id}/open(id=${notification.notificationId})}">Xem chi tiết</a>
+                </p>
+                <form th:if="${notification.readAt == null}" method="post"
+                      th:action="@{/notifications/{id}/read(id=${notification.notificationId})}">
+                    <input type="hidden" name="page" th:value="${notificationsPage.number}">
+                    <button type="submit">Đánh dấu đã đọc</button>
+                </form>
+            </article>
+        </li>
+    </ul>
+    <nav th:if="${notificationsPage.totalPages > 1}" aria-label="Phân trang thông báo">
+        <a th:if="${notificationsPage.hasPrevious()}"
+           th:href="@{/notifications(page=${notificationsPage.number - 1})}">Trang trước</a>
+        <span th:text="|Trang ${notificationsPage.number + 1} / ${notificationsPage.totalPages}|"></span>
+        <a th:if="${notificationsPage.hasNext()}"
+           th:href="@{/notifications(page=${notificationsPage.number + 1})}">Trang sau</a>
+    </nav>
+</main>
+</body>
+</html>

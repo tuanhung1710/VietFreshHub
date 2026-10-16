@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.ZoneOffset;
 
 @Service
@@ -18,13 +17,6 @@ import java.time.ZoneOffset;
 public class DeliveryService {
 
     private final DeliveryRepository deliveryRepository;
-
-    @Transactional
-    public void markAssigned(Long deliveryId) {
-        Delivery delivery = getDeliveryForUpdate(deliveryId);
-        requireStatus(delivery, DeliveryStatus.UNASSIGNED);
-        delivery.markAssigned(utcNow());
-    }
 
     @Transactional
     public void releaseAssignment(Long deliveryId) {
@@ -37,6 +29,9 @@ public class DeliveryService {
     public void accept(Long deliveryId) {
         Delivery delivery = getDeliveryForUpdate(deliveryId);
         requireStatus(delivery, DeliveryStatus.ASSIGNED);
+        if (!"READY_FOR_DELIVERY".equals(delivery.getShopOrder().getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Đơn hàng chưa sẵn sàng giao hàng.");
+        }
         delivery.accept();
     }
 
@@ -51,47 +46,32 @@ public class DeliveryService {
     public void startDelivery(Long deliveryId) {
         Delivery delivery = getDeliveryForUpdate(deliveryId);
         requireStatus(delivery, DeliveryStatus.PICKED_UP);
+        requirePickedUp(delivery);
         delivery.startDelivery();
-    }
-
-    @Transactional
-    public void scheduleRedelivery(Long deliveryId, LocalDateTime scheduledAt) {
-        Delivery delivery = getDeliveryForUpdate(deliveryId);
-        requireStatus(delivery, DeliveryStatus.OUT_FOR_DELIVERY);
-        LocalDateTime requestedAt = utcNow();
-
-        if (scheduledAt == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Vui lòng chọn thời gian giao lại.");
-        }
-        if (!scheduledAt.isAfter(requestedAt)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Thời gian giao lại phải sau thời gian yêu cầu.");
-        }
-        if (!scheduledAt.toLocalDate().equals(requestedAt.toLocalDate())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Thời gian giao lại phải trong cùng ngày yêu cầu.");
-        }
-        if (scheduledAt.toLocalTime().isAfter(LocalTime.of(23, 0))) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Thời gian giao lại không được sau 23:00:00.");
-        }
-
-        delivery.scheduleRedelivery(requestedAt, scheduledAt);
-    }
-
-    @Transactional
-    public void resumeRedelivery(Long deliveryId) {
-        Delivery delivery = getDeliveryForUpdate(deliveryId);
-        requireStatus(delivery, DeliveryStatus.REDELIVERY_SCHEDULED);
-        delivery.resumeRedelivery();
     }
 
     @Transactional
     public void markDelivered(Long deliveryId) {
         Delivery delivery = getDeliveryForUpdate(deliveryId);
         requireStatus(delivery, DeliveryStatus.OUT_FOR_DELIVERY);
+        requirePickedUp(delivery);
         delivery.markDelivered(utcNow());
+    }
+
+    @Transactional
+    public void markFailed(Long deliveryId, String failureReason) {
+        Delivery delivery = getDeliveryForUpdate(deliveryId);
+        requireStatus(delivery, DeliveryStatus.OUT_FOR_DELIVERY);
+        requirePickedUp(delivery);
+        String reason = failureReason == null ? "" : failureReason.strip();
+        if (reason.isBlank() || reason.length() > 1000) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Vui lòng nhập lý do giao hàng thất bại, tối đa 1.000 ký tự.");
+        }
+        if (delivery.getDeliveredAt() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Đơn giao hàng đã có thời gian giao thành công.");
+        }
+        delivery.markFailed(reason);
     }
 
     private Delivery getDeliveryForUpdate(Long deliveryId) {
@@ -101,9 +81,16 @@ public class DeliveryService {
     }
 
     private void requireStatus(Delivery delivery, DeliveryStatus requiredStatus) {
-        if (delivery.getStatus() != requiredStatus) {
+        if (delivery.getStatus() != requiredStatus
+                || delivery.getRedeliveryRequestedAt() != null || delivery.getRedeliveryScheduledAt() != null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Trạng thái giao hàng hiện tại không cho phép thao tác này.");
+        }
+    }
+
+    private void requirePickedUp(Delivery delivery) {
+        if (delivery.getPickedUpAt() == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Chưa ghi nhận thời gian nhận hàng.");
         }
     }
 

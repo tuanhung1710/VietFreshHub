@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -34,6 +36,7 @@ public class Order {
     @Column(name="placed_at", nullable=false, updatable=false)
     private LocalDateTime placedAt;
     @Column(name="cancelled_at") private LocalDateTime cancelledAt;
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     @Column(name="completed_at") private LocalDateTime completedAt;
     @PrePersist void timestamp() { if(placedAt==null) placedAt=LocalDateTime.now(ZoneOffset.UTC).withNano(0); }
 }
