@@ -1,6 +1,7 @@
 package VietFreshHub.loyalty.services;
 
 import VietFreshHub.loyalty.dto.LoyaltyEarningRuleForm;
+import VietFreshHub.loyalty.dto.LoyaltyRedemptionRuleForm;
 import VietFreshHub.loyalty.dto.LoyaltyRuleResponse;
 import VietFreshHub.loyalty.entity.LoyaltyRule;
 import VietFreshHub.loyalty.repository.LoyaltyRuleRepository;
@@ -39,6 +40,21 @@ public class LoyaltyRuleServiceImpl implements LoyaltyRuleService {
     }
 
     @Override
+    public LoyaltyRedemptionRuleForm getRedemptionForm() {
+        LoyaltyRule rule = findRule();
+
+        LoyaltyRedemptionRuleForm form =
+                new LoyaltyRedemptionRuleForm();
+
+        form.setRedemptionValue(rule.getRedemptionValue());
+        form.setMinRedemptionPoints(rule.getMinRedemptionPoints());
+        form.setMaxRedemptionPercent(rule.getMaxRedemptionPercent());
+        form.setRedemptionEnabled(rule.isRedemptionEnabled());
+
+        return form;
+    }
+
+    @Override
     @Transactional
     public LoyaltyRuleResponse updateEarningRules(
             LoyaltyEarningRuleForm form
@@ -49,6 +65,26 @@ public class LoyaltyRuleServiceImpl implements LoyaltyRuleService {
 
         rule.setEarningAmount(form.getEarningAmount());
         rule.setEarningEnabled(form.isEarningEnabled());
+
+        LoyaltyRule savedRule =
+                loyaltyRuleRepository.saveAndFlush(rule);
+
+        return toResponse(savedRule);
+    }
+
+    @Override
+    @Transactional
+    public LoyaltyRuleResponse updateRedemptionRules(
+            LoyaltyRedemptionRuleForm form
+    ) {
+        validateForm(form);
+
+        LoyaltyRule rule = findRuleForUpdate();
+
+        rule.setRedemptionValue(form.getRedemptionValue());
+        rule.setMinRedemptionPoints(form.getMinRedemptionPoints());
+        rule.setMaxRedemptionPercent(form.getMaxRedemptionPercent());
+        rule.setRedemptionEnabled(form.isRedemptionEnabled());
 
         LoyaltyRule savedRule =
                 loyaltyRuleRepository.saveAndFlush(rule);

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cấu hình quy tắc đổi điểm | VietFresh Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
+          rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+          crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --bs-body-font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --bs-primary: #006b2c;
+            --bs-primary-rgb: 0, 107, 44;
+            --bs-success: #006b2c;
+            --bs-success-rgb: 0, 107, 44;
+        }
+
+        body {
+            font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8f9ff;
+            color: #0b1c30;
+        }
+
+        .btn-success {
+            background-color: #006b2c;
+            border-color: #006b2c;
+        }
+
+        .btn-success:hover, .btn-success:focus {
+            background-color: #005320;
+            border-color: #005320;
+        }
+
+        .btn-outline-success {
+            color: #006b2c;
+            border-color: #006b2c;
+        }
+
+        .btn-outline-success:hover {
+            background-color: #006b2c;
+            border-color: #006b2c;
+            color: #fff;
+        }
+
+        .text-success {
+            color: #006b2c !important;
+        }
+
+        .card {
+            border: 1px solid #e5eeff;
+        }
+    </style>
+</head>
+<body class="bg-light">
+<main class="container py-4" style="max-width: 900px;">
+    <a th:href="@{/admin}"
+       class="btn btn-outline-secondary mb-3 d-inline-flex align-items-center gap-1 shadow-sm">
+        <i class="bi bi-arrow-left" aria-hidden="true"></i>
+        <span>Quay lại trang quản trị</span>
+    </a>
+
+    <nav class="d-flex flex-wrap gap-2 mb-3" aria-label="Cấu hình điểm thưởng">
+        <a th:href="@{/admin/loyalty-rules/earning}" class="btn btn-outline-success" >Quy tắc tích điểm</a>
+        <a th:href="@{/admin/loyalty-rules/redemption}" class="btn btn-success" aria-current="page">Quy tắc đổi điểm</a>
+    </nav>
+
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-body p-4">
+            <h1 class="h4 mb-4 fw-bold text-dark">Cấu hình quy tắc đổi điểm</h1>
+
+            <div th:if="${successMessage}" class="alert alert-success" role="status" th:text="${successMessage}"></div>
+            <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
+
+            <form th:action="@{/admin/loyalty-rules/redemption}" th:object="${form}" method="post">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <div class="alert alert-danger" role="alert" th:if="${#fields.hasAnyErrors()}">
+                    <strong>Vui lòng kiểm tra lại:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li th:each="error : ${#fields.allErrors()}" th:text="${error}"></li>
+                    </ul>
+                </div>
+
+                <div class="mb-3">
+                    <label for="redemptionValue" class="form-label fw-semibold">
+                        Giá trị giảm của 1 điểm <span class="text-danger">*</span>
+                    </label>
+                    <div class="input-group has-validation">
+                        <input id="redemptionValue" type="number" class="form-control"
+                               th:field="*{redemptionValue}" th:errorclass="is-invalid"
+                               min="0.01" step="0.01" placeholder="1000" aria-describedby="redemptionValueHelp" required>
+                        <span class="input-group-text">VND</span>
+                        <div class="invalid-feedback" th:errors="*{redemptionValue}"></div>
+                    </div>
+                    <div id="redemptionValueHelp" class="form-text">Ví dụ: nhập 1000 để mỗi điểm được đổi thành 1.000 VND giảm giá.</div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="minRedemptionPoints" class="form-label fw-semibold">
+                            Số điểm đổi tối thiểu <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group has-validation">
+                            <input id="minRedemptionPoints" type="number" class="form-control"
+                                   th:field="*{minRedemptionPoints}" th:errorclass="is-invalid"
+                                   min="1" max="2147483647" step="1" placeholder="10" required>
+                            <span class="input-group-text">điểm</span>
+                            <div class="invalid-feedback" th:errors="*{minRedemptionPoints}"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="maxRedemptionPercent" class="form-label fw-semibold">
+                            Phần trăm giảm tối đa <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group has-validation">
+                            <input id="maxRedemptionPercent" type="number" class="form-control"
+                                   th:field="*{maxRedemptionPercent}" th:errorclass="is-invalid"
+                                   min="1" max="100" step="1" placeholder="20"
+                                   aria-describedby="maxRedemptionPercentHelp" required>
+                            <span class="input-group-text">%</span>
+                            <div class="invalid-feedback" th:errors="*{maxRedemptionPercent}"></div>
+                        </div>
+                        <div id="maxRedemptionPercentHelp" class="form-text">Nhập phần trăm từ 1 đến 100.</div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <div class="form-check form-switch">
+                        <input id="redemptionEnabled" type="checkbox" role="switch" class="form-check-input"
+                               th:field="*{redemptionEnabled}" th:errorclass="is-invalid" aria-describedby="enabledHelp">
+                        <label for="redemptionEnabled" class="form-check-label fw-semibold">Bật đổi điểm</label>
+                        <div class="invalid-feedback" th:errors="*{redemptionEnabled}"></div>
+                    </div>
+                    <div id="enabledHelp" class="form-text">Bật để cho phép khách hàng dùng điểm để giảm giá.</div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                    <a th:href="@{/admin}" class="btn btn-outline-secondary">Hủy</a>
+                    <button type="submit" class="btn btn-success">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+</body>
+</html>
