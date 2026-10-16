@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Gói dịch vụ Store Manager | VietFresh Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
+          rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+          crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --bs-body-font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --bs-primary: #006b2c;
+            --bs-primary-rgb: 0, 107, 44;
+            --bs-success: #006b2c;
+            --bs-success-rgb: 0, 107, 44;
+        }
+
+        body {
+            font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8f9ff;
+            color: #0b1c30;
+        }
+
+        .btn-success {
+            background-color: #006b2c;
+            border-color: #006b2c;
+        }
+
+        .btn-success:hover, .btn-success:focus {
+            background-color: #005320;
+            border-color: #005320;
+        }
+
+        .btn-outline-success {
+            color: #006b2c;
+            border-color: #006b2c;
+        }
+
+        .btn-outline-success:hover {
+            background-color: #006b2c;
+            border-color: #006b2c;
+            color: #fff;
+        }
+
+        .text-success {
+            color: #006b2c !important;
+        }
+
+        .card {
+            border: 1px solid #e5eeff;
+        }
+    </style>
+</head>
+<body class="bg-light">
+<div class="container-xl py-4">
+    <div class="mb-3">
+        <a th:href="@{/admin}"
+           class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 shadow-sm">
+            <i class="bi bi-arrow-left"></i>
+            <span>Quay lại trang quản trị</span>
+        </a>
+    </div>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">Quản lý Gói dịch vụ Store Manager</h1>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a th:href="@{/admin/subscription-plans/create}"
+               class="btn btn-success d-inline-flex align-items-center gap-2">
+                <i class="bi bi-plus-lg"></i>
+                <span>Tạo gói mới</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-award-fill text-success fs-5"></i>
+                <span class="fw-semibold text-dark">Danh sách gói dịch vụ</span>
+            </div>
+            <span class="badge bg-light text-secondary border px-3 py-2"
+                  th:if="${plans != null}"
+                  th:text="${#lists.size(plans) + ' gói dịch vụ'}"></span>
+        </div>
+
+        <div th:if="${successMessage}"
+             class="alert alert-success m-3 mb-0"
+             role="alert"
+             th:text="${successMessage}">
+        </div>
+        <div th:if="${errorMessage}"
+             class="alert alert-danger m-3 mb-0"
+             role="alert"
+             th:text="${errorMessage}">
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th scope="col" class="text-center text-secondary small fw-bold text-uppercase py-3"
+                        style="width: 60px;">STT
+                    </th>
+                    <th scope="col" class="text-secondary small fw-bold text-uppercase py-3">Tên gói dịch vụ</th>
+                    <th scope="col" class="text-secondary small fw-bold text-uppercase py-3">Giá cước</th>
+                    <th scope="col" class="text-secondary small fw-bold text-uppercase py-3">Chu kỳ</th>
+                    <th scope="col" class="text-secondary small fw-bold text-uppercase py-3">Hạn mức sản phẩm</th>
+                    <th scope="col" class="text-secondary small fw-bold text-uppercase py-3">Quyền lợi</th>
+                    <th scope="col" class="text-center text-secondary small fw-bold text-uppercase py-3">Trạng thái</th>
+                    <th scope="col" class="text-secondary small fw-bold text-uppercase py-3">Cập nhật</th>
+                    <th scope="col" class="text-center py-3">Thao tác</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(plans)}">
+                    <td colspan="9" class="text-center py-5 text-muted">
+                        <i class="bi bi-box-seam fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                        <span>Chưa có gói dịch vụ nào trong hệ thống</span>
+                    </td>
+                </tr>
+                <tr th:each="plan, row : ${plans}">
+                    <td class="text-center text-secondary fw-semibold" th:text="${row.index + 1}"></td>
+                    <td>
+                        <div class="fw-bold text-dark" th:text="${plan.name}"></div>
+                        <div class="text-muted small mt-1" th:if="${plan.description != null}"
+                             th:text="${plan.description}"></div>
+                    </td>
+                    <td>
+                        <span th:if="${plan.price != null and plan.price.compareTo(T(java.math.BigDecimal).ZERO) > 0}"
+                              class="badge bg-success-subtle text-success border border-success-subtle"
+                              th:text="${#numbers.formatDecimal(plan.price, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></span>
+                        <span th:if="${plan.price != null and plan.price.compareTo(T(java.math.BigDecimal).ZERO) == 0}"
+                              class="badge bg-success-subtle text-success border border-success-subtle">
+                            Miễn phí
+                        </span>
+                        <span th:if="${plan.price == null}" class="text-muted">—</span>
+                    </td>
+                    <td th:switch="${plan.billingPeriod.name()}">
+                        <span th:case="'MONTHLY'"
+                              class="badge bg-primary-subtle text-primary border border-primary-subtle">Hàng tháng</span>
+                        <span th:case="'QUARTERLY'"
+                              class="badge bg-info-subtle text-info-emphasis border border-info-subtle">Hàng quý</span>
+                        <span th:case="'YEARLY'"
+                              class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Hàng năm</span>
+                        <span th:case="*" class="badge bg-light text-dark border"
+                              th:text="${plan.billingPeriod}"></span>
+                    </td>
+                    <td>
+                        <span class="fw-medium text-dark" th:text="${plan.maxProducts + ' sản phẩm'}"></span>
+                    </td>
+                    <td>
+                        <div class="small text-secondary" style="white-space: pre-line; max-width: 250px;"
+                             th:if="${plan.benefits != null and !#strings.isEmpty(plan.benefits)}"
+                             th:text="${plan.benefits}"></div>
+                        <span th:unless="${plan.benefits != null and !#strings.isEmpty(plan.benefits)}"
+                              class="text-muted small">—</span>
+                    </td>
+                    <td class="text-center" th:switch="${plan.status.name()}">
+                        <span th:case="'ACTIVE'"
+                              class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-3 py-2">Đã bật</span>
+                        <span th:case="'INACTIVE'"
+                              class="badge rounded-pill bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-2">Đang tắt</span>
+                        <span th:case="*" class="badge rounded-pill bg-light text-dark border px-3 py-2"
+                              th:text="${plan.status}"></span>
+                    </td>
+                    <td>
+                        <span class="text-secondary small text-nowrap"
+                              th:text="${plan.updatedAt != null ? #temporals.format(plan.updatedAt, 'dd-MM-yyyy HH:mm') : (#temporals.format(plan.createdAt, 'dd-MM-yyyy HH:mm'))}"></span>
+                    </td>
+                    <td class="text-center">
+                        <div class="d-flex justify-content-center gap-2">
+                            <a th:href="@{/admin/subscription-plans/{planId}/edit(planId=${plan.planId})}"
+                               class="btn btn-outline-success btn-sm">
+                                Sửa
+                            </a>
+
+                            <form th:if="${plan.status.name() == 'INACTIVE'}"
+                                  th:action="@{/admin/subscription-plans/{planId}/activate(planId=${plan.planId})}"
+                                  method="post"
+                                  class="m-0">
+                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    Bật
+                                </button>
+                            </form>
+
+                            <form th:if="${plan.status.name() == 'ACTIVE'}"
+                                  th:action="@{/admin/subscription-plans/{planId}/deactivate(planId=${plan.planId})}"
+                                  method="post"
+                                  class="m-0"
+                                  onsubmit="return confirm('Bạn có chắc chắn muốn tắt gói dịch vụ này? Store Manager sẽ không thể đăng ký mới gói này.');">
+                                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    Tắt
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+</body>
+</html>
