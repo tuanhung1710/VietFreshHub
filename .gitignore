@@ -34,3 +34,6 @@ build/
 
 # Product images uploaded at runtime
 uploads/product/
+
+# Local document extraction, preview fixtures and review logs
+.document-analysis/

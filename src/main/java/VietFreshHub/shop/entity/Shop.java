@@ -1,26 +1,84 @@
 package VietFreshHub.shop.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import VietFreshHub.catalog.entity.CatalogProduct;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
-/** Read the existing shop availability fields; this does not introduce a new table. */
-@Entity
-@Table(name = "shops", schema = "dbo")
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Entity
+@Table(schema = "dbo", name = "shops")
 public class Shop {
+
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "shop_id")
     private Long shopId;
-    @Column(name = "status", length = 30)
-    private String status;
-    @Column(name = "availability_status", length = 30)
-    private String availabilityStatus;
-    @jakarta.persistence.Transient
+
+    @Column(name = "application_id")
+    private Long applicationId;
+
+    @Nationalized
+    @Column(name = "shop_name", nullable = false, length = 200)
+    private String shopName;
+
+    @Nationalized
+    @Column(name = "description", columnDefinition = "NVARCHAR(MAX)")
+    private String description;
+
+    @Nationalized
+    @Column(name = "logo_url", length = 1000)
+    private String logoUrl;
+
+    @Nationalized @Column(name = "banner_url", length = 1000)
+    private String bannerUrl;
+
+    @Nationalized
+    @Column(name = "phone", length = 30)
+    private String phone;
+
+    @Nationalized
+    @Column(name = "email", length = 255)
+    private String email;
+
+    @Column(nullable = false, length = 30)
+    private String status = "ACTIVE";
+
+    @Column(name = "availability_status", nullable = false, length = 30)
+    private String availabilityStatus = "OPEN";
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CatalogProduct> products = new ArrayList<>();
+
+    @PrePersist
+    void initializeUtcTimestamps() {
+        var now = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+        if (createdAt == null) createdAt = now;
+        if (updatedAt == null) updatedAt = now;
+    }
+
+    @PreUpdate
+    void updateUtcTimestamps() {
+        updatedAt = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+    }
+
+@Transient
     public String getShopCode() {
         return VietFreshHub.common.BusinessCodes.format("SHP", shopId);
     }

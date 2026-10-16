@@ -5,6 +5,7 @@ import VietFreshHub.order.dto.OrderCountsResponse;
 import VietFreshHub.order.dto.OrderDetailResponse;
 import VietFreshHub.order.dto.OrderFilterRequest;
 import VietFreshHub.order.dto.ProcessedOrderResponse;
+import VietFreshHub.order.entity.OrderAddress;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 
@@ -29,6 +30,8 @@ public interface OrderService {
     OrderCountsResponse getOrderCounts(Authentication authentication);
 
     OrderDetailResponse getOrderDetail(Long shopOrderId, Authentication authentication);
+
+    OrderAddress getOrderAddress(Long orderId);
 
     void confirmOrder(Long shopOrderId, Authentication authentication);
 

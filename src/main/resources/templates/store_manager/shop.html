@@ -2,12 +2,14 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Cửa hàng của tôi · VietFresh Hub</title>
 </head>
 <body>
 <h1>SHOP</h1>
 <p>Mã shop: <span th:text="${shopCode}"></span>
 <button type="button" th:attr="data-vf-copy-code=${shopCode},aria-label=${'Sao chép mã shop '+shopCode}">Sao chép</button></p>
+<p><a th:href="@{/store_manager/chat}">Mở tin nhắn khách hàng</a></p>
 <h2>QUẢN LÝ ĐƠN HÀNG</h2>
 <nav aria-label="Quản lý đơn hàng">
     <ul>

@@ -27,6 +27,9 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, Jpa
     @EntityGraph(attributePaths = {"order", "order.customer"})
     Page<ShopOrder> findAll(Specification<ShopOrder> specification, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"shop", "items.variant.product"})
+    List<ShopOrder> findByOrderOrderIdOrderByShopOrderIdAsc(Long orderId);
+
     long countByShopId(Long shopId);
 
     long countByShopIdAndStatus(Long shopId, String status);
