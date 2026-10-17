@@ -8,9 +8,18 @@ public record DeliveryHistoryRow(Long assignmentId, Long deliveryId, String orde
                                  String shopName, String recipientName, String recipientPhone,
                                  String deliveryAddress, String outcome, BigDecimal totalAmount,
                                  LocalDateTime resultAt, String paymentName, String returnState,
-                                 boolean attributionVerified) {
+                                 boolean attributionVerified, LocalDateTime acceptedAt,
+                                 LocalDateTime pickedUpAt, String failureReason, BigDecimal cashToCollect) {
     public LocalDateTime getLocalResultAt() {
         return OrderLabels.local(resultAt);
+    }
+
+    public LocalDateTime getLocalAcceptedAt() {
+        return OrderLabels.local(acceptedAt);
+    }
+
+    public LocalDateTime getLocalPickedUpAt() {
+        return OrderLabels.local(pickedUpAt);
     }
 
     public String getOutcomeLabel() {

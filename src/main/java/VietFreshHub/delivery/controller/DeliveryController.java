@@ -2,6 +2,7 @@ package VietFreshHub.delivery.controller;
 
 import VietFreshHub.delivery.dto.DeliveryFailureRequest;
 import VietFreshHub.delivery.dto.DeliveryHistoryFilter;
+import VietFreshHub.delivery.dto.DailyCodSummary;
 import VietFreshHub.delivery.service.DeliveryAssignmentService;
 import VietFreshHub.delivery.service.DeliveryStaffActionService;
 import VietFreshHub.delivery.service.DeliveryStaffQueryService;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -19,6 +21,9 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDate;
+import java.time.ZoneId;
 
 @Controller
 @RequiredArgsConstructor
@@ -31,8 +36,17 @@ public class DeliveryController {
     @GetMapping("/delivery")
     public String showDeliveryPage(Authentication authentication, Model model) {
         model.addAttribute("assignedDeliveries", deliveryStaffQueryService.getAssignedDeliveries(authentication));
-        model.addAttribute("codSummary", deliveryStaffQueryService.getDailyCodSummary(authentication));
         return "delivery/home";
+    }
+
+    @GetMapping("/delivery/cod-summary")
+    public String showDailyCodSummary(@RequestParam(required = false)
+                                     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+                                     Authentication authentication, Model model) {
+        DailyCodSummary codSummary = deliveryStaffQueryService.getDailyCodSummary(authentication, date);
+        model.addAttribute("codSummary", codSummary);
+        model.addAttribute("isToday", codSummary.date().equals(LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"))));
+        return "delivery/cod-summary";
     }
 
     @GetMapping("/delivery/history")

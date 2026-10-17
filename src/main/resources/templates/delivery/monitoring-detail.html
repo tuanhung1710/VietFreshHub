@@ -8,112 +8,46 @@
 <body>
 <span th:replace="~{fragments/notifications :: bell}"></span>
 <main th:with="delivery=${deliveryDetail.summary}">
-    <a th:href="@{${basePath}}">Quay lại danh sách giao hàng</a>
+    <a th:href="@{${basePath}}">Giám sát giao hàng</a>
     <h1>Chi tiết giám sát giao hàng</h1>
-    <p>Thời gian hiển thị theo múi giờ Việt Nam (Asia/Ho_Chi_Minh).</p>
     <p th:if="${successMessage != null}" th:text="${successMessage}" role="status"></p>
     <p th:if="${deliveryDetail.legacyRedelivery}">Hồ sơ giao lại cũ chỉ được xem và cần đối soát thủ công. Chức năng giao lại đã ngừng.</p>
 
     <section aria-labelledby="delivery-heading">
-        <h2 id="delivery-heading">Thông tin giao hàng</h2>
+        <h2 id="delivery-heading">Thông tin đơn hàng</h2>
         <dl>
-            <dt>Mã giao hàng</dt>
-            <dd th:text="${delivery.deliveryId}"></dd>
             <dt>Mã đơn hàng</dt>
             <dd th:text="${delivery.orderCode}"></dd>
-            <dt>Mã đơn cửa hàng</dt>
-            <dd th:text="${delivery.shopOrderId}"></dd>
             <dt>Cửa hàng</dt>
             <dd>
                 <span th:text="${delivery.shopName == null ? 'Cửa hàng' : delivery.shopName}"></span>
-                <span th:text="| (#${delivery.shopId})|"></span>
             </dd>
-            <dt>Trạng thái giao hàng</dt>
-            <dd th:text="${delivery.deliveryStatusLabel}"></dd>
-            <dt>Ngày tạo</dt>
-            <dd th:text="${deliveryDetail.createdAt == null ? '—' : #temporals.format(deliveryDetail.createdAt, 'dd/MM/yyyy HH:mm:ss')}"></dd>
-            <dt>Thời gian phân công ghi nhận trên đơn giao</dt>
-            <dd th:text="${deliveryDetail.assignedAt == null ? '—' : #temporals.format(deliveryDetail.assignedAt, 'dd/MM/yyyy HH:mm:ss')}"></dd>
-            <dt>Thời gian lấy hàng</dt>
-            <dd th:text="${deliveryDetail.pickedUpAt == null ? '—' : #temporals.format(deliveryDetail.pickedUpAt, 'dd/MM/yyyy HH:mm:ss')}"></dd>
-            <dt>Thời gian giao thành công</dt>
-            <dd th:text="${deliveryDetail.deliveredAt == null ? 'Chưa ghi nhận giao thành công' : #temporals.format(deliveryDetail.deliveredAt, 'dd/MM/yyyy HH:mm:ss')}"></dd>
-            <th:block th:if="${deliveryDetail.failureReason != null}">
-                <dt>Lý do giao hàng thất bại</dt>
-                <dd th:text="${deliveryDetail.failureReason}"></dd>
-            </th:block>
-            <dt>Cập nhật lần cuối</dt>
-            <dd th:text="${delivery.updatedAt == null ? '—' : #temporals.format(delivery.updatedAt, 'dd/MM/yyyy HH:mm:ss')}"></dd>
         </dl>
-        <p th:if="${delivery.returnStatusLabel != null}" th:text="${delivery.returnStatusLabel}"></p>
         <form method="post" th:if="${basePath == '/seller/deliveries' and delivery.returnPending}"
               th:action="@{/seller/deliveries/{deliveryId}/confirm-return(deliveryId=${delivery.deliveryId})}">
-            <p>Chỉ xác nhận sau khi cửa hàng đã nhận lại hàng từ shipper. Thao tác này hoàn tất phân công và giải phóng một suất giao hàng.</p>
+            <p>Xác nhận hoàn hàng:</p>
             <button type="submit">XÁC NHẬN ĐÃ NHẬN LẠI HÀNG</button>
         </form>
-    </section>
-
-    <section aria-labelledby="assignment-heading">
-        <h2 id="assignment-heading" th:text="${delivery.assignmentTypeLabel}"></h2>
-        <p th:text="${delivery.assignmentStatusLabel}"></p>
-        <dl th:if="${delivery.assignmentId != null}">
-            <dt>Mã phân công</dt>
-            <dd th:text="${delivery.assignmentId}"></dd>
-            <dt>Nhân viên theo phân công</dt>
-            <dd th:text="${delivery.deliveryStaffName}"></dd>
-            <dt>Thời gian phân công</dt>
-            <dd th:text="${delivery.assignmentAssignedAt == null ? '—' : #temporals.format(delivery.assignmentAssignedAt, 'dd/MM/yyyy HH:mm:ss')}"></dd>
-            <dt>Thời gian chấp nhận</dt>
-            <dd th:text="${delivery.assignmentAcceptedAt == null ? '—' : #temporals.format(delivery.assignmentAcceptedAt, 'dd/MM/yyyy HH:mm:ss')}"></dd>
-        </dl>
-    </section>
-
-    <section aria-labelledby="assignment-history-heading">
-        <h2 id="assignment-history-heading">Lịch sử phân công</h2>
-        <p th:if="${#lists.isEmpty(deliveryDetail.assignments)}">Chưa có lịch sử phân công.</p>
-        <table th:unless="${#lists.isEmpty(deliveryDetail.assignments)}">
-            <thead>
-            <tr>
-                <th scope="col">Mã phân công</th>
-                <th scope="col">Nhân viên giao hàng</th>
-                <th scope="col">Trạng thái phân công</th>
-                <th scope="col">Vai trò bản ghi</th>
-                <th scope="col">Thời gian phân công</th>
-                <th scope="col">Thời gian chấp nhận</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="assignment : ${deliveryDetail.assignments}">
-                <td th:text="${assignment.assignmentId}"></td>
-                <td th:text="${assignment.staffName}"></td>
-                <td th:text="${assignment.statusLabel}"></td>
-                <td th:text="${assignment.current ? 'Phân công hiện tại' : 'Phân công trong lịch sử'}"></td>
-                <td th:text="${assignment.assignedAt == null ? 'Chưa ghi nhận' : #temporals.format(assignment.assignedAt, 'dd/MM/yyyy HH:mm:ss')}"></td>
-                <td th:text="${assignment.acceptedAt == null ? 'Chưa chấp nhận' : #temporals.format(assignment.acceptedAt, 'dd/MM/yyyy HH:mm:ss')}"></td>
-            </tr>
-            </tbody>
-        </table>
     </section>
 
     <section aria-labelledby="history-heading">
         <h2 id="history-heading">Lịch sử trạng thái giao hàng</h2>
         <p th:if="${#lists.isEmpty(deliveryDetail.history)}">Chưa có lịch sử trạng thái giao hàng được ghi nhận.</p>
         <table th:unless="${#lists.isEmpty(deliveryDetail.history)}">
-            <caption>Lịch sử theo thứ tự thời gian</caption>
             <thead>
             <tr>
                 <th scope="col">Trạng thái</th>
                 <th scope="col">Thời gian</th>
-                <th scope="col">Mã người thực hiện</th>
-                <th scope="col">Nội dung ghi nhận</th>
+                <th scope="col">Người thực hiện</th>
+                <th scope="col">Ghi chú</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="event : ${deliveryDetail.history}">
                 <td th:text="${event.statusLabel}"></td>
-                <td th:text="${event.createdAt == null ? '—' : #temporals.format(event.createdAt, 'dd/MM/yyyy HH:mm:ss')}"></td>
-                <td th:text="${event.changedBy == null ? 'Hệ thống' : event.changedBy}"></td>
-                <td th:text="${event.note ?: 'Không có ghi chú'}"></td>
+                <td th:text="${event.createdAt == null ? '—' : #temporals.format(event.createdAt, 'dd-MM-yyyy HH:mm')}"></td>
+                <td th:text="${event.performerName}"></td>
+                <td th:text="${event.note}"></td>
             </tr>
             </tbody>
         </table>

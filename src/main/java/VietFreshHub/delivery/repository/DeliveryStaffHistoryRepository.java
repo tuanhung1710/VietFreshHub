@@ -14,9 +14,9 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -30,8 +30,9 @@ public class DeliveryStaffHistoryRepository {
 
     private static final String HISTORY = """
             with assignment_data as (
-                select a.assignment_id, a.delivery_id, a.status as assignment_status, a.accepted_at,
-                       d.status as current_status, d.delivered_at, so.total_amount, so.shop_id,
+                select a.assignment_id, a.delivery_id, a.delivery_staff_id, a.status as assignment_status, a.accepted_at,
+                       d.status as current_status, d.delivered_at, d.picked_up_at, d.failure_reason,
+                       so.total_amount, so.shop_id,
                        o.order_id, o.order_code, s.shop_name, oa.recipient_name, oa.phone,
                        coalesce(nullif(oa.formatted_address, ''), oa.address_line) as delivery_address,
                        failure.created_at as failed_at, failure.history_id as failed_history_id,
@@ -144,11 +145,18 @@ public class DeliveryStaffHistoryRepository {
             """;
 
     public DailyCodSummary dailyCod(Long staffId, LocalDate date, LocalDateTime start, LocalDateTime end) {
-        Map<String, Object> parameters = Map.of("staffId", staffId, "start", start, "end", end);
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("staffId", staffId);
+        parameters.put("start", start.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        String endCondition = "";
+        if (end != null) {
+            parameters.put("end", end.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+            endCondition = " and delivered_at < convert(datetime2(0), :end, 126)";
+        }
         String eligible = """
                 from history where outcome = 'DELIVERED' and current_status = 'DELIVERED'
-                  and delivered_at >= :start and delivered_at < :end and has_cod = 1
-                """;
+                  and delivered_at >= convert(datetime2(0), :start, 126) and has_cod = 1
+                """ + endCondition;
         Object[] values = (Object[]) query(HISTORY + """
                 select coalesce(sum(eligible.total_amount), 0), count(*)
                 from (select delivery_id, max(total_amount) as total_amount
@@ -158,7 +166,9 @@ public class DeliveryStaffHistoryRepository {
         long unresolved = ((Number) query(HISTORY + """
                 select count(distinct delivery_id) from history
                 where current_status = 'DELIVERED' and assignment_status = 'COMPLETED' and has_cod = 1
-                  and delivered_at >= :start and delivered_at < :end and delivered_at >= started_at
+                  and delivered_at >= convert(datetime2(0), :start, 126)
+                """ + endCondition + """
+                  and delivered_at >= started_at
                   and (next_started_at is null or delivered_at < next_started_at)
                   and (outcome is null or outcome <> 'DELIVERED' or attribution_verified = 0 or method_count <> 1)
                 """, parameters).getSingleResult()).longValue();
@@ -235,12 +245,12 @@ public class DeliveryStaffHistoryRepository {
             parameters.put("outcome", filter.getStatus());
         }
         if (from != null) {
-            where.append(" and result_at >= :fromTime");
-            parameters.put("fromTime", from);
+            where.append(" and result_at >= convert(datetime2(0), :fromTime, 126)");
+            parameters.put("fromTime", from.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         }
         if (until != null) {
-            where.append(" and result_at < :untilTime");
-            parameters.put("untilTime", until);
+            where.append(" and result_at < convert(datetime2(0), :untilTime, 126)");
+            parameters.put("untilTime", until.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         }
         if (filter.getShopId() != null) {
             where.append(" and shop_id = :shopId");
@@ -290,11 +300,28 @@ public class DeliveryStaffHistoryRepository {
     private String selectColumns() {
         return """
                 select assignment_id, delivery_id, order_code, shop_id, shop_name, recipient_name, phone,
-                       delivery_address, outcome, total_amount, result_at,
+                       delivery_address, outcome, total_amount,
+                       convert(varchar(19), result_at, 126) as result_time,
                        case when method_count = 1 then method_name
                             when method_count = 0 then N'Chưa có dữ liệu thanh toán'
                             else N'Nhiều phương thức (cần đối soát)' end,
-                       case when outcome = 'FAILED' then return_state else 'NONE' end, attribution_verified
+                       case when outcome = 'FAILED' then return_state else 'NONE' end, attribution_verified,
+                       convert(varchar(19), accepted_at, 126) as accepted_time,
+                       convert(varchar(19), coalesce(
+                           case when picked_up_at >= started_at
+                             and (next_started_at is null or picked_up_at < next_started_at)
+                             and (result_at is null or picked_up_at <= result_at) then picked_up_at end,
+                           (select min(h.created_at) from dbo.delivery_status_history h
+                            where h.delivery_id = history.delivery_id and h.status = 'PICKED_UP'
+                              and (h.changed_by = history.delivery_staff_id
+                                or (h.changed_by is null and history.only_attempt = 1))
+                              and h.created_at >= history.started_at
+                              and (history.next_started_at is null or h.created_at < history.next_started_at)
+                              and (history.result_at is null or h.created_at <= history.result_at))
+                       ), 126) as pickup_time,
+                       case when outcome = 'FAILED' and current_status = 'FAILED'
+                         and next_started_at is null then failure_reason end as attempt_failure_reason,
+                       case when method_count = 1 and has_cod = 1 then total_amount else 0 end as cash_to_collect
                 from history
                 """;
     }
@@ -314,12 +341,15 @@ public class DeliveryStaffHistoryRepository {
     }
 
     private DeliveryHistoryRow toRow(Object[] row) {
-        LocalDateTime time = row[10] == null ? null : row[10] instanceof LocalDateTime date
-                ? date : ((Timestamp) row[10]).toLocalDateTime();
         return new DeliveryHistoryRow(((Number) row[0]).longValue(), ((Number) row[1]).longValue(),
                 (String) row[2], ((Number) row[3]).longValue(), (String) row[4], (String) row[5],
-                (String) row[6], (String) row[7], (String) row[8], decimal(row[9]), time,
-                (String) row[11], (String) row[12], ((Number) row[13]).intValue() == 1);
+                (String) row[6], (String) row[7], (String) row[8], decimal(row[9]), dateTime(row[10]),
+                (String) row[11], (String) row[12], ((Number) row[13]).intValue() == 1,
+                dateTime(row[14]), dateTime(row[15]), (String) row[16], decimal(row[17]));
+    }
+
+    private LocalDateTime dateTime(Object value) {
+        return value == null ? null : LocalDateTime.parse((String) value);
     }
 
     private BigDecimal decimal(Object value) {

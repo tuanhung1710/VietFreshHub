@@ -5,6 +5,7 @@ import VietFreshHub.delivery.entity.DeliveryStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -25,7 +26,6 @@ public class DeliveryDetailResponse {
     private LocalDateTime deliveredAt;
     private String failureReason;
     private String returnStatusLabel;
-    private boolean legacyRedelivery;
     private long remainingOfferSeconds;
     private String assignmentStatusLabel;
     private String deliveryStatusLabel;
@@ -33,4 +33,6 @@ public class DeliveryDetailResponse {
     private String recipientPhone;
     private DeliveryLocationResponse pickupLocation;
     private DeliveryLocationResponse deliveryLocation;
+    private String shopName;
+    private BigDecimal cashToCollect;
 }

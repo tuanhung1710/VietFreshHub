@@ -20,6 +20,7 @@ import VietFreshHub.order.entity.OrderAddress;
 import VietFreshHub.order.entity.ShopOrder;
 import VietFreshHub.order.service.OrderService;
 import VietFreshHub.order.service.OrderLabels;
+import VietFreshHub.payment.service.PaymentService;
 import VietFreshHub.shop.entity.ShopLocation;
 import VietFreshHub.shop.service.ShopService;
 import lombok.RequiredArgsConstructor;
@@ -31,11 +32,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -49,13 +52,19 @@ public class DeliveryStaffQueryService {
     private final AuthService authService;
     private final OrderService orderService;
     private final ShopService shopService;
+    private final PaymentService paymentService;
     private final DeliveryStaffHistoryRepository staffHistory;
 
     @Transactional(readOnly = true)
-    public DailyCodSummary getDailyCodSummary(Authentication authentication) {
+    public DailyCodSummary getDailyCodSummary(Authentication authentication, LocalDate date) {
         Long staffId = authService.getCurrentDeliveryStaffId(authentication);
-        LocalDate today = LocalDate.now(DELIVERY_ZONE);
-        return staffHistory.dailyCod(staffId, today, historyDayStart(today), historyDayStart(today.plusDays(1)));
+        LocalDate selectedDate = date == null ? LocalDate.now(DELIVERY_ZONE) : date;
+        if (selectedDate.getYear() < 1 || selectedDate.getYear() > 9999) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Ngày nằm ngoài phạm vi dữ liệu được hỗ trợ.");
+        }
+        LocalDateTime end = selectedDate.equals(LocalDate.of(9999, 12, 31))
+                ? null : historyDayStart(selectedDate.plusDays(1));
+        return staffHistory.dailyCod(staffId, selectedDate, historyDayStart(selectedDate), end);
     }
 
     @Transactional(readOnly = true)
@@ -184,6 +193,7 @@ public class DeliveryStaffQueryService {
                         deliveryStaffId,
                         List.of(DeliveryAssignmentStatus.ASSIGNED, DeliveryAssignmentStatus.ACCEPTED))
                 .stream()
+                .filter(assignment -> isSupportedDelivery(assignment.getDelivery()))
                 .map(this::toAssignedDeliverySummary)
                 .toList();
     }
@@ -197,6 +207,7 @@ public class DeliveryStaffQueryService {
                         deliveryStaffId,
                         List.of(DeliveryAssignmentStatus.ASSIGNED, DeliveryAssignmentStatus.ACCEPTED,
                                 DeliveryAssignmentStatus.COMPLETED))
+                .filter(    candidate -> isSupportedDelivery(candidate.getDelivery()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Không tìm thấy phân công giao hàng."));
 
@@ -218,8 +229,7 @@ public class DeliveryStaffQueryService {
                 toDeliveryLocalTime(assignment.getAcceptedAt()),
                 assignmentStatusLabel(assignment.getStatus()),
                 OrderLabels.delivery(delivery.getStatus().name()),
-                remainingOfferSeconds(assignment),
-                isLegacyRedelivery(delivery)
+                remainingOfferSeconds(assignment)
         );
     }
 
@@ -247,14 +257,15 @@ public class DeliveryStaffQueryService {
                 delivery.getStatus() == DeliveryStatus.DELIVERED ? toDeliveryLocalTime(delivery.getDeliveredAt()) : null,
                 delivery.getFailureReason(),
                 returnStatusLabel(assignment),
-                isLegacyRedelivery(delivery),
                 remainingOfferSeconds(assignment),
                 assignmentStatusLabel(assignment.getStatus()),
                 OrderLabels.delivery(delivery.getStatus().name()),
                 address == null ? null : address.getRecipientName(),
                 address == null ? null : address.getPhone(),
                 pickupLocation,
-                toDeliveryLocation(address)
+                toDeliveryLocation(address),
+                shopOrder.getShop() == null ? null : shopOrder.getShop().getShopName(),
+                paymentService.isCodOrder(order.getOrderId()) ? shopOrder.getTotalAmount() : BigDecimal.ZERO
         );
     }
 
@@ -267,9 +278,14 @@ public class DeliveryStaffQueryService {
         return Math.max(0, (remainingMillis + 999) / 1000);
     }
 
-    private boolean isLegacyRedelivery(Delivery delivery) {
-        return delivery.getStatus() == DeliveryStatus.REDELIVERY_SCHEDULED
-                || delivery.getRedeliveryRequestedAt() != null || delivery.getRedeliveryScheduledAt() != null;
+    private boolean isSupportedDelivery(Delivery delivery) {
+        if (delivery.getRedeliveryRequestedAt() != null || delivery.getRedeliveryScheduledAt() != null) {
+            return false;
+        }
+        return switch (delivery.getStatus()) {
+            case UNASSIGNED, ASSIGNED, ACCEPTED, PICKED_UP, OUT_FOR_DELIVERY, DELIVERED, FAILED -> true;
+            default -> false;
+        };
     }
 
     private String returnStatusLabel(DeliveryAssignment assignment) {
@@ -279,15 +295,14 @@ public class DeliveryStaffQueryService {
         }
         if (assignment.getStatus() == DeliveryAssignmentStatus.ACCEPTED && delivery.getPickedUpAt() != null
                 && delivery.getDeliveredAt() == null && delivery.getFailureReason() != null
-                && !delivery.getFailureReason().isBlank()
-                && !isLegacyRedelivery(delivery)) {
-            return "Đang chờ trả hàng về shop. Phân công vẫn chiếm một suất cho đến khi shop xác nhận nhận lại hàng.";
+                && !delivery.getFailureReason().isBlank()) {
+            return "Đang chờ trả hàng về cửa hàng";
         }
         if (assignment.getStatus() == DeliveryAssignmentStatus.COMPLETED
                 && deliveryStatusHistoryRepository.existsByDelivery_DeliveryIdAndStatusAndNoteAndChangedByIsNotNull(
                         delivery.getDeliveryId(), DeliveryStatus.FAILED,
                         DeliveryStatusHistoryWriter.goodsReturnConfirmationNote(assignment.getAssignmentId()))) {
-            return "Shop đã xác nhận nhận lại hàng. Phân công đã hoàn tất.";
+            return "Cửa hàng đã xác nhận nhận lại hàng.";
         }
         return "Chưa có xác nhận trả hàng phù hợp trong lịch sử; cần đối soát thủ công.";
     }
@@ -315,6 +330,18 @@ public class DeliveryStaffQueryService {
             return null;
         }
 
+        String formattedAddress = address.getFormattedAddress();
+        if (formattedAddress == null || formattedAddress.isBlank()) {
+            List<String> parts = new ArrayList<>();
+            for (String part : new String[]{address.getAddressLine(), address.getWard(),
+                    address.getDistrict(), address.getProvince()}) {
+                if (part != null && !part.isBlank()) {
+                    parts.add(part);
+                }
+            }
+            formattedAddress = String.join(", ", parts);
+        }
+
         return new DeliveryLocationResponse(
                 address.getProvinceId(),
                 address.getProvince(),
@@ -323,7 +350,7 @@ public class DeliveryStaffQueryService {
                 address.getWardId(),
                 address.getWard(),
                 address.getAddressLine(),
-                address.getFormattedAddress(),
+                formattedAddress,
                 address.getLatitude(),
                 address.getLongitude()
         );

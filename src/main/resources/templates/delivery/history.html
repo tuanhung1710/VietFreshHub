@@ -7,7 +7,13 @@
     <style>
         body { max-width: 1200px; margin: 24px auto; padding: 0 16px; font-family: Arial, sans-serif; line-height: 1.5; }
         .filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+        .search-form, .sort-form, .filter-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+        .search-form, .filter-form, .sort-form { margin-bottom: 20px; }
+        .search-form label { flex: 1; min-width: 220px; }
+        .filter-form { border: 1px solid black; padding: 16px; }
+        .filter-form h2 { margin: 0 0 16px; font-size: 1.125rem; }
         label { display: flex; flex-direction: column; gap: 4px; }
+        .custom-date[hidden] { display: none; }
         input, select, button { max-width: 100%; padding: 8px; font: inherit; box-sizing: border-box; }
         details { margin: 16px 0; }
         .table-container { overflow-x: auto; }
@@ -21,19 +27,38 @@
 <header>
     <span th:replace="~{fragments/notifications :: bell}"></span>
     <p>VIETFRESH HUB</p>
-    <a th:href="@{/delivery}">← Đơn giao đang xử lý</a>
+    <a th:href="@{/delivery}">Trang chủ</a>
 </header>
 <main>
     <h1>Lịch sử giao hàng</h1>
     <p th:if="${history.unresolvedCount > 0}" role="status"
        th:text="|Có ${history.unresolvedCount} hồ sơ cũ chưa đủ dữ liệu xác định đầy đủ các lần giao. Những kết quả chưa xác định được không được tự động gán cho bạn hoặc cộng vào COD.|"></p>
     <p th:if="${errorMessage != null}" class="error" role="alert" th:text="${errorMessage}"></p>
-    <form method="get" th:action="@{/delivery/history}" th:object="${filter}">
+    <form class="search-form" method="get" th:action="@{/delivery/history}" th:object="${filter}" aria-label="Tìm kiếm lịch sử giao hàng">
         <input type="hidden" name="page" value="0">
+        <input type="hidden" name="status" th:value="${filter.status}">
+        <input type="hidden" name="period" th:value="${filter.period}">
+        <th:block th:if="${filter.period == 'CUSTOM'}">
+            <input type="hidden" name="fromDate" th:value="${filter.fromDate}">
+            <input type="hidden" name="toDate" th:value="${filter.toDate}">
+        </th:block>
+        <input type="hidden" name="shopId" th:value="${filter.shopId}">
+        <input type="hidden" name="paymentMethod" th:value="${filter.paymentMethod}">
+        <input type="hidden" name="minAmount" th:value="${filter.minAmount}">
+        <input type="hidden" name="maxAmount" th:value="${filter.maxAmount}">
+        <input type="hidden" name="returnStatus" th:value="${filter.returnStatus}">
+        <input type="hidden" name="sort" th:value="${filter.sort}">
+        <label>Tìm kiếm
+            <input type="search" th:field="*{keyword}" placeholder="Mã đơn hàng, Tên người nhận, Số điện thoại người nhận, Tên cửa hàng">
+        </label>
+        <button type="submit">Tìm kiếm</button>
+    </form>
+    <form class="filter-form" method="get" th:action="@{/delivery/history}" th:object="${filter}" aria-labelledby="filters-heading">
+        <h2 id="filters-heading">Bộ lọc</h2>
+        <input type="hidden" name="page" value="0">
+        <input type="hidden" name="keyword" th:value="${filter.keyword}">
+        <input type="hidden" name="sort" th:value="${filter.sort}">
         <div class="filters">
-            <label>Tìm kiếm
-                <input type="search" th:field="*{keyword}" placeholder="Mã đơn, tên/SĐT người nhận, tên cửa hàng...">
-            </label>
             <label>Kết quả giao hàng
                 <select th:field="*{status}">
                     <option value="ALL">Tất cả</option>
@@ -42,7 +67,7 @@
                 </select>
             </label>
             <label>Thời gian giao
-                <select th:field="*{period}">
+                <select id="period" th:field="*{period}">
                     <option value="ALL">Tất cả thời gian</option>
                     <option value="TODAY">Hôm nay</option>
                     <option value="LAST_7">7 ngày gần nhất</option>
@@ -50,20 +75,16 @@
                     <option value="CUSTOM">Tùy chọn</option>
                 </select>
             </label>
-            <label>Từ ngày (tùy chọn)<input type="date" th:field="*{fromDate}"></label>
-            <label>Đến ngày (tùy chọn)<input type="date" th:field="*{toDate}"></label>
+            <label class="custom-date" th:hidden="${filter.period != 'CUSTOM'}">Từ ngày
+                <input type="date" th:field="*{fromDate}" th:disabled="${filter.period != 'CUSTOM'}">
+            </label>
+            <label class="custom-date" th:hidden="${filter.period != 'CUSTOM'}">Đến ngày
+                <input type="date" th:field="*{toDate}" th:disabled="${filter.period != 'CUSTOM'}">
+            </label>
             <label>Cửa hàng
                 <select th:field="*{shopId}">
                     <option value="">Tất cả cửa hàng</option>
                     <option th:each="shop : ${history.shops}" th:value="${shop.value}" th:text="${shop.label}"></option>
-                </select>
-            </label>
-            <label>Sắp xếp theo
-                <select th:field="*{sort}">
-                    <option value="NEWEST">Thời gian giao: Mới nhất trước</option>
-                    <option value="OLDEST">Thời gian giao: Cũ nhất trước</option>
-                    <option value="AMOUNT_HIGH">Giá trị đơn: Cao nhất trước</option>
-                    <option value="AMOUNT_LOW">Giá trị đơn: Thấp nhất trước</option>
                 </select>
             </label>
         </div>
@@ -87,12 +108,36 @@
                 </label>
             </div>
         </details>
-        <button type="submit">Tìm kiếm và áp dụng</button>
-        <a th:href="@{/delivery/history}">Xóa điều kiện tìm kiếm</a>
-        <p>Ngày tùy chọn chỉ áp dụng khi chọn “Tùy chọn”. Khi sắp xếp theo thời gian, hồ sơ chưa có thời gian nằm cuối danh sách và không thuộc khoảng ngày được lọc.</p>
+        <div class="filter-actions">
+            <button type="submit">Áp dụng bộ lọc</button>
+            <a th:href="@{/delivery/history(keyword=${filter.keyword},sort=${filter.sort})}">Xóa bộ lọc</a>
+        </div>
+    </form>
+    <form class="sort-form" method="get" th:action="@{/delivery/history}" th:object="${filter}" aria-label="Sắp xếp lịch sử giao hàng">
+        <input type="hidden" name="page" value="0">
+        <input type="hidden" name="keyword" th:value="${filter.keyword}">
+        <input type="hidden" name="status" th:value="${filter.status}">
+        <input type="hidden" name="period" th:value="${filter.period}">
+        <th:block th:if="${filter.period == 'CUSTOM'}">
+            <input type="hidden" name="fromDate" th:value="${filter.fromDate}">
+            <input type="hidden" name="toDate" th:value="${filter.toDate}">
+        </th:block>
+        <input type="hidden" name="shopId" th:value="${filter.shopId}">
+        <input type="hidden" name="paymentMethod" th:value="${filter.paymentMethod}">
+        <input type="hidden" name="minAmount" th:value="${filter.minAmount}">
+        <input type="hidden" name="maxAmount" th:value="${filter.maxAmount}">
+        <input type="hidden" name="returnStatus" th:value="${filter.returnStatus}">
+        <label>Sắp xếp theo
+            <select id="history-sort" th:field="*{sort}">
+                <option value="NEWEST">Thời gian giao: Mới nhất trước</option>
+                <option value="OLDEST">Thời gian giao: Cũ nhất trước</option>
+                <option value="AMOUNT_HIGH">Giá trị đơn: Cao nhất trước</option>
+                <option value="AMOUNT_LOW">Giá trị đơn: Thấp nhất trước</option>
+            </select>
+        </label>
+        <button type="submit">Sắp xếp</button>
     </form>
     <section th:if="${errorMessage == null}" th:with="page=${history.records}">
-        <p th:text="|Tổng kết quả: ${page.totalElements}|"></p>
         <p th:if="${page.empty and history.allTimeCount == 0}">Bạn chưa có lịch sử giao hàng.</p>
         <p th:if="${page.empty and history.allTimeCount > 0}">Không tìm thấy đơn giao hàng phù hợp với điều kiện tìm kiếm.</p>
         <div class="table-container" th:unless="${page.empty}">
@@ -101,7 +146,7 @@
                     <th scope="col">Mã đơn hàng</th><th scope="col">Cửa hàng</th>
                     <th scope="col">Người nhận</th><th scope="col">Số điện thoại</th>
                     <th scope="col">Kết quả giao hàng</th><th scope="col">Thanh toán</th>
-                    <th scope="col">Giá trị đơn</th><th scope="col">Thời gian giao</th>
+                    <th scope="col">Tiền thu hộ</th><th scope="col">Thời gian giao</th>
                     <th scope="col">Trả hàng</th><th scope="col">Chi tiết</th>
                 </tr></thead>
                 <tbody><tr th:each="row : ${page.content}">
@@ -109,8 +154,8 @@
                     <td th:text="${row.recipientName ?: 'Chưa có dữ liệu'}"></td>
                     <td th:text="${row.recipientPhone ?: 'Chưa có dữ liệu'}"></td>
                     <td th:text="${row.outcomeLabel}"></td><td th:text="${row.paymentName}"></td>
-                    <td th:text="${#numbers.formatDecimal(row.totalAmount, 1, 'POINT', row.totalAmount.stripTrailingZeros().scale() > 0 ? 2 : 0, 'COMMA')} + ' VND'"></td>
-                    <td th:text="${row.localResultAt == null ? 'Không có dữ liệu thời gian' : #temporals.format(row.localResultAt, 'dd/MM/yyyy HH:mm')}"></td>
+                    <td th:text="${#numbers.formatDecimal(row.cashToCollect, 1, 'POINT', row.cashToCollect.stripTrailingZeros().scale() > 0 ? 2 : 0, 'COMMA')} + ' VND'"></td>
+                    <td th:text="${row.localResultAt == null ? 'Không có dữ liệu thời gian' : #temporals.format(row.localResultAt, 'dd-MM-yyyy HH:mm')}"></td>
                     <td th:text="${row.returnLabel}"></td>
                     <td><a th:href="@{/delivery/history/{id}(id=${row.assignmentId})}">Xem chi tiết</a></td>
                 </tr></tbody>
@@ -123,5 +168,33 @@
         </nav>
     </section>
 </main>
+<script>
+    const historyPeriod = document.getElementById('period');
+    const historyDateFields = document.querySelectorAll('.custom-date');
+
+    function updateHistoryDateFields() {
+        const custom = historyPeriod.value === 'CUSTOM';
+        historyDateFields.forEach(field => {
+            field.hidden = !custom;
+            field.querySelector('input').disabled = !custom;
+        });
+    }
+
+    historyPeriod.addEventListener('change', () => {
+        updateHistoryDateFields();
+        if (historyPeriod.value !== 'CUSTOM') {
+            historyDateFields.forEach(field => {
+                field.querySelector('input').value = '';
+            });
+            historyPeriod.form.requestSubmit();
+        }
+    });
+
+    document.getElementById('history-sort').addEventListener('change', event => {
+        event.currentTarget.form.requestSubmit();
+    });
+
+    updateHistoryDateFields();
+</script>
 </body>
 </html>

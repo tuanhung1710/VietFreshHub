@@ -22,5 +22,4 @@ public class AssignedDeliverySummary {
     private String assignmentStatusLabel;
     private String deliveryStatusLabel;
     private long remainingOfferSeconds;
-    private boolean legacyRedelivery;
 }

@@ -1,5 +1,6 @@
 package VietFreshHub.delivery.service;
 
+import VietFreshHub.auth.service.AuthService;
 import VietFreshHub.delivery.dto.DeliveryMonitoringAssignment;
 import VietFreshHub.delivery.dto.DeliveryMonitoringDetail;
 import VietFreshHub.delivery.dto.DeliveryMonitoringHistoryEntry;
@@ -47,12 +48,13 @@ public class DeliveryMonitoringService {
     private final DeliveryAssignmentRepository deliveryAssignmentRepository;
     private final DeliveryStatusHistoryRepository deliveryStatusHistoryRepository;
     private final ShopService shopService;
+    private final AuthService authService;
 
     public Page<DeliveryMonitoringRow> getManagedShopDeliveries(Authentication authentication,
                                                                DeliveryStatus status, String orderCode,
-                                                               String sortBy, String direction, int page) {
+                                                               String direction, int page) {
         Long shopId = shopService.getManagedShopId(authentication);
-        return findDeliveries(shopId, status, orderCode, sortBy, direction, page);
+        return findDeliveries(shopId, status, orderCode, direction, page);
     }
 
     public DeliveryMonitoringDetail getManagedShopDeliveryDetail(Long deliveryId, Authentication authentication) {
@@ -64,9 +66,9 @@ public class DeliveryMonitoringService {
     }
 
     public Page<DeliveryMonitoringRow> getAdminDeliveries(Authentication authentication, DeliveryStatus status,
-                                                         String orderCode, String sortBy, String direction, int page) {
+                                                         String orderCode, String direction, int page) {
         requireAdmin(authentication);
-        return findDeliveries(null, status, orderCode, sortBy, direction, page);
+        return findDeliveries(null, status, orderCode, direction, page);
     }
 
     public DeliveryMonitoringDetail getAdminDeliveryDetail(Long deliveryId, Authentication authentication) {
@@ -86,15 +88,10 @@ public class DeliveryMonitoringService {
     }
 
     private Page<DeliveryMonitoringRow> findDeliveries(Long shopId, DeliveryStatus status, String orderCode,
-                                                       String sortBy, String direction, int page) {
+                                                       String direction, int page) {
         if (page < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Số trang không hợp lệ.");
         }
-        String sortField = switch (sortBy) {
-            case "updatedAt" -> "updatedAt";
-            case "deliveredAt" -> "deliveredAt";
-            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tiêu chí sắp xếp không hợp lệ.");
-        };
         if (!"asc".equals(direction) && !"desc".equals(direction)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chiều sắp xếp không hợp lệ.");
         }
@@ -106,15 +103,50 @@ public class DeliveryMonitoringService {
             if (shopId != null) {
                 predicates.add(builder.equal(root.get("shopOrder").get("shopId"), shopId));
             }
-            if (status != null) {
+            if (status == DeliveryStatus.UNASSIGNED || status == DeliveryStatus.ASSIGNED
+                    || status == DeliveryStatus.ACCEPTED) {
+                var acceptedAssignment = query.subquery(Long.class);
+                var assignmentRoot = acceptedAssignment.from(DeliveryAssignment.class);
+                var fullName = assignmentRoot.get("deliveryStaff").<String>get("fullName");
+                acceptedAssignment.select(assignmentRoot.get("assignmentId")).where(
+                        builder.equal(assignmentRoot.get("delivery").get("deliveryId"), root.get("deliveryId")),
+                        assignmentRoot.get("status").in(DeliveryAssignmentStatus.ACCEPTED, DeliveryAssignmentStatus.COMPLETED),
+                        builder.isNotNull(assignmentRoot.get("acceptedAt")),
+                        builder.isNotNull(fullName), builder.notEqual(builder.trim(fullName), ""));
+                Predicate acceptedWithName = builder.and(
+                        builder.equal(root.get("status"), DeliveryStatus.ACCEPTED),
+                        builder.exists(acceptedAssignment));
+                if (status == DeliveryStatus.ACCEPTED) {
+                    predicates.add(acceptedWithName);
+                } else {
+                    predicates.add(builder.or(
+                            root.get("status").in(DeliveryStatus.UNASSIGNED, DeliveryStatus.ASSIGNED),
+                            builder.and(builder.equal(root.get("status"), DeliveryStatus.ACCEPTED),
+                                    builder.not(builder.exists(acceptedAssignment)))));
+                }
+            } else if (status != null) {
                 predicates.add(builder.equal(root.get("status"), status));
             }
             if (!search.isEmpty()) {
-                predicates.add(builder.like(builder.lower(root.get("shopOrder").get("order").get("orderCode")),
-                        searchPattern, '\\'));
+                Predicate matchingOrderCode = builder.like(
+                        builder.lower(root.get("shopOrder").get("order").get("orderCode")), searchPattern, '\\');
+                if (shopId == null) {
+                    predicates.add(matchingOrderCode);
+                } else {
+                    var matchingStaff = query.subquery(Long.class);
+                    var assignment = matchingStaff.from(DeliveryAssignment.class);
+                    matchingStaff.select(assignment.get("assignmentId")).where(
+                            builder.equal(assignment.get("delivery").get("deliveryId"), root.get("deliveryId")),
+                            assignment.get("status").in(DeliveryAssignmentStatus.ACCEPTED, DeliveryAssignmentStatus.COMPLETED),
+                            builder.isNotNull(assignment.get("acceptedAt")),
+                            builder.like(builder.lower(assignment.get("deliveryStaff").get("fullName")), searchPattern, '\\'));
+                    predicates.add(builder.or(matchingOrderCode, builder.and(
+                            builder.not(root.get("status").in(DeliveryStatus.UNASSIGNED, DeliveryStatus.ASSIGNED)),
+                            builder.exists(matchingStaff))));
+                }
             }
             if (query != null && query.getResultType() != Long.class && query.getResultType() != long.class) {
-                Expression<?> timestamp = root.get(sortField);
+                Expression<?> timestamp = root.get("deliveredAt");
                 Expression<Integer> nullRank = builder.<Integer>selectCase()
                         .when(builder.isNull(timestamp), 1).otherwise(0);
                 boolean ascending = "asc".equals(direction);
@@ -131,7 +163,7 @@ public class DeliveryMonitoringService {
                 .findByDelivery_DeliveryIdInAndStatusAndNoteStartingWithAndChangedByIsNotNull(
                         deliveryIds, DeliveryStatus.FAILED, DeliveryStatusHistoryWriter.GOODS_RETURN_NOTE_PREFIX));
         return deliveries.map(delivery -> toMonitoringRow(delivery,
-                assignments.getOrDefault(delivery.getDeliveryId(), List.of()), confirmations));
+                assignments.getOrDefault(delivery.getDeliveryId(), List.of()), confirmations, true));
     }
 
     private Map<Long, List<DeliveryAssignment>> findAssignments(List<Long> deliveryIds) {
@@ -170,7 +202,7 @@ public class DeliveryMonitoringService {
     }
 
     private DeliveryMonitoringRow toMonitoringRow(Delivery delivery, List<DeliveryAssignment> assignments,
-                                                   Set<String> confirmations) {
+                                                   Set<String> confirmations, boolean listView) {
         ShopOrder shopOrder = delivery.getShopOrder();
         DeliveryAssignment assignment = selectAssignment(delivery, assignments);
         boolean current = assignment != null && isActive(assignment);
@@ -184,6 +216,23 @@ public class DeliveryMonitoringService {
         } else if (delivery.getStatus() == DeliveryStatus.DELIVERED && assignment != null) {
             assignmentLabel = "Phân công đã hoàn tất giao hàng thành công";
         }
+        String deliveryLabel = OrderLabels.delivery(delivery.getStatus().name());
+        if (listView) {
+            String fullName = assignment == null ? null : assignment.getDeliveryStaff().getFullName();
+            boolean acceptedStaff = assignment != null && assignment.getAcceptedAt() != null
+                    && (assignment.getStatus() == DeliveryAssignmentStatus.ACCEPTED
+                    || assignment.getStatus() == DeliveryAssignmentStatus.COMPLETED)
+                    && fullName != null && !fullName.isBlank();
+            staffName = acceptedStaff ? fullName.strip() : null;
+            if (delivery.getStatus() == DeliveryStatus.UNASSIGNED || delivery.getStatus() == DeliveryStatus.ASSIGNED
+                    || delivery.getStatus() == DeliveryStatus.ACCEPTED) {
+                boolean assigned = delivery.getStatus() == DeliveryStatus.ACCEPTED && acceptedStaff;
+                deliveryLabel = assigned ? "Đã phân công" : "Chờ phân công giao hàng";
+                if (!assigned) {
+                    staffName = null;
+                }
+            }
+        }
 
         boolean returnPending = delivery.getStatus() == DeliveryStatus.FAILED
                 && assignment != null && assignment.getStatus() == DeliveryAssignmentStatus.ACCEPTED
@@ -196,15 +245,15 @@ public class DeliveryMonitoringService {
                         DeliveryStatusHistoryWriter.goodsReturnConfirmationNote(assignment.getAssignmentId())));
         String returnLabel = null;
         if (delivery.getStatus() == DeliveryStatus.FAILED) {
-            returnLabel = returnConfirmed ? "Shop đã xác nhận nhận lại hàng"
-                    : returnPending ? "Đang chờ trả hàng về shop"
+            returnLabel = returnConfirmed ? "Cửa hàng đã xác nhận nhận lại hàng"
+                    : returnPending ? "Đang chờ trả hàng về cửa hàng"
                     : "Chưa có xác nhận trả hàng phù hợp trong lịch sử; cần đối soát thủ công";
         }
 
         return new DeliveryMonitoringRow(
                 delivery.getDeliveryId(), shopOrder.getOrder().getOrderCode(), shopOrder.getShopOrderId(),
                 shopOrder.getShopId(), shopOrder.getShop() == null ? null : shopOrder.getShop().getShopName(),
-                OrderLabels.delivery(delivery.getStatus().name()),
+                deliveryLabel,
                 current || delivery.getStatus() == DeliveryStatus.UNASSIGNED
                         ? "Phân công hiện tại" : "Phân công gần nhất trong lịch sử",
                 assignment == null ? null : assignment.getAssignmentId(), assignmentLabel, staffName,
@@ -219,14 +268,23 @@ public class DeliveryMonitoringService {
                 .getOrDefault(delivery.getDeliveryId(), List.of());
         List<DeliveryStatusHistory> events = deliveryStatusHistoryRepository
                 .findByDelivery_DeliveryIdOrderByCreatedAtAscHistoryIdAsc(delivery.getDeliveryId());
-        List<DeliveryMonitoringHistoryEntry> history = events.stream().map(event -> {
+        List<DeliveryStatusHistory> visibleEvents = events.stream()
+                .filter(event -> event.getStatus() != DeliveryStatus.UNASSIGNED
+                        && event.getStatus() != DeliveryStatus.ASSIGNED)
+                .toList();
+        List<Long> performerIds = visibleEvents.stream().map(DeliveryStatusHistory::getChangedBy)
+                .filter(userId -> userId != null).distinct().toList();
+        Map<Long, String> performerNames = authService.getUserFullNames(performerIds);
+        List<DeliveryMonitoringHistoryEntry> history = visibleEvents.stream().map(event -> {
             boolean returnConfirmation = event.getStatus() == DeliveryStatus.FAILED && event.getChangedBy() != null
                     && assignments.stream().anyMatch(assignment -> assignment.getStatus() == DeliveryAssignmentStatus.COMPLETED
                     && DeliveryStatusHistoryWriter.goodsReturnConfirmationNote(assignment.getAssignmentId())
                     .equals(event.getNote()));
-            return new DeliveryMonitoringHistoryEntry(OrderLabels.delivery(event.getStatus().name()),
-                    OrderLabels.local(event.getCreatedAt()), event.getChangedBy(),
-                    returnConfirmation ? "Shop đã xác nhận nhận lại hàng" : event.getNote());
+            String performerName = event.getChangedBy() == null ? "Hệ thống"
+                    : performerNames.getOrDefault(event.getChangedBy(), "Chưa ghi nhận họ tên");
+            return new DeliveryMonitoringHistoryEntry(historyStatusLabel(event.getStatus()),
+                    OrderLabels.local(event.getCreatedAt()), performerName,
+                    returnConfirmation ? "Cửa hàng đã xác nhận nhận lại hàng" : event.getNote());
         }).toList();
         List<DeliveryMonitoringAssignment> assignmentHistory = assignments.stream().map(assignment ->
                 new DeliveryMonitoringAssignment(assignment.getAssignmentId(),
@@ -234,11 +292,20 @@ public class DeliveryMonitoringService {
                         OrderLabels.local(assignment.getAssignedAt()), OrderLabels.local(assignment.getAcceptedAt()),
                         isActive(assignment))).toList();
         return new DeliveryMonitoringDetail(
-                toMonitoringRow(delivery, assignments, confirmationKeys(events)),
+                toMonitoringRow(delivery, assignments, confirmationKeys(events), false),
                 OrderLabels.local(delivery.getCreatedAt()), OrderLabels.local(delivery.getAssignedAt()),
                 OrderLabels.local(delivery.getPickedUpAt()),
                 delivery.getStatus() == DeliveryStatus.DELIVERED ? OrderLabels.local(delivery.getDeliveredAt()) : null,
                 delivery.getFailureReason(), isLegacyRedelivery(delivery), assignmentHistory, history);
+    }
+
+    private String historyStatusLabel(DeliveryStatus status) {
+        return switch (status) {
+            case ACCEPTED -> "Nhân viên giao hàng đã nhận nhiệm vụ";
+            case PICKED_UP -> "Nhân viên đã lấy hàng";
+            case OUT_FOR_DELIVERY -> "Đang giao hàng";
+            default -> OrderLabels.delivery(status.name());
+        };
     }
 
     private Set<String> confirmationKeys(List<DeliveryStatusHistory> events) {

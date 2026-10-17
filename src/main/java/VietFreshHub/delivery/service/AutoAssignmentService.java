@@ -87,6 +87,7 @@ public class AutoAssignmentService {
         LocalTime localTime = utcTime.atOffset(ZoneOffset.UTC)
                 .atZoneSameInstant(DELIVERY_ZONE).toLocalTime();
         return !localTime.isBefore(LocalTime.of(8, 0)) && localTime.isBefore(LocalTime.of(19, 0));
+//        return true;
     }
 
     private Set<Long> findExcludedStaffIds(Delivery delivery, LocalDateTime now) {

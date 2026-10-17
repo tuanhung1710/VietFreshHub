@@ -27,6 +27,17 @@ public interface DeliveryAssignmentRepository extends JpaRepository<DeliveryAssi
     @EntityGraph(attributePaths = {"delivery", "deliveryStaff"})
     List<DeliveryAssignment> findByDelivery_DeliveryIdInOrderByAssignedAtDescAssignmentIdDesc(List<Long> deliveryIds);
 
+    @Query("""
+            select a from DeliveryAssignment a
+            join fetch a.deliveryStaff
+            where a.delivery.shopOrder.order.orderId = :orderId
+              and a.delivery.shopOrder.order.customer.userId = :customerId
+              and a.acceptedAt is not null
+            order by a.acceptedAt desc, a.assignmentId desc
+            """)
+    List<DeliveryAssignment> findAcceptedAssignmentsForCustomerOrder(@Param("customerId") Long customerId,
+                                                                   @Param("orderId") Long orderId);
+
     long countByDeliveryStaff_UserIdAndStatusIn(Long userId, List<DeliveryAssignmentStatus> statuses);
 
     boolean existsByDelivery_DeliveryIdAndStatusIn(Long deliveryId, List<DeliveryAssignmentStatus> statuses);

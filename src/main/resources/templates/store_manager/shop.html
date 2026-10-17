@@ -23,7 +23,7 @@
             <li><a th:href="@{/seller/confirmed-orders}" th:text="${'Đã xác nhận (' + orderCounts.confirmedOrders + ')'}">Đã xác nhận</a></li>
             <li><a th:href="@{/seller/preparing-orders}" th:text="${'Đang chuẩn bị (' + orderCounts.preparingOrders + ')'}">Đang chuẩn bị</a></li>
             <li><a th:href="@{/seller/ready-orders}" th:text="${'Sẵn sàng giao (' + orderCounts.readyOrders + ')'}">Sẵn sàng giao</a></li>
-            <li><a th:href="@{/seller/processed-orders}" th:text="${'Lịch sử đơn đã xử lý (' + orderCounts.processedOrders + ')'}">Lịch sử đơn đã xử lý</a></li>
+            <li><a th:href="@{/seller/processed-orders}" th:text="${'Đơn đã giao thành công (' + orderCounts.completedOrders + ')'}">Đơn đã giao thành công</a></li>
         </ul>
     </nav>
 </main>

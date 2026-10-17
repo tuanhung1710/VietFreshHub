@@ -30,13 +30,12 @@ public class DeliveryMonitoringController {
     @GetMapping("/seller/deliveries")
     public String managedShopDeliveries(@RequestParam(required = false) DeliveryStatus status,
                                          @RequestParam(defaultValue = "") String orderCode,
-                                         @RequestParam(defaultValue = "updatedAt") String sortBy,
                                          @RequestParam(defaultValue = "desc") String direction,
                                          @RequestParam(defaultValue = "0") int page,
                                          Authentication authentication, Model model) {
         return showList(deliveryMonitoringService.getManagedShopDeliveries(
-                        authentication, status, orderCode, sortBy, direction, page),
-                status, orderCode, sortBy, direction, "/seller/deliveries", "/seller",
+                        authentication, status, orderCode, direction, page),
+                status, orderCode, direction, "/seller/deliveries", "/seller",
                 "Giao hàng của cửa hàng bạn quản lý", model);
     }
 
@@ -49,13 +48,12 @@ public class DeliveryMonitoringController {
     @GetMapping("/admin/deliveries")
     public String adminDeliveries(@RequestParam(required = false) DeliveryStatus status,
                                    @RequestParam(defaultValue = "") String orderCode,
-                                   @RequestParam(defaultValue = "updatedAt") String sortBy,
                                    @RequestParam(defaultValue = "desc") String direction,
                                    @RequestParam(defaultValue = "0") int page,
                                    Authentication authentication, Model model) {
         return showList(deliveryMonitoringService.getAdminDeliveries(
-                        authentication, status, orderCode, sortBy, direction, page),
-                status, orderCode, sortBy, direction, "/admin/deliveries", "/admin/accounts",
+                        authentication, status, orderCode, direction, page),
+                status, orderCode, direction, "/admin/deliveries", "/admin/accounts",
                 "Giao hàng toàn hệ thống", model);
     }
 
@@ -74,19 +72,22 @@ public class DeliveryMonitoringController {
     }
 
     private String showList(Page<DeliveryMonitoringRow> deliveries, DeliveryStatus status,
-                             String orderCode, String sortBy, String direction, String basePath,
+                             String orderCode, String direction, String basePath,
                              String homePath, String scopeLabel, Model model) {
+        if (status == DeliveryStatus.ASSIGNED) {
+            status = DeliveryStatus.UNASSIGNED;
+        }
         Map<DeliveryStatus, String> statusOptions = new LinkedHashMap<>();
         for (DeliveryStatus option : DeliveryStatus.values()) {
-            if (option != DeliveryStatus.REDELIVERY_SCHEDULED) {
-                statusOptions.put(option, OrderLabels.delivery(option.name()));
+            if (option != DeliveryStatus.REDELIVERY_SCHEDULED && option != DeliveryStatus.ASSIGNED
+                    && option != DeliveryStatus.CANCELLED) {
+                statusOptions.put(option, option == DeliveryStatus.ACCEPTED ? "Đã phân công" : OrderLabels.delivery(option.name()));
             }
         }
         model.addAttribute("deliveriesPage", deliveries);
         model.addAttribute("statusOptions", statusOptions);
         model.addAttribute("selectedStatus", status);
         model.addAttribute("orderCode", orderCode.strip());
-        model.addAttribute("sortBy", sortBy);
         model.addAttribute("direction", direction);
         model.addAttribute("basePath", basePath);
         model.addAttribute("homePath", homePath);

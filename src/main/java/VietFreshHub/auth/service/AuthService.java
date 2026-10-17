@@ -23,7 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -195,6 +197,21 @@ public class AuthService {
         }
 
         throw new AccessDeniedException("Bạn không có quyền nhân viên giao hàng.");
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, String> getUserFullNames(List<Long> userIds) {
+        Map<Long, String> names = new HashMap<>();
+        if (userIds.isEmpty()) {
+            return names;
+        }
+        for (User user : userRepository.findAllById(userIds)) {
+            String fullName = user.getFullName();
+            if (fullName != null && !fullName.isBlank()) {
+                names.put(user.getUserId(), fullName.strip());
+            }
+        }
+        return names;
     }
 
     @Transactional

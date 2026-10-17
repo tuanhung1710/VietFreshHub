@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tổng hợp COD trong ngày | VIETFRESH HUB</title>
+    <style>
+        body {
+            max-width: 1000px;
+            margin: 24px auto;
+            padding: 0 16px;
+            font-family: Arial, sans-serif;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <span th:replace="~{fragments/notifications :: bell}"></span>
+    <p>VIETFRESH HUB</p>
+    <p><a th:href="@{/delivery}">Trang chủ</a></p>
+</header>
+<main>
+    <h1>Tổng hợp COD trong ngày</h1>
+    <form method="get" th:action="@{/delivery/cod-summary}">
+        <label for="cod-date">Ngày</label>
+        <input id="cod-date" type="date" name="date" th:value="${codSummary.date}"
+               min="0001-01-01" max="9999-12-31" required>
+        <button type="submit">Xem</button>
+    </form>
+    <dl>
+        <dt>Tổng tiền COD ghi nhận (chưa đối soát)</dt>
+        <dd><strong th:text="${#numbers.formatDecimal(codSummary.amount, 1, 'POINT', codSummary.amount.stripTrailingZeros().scale() > 0 ? 2 : 0, 'COMMA')} + ' VNĐ'"></strong></dd>
+        <dt>Số đơn COD giao thành công</dt>
+        <dd><strong th:text="|${codSummary.deliveryCount} đơn|"></strong></dd>
+    </dl>
+    <p th:if="${codSummary.amount.signum() == 0}"
+       th:text="${isToday ? 'Hôm nay chưa có đơn hàng COD nào được giao thành công.' : 'Ngày đã chọn chưa có đơn hàng COD nào được giao thành công.'}"></p>
+    <p th:if="${codSummary.unresolvedCount > 0}"
+       th:text="|Có ${codSummary.unresolvedCount} hồ sơ COD chưa đủ dữ liệu xác định người hoàn tất hoặc phương thức thanh toán; chưa cộng vào tổng.|"></p>
+    <button type="button" disabled>Bàn giao tiền COD</button>
+</main>
+</body>
+</html>

@@ -52,7 +52,7 @@ public class DeliveryStaffActionService {
         }
 
         deliveryService.startDelivery(delivery.getDeliveryId());
-        shopOrder.markOutForDelivery();
+        orderService.startShopOrderDelivery(shopOrder.getShopOrderId(), assignment.getDeliveryStaff().getUserId());
         deliveryStatusHistoryWriter.record(delivery, assignment.getDeliveryStaff().getUserId(), null);
         deliveryNotificationService.notifyStarted(delivery);
     }
@@ -73,7 +73,8 @@ public class DeliveryStaffActionService {
         }
 
         deliveryService.markDelivered(delivery.getDeliveryId());
-        orderService.completeDeliveredShopOrder(shopOrder.getShopOrderId(), delivery.getDeliveredAt());
+        orderService.completeDeliveredShopOrder(shopOrder.getShopOrderId(), delivery.getDeliveredAt(),
+                assignment.getDeliveryStaff().getUserId());
         deliveryStatusHistoryWriter.record(delivery, assignment.getDeliveryStaff().getUserId(), null);
         assignment.complete();
         deliveryNotificationService.notifyCompleted(delivery);

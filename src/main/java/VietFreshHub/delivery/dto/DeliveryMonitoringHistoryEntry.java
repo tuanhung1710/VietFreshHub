@@ -11,6 +11,6 @@ public class DeliveryMonitoringHistoryEntry {
 
     private String statusLabel;
     private LocalDateTime createdAt;
-    private Long changedBy;
+    private String performerName;
     private String note;
 }

@@ -6,7 +6,10 @@
     const refIdInput = document.getElementById('refId');
     const suggestions = document.getElementById('address-suggestions');
     const status = document.getElementById('autocomplete-status');
-    const selectedAddress = document.getElementById('selected-address');
+    const currentAddress = document.getElementById('current-pickup-address');
+    const display = document.getElementById('pickup-location-display');
+    const editor = document.getElementById('pickup-location-editor');
+    const changeButton = document.getElementById('change-pickup-location');
     const saveButton = document.getElementById('save-pickup-location');
     let searchTimer;
     let searchVersion = 0;
@@ -16,8 +19,7 @@
         searchVersion++;
         searchInput.value = candidate.display;
         refIdInput.value = candidate.refId;
-        selectedAddress.textContent = 'Địa chỉ đã chọn: ' + candidate.display;
-        status.textContent = 'Địa điểm sẽ được xác minh khi lưu.';
+        status.textContent = '';
         suggestions.replaceChildren();
         saveButton.disabled = false;
     }
@@ -65,11 +67,18 @@
         }
     }
 
+    changeButton.addEventListener('click', () => {
+        display.hidden = true;
+        editor.hidden = false;
+        searchInput.value = currentAddress ? currentAddress.textContent.trim() : '';
+        searchInput.focus();
+        searchInput.select();
+    });
+
     searchInput.addEventListener('input', () => {
         clearTimeout(searchTimer);
         const version = ++searchVersion;
         refIdInput.value = '';
-        selectedAddress.textContent = 'Chưa chọn địa chỉ.';
         saveButton.disabled = true;
         suggestions.replaceChildren();
         const query = searchInput.value.trim();

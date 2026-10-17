@@ -8,51 +8,36 @@
 </head>
 <body>
 <main>
-    <a th:href="@{/seller}">Quay lại quản lý cửa hàng</a>
+    <a th:href="@{/seller}">Trang chủ</a>
     <h1>Quản lý địa điểm lấy hàng</h1>
     <p th:if="${successMessage != null}" th:text="${successMessage}" role="status"></p>
 
     <section aria-labelledby="current-location-heading">
         <h2 id="current-location-heading">Địa điểm lấy hàng hiện tại</h2>
-        <p th:if="${pickupLocation == null}">Shop chưa thiết lập địa điểm lấy hàng.</p>
-        <div th:if="${pickupLocation != null}">
-            <p th:if="${!#strings.isEmpty(pickupLocation.formattedAddress)}"
-               th:text="${pickupLocation.formattedAddress}"></p>
-            <dl>
-                <dt>Tỉnh/Thành phố</dt>
-                <dd th:text="${pickupLocation.province}"></dd>
-                <th:block th:if="${!#strings.isEmpty(pickupLocation.district)}">
-                    <dt>Quận/Huyện</dt>
-                    <dd th:text="${pickupLocation.district}"></dd>
-                </th:block>
-                <dt>Phường/Xã</dt>
-                <dd th:text="${pickupLocation.ward}"></dd>
-                <dt>Địa chỉ chi tiết</dt>
-                <dd th:text="${pickupLocation.addressLine}"></dd>
-            </dl>
-        </div>
-    </section>
-
-    <section aria-labelledby="select-location-heading">
-        <h2 id="select-location-heading">Chọn địa điểm lấy hàng</h2>
         <form id="pickup-location-form" th:action="@{/seller/pickup-location}"
               th:object="${pickupLocationForm}" method="post"
               th:data-autocomplete-url="@{/api/vietmap/autocomplete}">
-            <div th:if="${#fields.hasAnyErrors()}" role="alert">
-                <ul>
-                    <li th:each="error : ${#fields.allErrors()}" th:text="${error}"></li>
-                </ul>
+            <div id="pickup-location-display" th:hidden="${#fields.hasAnyErrors()}">
+                <p th:if="${pickupLocation == null}">Cửa hàng chưa thiết lập địa điểm lấy hàng.</p>
+                <p id="current-pickup-address" th:if="${pickupLocation != null}"
+                   th:text="${#strings.isEmpty(pickupLocation.formattedAddress) ? pickupLocation.addressLine : pickupLocation.formattedAddress}"></p>
+                <button id="change-pickup-location" type="button" aria-controls="pickup-location-editor">Thay đổi</button>
             </div>
-            <label for="searchText">Tìm kiếm địa chỉ</label>
-            <input type="search" th:field="*{searchText}" autocomplete="off"
-                   aria-describedby="autocomplete-status selected-address">
-            <input type="hidden" th:field="*{refId}">
-            <p id="autocomplete-status" role="status" aria-live="polite">Nhập ít nhất 2 ký tự để tìm gợi ý địa chỉ.</p>
-            <ul id="address-suggestions" aria-label="Gợi ý địa chỉ"></ul>
-            <p id="selected-address" aria-live="polite"
-               th:text="${#strings.isEmpty(pickupLocationForm.refId) ? 'Chưa chọn địa chỉ.' : 'Địa chỉ đã chọn: ' + (pickupLocationForm.searchText ?: '')}"></p>
-            <button id="save-pickup-location" type="submit"
-                    th:disabled="${#strings.isEmpty(pickupLocationForm.refId)}">Lưu địa điểm lấy hàng</button>
+            <div id="pickup-location-editor" th:hidden="${!#fields.hasAnyErrors()}">
+                <div th:if="${#fields.hasAnyErrors()}" role="alert">
+                    <ul>
+                        <li th:each="error : ${#fields.allErrors()}" th:text="${error}"></li>
+                    </ul>
+                </div>
+                <input type="search" th:field="*{searchText}" autocomplete="off"
+                       aria-label="Địa điểm lấy hàng" aria-describedby="autocomplete-status"
+                       style="width: 100%; max-width: 60rem; box-sizing: border-box;">
+                <input type="hidden" th:field="*{refId}">
+                <p id="autocomplete-status" role="status" aria-live="polite"></p>
+                <ul id="address-suggestions" aria-label="Gợi ý địa chỉ"></ul>
+                <button id="save-pickup-location" type="submit"
+                        th:disabled="${#strings.isEmpty(pickupLocationForm.refId)}">Lưu</button>
+            </div>
         </form>
     </section>
 </main>

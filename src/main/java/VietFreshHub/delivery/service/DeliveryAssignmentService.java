@@ -1,6 +1,7 @@
 package VietFreshHub.delivery.service;
 
 import VietFreshHub.auth.service.AuthService;
+import VietFreshHub.delivery.dto.DeliveryTrackingStaff;
 import VietFreshHub.delivery.entity.Delivery;
 import VietFreshHub.delivery.entity.DeliveryAssignment;
 import VietFreshHub.delivery.entity.DeliveryAssignmentStatus;
@@ -39,6 +40,14 @@ public class DeliveryAssignmentService {
     private final OrderService orderService;
     private final ApplicationEventPublisher events;
     private final DeliveryNotificationService deliveryNotificationService;
+
+    @Transactional(readOnly = true)
+    public List<DeliveryTrackingStaff> getTrackingStaff(Long customerId, Long orderId) {
+        return deliveryAssignmentRepository.findAcceptedAssignmentsForCustomerOrder(customerId, orderId).stream()
+                .map(assignment -> new DeliveryTrackingStaff(assignment.getDelivery().getDeliveryId(),
+                        assignment.getDeliveryStaff().getUserId(), assignment.getDeliveryStaff().getFullName()))
+                .toList();
+    }
 
     @Transactional
     public void accept(Long assignmentId, Authentication authentication) {
@@ -156,7 +165,7 @@ public class DeliveryAssignmentService {
         String confirmationNote = DeliveryStatusHistoryWriter.goodsReturnConfirmationNote(assignment.getAssignmentId());
         if (deliveryStatusHistoryRepository.existsByDelivery_DeliveryIdAndStatusAndNoteAndChangedByIsNotNull(
                 deliveryId, DeliveryStatus.FAILED, confirmationNote)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Shop đã xác nhận nhận lại hàng.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cửa hàng đã xác nhận nhận lại hàng.");
         }
 
         assignment.complete();
