@@ -22,7 +22,10 @@
     <style th:replace="~{store_manager/order-filters :: styles}"></style>
 </head>
 <body>
-<a th:href="@{/seller}">← Quay lại cửa hàng</a>
+<div>
+    <span th:replace="~{fragments/notifications :: bell}"></span>
+</div>
+<a th:href="@{/seller}">Trang chủ</a>
 <h1 th:text="${pageTitle}">Đơn hàng</h1>
 <div th:replace="~{store_manager/order-filters :: filters(${orderView}, ${filterAction}, ${showStatusFilter}, true, ${totalElements})}"></div>
 <form id="bulk-order-form" class="bulk-order-actions" method="post" autocomplete="off" th:if="${bulkAction != null}"

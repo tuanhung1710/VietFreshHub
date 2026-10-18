@@ -65,4 +65,23 @@ public class ShopLocation {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false, columnDefinition = "datetime2(0)")
     private LocalDateTime updatedAt;
+
+    public ShopLocation(Long shopId) {
+        this.shopId = shopId;
+    }
+
+    public void updateLocation(Integer provinceId, String province, Integer districtId, String district,
+                               Integer wardId, String ward, String addressLine, String formattedAddress,
+                               BigDecimal latitude, BigDecimal longitude) {
+        this.provinceId = provinceId;
+        this.province = province;
+        this.districtId = districtId;
+        this.district = district;
+        this.wardId = wardId;
+        this.ward = ward;
+        this.addressLine = addressLine;
+        this.formattedAddress = formattedAddress;
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
 }

@@ -6,10 +6,15 @@
     <title>Cửa hàng của tôi · VietFresh Hub</title>
 </head>
 <body>
+<span th:replace="~{fragments/notifications :: bell}"></span>
 <h1>SHOP</h1>
 <p>Mã shop: <span th:text="${shopCode}"></span>
 <button type="button" th:attr="data-vf-copy-code=${shopCode},aria-label=${'Sao chép mã shop '+shopCode}">Sao chép</button></p>
 <p><a th:href="@{/store_manager/chat}">Mở tin nhắn khách hàng</a></p>
+<p><a th:href="@{/seller/pickup-location}">Quản lý địa điểm lấy hàng</a></p>
+
+<p><a th:href="@{/seller/deliveries}">Giám sát giao hàng</a></p>
+
 <h2>QUẢN LÝ ĐƠN HÀNG</h2>
 <nav aria-label="Quản lý đơn hàng">
     <ul>
@@ -18,7 +23,7 @@
         <li><a th:href="@{/seller/confirmed-orders}" th:text="${'Đã xác nhận (' + orderCounts.confirmedOrders + ')'}">Đã xác nhận</a></li>
         <li><a th:href="@{/seller/preparing-orders}" th:text="${'Đang chuẩn bị (' + orderCounts.preparingOrders + ')'}">Đang chuẩn bị</a></li>
         <li><a th:href="@{/seller/ready-orders}" th:text="${'Sẵn sàng giao (' + orderCounts.readyOrders + ')'}">Sẵn sàng giao</a></li>
-        <li><a th:href="@{/seller/processed-orders}" th:text="${'Lịch sử đơn đã xử lý (' + orderCounts.processedOrders + ')'}">Lịch sử đơn đã xử lý</a></li>
+        <li><a th:href="@{/seller/processed-orders}" th:text="${'Đơn đã giao thành công (' + orderCounts.completedOrders + ')'}">Đơn đã giao thành công</a></li>
     </ul>
 </nav>
 <h2>QUẢN LÝ SẢN PHẨM VÀ KHO</h2>

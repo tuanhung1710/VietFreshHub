@@ -19,4 +19,7 @@ public class AssignedDeliverySummary {
     private DeliveryStatus deliveryStatus;
     private LocalDateTime assignedAt;
     private LocalDateTime acceptedAt;
+    private String assignmentStatusLabel;
+    private String deliveryStatusLabel;
+    private long remainingOfferSeconds;
 }

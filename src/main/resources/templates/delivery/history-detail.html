@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi tiết lịch sử giao hàng | VIETFRESH HUB</title>
+    <style>
+        body { max-width: 1000px; margin: 24px auto; padding: 0 16px; font-family: Arial, sans-serif; line-height: 1.5; }
+        .detail-sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+        .information-card { border: 1px solid black; padding: 16px; min-width: 0; }
+        .information-card h2 { margin: 0 0 16px; font-size: 1.125rem; }
+        .information-card-wide { grid-column: 1 / -1; }
+        .delivery-failed { font-weight: bold; font-style: italic; color: red; }
+        .delivery-success, .return-confirmed { font-weight: bold; font-style: italic; color: green; }
+        .return-pending { font-weight: bold; font-style: italic; color: #9a6700; }
+        dl { margin: 0; }
+        dt { font-weight: bold; }
+        dd { margin: 0 0 12px; overflow-wrap: anywhere; }
+        dd:last-child { margin-bottom: 0; }
+        @media (max-width: 640px) {
+            .detail-sections { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <span th:replace="~{fragments/notifications :: bell}"></span>
+    <p><a th:href="@{/delivery}">Trang chủ</a></p>
+    <a th:href="@{/delivery/history}">← Lịch sử giao hàng</a>
+</header>
+<main>
+    <h1>Chi tiết lịch sử giao hàng</h1>
+    <div class="detail-sections">
+        <section class="information-card" aria-labelledby="order-heading">
+            <h2 id="order-heading">Thông tin đơn hàng</h2>
+            <dl>
+                <dt>Mã đơn hàng</dt>
+                <dd th:text="${record.orderCode}"></dd>
+                <dt>Cửa hàng</dt>
+                <dd th:text="${record.shopName}"></dd>
+            </dl>
+        </section>
+        <section class="information-card" aria-labelledby="recipient-heading">
+            <h2 id="recipient-heading">Thông tin người nhận</h2>
+            <dl>
+                <dt>Người nhận</dt>
+                <dd th:text="${record.recipientName ?: 'Chưa có dữ liệu'}"></dd>
+                <dt>Số điện thoại</dt>
+                <dd th:text="${record.recipientPhone ?: 'Chưa có dữ liệu'}"></dd>
+                <dt>Địa chỉ giao hàng</dt>
+                <dd th:text="${record.deliveryAddress ?: 'Chưa có dữ liệu'}"></dd>
+            </dl>
+        </section>
+        <section class="information-card information-card-wide" aria-labelledby="progress-heading">
+            <h2 id="progress-heading">Tiến độ giao hàng</h2>
+            <dl>
+                <dt>Thời gian chấp nhận</dt>
+                <dd th:text="${record.localAcceptedAt == null ? '—' : #temporals.format(record.localAcceptedAt, 'dd-MM-yyyy HH:mm')}"></dd>
+                <dt>Thời gian nhận hàng</dt>
+                <dd th:text="${record.localPickedUpAt == null ? '—' : #temporals.format(record.localPickedUpAt, 'dd-MM-yyyy HH:mm')}"></dd>
+                <th:block th:if="${record.localResultAt != null}">
+                    <dt th:text="${record.outcome == 'DELIVERED' ? 'Thời gian giao hàng thành công' : 'Thời gian giao hàng thất bại'}"></dt>
+                    <dd th:text="${#temporals.format(record.localResultAt, 'dd-MM-yyyy HH:mm')}"></dd>
+                </th:block>
+                <dt>Trạng thái giao hàng</dt>
+                <dd th:switch="${record.outcome}">
+                    <span th:case="'FAILED'" class="delivery-failed">Giao hàng thất bại</span>
+                    <span th:case="*" th:classappend="${record.attributionVerified ? 'delivery-success' : ''}"
+                          th:text="${record.attributionVerified ? 'Giao hàng thành công' : record.outcomeLabel}"></span>
+                </dd>
+                <th:block th:if="${record.outcome == 'FAILED' and !#strings.isEmpty(#strings.trim(record.failureReason))}">
+                    <dt>Lý do giao hàng thất bại</dt>
+                    <dd class="delivery-failed" th:text="${record.failureReason}"></dd>
+                </th:block>
+                <th:block th:if="${record.outcome == 'FAILED'}">
+                    <dt>Trạng thái trả hàng về cửa hàng:</dt>
+                    <dd th:switch="${record.returnState}">
+                        <span th:case="'CONFIRMED'" class="return-confirmed">Cửa hàng đã xác nhận nhận lại hàng.</span>
+                        <span th:case="'PENDING'" class="return-pending">Đang chờ trả hàng về cửa hàng</span>
+                        <span th:case="*" th:text="${record.returnLabel}"></span>
+                    </dd>
+                </th:block>
+            </dl>
+        </section>
+        <section class="information-card information-card-wide" aria-labelledby="payment-heading">
+            <h2 id="payment-heading">Thông tin thanh toán</h2>
+            <dl>
+                <dt>Thanh toán</dt>
+                <dd th:text="${record.paymentName}"></dd>
+                <dt>Tiền thu hộ</dt>
+                <dd th:text="${#numbers.formatDecimal(record.cashToCollect, 1, 'POINT', record.cashToCollect.stripTrailingZeros().scale() > 0 ? 2 : 0, 'COMMA')} + ' VND'"></dd>
+            </dl>
+        </section>
+    </div>
+</main>
+</body>
+</html>

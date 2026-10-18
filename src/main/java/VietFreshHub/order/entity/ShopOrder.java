@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -25,6 +27,7 @@ public class ShopOrder {
     @Column(name="total_amount", nullable=false, precision=18, scale=2) private BigDecimal totalAmount=BigDecimal.ZERO;
     @Column(name="confirmed_at") private LocalDateTime confirmedAt;
     @Column(name="ready_at") private LocalDateTime readyAt;
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     @Column(name="completed_at") private LocalDateTime completedAt;
     @Column(name="cancelled_at") private LocalDateTime cancelledAt;
     @Column(name="shipping_distance_meters", precision=12, scale=1) private BigDecimal shippingDistanceMeters;

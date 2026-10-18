@@ -13,10 +13,12 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Nationalized;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Getter
 @NoArgsConstructor
@@ -44,7 +46,7 @@ public class DeliveryStatusHistory {
     @Column(name = "note", length = 1000)
     private String note;
 
-    @CreationTimestamp
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     @Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "datetime2(0)")
     private LocalDateTime createdAt;
 
@@ -53,5 +55,6 @@ public class DeliveryStatusHistory {
         this.status = delivery.getStatus();
         this.changedBy = changedBy;
         this.note = note;
+        this.createdAt = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
     }
 }

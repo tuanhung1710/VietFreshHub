@@ -10,13 +10,15 @@ import VietFreshHub.delivery.repository.DeliveryAssignmentRepository;
 import VietFreshHub.delivery.repository.DeliveryRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -25,121 +27,113 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class AutoAssignmentService {
 
+    public static final int MAX_ACTIVE_ASSIGNMENTS = 5;
+    private static final int OFFER_RETRY_COOLDOWN_SECONDS = 60;
+    private static final ZoneId DELIVERY_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final List<DeliveryAssignmentStatus> ACTIVE_ASSIGNMENT_STATUSES = List.of(
             DeliveryAssignmentStatus.ASSIGNED, DeliveryAssignmentStatus.ACCEPTED);
+    private static final List<DeliveryAssignmentStatus> FAILED_OFFER_STATUSES = List.of(
+            DeliveryAssignmentStatus.REJECTED, DeliveryAssignmentStatus.CANCELLED);
 
     private final DeliveryRepository deliveryRepository;
     private final DeliveryAssignmentRepository deliveryAssignmentRepository;
     private final AuthService authService;
     private final EntityManager entityManager;
     private final DeliveryStatusHistoryWriter deliveryStatusHistoryWriter;
+    private final DeliveryNotificationService deliveryNotificationService;
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public List<Long> findUnassignedDeliveryIds() {
+        return deliveryRepository.findUnassignedDeliveryIds(DeliveryStatus.UNASSIGNED);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Optional<Long> autoAssign(Long deliveryId) {
-        return autoAssignExcluding(deliveryId, null);
-    }
-
-    @Transactional
-    public Optional<Long> autoAssignExcluding(Long deliveryId, Long excludedDeliveryStaffId) {
-        Delivery delivery = deliveryRepository.findForUpdateByDeliveryId(deliveryId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Không tìm thấy thông tin giao hàng."));
-
-        if (delivery.getStatus() != DeliveryStatus.UNASSIGNED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Trạng thái giao hàng hiện tại không cho phép thao tác này.");
-        }
-
-        List<Long> staffIds = authService.lockActiveDeliveryStaffIdsForAssignment();
-        Set<Long> excludedStaffIds = excludedDeliveryStaffId == null ? Set.of() : Set.of(excludedDeliveryStaffId);
-        Optional<Long> selectedStaffId = findIdleStaff(staffIds, excludedStaffIds);
-        if (selectedStaffId.isEmpty()) {
+        if (!isAssignmentWindowOpen(LocalDateTime.now(ZoneOffset.UTC))) {
             return Optional.empty();
         }
 
-        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
-        createAssignment(delivery, selectedStaffId.get(), now);
-        delivery.markAssigned(now);
+        List<Long> staffIds = authService.lockActiveDeliveryStaffIdsForAssignment();
+        Delivery delivery = deliveryRepository.findForUpdateByDeliveryId(deliveryId).orElse(null);
+        if (delivery == null || delivery.getStatus() != DeliveryStatus.UNASSIGNED
+                || delivery.getRedeliveryRequestedAt() != null || delivery.getRedeliveryScheduledAt() != null
+                || !"READY_FOR_DELIVERY".equals(delivery.getShopOrder().getStatus())
+                || deliveryAssignmentRepository.existsByDelivery_DeliveryIdAndStatusIn(
+                        deliveryId, ACTIVE_ASSIGNMENT_STATUSES)) {
+            return Optional.empty();
+        }
+
+        Set<Long> excludedStaffIds = findExcludedStaffIds(delivery, LocalDateTime.now(ZoneOffset.UTC));
+        Optional<Long> selectedStaffId = findAvailableStaff(staffIds, excludedStaffIds);
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        if (selectedStaffId.isEmpty() || !isAssignmentWindowOpen(now)) {
+            return Optional.empty();
+        }
+
+        LocalDateTime assignedAt = now.withNano(0);
+        if (now.getNano() != 0) {
+            assignedAt = assignedAt.plusSeconds(1);
+        }
+        User deliveryStaff = entityManager.getReference(User.class, selectedStaffId.get());
+        DeliveryAssignment assignment = deliveryAssignmentRepository.save(
+                new DeliveryAssignment(delivery, deliveryStaff, assignedAt));
+        delivery.markAssigned(assignedAt);
         deliveryStatusHistoryWriter.record(delivery, null, null);
-
+        deliveryNotificationService.notifyAssigned(assignment);
         return selectedStaffId;
     }
 
-    @Transactional
-    public boolean tryAssignSpecificStaffForRedelivery(Long deliveryId, Long deliveryStaffId) {
-        Delivery delivery = deliveryRepository.findForUpdateByDeliveryId(deliveryId).orElse(null);
-        if (delivery == null || delivery.getStatus() != DeliveryStatus.REDELIVERY_SCHEDULED) {
-            return false;
-        }
-
-        List<Long> staffIds = authService.lockActiveDeliveryStaffIdsForAssignment();
-        if (!staffIds.contains(deliveryStaffId)) {
-            return false;
-        }
-        if (deliveryAssignmentRepository.existsByDelivery_DeliveryIdAndStatusIn(
-                deliveryId, ACTIVE_ASSIGNMENT_STATUSES)) {
-            return false;
-        }
-        if (deliveryAssignmentRepository.existsByDeliveryStaff_UserIdAndStatusIn(
-                deliveryStaffId, ACTIVE_ASSIGNMENT_STATUSES)) {
-            return false;
-        }
-
-        createAssignment(delivery, deliveryStaffId, LocalDateTime.now(ZoneOffset.UTC).withNano(0));
-        return true;
+    public boolean isAssignmentWindowOpen(LocalDateTime utcTime) {
+        LocalTime localTime = utcTime.atOffset(ZoneOffset.UTC)
+                .atZoneSameInstant(DELIVERY_ZONE).toLocalTime();
+        return !localTime.isBefore(LocalTime.of(8, 0)) && localTime.isBefore(LocalTime.of(19, 0));
+//        return true;
     }
 
-    @Transactional
-    public Optional<Long> tryAssignNextStaffForRedelivery(Long deliveryId, Set<Long> excludedStaffIds) {
-        Delivery delivery = deliveryRepository.findForUpdateByDeliveryId(deliveryId).orElse(null);
-        if (delivery == null || delivery.getStatus() != DeliveryStatus.REDELIVERY_SCHEDULED) {
-            return Optional.empty();
-        }
-        if (deliveryAssignmentRepository.existsByDelivery_DeliveryIdAndStatusIn(
-                deliveryId, ACTIVE_ASSIGNMENT_STATUSES)) {
-            return Optional.empty();
-        }
+    private Set<Long> findExcludedStaffIds(Delivery delivery, LocalDateTime now) {
+        LocalDateTime assignedAfter = now.minusSeconds(
+                DeliveryAssignmentService.OFFER_TIMEOUT_SECONDS + OFFER_RETRY_COOLDOWN_SECONDS);
+        Set<Long> excludedStaffIds = new HashSet<>(deliveryAssignmentRepository.findRecentFailedOfferStaffIds(
+                delivery.getDeliveryId(), FAILED_OFFER_STATUSES, assignedAfter));
 
-        List<Long> staffIds = authService.lockActiveDeliveryStaffIdsForAssignment();
-        Optional<Long> selectedStaffId = findIdleStaff(staffIds, excludedStaffIds);
-        if (selectedStaffId.isEmpty()) {
-            return Optional.empty();
+        if (now.isBefore(delivery.getUpdatedAt().plusSeconds(OFFER_RETRY_COOLDOWN_SECONDS + 1))) {
+            deliveryAssignmentRepository.findTopByDelivery_DeliveryIdOrderByAssignedAtDescAssignmentIdDesc(
+                            delivery.getDeliveryId())
+                    .filter(assignment -> FAILED_OFFER_STATUSES.contains(assignment.getStatus()))
+                    .ifPresent(assignment -> excludedStaffIds.add(assignment.getDeliveryStaff().getUserId()));
         }
-
-        createAssignment(delivery, selectedStaffId.get(), LocalDateTime.now(ZoneOffset.UTC).withNano(0));
-        return selectedStaffId;
+        return excludedStaffIds;
     }
 
-    private Optional<Long> findIdleStaff(List<Long> staffIds, Set<Long> excludedStaffIds) {
+    private Optional<Long> findAvailableStaff(List<Long> staffIds, Set<Long> excludedStaffIds) {
         Long selectedStaffId = null;
         LocalDateTime oldestLastAssignedAt = null;
+        Long oldestLastAssignmentId = null;
 
         for (Long staffId : staffIds) {
-            if (excludedStaffIds.contains(staffId)) {
-                continue;
-            }
-            if (deliveryAssignmentRepository.existsByDeliveryStaff_UserIdAndStatusIn(staffId, ACTIVE_ASSIGNMENT_STATUSES)) {
+            if (excludedStaffIds.contains(staffId)
+                    || deliveryAssignmentRepository.countByDeliveryStaff_UserIdAndStatusIn(
+                            staffId, ACTIVE_ASSIGNMENT_STATUSES) >= MAX_ACTIVE_ASSIGNMENTS) {
                 continue;
             }
 
             Optional<DeliveryAssignment> lastAssignment = deliveryAssignmentRepository
-                    .findTopByDeliveryStaff_UserIdOrderByAssignedAtDesc(staffId);
+                    .findTopByDeliveryStaff_UserIdOrderByAssignedAtDescAssignmentIdDesc(staffId);
             if (lastAssignment.isEmpty()) {
                 return Optional.of(staffId);
             }
 
-            LocalDateTime lastAssignedAt = lastAssignment.get().getAssignedAt();
-            if (selectedStaffId == null || lastAssignedAt.isBefore(oldestLastAssignedAt)) {
+            DeliveryAssignment latest = lastAssignment.get();
+            LocalDateTime lastAssignedAt = latest.getAssignedAt();
+            if (selectedStaffId == null || lastAssignedAt.isBefore(oldestLastAssignedAt)
+                    || (lastAssignedAt.equals(oldestLastAssignedAt)
+                    && latest.getAssignmentId() < oldestLastAssignmentId)) {
                 selectedStaffId = staffId;
                 oldestLastAssignedAt = lastAssignedAt;
+                oldestLastAssignmentId = latest.getAssignmentId();
             }
         }
 
         return Optional.ofNullable(selectedStaffId);
-    }
-
-    private void createAssignment(Delivery delivery, Long deliveryStaffId, LocalDateTime assignedAt) {
-        User deliveryStaff = entityManager.getReference(User.class, deliveryStaffId);
-        deliveryAssignmentRepository.save(new DeliveryAssignment(delivery, deliveryStaff, assignedAt));
     }
 }
