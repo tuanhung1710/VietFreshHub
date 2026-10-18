@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+    <!-- Tài nguyên trang -->
+    <head th:replace="~{fragments/product-inventory :: head('Chi tiết lô', 'inventory')}">
+    </head>
+
+    <body>
+
+        <!-- Điều hướng Seller Portal -->
+        <header th:replace="~{fragments/product-inventory :: nav('inventory')}">
+        </header>
+
+        <!-- Nội dung chính -->
+        <div class="vf-workspace">
+        <main class="container vf-main narrow vf-inventory-main">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 no-print">
+                <a class="text-success text-decoration-none" th:href="@{/seller/inventory}">
+                    ← Quản lý tồn kho
+                </a>
+                <button class="btn btn-success" type="button" onclick="window.print()">
+                    In thông tin lô
+                </button>
+            </div>
+
+            <section class="card p-4 batch-summary mb-4">
+                <p class="text-success fw-semibold">
+                    VietFresh Hub
+                </p>
+                <h1 class="h4" th:text="${row.productName}">
+                </h1>
+                <h2 class="h5 mb-3" th:text="${'Lô hàng ' + row.batch.batchCode}">
+                </h2>
+                <button type="button" class="vf-copy-sku mb-3" th:attr="data-vf-copy-code=${row.batch.batchCode},aria-label=${'Sao chép mã lô '+row.batch.batchCode}">Sao chép mã lô</button>
+                <dl class="row mb-0">
+                    <dt class="col-5">Phân loại</dt>
+                    <dd class="col-7 text-break" th:text="${row.variantName}"></dd>
+                    <dt class="col-5">
+                        SKU
+                    </dt>
+                    <dd class="col-7" th:text="${row.sku}">
+                    </dd>
+                    <dt class="col-5">Ngày nhập kho</dt>
+                    <dd class="col-7" th:text="${row.batch.receivedAt==null?'—':#temporals.format(row.batch.receivedAt.plusHours(7),'dd/MM/yyyy')}"></dd>
+                    <dt class="col-5">
+                        Hạn sử dụng
+                    </dt>
+                    <dd
+                        class="col-7"
+                        th:if="${row.batch.expiryDate != null}"
+                        th:text="${#temporals.format(row.batch.expiryDate, 'dd/MM/yyyy')}"
+                    >
+                    </dd>
+                    <dd class="col-7" th:if="${row.batch.expiryDate == null}">
+                        Chưa khai báo
+                    </dd>
+                    <dt class="col-5" title="Số lượng thực tế trong kho, gồm hàng đã giữ cho đơn, bị khóa hoặc hết hạn.">
+                        Tổng tồn kho
+                    </dt>
+                    <dd class="col-7" th:text="${row.batch.quantityOnHand + ' ' + row.unit}">
+                    </dd>
+                    <dt class="col-5" title="Số lượng đã giữ cho đơn hàng, chưa xuất kho.">
+                        Chờ xuất kho
+                    </dt>
+                    <dd class="col-7" th:text="${row.batch.reservedQuantity + ' ' + row.unit}">
+                    </dd>
+                    <dt class="col-5" title="Số lượng còn hạn, không bị khóa và chưa giữ cho đơn hàng.">
+                        Khả dụng
+                    </dt>
+                    <dd class="col-7" th:text="${row.available + ' ' + row.unit}">
+                    </dd>
+                    <dt class="col-5">Giá vốn mỗi đơn vị</dt>
+                    <dd class="col-7" th:text="${row.batch.costPrice==null?'Chưa khai báo':#numbers.formatDecimal(row.batch.costPrice,0,'POINT',0,'COMMA')+' đ'}"></dd>
+                    <dt class="col-5">
+                        Trạng thái lô
+                    </dt>
+                    <dd class="col-7">
+                        <span class="badge" th:classappend="${row.stateTone}" th:text="${row.stateLabel}"></span>
+                    </dd>
+                </dl>
+                <div class="vf-batch-detail-actions no-print">
+                    <div th:replace="~{fragments/inventory-actions :: batchActions(${row}, ${row.canMarkdown}, true)}"></div>
+                </div>
+            </section>
+
+            <section class="card p-4 no-print">
+                <h2 class="h5 mb-3">
+                    Hàng phân bổ cho đơn hàng
+                </h2>
+                <p class="text-body-secondary mb-0" th:if="${row.allocations.empty}">
+                    Chưa có hàng phân bổ cho đơn hàng.
+                </p>
+                <div class="table-responsive" th:if="${!row.allocations.empty}">
+
+                    <!-- Bảng dữ liệu -->
+                    <table class="table table-hover align-middle mb-0 vf-inventory-allocation-table" aria-label="Hàng phân bổ cho đơn hàng">
+                        <colgroup>
+                            <col class="vf-allocation-col-id">
+                            <col class="vf-allocation-col-quantity">
+                            <col class="vf-allocation-col-status">
+                        </colgroup>
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">
+                                    Mã đơn hàng
+                                </th>
+                                <th scope="col">
+                                    Số lượng
+                                </th>
+                                <th scope="col">
+                                    Trạng thái phân bổ
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="allocation : ${row.allocations}">
+                                <td th:text="${row.allocationOrderCodes[allocation.orderItemId] ?: 'Đơn hàng'}" data-label="Mã đơn hàng">
+                                </td>
+                                <td th:text="${allocation.quantity}" data-label="Số lượng" class="vf-table-number">
+                                </td>
+                                <td data-label="Trạng thái phân bổ">
+                                    <span
+                                        class="badge bg-secondary-subtle text-secondary-emphasis"
+                                        th:if="${allocation.status.name() == 'RESERVED'}"
+                                        title="Số lượng đã giữ cho đơn hàng, chưa xuất kho."
+                                    >
+                                        Chờ xuất kho
+                                    </span>
+                                    <span
+                                        class="badge bg-secondary-subtle text-secondary-emphasis"
+                                        th:if="${allocation.status.name() == 'SOLD'}"
+                                    >
+                                        Đã xuất bán
+                                    </span>
+                                    <span
+                                        class="badge bg-secondary-subtle text-secondary-emphasis"
+                                        th:if="${allocation.status.name() == 'RELEASED'}"
+                                    >
+                                        Đã giải phóng
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                </div>
+            </section>
+
+        </main>
+
+
+        </div>
+        <div th:replace="~{fragments/inventory-actions :: actionModal}"></div>
+        <script defer th:src="@{/js/inventory/inventory.js}"></script>
+    </body>
+</html>

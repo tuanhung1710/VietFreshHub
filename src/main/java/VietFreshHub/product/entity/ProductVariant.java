@@ -1,79 +1,73 @@
 package VietFreshHub.product.entity;
 
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
+import VietFreshHub.product.enums.VariantStatus;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+@Entity
+@Table(name = "product_variants", schema = "dbo")
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@Entity
-@Table(schema = "dbo", name = "product_variants")
 public class ProductVariant {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "variant_id")
     private Long variantId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
-    private Product product;
+    @Column(name = "product_id")
+    private Long productId;
 
-    @Column(name = "sku", nullable = false, length = 100)
+    @Column(name = "sku", length = 100)
     private String sku;
 
     @Nationalized
-    @Column(name = "variant_name", nullable = false, length = 200)
+    @Column(name = "variant_name", length = 200)
     private String variantName;
 
-    @Nationalized @Column(name = "thumbnail_url", nullable = false, length = 1000)
-    private String thumbnailUrl;
-
-    @Nationalized @Column(nullable = false, length = 30)
-    private String unit;
+    @Column(name = "price", precision = 18, scale = 2)
+    private BigDecimal price;
 
     @Column(name = "compare_at_price", precision = 18, scale = 2)
     private BigDecimal compareAtPrice;
 
-    @Column(precision = 18, scale = 3)
+    @Column(name = "weight", precision = 18, scale = 3)
     private BigDecimal weight;
 
-    public String getDisplayImageUrl() {
-        return thumbnailUrl != null && !thumbnailUrl.isBlank() ? thumbnailUrl : product.getImageUrl();
-    }
+    @Nationalized
+    @Column(name = "unit", length = 30)
+    private String unit;
 
-    @Column(nullable = false, precision = 18, scale = 2)
-    private BigDecimal price;
+    @Column(name = "low_stock_threshold")
+    private Integer lowStockThreshold;
 
-    @Column(name = "low_stock_threshold", nullable = false)
-    private Integer lowStockThreshold = 0;
+    @Column(name = "status", length = 30)
+    @Enumerated(EnumType.STRING)
+    private VariantStatus status;
 
-    @Column(nullable = false, length = 30)
-    private String status = "ACTIVE"; // ACTIVE, INACTIVE, OUT_OF_STOCK
+    @Nationalized
+    @Column(name = "thumbnail_url", length = 1000)
+    private String thumbnailUrl;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    void initializeUtcTimestamps() {
-        var now = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
-        if (createdAt == null) createdAt = now;
-        if (updatedAt == null) updatedAt = now;
-    }
-
-    @PreUpdate
-    void updateUtcTimestamps() {
-        updatedAt = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
-    }
 }

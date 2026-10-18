@@ -72,6 +72,9 @@ public class OrderController {
     public String processedOrders(@ModelAttribute("filter") OrderFilterRequest filter,
                                   @RequestParam(defaultValue = "0") int page,
                                   Authentication authentication, Model model) {
+        if (filter.getStatus() == null) {
+            filter.setStatus("COMPLETED");
+        }
         Page<?> orders = orderService.getProcessedOrderHistory(authentication, filter, page);
         model.addAttribute("processedOrders", orders.getContent());
         addPageAttributes(orders, model);
@@ -91,6 +94,12 @@ public class OrderController {
         model.addAttribute("orderDetail", orderService.getOrderDetail(shopOrderId, authentication));
         model.addAttribute("shopOrderId", shopOrderId);
         return "store_manager/order-detail";
+    }
+
+    @GetMapping("/seller/orders/{shopOrderId}/delivery-tracking")
+    public String trackDelivery(@PathVariable Long shopOrderId, Authentication authentication) {
+        Long deliveryId = orderService.getDeliveryIdForManagedShopOrder(shopOrderId, authentication);
+        return "redirect:/seller/deliveries/" + deliveryId;
     }
 
     @PostMapping("/seller/orders/{shopOrderId}/confirm")

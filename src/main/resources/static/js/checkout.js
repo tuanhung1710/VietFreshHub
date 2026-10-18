@@ -1,23 +1,39 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const addressSection = document.getElementById('checkout-address-section');
-    const addressLink = document.querySelector('.address-add-link');
-    if (addressSection && addressLink) addressLink.addEventListener('click', event => {
-        event.preventDefault();
-        addressSection.querySelector('details').open = true;
-        addressSection.scrollIntoView({ behavior: 'auto', block: 'start' });
-        document.getElementById('recipient-name').focus({ preventScroll: true });
-    });
     const addressForm = document.querySelector('.address-create-form');
-    if (addressForm) addressForm.addEventListener('submit', () => {
-        if (!addressForm.checkValidity()) return;
+    if (addressForm) addressForm.addEventListener('submit', event => {
+        if (event.defaultPrevented || !addressForm.checkValidity()) return;
         const button = addressForm.querySelector('button[type="submit"]');
         button.disabled = true; button.textContent = 'Đang lưu địa chỉ…';
     });
     const form = document.getElementById('checkout-form');
     if (!form) return;
-    form.addEventListener('submit', () => {
+    const button = form.querySelector('[data-confirm-order]');
+    let requoting = false;
+    form.querySelectorAll('input[name="addressId"]').forEach(address => {
+        address.addEventListener('change', () => {
+            requoting = true;
+            button.disabled = true;
+            button.textContent = 'Đang tính phí giao hàng…';
+            form.setAttribute('aria-busy', 'true');
+            form.querySelectorAll('[data-shipping-amount], [data-grand-total]').forEach(amount => {
+                amount.textContent = 'Đang tính lại…';
+            });
+            form.querySelectorAll('[data-shipping-error]').forEach(error => {
+                error.hidden = true;
+            });
+            const url = new URL(form.action);
+            url.searchParams.set('checkoutToken', form.elements.checkoutToken.value);
+            url.searchParams.set('addressId', address.value);
+            url.searchParams.set('selectionSubmitted', 'true');
+            window.location.assign(url.toString());
+        });
+    });
+    form.addEventListener('submit', event => {
+        if (requoting || button.disabled) {
+            event.preventDefault();
+            return;
+        }
         if (!form.checkValidity()) return;
-        const button = form.querySelector('[data-confirm-order]');
         button.disabled = true;
         button.textContent = 'Đang ghi nhận đơn…';
         form.setAttribute('aria-busy', 'true');

@@ -22,7 +22,10 @@
     <style th:replace="~{store_manager/order-filters :: styles}"></style>
 </head>
 <body>
-<a th:href="@{/seller}">← Quay lại cửa hàng</a>
+<div>
+    <span th:replace="~{fragments/notifications :: bell}"></span>
+</div>
+<a th:href="@{/seller}">Trang chủ</a>
 <h1 th:text="${pageTitle}">Đơn hàng</h1>
 <div th:replace="~{store_manager/order-filters :: filters(${orderView}, ${filterAction}, ${showStatusFilter}, true, ${totalElements})}"></div>
 <form id="bulk-order-form" class="bulk-order-actions" method="post" autocomplete="off" th:if="${bulkAction != null}"
@@ -60,7 +63,9 @@
             <input class="order-selection" type="checkbox"
                    th:value="${order.shopOrderId}" th:attr="aria-label=${'Chọn đơn hàng ' + order.orderCode}">
         </td>
-        <td th:text="${order.orderCode}"></td>
+        <td style="overflow-wrap:anywhere"><span th:text="${order.orderCode}"></span>
+            <button type="button" th:attr="data-vf-copy-code=${order.orderCode},aria-label=${'Sao chép mã đơn '+order.orderCode}">Sao chép</button>
+            <small style="display:block" th:text="${order.shopOrderCode}"></small></td>
         <td th:text="${order.customerName}"></td>
         <td th:text="${#temporals.format(order.placedAt, 'dd-MM-yyyy HH:mm')}"></td>
         <td th:text="${#numbers.formatDecimal(order.totalAmount, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></td>
@@ -195,5 +200,6 @@
     }
     restoreOrderSelection();
 </script>
+<script th:src="@{/js/product/module.js}" defer></script>
 </body>
 </html>

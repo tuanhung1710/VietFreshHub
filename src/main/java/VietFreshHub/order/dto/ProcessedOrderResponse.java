@@ -17,4 +17,7 @@ public class ProcessedOrderResponse {
     private BigDecimal totalAmount;
     private String orderStatusLabel;
     private String paymentStatus;
+    public String getShopOrderCode() {
+        return VietFreshHub.common.BusinessCodes.format("SOR", shopOrderId);
+    }
 }

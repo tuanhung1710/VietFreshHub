@@ -14,6 +14,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -44,9 +46,11 @@ public class DeliveryAssignment {
     @Column(name = "status", nullable = false, length = 30)
     private DeliveryAssignmentStatus status;
 
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     @Column(name = "assigned_at", nullable = false, columnDefinition = "datetime2(0)")
     private LocalDateTime assignedAt;
 
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     @Column(name = "accepted_at", columnDefinition = "datetime2(0)")
     private LocalDateTime acceptedAt;
 

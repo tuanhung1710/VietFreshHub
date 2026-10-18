@@ -6,11 +6,11 @@ import VietFreshHub.cart.dto.*;
 import VietFreshHub.cart.entity.*;
 import VietFreshHub.cart.repository.*;
 import VietFreshHub.cart.service.CartService;
-import VietFreshHub.inventory.repository.InventoryBatchRepository;
-import VietFreshHub.product.dto.StockCheckResponse;
-import VietFreshHub.product.entity.ProductVariant;
-import VietFreshHub.product.repository.ProductVariantRepository;
-import VietFreshHub.product.service.CatalogService;
+import VietFreshHub.checkout.repository.CheckoutInventoryBatchRepository;
+import VietFreshHub.catalog.dto.StockCheckResponse;
+import VietFreshHub.catalog.entity.CatalogVariant;
+import VietFreshHub.catalog.repository.CatalogVariantRepository;
+import VietFreshHub.catalog.service.CatalogService;
 import VietFreshHub.exception.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -25,8 +25,8 @@ import java.util.List;
 public class CartServiceImpl implements CartService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
-    private final ProductVariantRepository productVariantRepository;
-    private final InventoryBatchRepository inventoryBatchRepository;
+    private final CatalogVariantRepository productVariantRepository;
+    private final CheckoutInventoryBatchRepository inventoryBatchRepository;
     private final UserRepository userRepository;
     private final CatalogService catalogService;
 
@@ -38,7 +38,7 @@ public class CartServiceImpl implements CartService {
             throw new IllegalArgumentException("Vui lòng chọn sản phẩm và nhập số lượng từ 1 trở lên.");
         }
         User user = lockCustomer(userId);
-        ProductVariant variant = requirePurchasable(request.getVariantId());
+        CatalogVariant variant = requirePurchasable(request.getVariantId());
         Cart cart = cartRepository.findByUserUserIdAndStatus(userId, "ACTIVE").orElseGet(() -> {
             Cart created = new Cart();
             created.setUser(user);
@@ -81,7 +81,7 @@ public class CartServiceImpl implements CartService {
     }
 
     private CartItemDto toItem(CartItem item, int stock) {
-        ProductVariant variant = item.getVariant();
+        CatalogVariant variant = item.getVariant();
         boolean eligible = catalogService.isPurchasable(variant);
         boolean purchasable = eligible && stock > 0 && item.getQuantity() <= stock;
         String message = !eligible ? "Sản phẩm hoặc cửa hàng hiện không nhận đơn."
@@ -99,7 +99,7 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional(readOnly = true)
     public StockCheckResponse getVariantStock(Long variantId) {
-        ProductVariant variant = productVariantRepository.findById(variantId).orElse(null);
+        CatalogVariant variant = productVariantRepository.findById(variantId).orElse(null);
         boolean eligible = catalogService.isPurchasable(variant);
         int stock = eligible ? availableStock(variantId) : 0;
         return StockCheckResponse.builder().variantId(variantId).availableStock(stock)
@@ -120,7 +120,7 @@ public class CartServiceImpl implements CartService {
             cartItemRepository.delete(item);
             return;
         }
-        ProductVariant variant = requirePurchasable(variantId);
+        CatalogVariant variant = requirePurchasable(variantId);
         int stock = availableStock(variantId);
         if (quantity > stock) throw insufficientStock(stock);
         item.setQuantity(quantity);
@@ -154,8 +154,8 @@ public class CartServiceImpl implements CartService {
         return user;
     }
 
-    private ProductVariant requirePurchasable(Long variantId) {
-        ProductVariant variant = productVariantRepository.findById(variantId)
+    private CatalogVariant requirePurchasable(Long variantId) {
+        CatalogVariant variant = productVariantRepository.findById(variantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm không còn được bán."));
         if (!catalogService.isPurchasable(variant)) throw new ResourceNotFoundException("Sản phẩm hoặc cửa hàng hiện không nhận đơn.");
         return variant;

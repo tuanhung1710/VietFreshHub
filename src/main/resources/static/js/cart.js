@@ -14,18 +14,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const update = () => {
             const chosen = selections.filter(box => box.checked);
             const subtotal = chosen.reduce((total, box) => total + Number(box.dataset.amount), 0);
-            const shops = new Set(chosen.map(box => box.dataset.shopId));
-            const shipping = document.getElementById('selected-shipping');
-            const fee = shipping.dataset.feePerShop;
-            const shippingTotal = fee ? Number(fee) * shops.size : 0;
             document.getElementById('selected-item-count').textContent = chosen.length;
             document.getElementById('selected-subtotal').textContent = money(subtotal);
-            shipping.textContent = fee ? money(shippingTotal) : 'Tính khi đặt hàng';
-            document.getElementById('selected-grand-total').textContent = money(subtotal + shippingTotal);
+            document.getElementById('selected-grand-total').textContent = money(subtotal);
             selectAll.checked = selections.length > 0 && chosen.length === selections.length;
             selectAll.indeterminate = chosen.length > 0 && chosen.length < selections.length;
             selectedButton.disabled = chosen.length === 0;
-            try { sessionStorage.setItem(key, JSON.stringify(chosen.map(box => box.value))); } catch { /* Optional storage. */ }
+            try { sessionStorage.setItem(key, JSON.stringify(chosen.map(box => box.value))); } catch {}
         };
         selectAll.addEventListener('change', () => { selections.forEach(box => { box.checked = selectAll.checked; }); update(); });
         selections.forEach(box => box.addEventListener('change', update));

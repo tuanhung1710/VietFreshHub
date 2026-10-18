@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+    <!-- Tài nguyên trang -->
+    <head th:fragment="head(title, feature)">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title th:text="${title + ' · VietFresh Hub'}">
+            VietFresh Hub
+        </title>
+        <meta name="csrf-token" th:content="${_csrf.token}">
+        <meta name="csrf-header" th:content="${_csrf.headerName}">
+        <meta name="image-upload-url" th:content="@{/seller/products/images}">
+        <link rel="stylesheet" th:href="@{/css/vendor/bootstrap/bootstrap.min.css}">
+        <link rel="stylesheet" th:href="@{/css/product/module.css}">
+        <link rel="stylesheet" th:href="@{'/css/'+${feature}+'/'+${feature}+'.css'}">
+        <link th:if="${feature == 'product'}" rel="stylesheet" th:href="@{/css/product/catalog.css}">
+        <script defer th:src="@{/js/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
+        <script defer th:src="@{/js/product/module.js}"></script>
+        <script defer th:src="@{/js/product/filter-selects.js}"></script>
+        <script defer th:src="@{/js/product/date-inputs.js}"></script>
+        <script defer th:src="@{/js/product/list-layout.js}"></script>
+        <script defer th:src="@{/js/product/live-filters.js}"></script>
+        <script defer th:src="@{/js/inventory/batch-dates.js}"></script>
+    </head>
+
+    <body>
+        <div th:fragment="nav(active)">
+            <svg class="d-none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <symbol id="vf-leaf" viewBox="0 0 24 24">
+                    <path d="M20 3c-9-1-17 4-15 11 2 6 13 5 15-11Z M4 21l9-10"/>
+                </symbol>
+                <symbol id="vf-shop" viewBox="0 0 24 24">
+                    <path
+                        d="M3 10l2-6h14l2 6 M3 10c0 4 4 4 4 0 0 4 5 4 5 0 0 4 5 4 5 0 0 4 4 4 4 0 M5 13v8h14v-8 M10 21v-6h4v6"
+                    />
+                </symbol>
+                <symbol id="vf-product" viewBox="0 0 24 24">
+                    <path
+                        d="M12 8c-9-6-12 5-6 12 3 3 5 0 6 0s3 3 6 0c6-7 3-18-6-12Z M12 8c-1-5 3-6 5-5 0 3-2 4-5 5 M12 8l-2-5"
+                    />
+                </symbol>
+                <symbol id="vf-box" viewBox="0 0 24 24">
+                    <path d="M3 7l9-5 9 5v10l-9 5-9-5Z M3 7l9 5 9-5 M12 12v10 M7 4l10 5"/>
+                </symbol>
+                <symbol id="vf-order" viewBox="0 0 24 24">
+                    <path d="M6 3h12v18l-3-2-3 2-3-2-3 2Z M9 7h6 M9 11h6 M9 15h3"/>
+                </symbol>
+                <symbol id="vf-search" viewBox="0 0 24 24">
+                    <circle cx="10" cy="10" r="6"/>
+                    <path d="m15 15 6 6"/>
+                </symbol>
+                <symbol id="vf-plus" viewBox="0 0 24 24">
+                    <path d="M12 5v14 M5 12h14"/>
+                </symbol>
+                <symbol id="vf-edit" viewBox="0 0 24 24">
+                    <path d="m15 4 5 5 M4 20l4-1L21 6l-4-4L4 15Z M13 20h8"/>
+                </symbol>
+                <symbol id="vf-eye" viewBox="0 0 24 24">
+                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </symbol>
+                <symbol id="vf-more" viewBox="0 0 24 24">
+                    <circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>
+                </symbol>
+                <symbol id="vf-adjust" viewBox="0 0 24 24">
+                    <path d="M3 6h5m4 0h9M3 12h11m4 0h3M3 18h2m4 0h12M8 3v6M14 9v6M5 15v6"/>
+                </symbol>
+                <symbol id="vf-lock" viewBox="0 0 24 24">
+                    <rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/>
+                </symbol>
+                <symbol id="vf-unlock" viewBox="0 0 24 24">
+                    <rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0M12 14v3"/>
+                </symbol>
+                <symbol id="vf-trash" viewBox="0 0 24 24">
+                    <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/>
+                </symbol>
+                <symbol id="vf-tag" viewBox="0 0 24 24">
+                    <path d="m3 3 8 0 10 10-8 8L3 11Z"/><circle cx="7" cy="7" r="1"/>
+                </symbol>
+                <symbol id="vf-history" viewBox="0 0 24 24">
+                    <path d="M3 11a9 9 0 1 1 2 7 M3 4v7h7 M12 7v5l3 2"/>
+                </symbol>
+                <symbol id="vf-archive" viewBox="0 0 24 24">
+                    <path d="M4 8h16v13H4Z M3 3h18v5H3Z M9 12h6"/>
+                </symbol>
+                <symbol id="vf-chevron" viewBox="0 0 24 24">
+                    <path d="m9 5 7 7-7 7"/>
+                </symbol>
+                <symbol id="vf-user" viewBox="0 0 24 24">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M4 22v-3a8 8 0 0 1 16 0v3"/>
+                </symbol>
+                <symbol id="vf-menu" viewBox="0 0 24 24">
+                    <path d="M4 6h16 M4 12h16 M4 18h16"/>
+                </symbol>
+            </svg>
+
+            <!-- Menu điều hướng -->
+            <aside
+                class="offcanvas-lg offcanvas-start vf-sidebar"
+                tabindex="-1"
+                id="vfSidebar"
+                aria-labelledby="vfSidebarTitle"
+            >
+                <div class="offcanvas-header vf-sidebar-brand">
+                    <a class="brand" th:href="@{/seller}" id="vfSidebarTitle">
+                        <svg class="vf-icon vf-logo">
+                            <use href="#vf-leaf"/>
+                        </svg>
+                        VietFresh Hub
+                    </a>
+                    <button
+                        type="button"
+                        class="btn-close d-lg-none"
+                        data-bs-dismiss="offcanvas"
+                        data-bs-target="#vfSidebar"
+                        aria-label="Đóng menu"
+                    >
+                    </button>
+                </div>
+                <div class="offcanvas-body p-0">
+                    <div class="vf-portal-label">
+                        Kênh người bán
+                    </div>
+
+                    <nav class="nav flex-column vf-side-nav" aria-label="Quản lý cửa hàng">
+                        <a class="nav-link" th:href="@{/seller}">
+                            <svg class="vf-icon">
+                                <use href="#vf-shop"/>
+                            </svg>
+                            Cửa hàng của tôi
+                        </a>
+                        <a
+                            class="nav-link"
+                            th:href="@{/seller/products}"
+                            th:classappend="${active=='product'?'active':''}"
+                            th:attr="aria-current=${active=='product'?'page':null}"
+                        >
+                            <svg class="vf-icon">
+                                <use href="#vf-product"/>
+                            </svg>
+                            Sản phẩm
+                        </a>
+                        <a
+                            class="nav-link"
+                            th:href="@{/seller/inventory}"
+                            th:classappend="${active=='inventory'?'active':''}"
+                            th:attr="aria-current=${active=='inventory'?'page':null}"
+                        >
+                            <svg class="vf-icon">
+                                <use href="#vf-box"/>
+                            </svg>
+                            Kho hàng
+                        </a>
+                        <a class="nav-link" th:href="@{/seller/orders}">
+                            <svg class="vf-icon">
+                                <use href="#vf-order"/>
+                            </svg>
+                            Đơn hàng
+                        </a>
+                    </nav>
+
+                    <div class="vf-sidebar-account">
+                        <div class="d-flex gap-2 align-items-center mb-3">
+                            <span class="vf-avatar">
+                                <svg class="vf-icon">
+                                    <use href="#vf-user"/>
+                                </svg>
+                            </span>
+                            <div class="min-w-0">
+                                <strong class="small d-block">
+                                    Tài khoản người bán
+                                </strong>
+                                <span
+                                    class="vf-account-name"
+                                    th:text="${#authentication != null ? #authentication.name : 'Kênh người bán'}"
+                                >
+                                    Kênh người bán
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Biểu mẫu -->
+                        <form th:action="@{/logout}" method="post">
+                            <button class="btn btn-sm btn-outline-secondary w-100" type="submit">
+                                Đăng xuất
+                            </button>
+                        </form>
+
+                    </div>
+                </div>
+            </aside>
+
+            <header class="vf-topbar d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-3">
+                    <button
+                        class="btn btn-sm btn-light d-lg-none"
+                        type="button"
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#vfSidebar"
+                        aria-controls="vfSidebar"
+                        aria-label="Mở menu"
+                    >
+                        <svg class="vf-icon">
+                            <use href="#vf-menu"/>
+                        </svg>
+                    </button>
+                    <span class="text-secondary d-none d-sm-inline">
+                        Kênh người bán
+                        <span class="mx-2 text-body-tertiary">
+                            /
+                        </span>
+                    </span>
+                    <strong th:text="${active=='product'?'Sản phẩm':'Kho hàng'}">
+                        Sản phẩm
+                    </strong>
+                </div>
+                <a class="btn btn-sm btn-outline-secondary" th:href="@{/seller}">
+                    <svg class="vf-icon me-1">
+                        <use href="#vf-shop"/>
+                    </svg>
+                    <span class="d-none d-sm-inline">
+                        Cửa hàng của tôi
+                    </span>
+                </a>
+            </header>
+
+        </div>
+        <!-- Cùng một cách trình bày thời gian cho biến động kho và nhật ký hoạt động. -->
+        <time th:fragment="historyTime(timestamp)" class="vf-history-time-content"
+              th:datetime="${timestamp.plusHours(7)} + '+07:00'">
+            <span th:text="${#temporals.format(timestamp.plusHours(7),'dd/MM/yyyy')}"></span>
+            <small class="text-body-secondary" th:text="${#temporals.format(timestamp.plusHours(7),'HH:mm:ss')}"></small>
+        </time>
+
+        <!-- Cụm chuyển trang gọn; hai nút giữ vị trí khi bị vô hiệu hóa. -->
+        <div
+            th:fragment="pagination(pageData, previousUrl, nextUrl, label, unit)"
+            class="vf-pagination"
+            role="navigation"
+            th:attr="aria-label=${label}"
+        >
+            <a
+                class="btn btn-sm btn-outline-secondary vf-page-previous"
+                aria-label="Trang trước"
+                title="Trang trước"
+                th:classappend="${!pageData.hasPrevious() ? 'disabled' : ''}"
+                th:attr="href=${pageData.hasPrevious() ? previousUrl : null},aria-disabled=${!pageData.hasPrevious()},tabindex=${pageData.hasPrevious() ? null : -1}"
+            >
+                <svg class="vf-icon" aria-hidden="true">
+                    <use href="#vf-chevron"/>
+                </svg>
+            </a>
+            <span class="vf-page-summary text-secondary" aria-live="polite">
+                <span
+                    th:text="${'Trang ' + (pageData.number + 1) + ' / ' + T(java.lang.Math).max(1, pageData.totalPages)}"
+                >
+                </span>
+                <small th:if="${!#strings.isEmpty(unit)}" th:text="${pageData.totalElements + ' ' + unit}">
+                </small>
+            </span>
+            <a
+                class="btn btn-sm btn-outline-secondary vf-page-next"
+                aria-label="Trang sau"
+                title="Trang sau"
+                th:classappend="${!pageData.hasNext() ? 'disabled' : ''}"
+                th:attr="href=${pageData.hasNext() ? nextUrl : null},aria-disabled=${!pageData.hasNext()},tabindex=${pageData.hasNext() ? null : -1}"
+            >
+                <svg class="vf-icon" aria-hidden="true">
+                    <use href="#vf-chevron"/>
+                </svg>
+            </a>
+        </div>
+
+        <th:block th:fragment="pageSize(pageData, selectId, label)">
+            <label th:for="${selectId}" th:text="${label}"></label>
+            <select class="form-select form-select-sm" name="size" th:id="${selectId}">
+                <option th:each="n : ${ {15,20,50} }" th:value="${n}"
+                        th:selected="${pageData.size == n}" th:text="${n}"></option>
+            </select>
+            <button class="btn btn-sm btn-light" type="submit" data-vf-filter-submit>Áp dụng</button>
+        </th:block>
+
+        <div th:fragment="messages" aria-live="polite">
+            <div class="alert alert-success" th:if="${success}" th:text="${success}">
+            </div>
+            <div class="alert alert-danger" th:if="${error}" th:text="${error}">
+            </div>
+        </div>
+        <div th:fragment="errors" class="alert alert-danger" th:if="${#fields.hasAnyErrors()}" role="alert">
+            <p class="mb-1" th:each="err : ${#fields.allErrors()}" th:text="${err}">
+            </p>
+        </div>
+        <!-- Hiển thị bán hàng; kết quả kiểm duyệt được trình bày riêng. -->
+        <th:block th:fragment="productStatus(row)">
+            <span class="badge"
+                  th:classappend="${row.managementState.code=='active'?'vf-badge-green':(row.managementState.code=='violation'?'vf-badge-red':'vf-badge-gray')}"
+                  th:text="${row.managementState.label}"
+                  th:title="${row.managementState.reason}"></span>
+        </th:block>
+        <span
+            th:fragment="approval(status)"
+            class="badge"
+            th:classappend="${status.name()=='APPROVED'?'vf-badge-blue':(status.name()=='REJECTED'?'vf-badge-red':'vf-badge-yellow')}"
+            th:text="${status.name()=='APPROVED'?'Đã kiểm tra':(status.name()=='REJECTED'?'Cần cập nhật':'Chờ kiểm tra')}"
+        >
+        </span>
+    </body>
+</html>

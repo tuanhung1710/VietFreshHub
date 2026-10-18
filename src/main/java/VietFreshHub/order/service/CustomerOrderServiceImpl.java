@@ -5,20 +5,22 @@ import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.cart.entity.Cart;
 import VietFreshHub.cart.entity.CartItem;
 import VietFreshHub.cart.repository.*;
-import VietFreshHub.inventory.repository.InventoryBatchRepository;
+import VietFreshHub.delivery.dto.DeliveryTrackingStaff;
+import VietFreshHub.delivery.service.DeliveryAssignmentService;
+import VietFreshHub.checkout.repository.CheckoutInventoryBatchRepository;
 import VietFreshHub.order.dto.*;
 import VietFreshHub.order.entity.*;
 import VietFreshHub.order.entity.Order;
 import VietFreshHub.order.service.OrderCancelledEvent;
 import VietFreshHub.exception.CustomerOrderException;
-import VietFreshHub.inventory.service.OrderInventoryReleaseService;
+import VietFreshHub.order.service.OrderInventoryReleaseService;
 import VietFreshHub.order.repository.*;
 import VietFreshHub.order.service.CustomerOrderService;
 import VietFreshHub.order.service.OrderLabels;
 import VietFreshHub.payment.entity.Payment;
 import VietFreshHub.payment.repository.PaymentRepository;
-import VietFreshHub.product.repository.ProductVariantRepository;
-import VietFreshHub.product.service.CatalogService;
+import VietFreshHub.catalog.repository.CatalogVariantRepository;
+import VietFreshHub.catalog.service.CatalogService;
 import VietFreshHub.exception.ResourceNotFoundException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
@@ -38,12 +40,13 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
     private final OrderDeliveryReadRepository deliveries;
     private final OrderDeliveryHistoryReadRepository deliveryHistory;
     private final OrderStatusHistoryRepository orderHistory;
+    private final DeliveryAssignmentService deliveryAssignments;
     private final UserRepository users;
     private final CartRepository carts;
     private final CartItemRepository cartItems;
-    private final ProductVariantRepository variants;
+    private final CatalogVariantRepository variants;
     private final CatalogService catalog;
-    private final InventoryBatchRepository stock;
+    private final CheckoutInventoryBatchRepository stock;
     private final OrderInventoryReleaseService inventory;
     private final EntityManager em;
     private final ApplicationEventPublisher events;
@@ -102,9 +105,13 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
     }
     private String cancellationHint(Order order,List<ShopOrder> children,List<Payment> pay,List<OrderDeliveryView> delivery) {
         if(order.getStatus()==Order.Status.CANCELLED) return "Đơn hàng đã được hủy.";
-        if(order.getStatus()!=Order.Status.PENDING && order.getStatus()!=Order.Status.CONFIRMED) return "Đơn đã bắt đầu xử lý, không còn đủ điều kiện hủy.";
-        if(children.isEmpty() || children.stream().anyMatch(c -> !"PENDING".equals(c.getStatus()) && !"CONFIRMED".equals(c.getStatus()) && !"CANCELLED".equals(c.getStatus())))
-            return "Một cửa hàng đã bắt đầu chuẩn bị hàng. Không thể hủy toàn bộ đơn.";
+        if(children.isEmpty()) return "Đơn hàng chưa có thông tin cửa hàng, không thể hủy.";
+        if(children.stream().anyMatch(c -> "CANCELLED".equals(c.getStatus())))
+            return "Một đơn cửa hàng đã được hủy. Không thể hủy lại hoặc hủy một phần đơn này.";
+        if(children.stream().anyMatch(c -> !"PENDING".equals(c.getStatus())))
+            return children.size()==1 ? "Đơn hàng đã được cửa hàng xác nhận nên không thể hủy."
+                    : "Một hoặc nhiều cửa hàng đã xác nhận đơn hàng. Bạn không thể hủy toàn bộ đơn này.";
+        if(order.getStatus()!=Order.Status.PENDING) return "Đơn đã bắt đầu xử lý, không còn đủ điều kiện hủy.";
         if(delivery.stream().anyMatch(d -> !Set.of("UNASSIGNED","ASSIGNED","ACCEPTED","CANCELLED").contains(d.getStatus())))
             return "Đơn đã được lấy hoặc đang giao, không thể hủy.";
         if("PAID".equals(order.getPaymentStatus()) || "PARTIALLY_REFUNDED".equals(order.getPaymentStatus()) || "REFUNDED".equals(order.getPaymentStatus())
@@ -145,19 +152,78 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         var rows=deliveries.findByShopOrderOrderOrderIdOrderByDeliveryIdAsc(orderId);
         var history=rows.isEmpty() ? List.<OrderDeliveryHistoryView>of() : deliveryHistory.findByDeliveryDeliveryIdInOrderByCreatedAtAscHistoryIdAsc(rows.stream().map(OrderDeliveryView::getDeliveryId).toList());
         var statuses=orderHistory.findByShopOrderOrderOrderIdOrderByCreatedAtAscHistoryIdAsc(orderId);
+        var staff=rows.isEmpty() ? List.<DeliveryTrackingStaff>of() : deliveryAssignments.getTrackingStaff(customerId,orderId);
         var groups=children.stream().map(child -> {
             OrderDeliveryView delivery=rows.stream().filter(d -> d.getShopOrder().getShopOrderId().equals(child.getShopOrderId())).findFirst().orElse(null);
+            var shopHistory=statuses.stream().filter(h -> h.getShopOrder().getShopOrderId().equals(child.getShopOrderId())).toList();
+            var deliveryEvents=history.stream().filter(h -> delivery!=null && h.getDelivery().getDeliveryId().equals(delivery.getDeliveryId())).toList();
+            var deliveryStates=deliveryEvents.stream().map(OrderDeliveryHistoryView::getStatus).toList();
             List<OrderTrackingResponse.Event> timeline=new ArrayList<>();
-            statuses.stream().filter(h -> h.getShopOrder().getShopOrderId().equals(child.getShopOrderId()))
-                    .forEach(h -> timeline.add(new OrderTrackingResponse.Event(OrderLabels.local(h.getCreatedAt()),OrderLabels.shop(h.getStatus()),h.getNote(),"ORDER")));
-            if(delivery!=null) history.stream().filter(h -> h.getDelivery().getDeliveryId().equals(delivery.getDeliveryId()))
-                    .forEach(h -> timeline.add(new OrderTrackingResponse.Event(OrderLabels.local(h.getCreatedAt()),OrderLabels.delivery(h.getStatus()),h.getNote(),"DELIVERY")));
+            shopHistory.stream()
+                    .filter(h -> !"OUT_FOR_DELIVERY".equals(h.getStatus()) || !deliveryStates.contains("OUT_FOR_DELIVERY"))
+                    .filter(h -> !"COMPLETED".equals(h.getStatus()) || !deliveryStates.contains("DELIVERED"))
+                    .forEach(h -> timeline.add(new OrderTrackingResponse.Event(OrderLabels.local(h.getCreatedAt()),trackingShopLabel(h.getStatus()),h.getNote(),"ORDER")));
+            if(delivery!=null) {
+                for(var event:deliveryEvents) {
+                    String staffName=event.getChangedBy()==null ? null : trackingStaffName(staff,delivery.getDeliveryId(),event.getChangedBy());
+                    String eventLabel=trackingDeliveryLabel(event.getStatus(),staffName);
+                    if(eventLabel!=null) timeline.add(new OrderTrackingResponse.Event(OrderLabels.local(event.getCreatedAt()),eventLabel,null,"DELIVERY"));
+                }
+            }
             timeline.sort(Comparator.comparing(OrderTrackingResponse.Event::occurredAt));
-            String label="CANCELLED".equals(child.getStatus()) ? "Đơn hàng đã hủy" : delivery==null ? "Chưa chuyển sang giao hàng" : OrderLabels.delivery(delivery.getStatus());
-            return new OrderTrackingResponse.ShopTracking(child.getShopOrderId(),child.getShop().getShopName(),OrderLabels.shop(child.getStatus()),label,
-                    delivery==null ? null : delivery.getFailureReason(),List.copyOf(timeline));
+            addMissingConfirmation(child,shopHistory,timeline);
+            String label=trackingShopLabel(child.getStatus());
+            String deliveryStatusCode=child.getStatus();
+            if(delivery!=null && !"CANCELLED".equals(child.getStatus())
+                    && !Set.of("UNASSIGNED","ASSIGNED").contains(delivery.getStatus())) {
+                String staffName=trackingStaffName(staff,delivery.getDeliveryId(),null);
+                String deliveryLabel=trackingDeliveryLabel(delivery.getStatus(),staffName);
+                label=deliveryLabel==null ? "Thông tin giao hàng cần được kiểm tra." : deliveryLabel;
+                deliveryStatusCode=deliveryLabel==null ? null : delivery.getStatus();
+            }
+            return new OrderTrackingResponse.ShopTracking(child.getShopOrderId(),child.getShop().getShopName(),trackingShopLabel(child.getStatus()),
+                    child.getStatus(),label,deliveryStatusCode,List.copyOf(timeline));
         }).toList();
-        return new OrderTrackingResponse(orderId,order.getOrderCode(),OrderLabels.order(order.getStatus()),groups);
+        return new OrderTrackingResponse(orderId,order.getOrderCode(),OrderLabels.order(order.getStatus()),order.getStatus().name(),groups);
+    }
+    private void addMissingConfirmation(ShopOrder child,List<OrderStatusHistory> history,List<OrderTrackingResponse.Event> timeline) {
+        if(history.stream().anyMatch(entry -> "CONFIRMED".equals(entry.getStatus()))) return;
+        Set<String> confirmedStates=Set.of("CONFIRMED","PREPARING","READY_FOR_DELIVERY","OUT_FOR_DELIVERY","COMPLETED");
+        boolean confirmed=child.getConfirmedAt()!=null || confirmedStates.contains(child.getStatus())
+                || history.stream().anyMatch(entry -> confirmedStates.contains(entry.getStatus()));
+        if(!confirmed) return;
+        var confirmation=new OrderTrackingResponse.Event(OrderLabels.local(child.getConfirmedAt()),trackingShopLabel("CONFIRMED"),null,"ORDER");
+        int position=0;
+        for(int i=0;i<timeline.size();i++) {
+            var entry=timeline.get(i);
+            if("ORDER".equals(entry.kind()) && trackingShopLabel("PENDING").equals(entry.label())) position=i+1;
+        }
+        timeline.add(position,confirmation);
+    }
+    private String trackingStaffName(List<DeliveryTrackingStaff> staff,Long deliveryId,Long staffId) {
+        return staff.stream().filter(s -> s.deliveryId().equals(deliveryId) && (staffId==null || s.staffId().equals(staffId)))
+                .findFirst().map(DeliveryTrackingStaff::staffName).orElse(null);
+    }
+    private String trackingShopLabel(String status) {
+        return switch(status) {
+            case "PENDING" -> "Chờ cửa hàng xác nhận đơn hàng";
+            case "CONFIRMED" -> "Cửa hàng đã xác nhận đơn hàng";
+            case "PREPARING" -> "Cửa hàng đang chuẩn bị đơn hàng";
+            case "READY_FOR_DELIVERY" -> "Sẵn sàng giao hàng";
+            case "OUT_FOR_DELIVERY" -> "Đang giao hàng";
+            case "CANCELLED" -> "Đã hủy đơn hàng";
+            default -> OrderLabels.shop(status);
+        };
+    }
+    private String trackingDeliveryLabel(String status,String staffName) {
+        return switch(status) {
+            case "ACCEPTED" -> staffName==null || staffName.isBlank() ? "Nhân viên đã nhận nhiệm vụ" : "Nhân viên "+staffName.strip()+" đã nhận nhiệm vụ";
+            case "PICKED_UP" -> "Nhân viên giao hàng đã lấy hàng";
+            case "OUT_FOR_DELIVERY" -> "Đang giao hàng";
+            case "DELIVERED" -> "Giao hàng thành công";
+            case "FAILED" -> "Giao hàng thất bại";
+            default -> null;
+        };
     }
     private Order owned(Long customerId,Long orderId) { return orders.findByOrderIdAndCustomerUserId(orderId,customerId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng của bạn.")); }

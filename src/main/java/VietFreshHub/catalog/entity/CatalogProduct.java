@@ -1,0 +1,125 @@
+package VietFreshHub.catalog.entity;
+
+import VietFreshHub.shop.entity.Shop;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Entity
+@Table(schema = "dbo", name = "products")
+public class CatalogProduct {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "product_id")
+    private Long productId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shop_id", nullable = false)
+    private Shop shop;
+
+    @Nationalized
+    @Column(name = "name", nullable = false, length = 250)
+    private String name;
+
+    @Column(name = "slug", nullable = false, length = 300)
+    private String slug;
+
+    @Nationalized
+    @Column(name = "description", columnDefinition = "NVARCHAR(MAX)")
+    private String description;
+
+    @Transient
+    private String imageUrl;
+
+    @OneToMany(mappedBy = "product")
+    @org.hibernate.annotations.BatchSize(size = 16)
+    private List<CatalogProductImage> images = new ArrayList<>();
+
+    @Column(name = "requires_preparation_check", nullable = false)
+    private boolean requiresPreparationCheck;
+
+    @Nationalized @Column(name = "preparation_note", length = 1000)
+    private String preparationNote;
+
+    public String getImageUrl() {
+        if (this.imageUrl != null && !this.imageUrl.isBlank()) {
+            return this.imageUrl;
+        }
+        var primary = images.stream().filter(i -> i.getVariant() == null && i.isPrimary())
+                .sorted(java.util.Comparator.comparing(CatalogProductImage::getSortOrder).thenComparing(CatalogProductImage::getImageId))
+                .map(CatalogProductImage::getImageUrl).findFirst();
+        if (primary.isPresent()) return primary.get();
+        var thumbnail = variants.stream().map(CatalogVariant::getThumbnailUrl)
+                .filter(url -> url != null && !url.isBlank()).findFirst();
+        if (thumbnail.isPresent()) return thumbnail.get();
+        if (slug != null) {
+            String s = slug.toLowerCase();
+            if (s.contains("buoi")) return "/images/buoi-da-xanh.jpg";
+            if (s.contains("sau-rieng")) return "/images/sau-rieng.jpg";
+            if (s.contains("xoai")) return "/images/xoai-cat.png";
+            if (s.contains("vai")) return "/images/vai-thieu.png";
+        }
+        if (name != null) {
+            String lower = name.toLowerCase();
+            if (lower.contains("bưởi")) return "/images/buoi-da-xanh.jpg";
+            if (lower.contains("sầu")) return "/images/sau-rieng.jpg";
+            if (lower.contains("xoài")) return "/images/xoai-cat.png";
+            if (lower.contains("vải")) return "/images/vai-thieu.png";
+        }
+        return "/images/buoi-da-xanh.jpg";
+    }
+
+    @Column(nullable = false, length = 30)
+    private String status = "INACTIVE";
+
+    @Column(name = "moderation_blocked", nullable = false)
+    private boolean moderationBlocked;
+
+    @Column(name = "approval_status", nullable = false, length = 30)
+    private String approvalStatus = "PENDING";
+
+    @Column(name = "approved_by")
+    private Long approvedBy;
+
+    @Column(name = "approved_at")
+    private LocalDateTime approvedAt;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @org.hibernate.annotations.BatchSize(size = 16)
+    private List<CatalogVariant> variants = new ArrayList<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(schema = "dbo", name = "product_categories",
+            joinColumns = @JoinColumn(name = "product_id"), inverseJoinColumns = @JoinColumn(name = "category_id"))
+    private java.util.Set<CatalogCategory> categories = new java.util.LinkedHashSet<>();
+
+    @PrePersist
+    void initializeUtcTimestamps() {
+        var now = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+        if (createdAt == null) createdAt = now;
+        if (updatedAt == null) updatedAt = now;
+    }
+
+    @PreUpdate
+    void updateUtcTimestamps() {
+        updatedAt = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+    }
+}

@@ -256,9 +256,14 @@
     </style>
 </head>
 <body>
+<span th:replace="~{fragments/notifications :: bell}"></span>
 <main>
+    <nav aria-label="Điều hướng đơn hàng">
+        <div><a th:href="@{/seller}">Trang chủ</a></div>
+        <div><a th:href="@{/seller/orders}">Tất cả đơn</a></div>
+    </nav>
     <header>
-        <h1>CHI TIẾT ĐƠN HÀNG #<span th:text="${orderDetail.orderCode}"></span></h1>
+        <h1>CHI TIẾT ĐƠN HÀNG</h1>
     </header>
 
     <p>Trạng thái đơn hàng: <strong th:text="${orderDetail.orderStatusLabel}"></strong></p>
@@ -285,7 +290,8 @@
             <h2 id="order-information-heading">THÔNG TIN ĐƠN HÀNG</h2>
             <dl>
                 <dt>Mã đơn hàng</dt>
-                <dd th:text="${orderDetail.orderCode}"></dd>
+                <dd><span th:text="${orderDetail.orderCode}"></span>
+                    <button type="button" th:attr="data-vf-copy-code=${orderDetail.orderCode},aria-label=${'Sao chép mã đơn '+orderDetail.orderCode}">Sao chép</button></dd>
                 <dt>Trạng thái thanh toán</dt>
                 <dd th:text="${orderDetail.paymentStatusLabel}"></dd>
             </dl>
@@ -319,6 +325,9 @@
                 </tbody>
             </table>
         </div>
+        <p class="money">Phí vận chuyển:
+            <span th:text="${#numbers.formatDecimal(orderDetail.shippingFee, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></span>
+        </p>
         <p class="total">TỔNG CỘNG:
             <span th:text="${#numbers.formatDecimal(orderDetail.totalAmount, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></span>
         </p>
@@ -394,6 +403,9 @@
                     </tr>
                     </tbody>
                 </table>
+                <p class="money">Phí vận chuyển:
+                    <span th:text="${#numbers.formatDecimal(orderDetail.shippingFee, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></span>
+                </p>
                 <p class="total">TỔNG CỘNG:
                     <span th:text="${#numbers.formatDecimal(orderDetail.totalAmount, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></span>
                 </p>
@@ -433,5 +445,6 @@
 
     window.addEventListener('afterprint', closeInvoiceModal);
 </script>
+<script th:src="@{/js/product/module.js}" defer></script>
 </body>
 </html>

@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<span th:fragment="bell" th:if="${#authorization.expression('isAuthenticated()')}"
+      th:with="unreadCount=${@notificationService.countUnread(#authentication)}">
+    <a th:href="@{/notifications}" data-notification-bell
+       th:attr="data-unread-count=${unreadCount},data-count-url=@{/notifications/unread-count},aria-label=${'Thông báo, ' + unreadCount + ' chưa đọc'}">
+        <span aria-hidden="true">🔔</span> Thông báo
+        <span data-notification-count th:text="${unreadCount}" th:hidden="${unreadCount == 0}" aria-live="polite"></span>
+    </a>
+    <script defer th:src="@{/js/notifications.js}"></script>
+</span>
+</body>
+</html>

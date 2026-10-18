@@ -18,6 +18,7 @@
             <span><strong>VietFresh Hub</strong><small>TRUNG TÂM QUẢN TRỊ</small></span>
         </a>
         <div class="topbar-right">
+            <span th:replace="~{fragments/notifications :: bell}"></span>
             <span class="admin-label">QUẢN TRỊ VIÊN</span>
             <span class="admin-avatar" aria-label="Quản trị viên">AD</span>
         </div>
@@ -26,6 +27,8 @@
     <main class="page-content">
         <nav class="breadcrumbs" aria-label="Điều hướng">
             <span>Quản trị</span><span aria-hidden="true">/</span><strong>Quản lý tài khoản</strong>
+            <a th:href="@{/admin/deliveries}">Giám sát giao hàng</a>
+            <a th:href="@{/admin/products}">Hậu kiểm sản phẩm</a>
         </nav>
         <section class="page-heading">
             <div>
