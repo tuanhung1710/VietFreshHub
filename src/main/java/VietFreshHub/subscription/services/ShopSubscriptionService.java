@@ -3,6 +3,9 @@ package VietFreshHub.subscription.services;
 import VietFreshHub.subscription.dto.ShopSubscriptionResponse;
 import VietFreshHub.subscription.dto.SubscriptionPaymentForm;
 import VietFreshHub.subscription.dto.SubscriptionPaymentResponse;
+import VietFreshHub.subscription.entity.SubscriptionPaymentStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -37,7 +40,15 @@ public interface ShopSubscriptionService {
     );
 
 
+    // Admin xem danh sách đăng ký, có phân trang.
+    Page<ShopSubscriptionResponse> getAllSubscriptions(
+            Pageable pageable
+    );
 
+    // Admin xem yêu cầu thanh toán theo trạng thái.
+    List<SubscriptionPaymentResponse> getPaymentsByStatus(
+            SubscriptionPaymentStatus status
+    );
 
 
 }

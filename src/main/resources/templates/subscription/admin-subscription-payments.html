@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý yêu cầu thanh toán | VietFresh Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        :root { --bs-body-font-family: 'Be Vietnam Pro', sans-serif; --bs-success-rgb: 0,107,44; --bs-primary-rgb: 0,107,44; }
+        body { background: #f8f9ff; color: #0b1c30; }
+        .btn-success { background: #006b2c; border-color: #006b2c; }
+        .btn-success:hover, .btn-success:focus { background: #005320; border-color: #005320; }
+        .btn-outline-success { color: #006b2c; border-color: #006b2c; }
+        .btn-outline-success:hover { background: #006b2c; border-color: #006b2c; }
+        .card { border: 1px solid #e5eeff; }
+        .benefits { white-space: pre-line; overflow-wrap: anywhere; }
+        .table > :not(caption) > * > * { padding: 1rem; }
+        .table thead th { font-size: .8rem; color: #6c757d; }
+    </style>
+</head>
+<body>
+<main class="container-xl py-4">
+<nav class="d-flex flex-wrap gap-2 mb-4" aria-label="Quản trị gói dịch vụ">
+        <a th:href="@{/admin}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left" aria-hidden="true"></i> Trang quản trị</a>
+        <a th:href="@{/admin/subscription-plans}" class="btn btn-outline-success btn-sm">Danh mục gói</a>
+        <a th:href="@{/admin/shop-subscriptions}" class="btn btn-outline-success btn-sm">Đăng ký của shop</a>
+        <a th:href="@{/admin/shop-subscriptions/payments}" class="btn btn-outline-success btn-sm">Yêu cầu thanh toán</a>
+    </nav>
+    <h1 class="h3 fw-bold mb-4">Quản lý yêu cầu thanh toán</h1>
+    <div th:if="${successMessage}" class="alert alert-success" role="alert" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
+
+    <form method="get" th:action="@{/admin/shop-subscriptions/payments}" class="d-flex flex-wrap align-items-end gap-2 mb-4">
+        <div><label for="status" class="form-label fw-semibold">Trạng thái thanh toán</label>
+            <select id="status" name="status" class="form-select">
+                <option th:each="status : ${paymentStatuses}" th:value="${status}" th:selected="${status == selectedStatus}" th:text="${status.name() == 'PENDING' ? 'PENDING — Chờ xác nhận' : (status.name() == 'PAID' ? 'PAID — Đã thanh toán' : 'FAILED — Thất bại')}"></option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-success">Lọc yêu cầu</button>
+    </form>
+    <div class="card shadow-sm border-0 rounded-3 overflow-hidden"><div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <caption class="px-3">Đối chiếu giao dịch ngân hàng trước khi xác nhận nhận tiền. Thời gian theo UTC.</caption>
+            <thead class="table-light"><tr><th scope="col">Yêu cầu / Shop</th><th scope="col">Gói / Thao tác</th><th scope="col">Số tiền</th><th scope="col">Trạng thái / Thời gian</th><th scope="col">Xử lý</th></tr></thead>
+            <tbody>
+                <tr th:if="${#lists.isEmpty(payments)}"><td colspan="5" class="text-center text-secondary py-5">Không có yêu cầu ở trạng thái đã chọn.</td></tr>
+                <tr th:each="payment : ${payments}">
+                    <td><div class="fw-semibold" th:text="${'#' + payment.subscriptionPaymentId}"></div><div th:text="${payment.shopName}"></div><small class="text-secondary" th:text="${'Shop ID: ' + payment.shopId}"></small></td>
+                    <td><div class="fw-semibold" th:text="${payment.planName}"></div><small th:text="${payment.action.name() == 'SUBSCRIBE' ? 'Đăng ký' : (payment.action.name() == 'RENEW' ? 'Gia hạn' : 'Nâng cấp')}"></small></td>
+                    <td class="text-nowrap" th:text="${#numbers.formatDecimal(payment.amount, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></td>
+                    <td><span class="badge rounded-pill" th:classappend="${payment.status.name() == 'PAID' ? 'bg-success-subtle text-success' : (payment.status.name() == 'PENDING' ? 'bg-warning-subtle text-dark' : (payment.status.name() == 'FAILED' ? 'bg-danger-subtle text-danger' : 'bg-secondary-subtle text-secondary'))}" th:text="${payment.status}"></span><div class="small text-secondary mt-2 text-nowrap" th:text="${payment.createdAt != null ? #temporals.format(payment.createdAt, 'dd/MM/yyyy HH:mm') : '—'}"></div></td>
+                    <td style="min-width: 280px;">
+                        <div th:unless="${payment.status.name() == 'PENDING'}" class="small">
+                            <div class="text-break">Mã giao dịch: <span th:text="${payment.transactionReference ?: '—'}"></span></div>
+                            <div class="benefits mt-2">Ghi chú: <span th:text="${payment.note ?: '—'}"></span></div>
+                            <div class="text-secondary mt-2">Xử lý: <span th:text="${payment.reviewedAt != null ? #temporals.format(payment.reviewedAt, 'dd/MM/yyyy HH:mm') : '—'}"></span></div>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div></div>
+</main>
+</body>
+</html>
+

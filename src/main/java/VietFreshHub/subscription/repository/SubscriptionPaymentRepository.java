@@ -15,5 +15,6 @@ public interface SubscriptionPaymentRepository extends JpaRepository<Subscriptio
 
     boolean existsByShop_ShopIdAndStatus(Long shopId, SubscriptionPaymentStatus status);
 
+    List<SubscriptionPayment> findByStatusOrderByCreatedAtAscSubscriptionPaymentIdAsc(SubscriptionPaymentStatus status);
 
 }

@@ -12,6 +12,9 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.validation.Validator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -130,6 +133,35 @@ public class ShopSubscriptionServiceImpl
         return paymentRepository
                 .findByShop_ShopIdOrderByCreatedAtDescSubscriptionPaymentIdDesc(
                         shopId
+                )
+                .stream()
+                .map(this::toPaymentResponse)
+                .toList();
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public Page<ShopSubscriptionResponse> getAllSubscriptions(
+            Pageable pageable
+    ) {
+        return subscriptionRepository.findAll(pageable)
+                .map(this::toSubscriptionResponse);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<SubscriptionPaymentResponse> getPaymentsByStatus(
+            SubscriptionPaymentStatus status
+    ) {
+        if (status == null) {
+            throw new IllegalArgumentException(
+                    "Trạng thái thanh toán không hợp lệ"
+            );
+        }
+
+        return paymentRepository
+                .findByStatusOrderByCreatedAtAscSubscriptionPaymentIdAsc(
+                        status
                 )
                 .stream()
                 .map(this::toPaymentResponse)
