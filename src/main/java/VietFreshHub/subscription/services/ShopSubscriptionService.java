@@ -13,6 +13,10 @@ public interface ShopSubscriptionService {
             Long shopId
     );
 
+    // Lịch sử đăng ký của shop.
+    List<ShopSubscriptionResponse> getSubscriptionHistory(
+            Long shopId
+    );
 
 
     // Shop xem chi tiết yêu cầu thanh toán của mình.

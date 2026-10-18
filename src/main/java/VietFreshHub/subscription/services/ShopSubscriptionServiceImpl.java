@@ -39,6 +39,21 @@ public class ShopSubscriptionServiceImpl
     }
 
     @Override
+    public List<ShopSubscriptionResponse> getSubscriptionHistory(
+            Long shopId
+    ) {
+        requireId(shopId);
+
+        return subscriptionRepository
+                .findByShop_ShopIdOrderByCreatedAtDescSubscriptionIdDesc(
+                        shopId
+                )
+                .stream()
+                .map(this::toSubscriptionResponse)
+                .toList();
+    }
+
+    @Override
     public SubscriptionPaymentResponse getPayment(
             Long shopId,
             Long paymentId

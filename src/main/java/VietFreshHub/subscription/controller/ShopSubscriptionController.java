@@ -69,5 +69,20 @@ public class ShopSubscriptionController {
         return "subscription/subscription-payment-history";
     }
 
+    @GetMapping("/history")
+    public String subscriptionHistory(
+            Authentication authentication,
+            Model model
+    ) {
+        Long shopId = shopService.getManagedShopId(authentication);
+
+        model.addAttribute(
+                "subscriptions",
+                subscriptionService.getSubscriptionHistory(shopId)
+        );
+
+        return "subscription/shop-subscription-history";
+    }
+
 
 }
