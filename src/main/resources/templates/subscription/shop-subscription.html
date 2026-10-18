@@ -27,6 +27,7 @@
     <a th:href="@{/seller}" class="btn btn-outline-secondary btn-sm mb-3"><i class="bi bi-arrow-left" aria-hidden="true"></i> Quay lại cửa hàng</a>
 <nav class="d-flex flex-wrap gap-2 mb-4" aria-label="Gói dịch vụ">
         <a th:href="@{/seller/subscription}" class="btn btn-outline-success btn-sm">Gói hiện tại</a>
+        <a th:href="@{/seller/subscription/payments}" class="btn btn-outline-secondary btn-sm">Lịch sử thanh toán</a>
     </nav>
     <h1 class="h3 fw-bold mb-4">Gói dịch vụ hiện tại</h1>
     <div th:if="${successMessage}" class="alert alert-success" role="alert" th:text="${successMessage}"></div>

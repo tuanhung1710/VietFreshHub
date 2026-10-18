@@ -38,5 +38,36 @@ public class ShopSubscriptionController {
         return "subscription/shop-subscription";
     }
 
+    @GetMapping("/payments/{paymentId}")
+    public String paymentDetail(
+            Authentication authentication,
+            @PathVariable Long paymentId,
+            Model model
+    ) {
+        Long shopId = shopService.getManagedShopId(authentication);
+
+        model.addAttribute(
+                "payment",
+                subscriptionService.getPayment(shopId, paymentId)
+        );
+
+        return "subscription/subscription-payment-detail";
+    }
+
+    @GetMapping("/payments")
+    public String paymentHistory(
+            Authentication authentication,
+            Model model
+    ) {
+        Long shopId = shopService.getManagedShopId(authentication);
+
+        model.addAttribute(
+                "payments",
+                subscriptionService.getPaymentHistory(shopId)
+        );
+
+        return "subscription/subscription-payment-history";
+    }
+
 
 }
