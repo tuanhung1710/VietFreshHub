@@ -1,6 +1,7 @@
 package VietFreshHub.subscription.services;
 
 import VietFreshHub.subscription.dto.ShopSubscriptionResponse;
+import VietFreshHub.subscription.dto.SubscriptionPaymentForm;
 import VietFreshHub.subscription.dto.SubscriptionPaymentResponse;
 
 import java.util.List;
@@ -18,6 +19,11 @@ public interface ShopSubscriptionService {
             Long shopId
     );
 
+    // Tạo yêu cầu thanh toán: đăng ký, gia hạn hoặc nâng cấp.
+    SubscriptionPaymentResponse createPaymentRequest(
+            Long shopId,
+            SubscriptionPaymentForm form
+    );
 
     // Shop xem chi tiết yêu cầu thanh toán của mình.
     SubscriptionPaymentResponse getPayment(
