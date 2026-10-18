@@ -1,6 +1,6 @@
 package VietFreshHub.cart.entity;
 
-import VietFreshHub.product.entity.ProductVariant;
+import VietFreshHub.catalog.entity.CatalogVariant;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -29,7 +29,7 @@ public class CartItem {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "variant_id", nullable = false)
-    private ProductVariant variant;
+    private CatalogVariant variant;
 
     @Column(nullable = false)
     private Integer quantity;

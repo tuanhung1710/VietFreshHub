@@ -523,10 +523,12 @@ public class OrderServiceImpl implements OrderService {
                 String keyword = filter.getKeyword().trim().toLowerCase(Locale.ROOT)
                         .replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_").replace("[", "\\[");
                 String pattern = "%" + keyword + "%";
-                predicates.add(builder.or(
-                        builder.like(builder.lower(order.get("orderCode")), pattern, '\\'),
-                        builder.like(builder.lower(order.join("customer", JoinType.LEFT).get("fullName")), pattern, '\\')
-                ));
+                Long shopOrderCode = VietFreshHub.common.BusinessCodes.parse("SOR", filter.getKeyword());
+                List<Predicate> references = new ArrayList<>();
+                references.add(builder.like(builder.lower(order.get("orderCode")), pattern, '\\'));
+                references.add(builder.like(builder.lower(order.join("customer", JoinType.LEFT).get("fullName")), pattern, '\\'));
+                if (shopOrderCode != null) references.add(builder.equal(root.get("shopOrderId"), shopOrderCode));
+                predicates.add(builder.or(references.toArray(new Predicate[0])));
             }
 
             return builder.and(predicates.toArray(new Predicate[0]));

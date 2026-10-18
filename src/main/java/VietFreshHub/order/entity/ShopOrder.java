@@ -37,4 +37,9 @@ public class ShopOrder {
     public void markReady() { status="READY_FOR_DELIVERY"; }
     public void markOutForDelivery() { status="OUT_FOR_DELIVERY"; }
     public void markCompleted() { status="COMPLETED"; }
+
+@Transient
+    public String getShopOrderCode() {
+        return VietFreshHub.common.BusinessCodes.format("SOR", shopOrderId);
+    }
 }

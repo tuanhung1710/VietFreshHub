@@ -1,6 +1,6 @@
 package VietFreshHub.shop.entity;
 
-import VietFreshHub.product.entity.Product;
+import VietFreshHub.catalog.entity.CatalogProduct;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -64,7 +64,7 @@ public class Shop {
     private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Product> products = new ArrayList<>();
+    private List<CatalogProduct> products = new ArrayList<>();
 
     @PrePersist
     void initializeUtcTimestamps() {
@@ -76,5 +76,10 @@ public class Shop {
     @PreUpdate
     void updateUtcTimestamps() {
         updatedAt = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+    }
+
+@Transient
+    public String getShopCode() {
+        return VietFreshHub.common.BusinessCodes.format("SHP", shopId);
     }
 }

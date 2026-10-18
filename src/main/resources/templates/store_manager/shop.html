@@ -3,29 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Quản lý cửa hàng | VietFresh Hub</title>
+    <title>Cửa hàng của tôi · VietFresh Hub</title>
 </head>
 <body>
 <span th:replace="~{fragments/notifications :: bell}"></span>
-<main>
-    <h1>Quản lý cửa hàng</h1>
-    <p>Quản lý hoạt động và trao đổi với khách hàng.</p>
-    <a th:href="@{/store_manager/chat}">Mở tin nhắn khách hàng</a>
-    <p><a th:href="@{/seller/pickup-location}">Quản lý địa điểm lấy hàng</a></p>
+<h1>SHOP</h1>
+<p>Mã shop: <span th:text="${shopCode}"></span>
+<button type="button" th:attr="data-vf-copy-code=${shopCode},aria-label=${'Sao chép mã shop '+shopCode}">Sao chép</button></p>
+<p><a th:href="@{/store_manager/chat}">Mở tin nhắn khách hàng</a></p>
+<p><a th:href="@{/seller/pickup-location}">Quản lý địa điểm lấy hàng</a></p>
 
-    <p><a th:href="@{/seller/deliveries}">Giám sát giao hàng</a></p>
+<p><a th:href="@{/seller/deliveries}">Giám sát giao hàng</a></p>
 
-    <h2>QUẢN LÝ ĐƠN HÀNG</h2>
-    <nav aria-label="Quản lý đơn hàng">
-        <ul>
-            <li><a th:href="@{/seller/orders}" th:text="${'Tất cả đơn (' + orderCounts.totalOrders + ')'}">Tất cả đơn</a></li>
-            <li><a th:href="@{/seller/incoming-orders}" th:text="${'Đơn mới (' + orderCounts.incomingOrders + ')'}">Đơn mới</a></li>
-            <li><a th:href="@{/seller/confirmed-orders}" th:text="${'Đã xác nhận (' + orderCounts.confirmedOrders + ')'}">Đã xác nhận</a></li>
-            <li><a th:href="@{/seller/preparing-orders}" th:text="${'Đang chuẩn bị (' + orderCounts.preparingOrders + ')'}">Đang chuẩn bị</a></li>
-            <li><a th:href="@{/seller/ready-orders}" th:text="${'Sẵn sàng giao (' + orderCounts.readyOrders + ')'}">Sẵn sàng giao</a></li>
-            <li><a th:href="@{/seller/processed-orders}" th:text="${'Đơn đã giao thành công (' + orderCounts.completedOrders + ')'}">Đơn đã giao thành công</a></li>
-        </ul>
-    </nav>
-</main>
+<h2>QUẢN LÝ ĐƠN HÀNG</h2>
+<nav aria-label="Quản lý đơn hàng">
+    <ul>
+        <li><a th:href="@{/seller/orders}" th:text="${'Tất cả đơn (' + orderCounts.totalOrders + ')'}">Tất cả đơn</a></li>
+        <li><a th:href="@{/seller/incoming-orders}" th:text="${'Đơn mới (' + orderCounts.incomingOrders + ')'}">Đơn mới</a></li>
+        <li><a th:href="@{/seller/confirmed-orders}" th:text="${'Đã xác nhận (' + orderCounts.confirmedOrders + ')'}">Đã xác nhận</a></li>
+        <li><a th:href="@{/seller/preparing-orders}" th:text="${'Đang chuẩn bị (' + orderCounts.preparingOrders + ')'}">Đang chuẩn bị</a></li>
+        <li><a th:href="@{/seller/ready-orders}" th:text="${'Sẵn sàng giao (' + orderCounts.readyOrders + ')'}">Sẵn sàng giao</a></li>
+        <li><a th:href="@{/seller/processed-orders}" th:text="${'Đơn đã giao thành công (' + orderCounts.completedOrders + ')'}">Đơn đã giao thành công</a></li>
+    </ul>
+</nav>
+<h2>QUẢN LÝ SẢN PHẨM VÀ KHO</h2>
+<section th:if="${inventoryAttention.hasAlerts()}" aria-label="Kho cần chú ý">
+    <h3>Kho cần chú ý</h3>
+    <ul>
+        <li th:if="${inventoryAttention.lowVariants > 0}"><a th:href="@{/seller/inventory(stock='low')}" th:text="${inventoryAttention.lowVariants + ' phân loại sắp hết hàng'}"></a></li>
+        <li th:if="${inventoryAttention.nearBatches > 0}"><a th:href="@{/seller/inventory(expiry='near')}" th:text="${inventoryAttention.nearBatches + ' lô sắp hết hạn'}"></a></li>
+        <li th:if="${inventoryAttention.expiredBatches > 0}"><a th:href="@{/seller/inventory(expiry='expired')}" th:text="${inventoryAttention.expiredBatches + ' lô đã hết hạn'}"></a></li>
+    </ul>
+</section>
+<nav aria-label="Sản phẩm và kho">
+    <ul>
+        <li><a th:href="@{/seller/products}">SẢN PHẨM VÀ PHÂN LOẠI</a></li>
+        <li><a th:href="@{/seller/inventory}">KHO HÀNG THEO LÔ</a></li>
+        <li><a th:href="@{/seller/inventory/journal}">NHẬT KÝ KHO</a></li>
+    </ul>
+</nav>
+<script th:src="@{/js/product/module.js}" defer></script>
 </body>
 </html>

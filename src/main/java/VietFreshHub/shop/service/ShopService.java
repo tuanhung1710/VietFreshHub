@@ -1,14 +1,14 @@
 package VietFreshHub.shop.service;
 
-import VietFreshHub.shop.entity.ShopMember;
-import VietFreshHub.shop.repository.ShopMemberRepository;
-import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.shop.entity.ShopLocation;
 import VietFreshHub.shop.repository.ShopLocationRepository;
 import VietFreshHub.shop.repository.ShopRepository;
 import VietFreshHub.vietmap.dto.VietMapPlaceResponse;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
+import VietFreshHub.auth.service.AuthService;
+import VietFreshHub.shop.entity.ShopMember;
+import VietFreshHub.shop.repository.ShopMemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -25,11 +25,12 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class ShopService {
 
-    private final UserRepository userRepository;
-    private final ShopMemberRepository shopMemberRepository;
     private final ShopLocationRepository shopLocationRepository;
     private final ShopRepository shopRepository;
     private final EntityManager entityManager;
+
+    private final AuthService authService;
+    private final ShopMemberRepository shopMemberRepository;
 
     @Transactional(readOnly = true)
     public Long getManagedShopId(Authentication authentication) {
@@ -39,18 +40,17 @@ public class ShopService {
             throw new AccessDeniedException("Bạn không có quyền quản lý cửa hàng.");
         }
 
-        Long userId = userRepository.findByEmailIgnoreCase(authentication.getName())
-                .map(user -> user.getUserId())
-                .orElseThrow(() -> new AccessDeniedException("Không xác định được tài khoản."));
-        List<ShopMember> memberships = shopMemberRepository.findActiveMembershipsByUserId(userId).stream()
-                .filter(membership -> List.of("OWNER", "MANAGER").contains(membership.getMemberRole()))
-                .toList();
+        Long userId = authService.getCurrentUserId(authentication);
+        // Validate both sides in one query, including active legacy/unknown roles.
+        ShopMember ownership = shopMemberRepository.findSoleActiveOwnerByUserId(userId)
+                .orElseThrow(() -> new AccessDeniedException(
+                        "Tài khoản phải là chủ duy nhất đang hoạt động của một cửa hàng."));
 
-        if (memberships.size() != 1) {
-            throw new AccessDeniedException("Không xác định được cửa hàng bạn được phép quản lý.");
-        }
-
-        return memberships.get(0).getShop().getShopId();
+        return ownership.getShopId();
+    }
+    @Transactional(readOnly = true)
+    public String getManagedShopCode(Authentication authentication) {
+        return VietFreshHub.common.BusinessCodes.format("SHP", getManagedShopId(authentication));
     }
 
     @Transactional(readOnly = true)
