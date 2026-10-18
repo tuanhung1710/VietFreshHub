@@ -168,6 +168,117 @@ public class ShopSubscriptionServiceImpl
                 .toList();
     }
 
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public ShopSubscriptionResponse approvePayment(
+            Long paymentId,
+            Long adminUserId,
+            String transactionReference
+    ) {
+        requireId(paymentId);
+        requireId(adminUserId);
+
+        String reference = requireText(
+                transactionReference,
+                255,
+                "Mã giao dịch không hợp lệ"
+        );
+
+        // Lấy shopId trước, sau đó khóa theo thứ tự Shop -> Payment.
+        SubscriptionPayment existing = paymentRepository
+                .findById(paymentId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Không tìm thấy yêu cầu thanh toán"
+                ));
+
+        Long shopId = existing.getShop().getShopId();
+        Shop shop = lockShop(shopId);
+
+        SubscriptionPayment payment = paymentRepository
+                .findByIdForUpdate(paymentId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Không tìm thấy yêu cầu thanh toán"
+                ));
+
+        // Làm mới vì payment có thể đã nằm trong persistence context.
+        entityManager.refresh(payment, LockModeType.PESSIMISTIC_WRITE);
+        requirePending(payment);
+
+        LocalDateTime now = utcNow();
+        ShopSubscription current = expireAndFindCurrent(shopId, now);
+
+        SubscriptionPlan plan =
+                findPurchasablePlan(payment.getPlan().getPlanId());
+
+        validateAction(shopId, current, plan, payment.getAction());
+
+        ShopSubscription previous = current;
+
+        if (payment.getAction() == SubscriptionPaymentAction.UPGRADE) {
+            current.setStatus(SubscriptionStatus.UPGRADED);
+            current.setAutoRenew(false);
+
+            // Giải phóng unique index ACTIVE trước khi thêm gói mới.
+            subscriptionRepository.flush();
+        } else if (payment.getAction()
+                == SubscriptionPaymentAction.RENEW) {
+            previous = latestSubscription(shopId).orElseThrow();
+        }
+
+        ShopSubscription subscription = ShopSubscription.builder()
+                .shop(shop)
+                .plan(plan)
+                .startAt(now)
+                .endAt(calculateEndAt(now, plan.getBillingPeriod()))
+                .status(SubscriptionStatus.ACTIVE)
+                .autoRenew(false)
+                .previousSubscription(previous)
+                .build();
+
+        ShopSubscription saved =
+                subscriptionRepository.saveAndFlush(subscription);
+
+        payment.setStatus(SubscriptionPaymentStatus.PAID);
+        payment.setSubscription(saved);
+        payment.setTransactionReference(reference);
+        payment.setReviewedBy(adminUserId);
+        payment.setReviewedAt(now);
+
+        return toSubscriptionResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN')")
+    public void rejectPayment(
+            Long paymentId,
+            Long adminUserId,
+            String reason
+    ) {
+        requireId(paymentId);
+        requireId(adminUserId);
+
+        String note = requireText(
+                reason,
+                1000,
+                "Vui lòng nhập lý do, tối đa 1000 ký tự"
+        );
+
+        SubscriptionPayment payment = paymentRepository
+                .findByIdForUpdate(paymentId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Không tìm thấy yêu cầu thanh toán"
+                ));
+
+        requirePending(payment);
+
+        payment.setStatus(SubscriptionPaymentStatus.FAILED);
+        payment.setNote(note);
+        payment.setReviewedBy(adminUserId);
+        payment.setReviewedAt(utcNow());
+    }
+
     private void validateAction(
             Long shopId,
             ShopSubscription current,
@@ -317,6 +428,25 @@ public class ShopSubscriptionServiceImpl
         return plan;
     }
 
+    private LocalDateTime calculateEndAt(
+            LocalDateTime startAt,
+            BillingPeriod period
+    ) {
+        return switch (period) {
+            case MONTHLY -> startAt.plusMonths(1);
+            case QUARTERLY -> startAt.plusMonths(3);
+            case YEARLY -> startAt.plusYears(1);
+        };
+    }
+
+    private void requirePending(SubscriptionPayment payment) {
+        if (payment.getStatus() != SubscriptionPaymentStatus.PENDING) {
+            throw new IllegalArgumentException(
+                    "Yêu cầu thanh toán đã được xử lý"
+            );
+        }
+    }
+
     private void validateForm(SubscriptionPaymentForm form) {
         if (form == null) {
             throw new IllegalArgumentException(
@@ -341,6 +471,20 @@ public class ShopSubscriptionServiceImpl
         if (id == null || id <= 0) {
             throw new IllegalArgumentException("ID không hợp lệ");
         }
+    }
+
+    private String requireText(
+            String value,
+            int maxLength,
+            String message
+    ) {
+        if (value == null
+                || value.isBlank()
+                || value.strip().length() > maxLength) {
+            throw new IllegalArgumentException(message);
+        }
+
+        return value.strip();
     }
 
     private ShopSubscriptionResponse toSubscriptionResponse(

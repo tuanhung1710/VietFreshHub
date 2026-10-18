@@ -50,5 +50,17 @@ public interface ShopSubscriptionService {
             SubscriptionPaymentStatus status
     );
 
+    // Admin xác nhận đã nhận tiền và kích hoạt gói.
+    ShopSubscriptionResponse approvePayment(
+            Long paymentId,
+            Long adminUserId,
+            String transactionReference
+    );
 
+    // Admin đánh dấu yêu cầu thanh toán thất bại.
+    void rejectPayment(
+            Long paymentId,
+            Long adminUserId,
+            String reason
+    );
 }
