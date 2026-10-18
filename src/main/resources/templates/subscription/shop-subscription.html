@@ -49,6 +49,10 @@
             </dl>
             <div class="d-flex flex-wrap gap-2 border-top pt-3">
                 <a th:href="@{/seller/subscription/plans}" class="btn btn-success">Chọn gói / Nâng cấp</a>
+                <form method="post" th:action="@{/seller/subscription/{id}/cancel(id=${currentSubscription.subscriptionId})}" onsubmit="return confirm('Hủy gói hiện tại? Shop sẽ chuyển ngay sang quyền lợi Free.');">
+                    <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <button type="submit" class="btn btn-outline-danger">Hủy gói</button>
+                </form>
             </div>
         </div>
     </section>

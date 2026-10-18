@@ -140,6 +140,47 @@ public class ShopSubscriptionServiceImpl
     }
 
     @Override
+    @Transactional
+    public void cancelSubscription(
+            Long shopId,
+            Long subscriptionId
+    ) {
+        requireId(subscriptionId);
+        lockShop(shopId);
+
+        if (paymentRepository.existsByShop_ShopIdAndStatus(
+                shopId,
+                SubscriptionPaymentStatus.PENDING
+        )) {
+            throw new IllegalArgumentException(
+                    "Cần xử lý yêu cầu thanh toán đang chờ trước khi hủy gói"
+            );
+        }
+
+        ShopSubscription subscription = subscriptionRepository
+                .findBySubscriptionIdAndShop_ShopId(
+                        subscriptionId,
+                        shopId
+                )
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Không tìm thấy đăng ký của shop"
+                ));
+
+        LocalDateTime now = utcNow();
+
+        if (subscription.getStatus() != SubscriptionStatus.ACTIVE
+                || subscription.getStartAt().isAfter(now)
+                || !subscription.getEndAt().isAfter(now)) {
+            throw new IllegalArgumentException(
+                    "Chỉ được hủy gói đang có hiệu lực"
+            );
+        }
+
+        subscription.setStatus(SubscriptionStatus.CANCELLED);
+        subscription.setAutoRenew(false);
+    }
+
+    @Override
     @PreAuthorize("hasRole('ADMIN')")
     public Page<ShopSubscriptionResponse> getAllSubscriptions(
             Pageable pageable

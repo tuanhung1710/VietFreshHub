@@ -39,6 +39,11 @@ public interface ShopSubscriptionService {
             Long shopId
     );
 
+    // Hủy gói đang có hiệu lực.
+    void cancelSubscription(
+            Long shopId,
+            Long subscriptionId
+    );
 
     // Admin xem danh sách đăng ký, có phân trang.
     Page<ShopSubscriptionResponse> getAllSubscriptions(

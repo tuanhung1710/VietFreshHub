@@ -150,6 +150,35 @@ public class ShopSubscriptionController {
         return "subscription/shop-subscription-history";
     }
 
+    @PostMapping("/{subscriptionId}/cancel")
+    public String cancelSubscription(
+            Authentication authentication,
+            @PathVariable Long subscriptionId,
+            RedirectAttributes redirectAttributes
+    ) {
+        Long shopId = shopService.getManagedShopId(authentication);
+
+        try {
+            subscriptionService.cancelSubscription(
+                    shopId,
+                    subscriptionId
+            );
+
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    "Đã hủy gói dịch vụ. Shop áp dụng quyền lợi gói Free."
+            );
+
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    ex.getMessage()
+            );
+        }
+
+        return "redirect:/seller/subscription";
+    }
+
     private void populatePlansPage(Model model, Long shopId) {
         model.addAttribute("plans", planService.getActivePlans());
 

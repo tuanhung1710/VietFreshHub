@@ -14,4 +14,5 @@ public interface ShopSubscriptionRepository
 
     List<ShopSubscription> findByShop_ShopIdOrderByCreatedAtDescSubscriptionIdDesc(Long shopId);
 
+    Optional<ShopSubscription> findBySubscriptionIdAndShop_ShopId(Long subscriptionId, Long shopId);
 }
