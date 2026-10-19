@@ -17,4 +17,7 @@ public interface LoyaltyService {
             Pageable pageable
     );
 
+    // Trả số điểm vừa cộng; trả 0 nếu không cộng.
+    int earnPoints(Long orderId);
+
 }
