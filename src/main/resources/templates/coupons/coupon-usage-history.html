@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lịch sử sử dụng coupon</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+</head>
+<body class="bg-light">
+<main class="container-xl py-4">
+    <a th:href="@{/seller/coupons}" class="btn btn-outline-secondary mb-4">
+        Quay lại danh sách coupon
+    </a>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-2">Lịch sử sử dụng coupon</h1>
+            <p class="text-muted mb-0" th:text="${'Coupon ID: ' + couponId}"></p>
+        </div>
+        <span class="badge bg-success-subtle text-success"
+              th:text="${usagePage.totalElements + ' lượt sử dụng'}"></span>
+    </div>
+
+    <div th:if="${successMessage}" th:text="${successMessage}"
+         class="alert alert-success" role="status"></div>
+    <div th:if="${errorMessage}" th:text="${errorMessage}"
+         class="alert alert-danger" role="alert"></div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <caption class="px-3">
+                    Các lượt sử dụng mới nhất được hiển thị trước. Thời gian hiển thị theo UTC.
+                </caption>
+                <thead class="table-light">
+                <tr>
+                    <th scope="col">STT</th>
+                    <th scope="col">Khách hàng</th>
+                    <th scope="col">Mã đơn</th>
+                    <th scope="col" class="text-end">Số tiền giảm</th>
+                    <th scope="col">Thời điểm sử dụng (UTC)</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${usagePage.isEmpty()}">
+                    <td colspan="5" class="text-center text-muted py-5"
+                        th:text="${usagePage.totalElements == 0
+                            ? 'Coupon chưa có lượt sử dụng nào.'
+                            : 'Không có lượt sử dụng trên trang này. Vui lòng quay lại trang trước.'}"></td>
+                </tr>
+                <tr th:each="usage, row : ${usagePage.content}">
+                    <td th:text="${usagePage.pageable.offset + row.count}"></td>
+                    <td>
+                        <div class="fw-semibold text-break"
+                             th:text="${#strings.isEmpty(usage.customerName)
+                                 ? 'Chưa có tên khách hàng' : usage.customerName}"></div>
+                        <small class="text-muted" th:text="${'ID: ' + usage.userId}"></small>
+                    </td>
+                    <td class="text-break"
+                        th:text="${#strings.isEmpty(usage.orderCode)
+                            ? '#' + usage.orderId : usage.orderCode}"></td>
+                    <td class="text-end text-nowrap fw-semibold text-success"
+                        th:text="${#numbers.formatDecimal(
+                            usage.discountAmount, 1, 'POINT', 2, 'COMMA') + ' ₫'}"></td>
+                    <td class="text-nowrap"
+                        th:text="${usage.usedAt != null
+                            ? #temporals.format(usage.usedAt, 'dd/MM/yyyy HH:mm:ss') : '—'}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <nav th:if="${usagePage.totalPages > 0}"
+         class="mt-4" aria-label="Phân trang lịch sử sử dụng coupon">
+        <ul class="pagination flex-wrap mb-0">
+            <li class="page-item" th:classappend="${!usagePage.hasPrevious() ? 'disabled' : ''}">
+                <a th:if="${usagePage.hasPrevious()}" class="page-link text-success"
+                   th:href="@{/manager/coupons/{id}/usages(id=${couponId}, page=0)}">Đầu</a>
+                <span th:unless="${usagePage.hasPrevious()}" class="page-link">Đầu</span>
+            </li>
+            <li class="page-item" th:classappend="${!usagePage.hasPrevious() ? 'disabled' : ''}">
+                <a th:if="${usagePage.hasPrevious()}" class="page-link text-success"
+                   th:href="@{/manager/coupons/{id}/usages(id=${couponId}, page=${usagePage.number - 1})}">Trước</a>
+                <span th:unless="${usagePage.hasPrevious()}" class="page-link">Trước</span>
+            </li>
+            <li class="page-item">
+                <span class="page-link text-dark" aria-current="page"
+                      th:text="${'Trang ' + (usagePage.number + 1) + ' / ' + usagePage.totalPages}"></span>
+            </li>
+            <li class="page-item" th:classappend="${!usagePage.hasNext() ? 'disabled' : ''}">
+                <a th:if="${usagePage.hasNext()}" class="page-link text-success"
+                   th:href="@{/manager/coupons/{id}/usages(id=${couponId}, page=${usagePage.number + 1})}">Sau</a>
+                <span th:unless="${usagePage.hasNext()}" class="page-link">Sau</span>
+            </li>
+            <li class="page-item" th:classappend="${!usagePage.hasNext() ? 'disabled' : ''}">
+                <a th:if="${usagePage.hasNext()}" class="page-link text-success"
+                   th:href="@{/manager/coupons/{id}/usages(id=${couponId}, page=${usagePage.totalPages - 1})}">Cuối</a>
+                <span th:unless="${usagePage.hasNext()}" class="page-link">Cuối</span>
+            </li>
+        </ul>
+    </nav>
+</main>
+</body>
+</html>

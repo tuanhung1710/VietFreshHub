@@ -148,6 +148,13 @@
 
                     <td>
                         <div class="d-flex flex-wrap gap-2">
+                            <a th:href="@{/manager/coupons/{id}/usages(
+                                   id=${coupon.couponId}
+                               )}"
+                               class="btn btn-sm btn-outline-secondary">
+                                Lịch sử sử dụng
+                            </a>
+
                             <a th:if="${coupon.status.name() == 'INACTIVE'}"
                                th:href="@{/seller/coupons/{id}/edit(
                                    id=${coupon.couponId}
