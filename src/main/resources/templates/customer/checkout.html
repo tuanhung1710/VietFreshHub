@@ -8,6 +8,7 @@
     <div th:replace="~{fragments/storefront :: messages}"></div>
     <form th:action="@{/customer/checkout}" th:object="${form}" method="post" id="checkout-form">
         <input type="hidden" name="checkoutToken" th:value="${form.checkoutToken}">
+        <input type="hidden" th:field="*{couponCode}">
         <div th:if="${#fields.hasGlobalErrors()}" class="notice error" role="alert"><p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p></div>
         <div class="checkout-layout">
             <div class="checkout-sections">
@@ -43,12 +44,45 @@
                 </section>
             </div>
             <aside class="panel summary"><h2>Tóm tắt đơn hàng</h2>
+                <div class="coupon-section">
+                    <label for="coupon-input">Mã giảm giá</label>
+                    <input id="coupon-input"
+                           type="text"
+                           name="couponInput"
+                           th:value="${form.couponCode}"
+                           maxlength="100"
+                           placeholder="Nhập mã coupon">
+                    <button type="submit"
+                            class="button secondary"
+                            th:formaction="@{/customer/checkout/coupon/preview}"
+                            formnovalidate>
+                        Áp dụng
+                    </button>
+                    <p class="muted">Để bỏ mã, xóa nội dung rồi bấm Áp dụng.</p>
+                    <p th:if="${couponApplication != null}"
+                       role="status"
+                       th:text="${'Đã áp dụng mã ' + couponApplication.code}"></p>
+                    <p th:if="${couponError != null}"
+                       class="item-error"
+                       role="alert"
+                       th:text="${couponError}"></p>
+                    <p class="item-error" th:errors="*{couponCode}"></p>
+                </div>
                 <div class="summary-line"><span>Tiền sản phẩm</span><strong th:text="${#numbers.formatInteger(cart.totalAmount,0,'POINT')} + ' ₫'"></strong></div>
+                <div class="summary-line" th:if="${couponDiscount.signum() > 0}">
+                    <span>Giảm giá coupon</span>
+                    <strong th:text="${'- ' + #numbers.formatInteger(couponDiscount, 0, 'POINT') + ' ₫'}"></strong>
+                </div>
                 <div class="summary-line"><span th:text="'Phí giao hàng (' + ${#maps.size(shopGroups)} + ' shop)'"></span><strong th:if="${checkout.shippingFee != null}" th:text="${#numbers.formatInteger(checkout.shippingFee,0,'POINT')} + ' ₫'"></strong></div>
                 <p th:if="${checkout.shippingFee == null}" class="item-error">Phí giao hàng chưa được cấu hình. Hiện chưa thể xác nhận đơn.</p>
-                <div class="summary-line summary-total"><span>Tổng thanh toán</span><strong class="price" th:if="${checkout.grandTotal != null}" th:text="${#numbers.formatInteger(checkout.grandTotal,0,'POINT')} + ' ₫'"></strong></div>
+                <div class="summary-line summary-total">
+                    <span>Tổng thanh toán</span>
+                    <strong class="price"
+                            th:if="${checkoutTotal != null}"
+                            th:text="${#numbers.formatInteger(checkoutTotal, 0, 'POINT') + ' ₫'}"></strong>
+                </div>
                 <p class="muted">Phương thức: COD. Chưa thu tiền khi bạn đặt đơn.</p>
-                <button class="button full" type="submit" th:disabled="${!checkout.canConfirm()}" data-confirm-order>Xác nhận đặt hàng</button>
+                <button class="button full" type="submit" th:disabled="${!checkout.canConfirm() or couponError != null}" data-confirm-order>Xác nhận đặt hàng</button>
                 <p class="muted summary-footnote">Các cửa hàng sẽ xác nhận và chuẩn bị phần đơn của mình. Đơn chỉ được ghi nhận khi hệ thống kiểm tra đủ hàng.</p>
                 <a th:href="@{/cart}" class="checkout-back">← Quay lại giỏ hàng</a>
             </aside>

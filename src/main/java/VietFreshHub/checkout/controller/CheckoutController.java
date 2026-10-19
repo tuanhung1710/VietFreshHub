@@ -5,6 +5,7 @@ import VietFreshHub.cart.dto.CartItemDto;
 import VietFreshHub.checkout.dto.CheckoutRequest;
 import VietFreshHub.checkout.dto.CheckoutAddressRequest;
 import VietFreshHub.checkout.service.CheckoutAddressService;
+import VietFreshHub.coupon.services.CouponApplicationService;
 import VietFreshHub.exception.CheckoutException;
 import VietFreshHub.checkout.service.CheckoutDraftStore;
 import VietFreshHub.checkout.service.CheckoutService;
@@ -20,6 +21,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
@@ -32,6 +34,7 @@ public class CheckoutController {
     private final CheckoutDraftStore drafts;
     private final CheckoutAddressService checkoutAddresses;
     private final VietFreshHub.cart.service.CartService carts;
+    private final CouponApplicationService couponApplicationService;
     @GetMapping
     public String show(Authentication authentication,HttpSession session,Model model,
                        @RequestParam(required=false) List<Long> itemIds,
@@ -95,5 +98,69 @@ public class CheckoutController {
         ((CheckoutAddressRequest)model.getAttribute("addressForm")).setCheckoutToken(draft.token());
         model.addAttribute("shopGroups",preview.cart().getItems().stream().collect(Collectors.groupingBy(
                 CartItemDto::getShopId,LinkedHashMap::new,Collectors.toList())));
+
+        BigDecimal couponDiscount = BigDecimal.ZERO;
+
+        model.addAttribute("couponApplication", null);
+        model.addAttribute("couponError", null);
+        String couponCode = form.getCouponCode();
+
+        if (couponCode != null && !couponCode.isBlank()) {
+            try {
+                var application = couponApplicationService.preview(
+                        customerId,
+                        couponCode,
+                        draft.selectedItemIds()
+                );
+
+                couponDiscount = application.discountAmount();
+                model.addAttribute("couponApplication", application);
+            } catch (IllegalArgumentException ex) {
+                model.addAttribute("couponError", ex.getMessage());
+            }
+        }
+
+        model.addAttribute("couponDiscount", couponDiscount);
+        model.addAttribute(
+                "checkoutTotal",
+                preview.grandTotal() == null
+                        ? null
+                        : preview.grandTotal().subtract(couponDiscount)
+        );
+    }
+
+    @PostMapping("/coupon/preview")
+    public String previewCoupon(
+            @ModelAttribute("form") CheckoutRequest form,
+            @RequestParam(defaultValue = "") String couponInput,
+            Authentication authentication,
+            HttpSession session,
+            Model model
+    ) {
+        Long customerId =
+                currentCustomer.requireCustomerId(authentication);
+
+        var draft = drafts.find(
+                session,
+                form.getCheckoutToken(),
+                customerId
+        );
+
+        if (draft == null) {
+            throw new CheckoutException(
+                    "Phiên đặt hàng đã hết hạn. Vui lòng chọn lại sản phẩm."
+            );
+        }
+
+        form.setCouponCode(couponInput.strip());
+
+        var preview = checkout.preview(
+                customerId,
+                draft.selectedItemIds()
+        );
+
+        populate(customerId, form, preview, session, model);
+
+        return "customer/checkout";
     }
 }

@@ -13,4 +13,6 @@ public class CheckoutRequest {
     @NotBlank(message="Phiên đặt hàng không hợp lệ. Vui lòng tải lại trang.")
     @Pattern(regexp="[0-9a-f]{32}",message="Phiên đặt hàng không hợp lệ. Vui lòng tải lại trang.")
     private String checkoutToken;
+    @Size(max = 100, message = "Mã coupon tối đa 100 ký tự")
+    private String couponCode;
 }

@@ -1,6 +1,7 @@
 package VietFreshHub.checkout.service;
 
 import VietFreshHub.auth.entity.Address;
+import VietFreshHub.coupon.services.CouponApplicationService;
 import VietFreshHub.sellerapplication.entity.SellerApplication;
 import VietFreshHub.auth.entity.User;
 import VietFreshHub.auth.repository.UserRepository;
@@ -57,6 +58,7 @@ public class CheckoutServiceImpl implements CheckoutService {
     private final ShippingQuoteService shipping;
     private final EntityManager em;
     private final ApplicationEventPublisher events;
+    private final CouponApplicationService couponApplicationService;
 
     @Override @Transactional(readOnly=true)
     public CheckoutPreview preview(Long customerId) {
@@ -150,8 +152,24 @@ public class CheckoutServiceImpl implements CheckoutService {
             OrderStatusHistory history=new OrderStatusHistory(); history.setShopOrder(shopOrder); history.setStatus("PENDING");
             history.setChangedBy(buyer); history.setNote("Khách hàng đặt đơn COD."); em.persist(history);
         }
-        inventory.reserve(reservations,customerId);
-        Payment payment=new Payment(); payment.setOrder(order); payment.setPaymentMethod(method); payment.setAmount(order.getGrandTotal());
+        inventory.reserve(reservations, customerId);
+
+        String couponCode = request.getCouponCode();
+
+        if (couponCode != null && !couponCode.isBlank()) {
+            try {
+                couponApplicationService.applyToOrder(
+                        customerId,
+                        order.getOrderId(),
+                        couponCode
+                );
+            } catch (IllegalArgumentException ex) {
+                throw new CheckoutException(ex.getMessage());
+            }
+        }
+
+        Payment payment = new Payment();
+        payment.setOrder(order); payment.setPaymentMethod(method); payment.setAmount(order.getGrandTotal());
         // COD is awaiting collection: no paid_at and no PAID transition at checkout.
         em.persist(payment);
         if(selected.size()==cart.getItems().size()) cart.setStatus("CHECKED_OUT");
