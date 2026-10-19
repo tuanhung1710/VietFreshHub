@@ -1,6 +1,8 @@
 package VietFreshHub.subscription.services;
 
 import VietFreshHub.shop.entity.Shop;
+import VietFreshHub.notification.services.NotificationService;
+import VietFreshHub.shop.repository.ShopMemberRepository;
 import VietFreshHub.subscription.dto.ShopSubscriptionResponse;
 import VietFreshHub.subscription.dto.SubscriptionPaymentForm;
 import VietFreshHub.subscription.dto.SubscriptionPaymentResponse;
@@ -35,6 +37,8 @@ public class ShopSubscriptionServiceImpl
     private final SubscriptionPlanRepository planRepository;
     private final EntityManager entityManager;
     private final Validator validator;
+    private final NotificationService notificationService;
+    private final ShopMemberRepository shopMemberRepository;
 
     @Override
     public Optional<ShopSubscriptionResponse> getCurrentSubscription(
@@ -178,6 +182,16 @@ public class ShopSubscriptionServiceImpl
 
         subscription.setStatus(SubscriptionStatus.CANCELLED);
         subscription.setAutoRenew(false);
+
+        notifyShopOwners(
+                shopId,
+                "SUBSCRIPTION_CANCELLED",
+                "Gói dịch vụ đã được hủy",
+                "Gói " + subscription.getPlan().getName()
+                        + " của shop đã được hủy.",
+                "SHOP_SUBSCRIPTION",
+                subscription.getSubscriptionId()
+        );
     }
 
     @Override
@@ -286,6 +300,22 @@ public class ShopSubscriptionServiceImpl
         payment.setReviewedBy(adminUserId);
         payment.setReviewedAt(now);
 
+        String actionText = switch (payment.getAction()) {
+            case SUBSCRIBE -> "đăng ký";
+            case RENEW -> "gia hạn";
+            case UPGRADE -> "nâng cấp";
+        };
+
+        notifyShopOwners(
+                shopId,
+                "SUBSCRIPTION_ACTIVATED",
+                "Gói dịch vụ đã được kích hoạt",
+                "Shop đã " + actionText
+                        + " thành công gói " + plan.getName() + ".",
+                "SHOP_SUBSCRIPTION",
+                saved.getSubscriptionId()
+        );
+
         return toSubscriptionResponse(saved);
     }
 
@@ -318,6 +348,40 @@ public class ShopSubscriptionServiceImpl
         payment.setNote(note);
         payment.setReviewedBy(adminUserId);
         payment.setReviewedAt(utcNow());
+
+        notifyShopOwners(
+                payment.getShop().getShopId(),
+                "SUBSCRIPTION_PAYMENT_REJECTED",
+                "Yêu cầu thanh toán gói bị từ chối",
+                "Yêu cầu thanh toán gói "
+                        + payment.getPlan().getName()
+                        + " đã bị từ chối. Lý do: " + note,
+                "SUBSCRIPTION_PAYMENT",
+                payment.getSubscriptionPaymentId()
+        );
+    }
+
+    private void notifyShopOwners(
+            Long shopId,
+            String type,
+            String title,
+            String content,
+            String entityType,
+            Long entityId
+    ) {
+        List<Long> ownerIds =
+                shopMemberRepository.findActiveOwnerUserIds(shopId);
+
+        for (Long ownerId : ownerIds) {
+            notificationService.send(
+                    ownerId,
+                    type,
+                    title,
+                    content,
+                    entityType,
+                    entityId
+            );
+        }
     }
 
     private void validateAction(

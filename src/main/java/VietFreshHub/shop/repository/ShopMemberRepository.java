@@ -8,6 +8,16 @@ import java.util.List;
 public interface ShopMemberRepository extends JpaRepository<ShopMember, Long> {
 
     @Query("""
+            select sm.user.userId
+            from ShopMember sm
+            where sm.shop.shopId = :shopId
+              and sm.memberRole = 'OWNER'
+              and sm.status = 'ACTIVE'
+            order by sm.user.userId
+            """)
+    List<Long> findActiveOwnerUserIds(@Param("shopId") Long shopId);
+
+    @Query("""
             select sm from ShopMember sm
             join fetch sm.shop s
             where sm.user.userId = :userId
