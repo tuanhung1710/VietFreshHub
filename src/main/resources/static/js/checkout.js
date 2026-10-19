@@ -15,9 +15,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     const form = document.getElementById('checkout-form');
     if (!form) return;
-    form.addEventListener('submit', () => {
+    form.addEventListener('submit', event => {
+        const button = event.submitter;
+        if (!button?.matches('[data-confirm-order]')) return;
         if (!form.checkValidity()) return;
-        const button = form.querySelector('[data-confirm-order]');
         button.disabled = true;
         button.textContent = 'Đang ghi nhận đơn…';
         form.setAttribute('aria-busy', 'true');
