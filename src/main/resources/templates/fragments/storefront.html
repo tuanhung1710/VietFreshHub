@@ -25,6 +25,7 @@
             <a th:if="${#authorization.expression('!isAuthenticated()')}" th:href="@{/login}">Đăng nhập</a>
             <details th:if="${#authorization.expression('isAuthenticated()')}" class="account-menu"><summary>Tài khoản</summary>
                 <div class="account-dropdown"><span th:text="${#authentication.name}"></span>
+                    <a th:href="@{/notifications}">Thông báo</a>
                     <a th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" th:href="@{/customer/orders}">Đơn hàng của tôi</a>
                     <a th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" th:href="@{/customer/loyalty}">Điểm thưởng của tôi</a>
                     <form th:action="@{/logout}" method="post"><button type="submit">Đăng xuất</button></form></div>
