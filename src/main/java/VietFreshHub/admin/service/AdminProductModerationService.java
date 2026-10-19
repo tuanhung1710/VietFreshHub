@@ -6,12 +6,14 @@ import VietFreshHub.admin.repository.AdminProductModerationRepository;
 import VietFreshHub.auth.entity.User;
 import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.inventory.service.InventoryJournalService;
+import VietFreshHub.notification.service.NotificationService;
 import VietFreshHub.product.entity.Product;
 import VietFreshHub.product.enums.ApprovalStatus;
 import VietFreshHub.product.enums.ProductStatus;
 import VietFreshHub.product.repository.ProductImageRepository;
 import VietFreshHub.product.repository.ProductVariantRepository;
 import VietFreshHub.shop.repository.ShopRepository;
+import VietFreshHub.shop.service.ShopService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -41,8 +43,10 @@ public class AdminProductModerationService {
     private final ProductImageRepository productImageRepository;
     private final ProductVariantRepository productVariantRepository;
     private final ShopRepository shopRepository;
+    private final ShopService shopService;
     private final UserRepository userRepository;
     private final InventoryJournalService journalService;
+    private final NotificationService notificationService;
 
     public Page<AdminProductModerationRow> search(
             String tab, String keyword, String dateRange, int requestedPage) {
@@ -106,6 +110,7 @@ public class AdminProductModerationService {
                 .orElseThrow(() -> new IllegalStateException("Tài khoản admin không còn hoạt động."));
 
         String normalizedAction = action == null ? "" : action.trim().toUpperCase(Locale.ROOT);
+        boolean wasModerationBlocked = product.isModerationBlocked();
         switch (normalizedAction) {
             case "APPROVE" -> {
                 if (product.isModerationBlocked()) {
@@ -127,6 +132,9 @@ public class AdminProductModerationService {
                 product.setModerationReason(normalizedReason);
                 journalService.audit(admin.getUserId(), "PRODUCT_MODERATION_BLOCKED", "PRODUCT",
                         productId, normalizedReason);
+                if (!wasModerationBlocked) {
+                    notifyShopManagersOfBlock(product, productId, normalizedReason);
+                }
             }
             case "UNBLOCK" -> {
                 if (!product.isModerationBlocked()) {
@@ -142,6 +150,27 @@ public class AdminProductModerationService {
         }
         product.setUpdatedAt(LocalDateTime.now(ZoneOffset.UTC).withNano(0));
         moderationRepository.save(product);
+    }
+
+    private void notifyShopManagersOfBlock(Product product, Long productId, String reason) {
+        if (product.getShopId() == null) {
+            return;
+        }
+        String productName = product.getName() == null || product.getName().isBlank()
+                ? "sản phẩm #" + productId
+                : product.getName().trim();
+        String content = "Admin đã tạm ẩn sản phẩm \"" + productName
+                + "\" khỏi sàn. Lý do: " + reason;
+        for (Long managerUserId : shopService.findActiveManagerUserIds(product.getShopId())) {
+            notificationService.createInAppForTransition(
+                    managerUserId,
+                    "PRODUCT_MODERATION_BLOCKED",
+                    "Sản phẩm bị tạm ẩn sau kiểm duyệt",
+                    content,
+                    "PRODUCT",
+                    productId
+            );
+        }
     }
 
     private void markApproved(Product product, Long adminId) {

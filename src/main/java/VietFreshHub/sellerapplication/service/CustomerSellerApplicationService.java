@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Service
@@ -86,7 +87,8 @@ public class CustomerSellerApplicationService {
                         document.getVerificationStatus(),
                         documentStatusLabel(document.getVerificationStatus()),
                         format(document.getUploadedAt()),
-                        cloudinaryStorageService.createPrivateDownloadUrl(
+                        isImageFormat(document.getCloudinaryFormat()),
+                        cloudinaryStorageService.createPrivatePreviewUrl(
                                 document.getCloudinaryPublicId(),
                                 document.getCloudinaryResourceType(),
                                 document.getCloudinaryFormat()
@@ -283,6 +285,17 @@ public class CustomerSellerApplicationService {
         history.setChangedBy(application.getUser());
         history.setNote("Khách hàng đã chỉnh sửa và gửi lại hồ sơ.");
         historyRepository.save(history);
+    }
+
+    private boolean isImageFormat(String format) {
+        if (format == null) {
+            return false;
+        }
+
+        return switch (format.toLowerCase(Locale.ROOT)) {
+            case "jpg", "jpeg", "png" -> true;
+            default -> false;
+        };
     }
 
     private SellerApplication findOwnedApplication(Long applicationId, String email) {

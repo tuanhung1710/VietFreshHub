@@ -87,7 +87,7 @@ public class SellerApplicationController {
 
     @GetMapping("/customer/apply/success")
     public String showSuccessPage() {
-        return "customer/home";
+        return "redirect:/customer/home";
     }
 
     private User getCurrentUser(Authentication authentication) {

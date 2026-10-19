@@ -218,6 +218,32 @@ public class CloudinaryStorageService {
             );
         }
     }
+
+    public String createPrivatePreviewUrl(
+            String publicId,
+            String resourceType,
+            String format
+    ) {
+        try {
+            long expiresAt = Instant.now().plusSeconds(600).getEpochSecond();
+
+            return cloudinary.privateDownload(
+                    publicId,
+                    format,
+                    ObjectUtils.asMap(
+                            "resource_type", resourceType,
+                            "type", "authenticated",
+                            "expires_at", expiresAt,
+                            "attachment", false
+                    )
+            );
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "Không tạo được link xem trước giấy tờ trên Cloudinary", e
+            );
+        }
+    }
+
     public void deletePrivate(UploadedAsset asset) throws IOException {
         cloudinary.uploader().destroy(
                 asset.publicId(),

@@ -5,6 +5,7 @@ import VietFreshHub.auth.entity.User;
 import VietFreshHub.auth.repository.RoleRepository;
 import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.auth.repository.UserRoleGrantRepository;
+import VietFreshHub.notification.service.NotificationService;
 import VietFreshHub.sellerapplication.dto.SellerApplicationAdminDetail;
 import VietFreshHub.sellerapplication.dto.SellerApplicationAdminRow;
 import VietFreshHub.sellerapplication.event.SellerApplicationApprovedEvent;
@@ -44,6 +45,7 @@ public class AdminSellerApplicationService {
     private final RoleRepository roleRepository;
     private final UserRoleGrantRepository userRoleGrantRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final NotificationService notificationService;
     private final String cloudinaryCloudName;
     private final String cloudinaryDocumentResourceType;
     private final CloudinaryStorageService cloudinaryStorageService;
@@ -56,6 +58,7 @@ public class AdminSellerApplicationService {
             RoleRepository roleRepository,
             UserRoleGrantRepository userRoleGrantRepository,
             ApplicationEventPublisher eventPublisher,
+            NotificationService notificationService,
             @Value("${cloudinary.cloud-name:}") String cloudinaryCloudName,
             @Value("${cloudinary.document-resource-type:image}") String cloudinaryDocumentResourceType, CloudinaryStorageService cloudinaryStorageService
     ) {
@@ -67,6 +70,7 @@ public class AdminSellerApplicationService {
         this.roleRepository = roleRepository;
         this.userRoleGrantRepository = userRoleGrantRepository;
         this.eventPublisher = eventPublisher;
+        this.notificationService = notificationService;
         this.cloudinaryCloudName = cloudinaryCloudName;
         this.cloudinaryDocumentResourceType = cloudinaryDocumentResourceType;
         this.cloudinaryStorageService = cloudinaryStorageService;
@@ -280,6 +284,14 @@ public class AdminSellerApplicationService {
         application.setReviewedAt(nowUtc());
         application.setRejectionReason(rejectionReason);
         transition(application, SellerApplicationStatus.REJECTED, admin, rejectionReason);
+        notificationService.createInAppForTransition(
+                application.getUser().getUserId(),
+                "SELLER_APPLICATION_REJECTED",
+                "Hồ sơ đăng ký bán hàng bị từ chối",
+                "Hồ sơ \"" + application.getBusinessName() + "\" bị từ chối. Lý do: " + rejectionReason,
+                "SELLER_APPLICATION",
+                applicationId
+        );
     }
 
     private SellerApplication lockApplication(Long applicationId) {
