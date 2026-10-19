@@ -2,6 +2,7 @@ package VietFreshHub.coupon.services;
 
 import VietFreshHub.cart.entity.CartItem;
 import VietFreshHub.coupon.dto.CouponApplicationResponse;
+import VietFreshHub.coupon.dto.CouponUsageResponse;
 import VietFreshHub.coupon.entity.Coupon;
 import VietFreshHub.coupon.entity.CouponStatus;
 import VietFreshHub.coupon.entity.CouponUsage;
@@ -16,6 +17,8 @@ import VietFreshHub.promotion.entity.PromotionStatus;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -298,6 +301,40 @@ public class CouponApplicationServiceImpl
         usageRepository.saveAndFlush(usage);
 
         return response;
+    }
+
+    @Override
+    public Page<CouponUsageResponse> getUsageHistory(
+            Long shopId,
+            Long couponId,
+            Pageable pageable
+    ) {
+        requireId(shopId);
+        requireId(couponId);
+
+        couponRepository
+                .findByCouponIdAndPromotion_ShopId(couponId, shopId)
+                .orElseThrow(() -> invalid(
+                        "Không tìm thấy coupon của shop"
+                ));
+
+        return usageRepository
+                .findByCoupon_CouponIdAndCoupon_Promotion_ShopIdOrderByUsedAtDescCouponUsageIdDesc(
+                        couponId,
+                        shopId,
+                        pageable
+                )
+                .map(usage -> new CouponUsageResponse(
+                        usage.getCouponUsageId(),
+                        usage.getCoupon().getCouponId(),
+                        usage.getCoupon().getCode(),
+                        usage.getUser().getUserId(),
+                        usage.getUser().getFullName(),
+                        usage.getOrder().getOrderId(),
+                        usage.getOrder().getOrderCode(),
+                        usage.getDiscountAmount(),
+                        usage.getUsedAt()
+                ));
     }
 
     private void validateCoupon(Coupon coupon, Long customerId) {

@@ -1,6 +1,9 @@
 package VietFreshHub.coupon.services;
 
 import VietFreshHub.coupon.dto.CouponApplicationResponse;
+import VietFreshHub.coupon.dto.CouponUsageResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -22,5 +25,10 @@ public interface CouponApplicationService {
             String code
     );
 
-
+    // Shop xem lịch sử sử dụng một coupon của mình.
+    Page<CouponUsageResponse> getUsageHistory(
+            Long shopId,
+            Long couponId,
+            Pageable pageable
+    );
 }
