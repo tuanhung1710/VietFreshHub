@@ -6,6 +6,7 @@ import VietFreshHub.checkout.dto.CheckoutRequest;
 import VietFreshHub.checkout.dto.CheckoutAddressRequest;
 import VietFreshHub.checkout.service.CheckoutAddressService;
 import VietFreshHub.coupon.services.CouponApplicationService;
+import VietFreshHub.loyalty.services.LoyaltyService;
 import VietFreshHub.exception.CheckoutException;
 import VietFreshHub.checkout.service.CheckoutDraftStore;
 import VietFreshHub.checkout.service.CheckoutService;
@@ -35,6 +36,7 @@ public class CheckoutController {
     private final CheckoutAddressService checkoutAddresses;
     private final VietFreshHub.cart.service.CartService carts;
     private final CouponApplicationService couponApplicationService;
+    private final LoyaltyService loyaltyService;
     @GetMapping
     public String show(Authentication authentication,HttpSession session,Model model,
                        @RequestParam(required=false) List<Long> itemIds,
@@ -100,9 +102,15 @@ public class CheckoutController {
                 CartItemDto::getShopId,LinkedHashMap::new,Collectors.toList())));
 
         BigDecimal couponDiscount = BigDecimal.ZERO;
+        BigDecimal loyaltyDiscount = BigDecimal.ZERO;
 
         model.addAttribute("couponApplication", null);
         model.addAttribute("couponError", null);
+        model.addAttribute("redemption", null);
+        model.addAttribute("loyaltyError", null);
+        model.addAttribute("loyaltyBalance", loyaltyService.getBalance(customerId));
+
+        boolean couponValid = true;
         String couponCode = form.getCouponCode();
 
         if (couponCode != null && !couponCode.isBlank()) {
@@ -116,17 +124,59 @@ public class CheckoutController {
                 couponDiscount = application.discountAmount();
                 model.addAttribute("couponApplication", application);
             } catch (IllegalArgumentException ex) {
+                couponValid = false;
                 model.addAttribute("couponError", ex.getMessage());
             }
         }
 
+        if (couponValid) {
+            BigDecimal goodsAmountAfterCoupon = preview.cart()
+                    .getTotalAmount()
+                    .subtract(couponDiscount);
+
+            try {
+                var redemption = loyaltyService.previewRedemption(
+                        customerId,
+                        form.getPointsToUse(),
+                        goodsAmountAfterCoupon
+                );
+                loyaltyDiscount = redemption.discountAmount();
+                model.addAttribute("redemption", redemption);
+            } catch (IllegalArgumentException ex) {
+                model.addAttribute("loyaltyError", ex.getMessage());
+            }
+        }
+
         model.addAttribute("couponDiscount", couponDiscount);
+        model.addAttribute("loyaltyDiscount", loyaltyDiscount);
         model.addAttribute(
                 "checkoutTotal",
                 preview.grandTotal() == null
                         ? null
-                        : preview.grandTotal().subtract(couponDiscount)
+                        : preview.grandTotal().subtract(couponDiscount).subtract(loyaltyDiscount)
         );
+    }
+
+    @PostMapping("/points/preview")
+    public String previewPoints(
+            @ModelAttribute("form") CheckoutRequest form,
+            @RequestParam(defaultValue = "0") Integer pointsInput,
+            Authentication authentication,
+            HttpSession session,
+            Model model
+    ) {
+        Long customerId = currentCustomer.requireCustomerId(authentication);
+        var draft = drafts.find(session, form.getCheckoutToken(), customerId);
+        if (draft == null) {
+            throw new CheckoutException(
+                    "Phiên đặt hàng đã hết hạn. Vui lòng chọn lại sản phẩm."
+            );
+        }
+
+        form.setPointsToUse(pointsInput);
+        var preview = checkout.preview(customerId, draft.selectedItemIds());
+        populate(customerId, form, preview, session, model);
+        return "customer/checkout";
     }
 
     @PostMapping("/coupon/preview")

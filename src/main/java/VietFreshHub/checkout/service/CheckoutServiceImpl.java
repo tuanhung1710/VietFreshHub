@@ -2,6 +2,7 @@ package VietFreshHub.checkout.service;
 
 import VietFreshHub.auth.entity.Address;
 import VietFreshHub.coupon.services.CouponApplicationService;
+import VietFreshHub.loyalty.services.LoyaltyService;
 import VietFreshHub.sellerapplication.entity.SellerApplication;
 import VietFreshHub.auth.entity.User;
 import VietFreshHub.auth.repository.UserRepository;
@@ -59,6 +60,7 @@ public class CheckoutServiceImpl implements CheckoutService {
     private final EntityManager em;
     private final ApplicationEventPublisher events;
     private final CouponApplicationService couponApplicationService;
+    private final LoyaltyService loyaltyService;
 
     @Override @Transactional(readOnly=true)
     public CheckoutPreview preview(Long customerId) {
@@ -162,6 +164,26 @@ public class CheckoutServiceImpl implements CheckoutService {
                         customerId,
                         order.getOrderId(),
                         couponCode
+                );
+            } catch (IllegalArgumentException ex) {
+                throw new CheckoutException(ex.getMessage());
+            }
+        }
+
+        Integer pointsToUse = request.getPointsToUse();
+
+        if (pointsToUse == null || pointsToUse < 0) {
+            throw new CheckoutException(
+                    "Số điểm sử dụng không hợp lệ"
+            );
+        }
+
+        if (pointsToUse > 0) {
+            try {
+                loyaltyService.redeemToOrder(
+                        customerId,
+                        order.getOrderId(),
+                        pointsToUse
                 );
             } catch (IllegalArgumentException ex) {
                 throw new CheckoutException(ex.getMessage());

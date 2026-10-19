@@ -15,4 +15,7 @@ public class CheckoutRequest {
     private String checkoutToken;
     @Size(max = 100, message = "Mã coupon tối đa 100 ký tự")
     private String couponCode;
+    @NotNull(message = "Vui lòng nhập số điểm sử dụng")
+    @Min(value = 0, message = "Số điểm sử dụng không được âm")
+    private Integer pointsToUse = 0;
 }
