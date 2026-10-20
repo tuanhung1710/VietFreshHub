@@ -39,6 +39,7 @@ public final class CustomerSellerApplicationView {
             DocumentVerificationStatus status,
             String statusLabel,
             String uploadedAtLabel,
+            boolean imagePreview,
             String fileUrl
     ) {
     }

@@ -84,6 +84,9 @@ public class CatalogProduct {
     @Column(nullable = false, length = 30)
     private String status = "INACTIVE";
 
+    @Column(name = "moderation_blocked", nullable = false)
+    private boolean moderationBlocked;
+
     @Column(name = "approval_status", nullable = false, length = 30)
     private String approvalStatus = "PENDING";
 

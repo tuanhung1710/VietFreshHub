@@ -20,13 +20,18 @@ public class CustomerProfileService {
         User user = findCurrentUser(authenticatedEmail);
         CustomerProfileRequest profile = new CustomerProfileRequest();
         profile.setEmail(user.getEmail());
+        profile.setAvatarUrl(user.getAvatarUrl());
         profile.setFullName(user.getFullName());
         profile.setPhone(user.getPhone());
         return profile;
     }
 
     @Transactional
-    public void updateProfile(String authenticatedEmail, CustomerProfileRequest request) {
+    public String updateProfile(
+            String authenticatedEmail,
+            CustomerProfileRequest request,
+            String newAvatarUrl
+    ) {
         User user = findCurrentUser(authenticatedEmail);
         String fullName = request.getFullName() == null ? "" : request.getFullName().trim();
         if (fullName.isEmpty() || fullName.length() > 150) {
@@ -43,9 +48,16 @@ public class CustomerProfileService {
             throw new IllegalArgumentException("Số điện thoại này đã được tài khoản khác sử dụng.");
         }
 
+        String previousAvatarUrl = null;
+        if (newAvatarUrl != null && !newAvatarUrl.isBlank()) {
+            previousAvatarUrl = user.getAvatarUrl();
+            user.setAvatarUrl(newAvatarUrl);
+        }
+
         user.setFullName(fullName);
         user.setPhone(phone);
         userRepository.save(user);
+        return previousAvatarUrl;
     }
 
     private User findCurrentUser(String authenticatedEmail) {

@@ -8,14 +8,20 @@
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
 <main class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-    <header class="mb-6">
-        <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-            VietFresh Hub
-        </p>
-        <h1 class="mt-2 text-3xl font-bold">Hồ sơ đăng ký bán hàng của tôi</h1>
-        <p class="mt-2 text-slate-600">
-            Theo dõi trạng thái xử lý và xem phản hồi từ admin.
-        </p>
+    <header class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+            <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+                VietFresh Hub
+            </p>
+            <h1 class="mt-2 text-3xl font-bold">Hồ sơ đăng ký bán hàng của tôi</h1>
+            <p class="mt-2 text-slate-600">
+                Theo dõi trạng thái xử lý và xem phản hồi từ admin.
+            </p>
+        </div>
+        <form th:action="@{/logout}" method="post">
+            <button class="rounded-lg border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                    type="submit">Đăng xuất</button>
+        </form>
     </header>
     <div th:if="${errorMessage}"
          class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
@@ -24,6 +30,10 @@
     <div th:if="${#lists.isEmpty(applications)}"
          class="rounded-2xl border bg-white p-8 text-center text-slate-600 shadow-sm">
         Bạn chưa gửi hồ sơ đăng ký bán hàng.
+        <div class="mt-5">
+            <a class="inline-flex rounded-lg bg-emerald-700 px-5 py-3 font-semibold text-white hover:bg-emerald-800"
+               th:href="@{/seller-onboarding/apply}">Bắt đầu đăng ký bán hàng</a>
+        </div>
     </div>
 
     <div th:unless="${#lists.isEmpty(applications)}"

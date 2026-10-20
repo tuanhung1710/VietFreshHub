@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chi tiết hậu kiểm · VietFresh Hub</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #f4f8f4; color: #18382b; font: 15px/1.55 system-ui, sans-serif; }
+        header { padding: 18px max(24px, calc((100vw - 1100px)/2)); background: white; border-bottom: 1px solid #dce8df; }
+        main { max-width: 1100px; margin: 28px auto; padding: 0 22px 40px; }
+        a { color: #087443; text-decoration: none; }
+        .card { margin: 18px 0; padding: 20px; background: white; border: 1px solid #dce8df; border-radius: 12px; }
+        .gallery { display: flex; flex-wrap: wrap; gap: 12px; }
+        .gallery img { width: 150px; height: 150px; border-radius: 9px; object-fit: cover; background: #eef3ef; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; border-bottom: 1px solid #edf1ee; text-align: left; }
+        textarea { display: block; width: 100%; min-height: 80px; margin: 8px 0; padding: 10px; font: inherit; }
+        button { border: 0; border-radius: 8px; padding: 10px 14px; background: #087443; color: white; cursor: pointer; font: inherit; }
+        .danger { background: #a33225; }
+    </style>
+</head>
+<body>
+<header><a th:href="@{/admin/products}">← Quay lại danh sách hậu kiểm</a></header>
+<main>
+    <h1 th:text="${detail.product.name}">Tên sản phẩm</h1>
+    <p><strong>Cửa hàng:</strong> <span th:text="${detail.shopName}">Tên cửa hàng</span></p>
+    <p><strong>Slug:</strong> <span th:text="${detail.product.slug}">slug</span></p>
+    <p><strong>Trạng thái:</strong> <span th:text="${detail.product.status}">ACTIVE</span>
+        · <span th:text="${detail.product.approvalStatus}">PENDING</span>
+        · <span th:if="${detail.product.moderationBlocked}" th:text="${'Đang khóa: ' + detail.product.moderationReason}">Lý do khóa</span></p>
+    <section class="card">
+        <h2>Mô tả</h2>
+        <p th:text="${detail.product.description}">Mô tả sản phẩm</p>
+    </section>
+    <section class="card">
+        <h2>Hình ảnh</h2>
+        <div class="gallery">
+            <img th:each="image : ${detail.images}" th:src="${image.imageUrl}" th:alt="${detail.product.name}">
+            <p th:if="${#lists.isEmpty(detail.images)}">Chưa có hình ảnh.</p>
+        </div>
+    </section>
+    <section class="card">
+        <h2>Phân loại và giá</h2>
+        <div style="overflow-x:auto">
+            <table>
+                <thead><tr><th>Tên phân loại</th><th>SKU</th><th>Đơn vị</th><th>Giá</th><th>Trạng thái</th></tr></thead>
+                <tbody>
+                <tr th:each="variant : ${detail.variants}">
+                    <td th:text="${variant.variantName}">Phân loại</td>
+                    <td th:text="${variant.sku}">SKU</td>
+                    <td th:text="${variant.unit}">kg</td>
+                    <td th:text="${#numbers.formatDecimal(variant.price, 0, 'COMMA', 0, 'POINT') + ' đ'}">55.000 đ</td>
+                    <td th:text="${variant.status}">ACTIVE</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <section class="card">
+        <h2>Quyết định hậu kiểm</h2>
+        <form th:if="${detail.product.approvalStatus == T(VietFreshHub.product.enums.ApprovalStatus).PENDING and !detail.product.moderationBlocked}"
+              method="post" th:action="@{/admin/products/{id}/review(id=${detail.product.productId})}">
+            <input type="hidden" name="action" value="APPROVE">
+            <button type="submit">Đã kiểm tra, tiếp tục bán</button>
+        </form>
+        <form th:if="${!detail.product.moderationBlocked}" method="post"
+              th:action="@{/admin/products/{id}/review(id=${detail.product.productId})}">
+            <input type="hidden" name="action" value="BLOCK">
+            <label for="reason">Lý do tạm khóa (bắt buộc)</label>
+            <textarea id="reason" name="reason" maxlength="1000" required></textarea>
+            <button class="danger" type="submit">Tạm khóa</button>
+        </form>
+        <form th:if="${detail.product.moderationBlocked}" method="post"
+              th:action="@{/admin/products/{id}/review(id=${detail.product.productId})}">
+            <input type="hidden" name="action" value="UNBLOCK">
+            <button type="submit">Mở khóa và duyệt</button>
+        </form>
+    </section>
+</main>
+</body>
+</html>

@@ -69,61 +69,97 @@
     <div th:unless="${#lists.isEmpty(detail.documents)}"
          class="mt-3 divide-y divide-slate-100">
       <article th:each="document : ${detail.documents}"
-               class="flex flex-col gap-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p class="font-semibold" th:text="${document.documentType}">Loại giấy tờ</p>
-          <p class="mt-1 text-xs text-slate-500">
-            Tải lên: <span th:text="${document.uploadedAtLabel}">—</span>
-          </p>
-          <span class="mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
-                th:classappend="${document.status.name() == 'VERIFIED'
-                              ? ' bg-emerald-100 text-emerald-800'
-                              : (document.status.name() == 'REJECTED'
-                                  ? ' bg-rose-100 text-rose-800'
-                                  : ' bg-amber-100 text-amber-800')}"
-                th:text="${document.statusLabel}">
-                        Trạng thái tài liệu
-                    </span>
+               class="space-y-4 border-b border-slate-100 py-5 last:border-0">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p class="font-semibold" th:text="${document.documentType}">Loại giấy tờ</p>
+            <p class="mt-1 text-xs text-slate-500">
+              Tải lên: <span th:text="${document.uploadedAtLabel}">—</span>
+            </p>
+            <span class="mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                  th:classappend="${document.status.name() == 'VERIFIED'
+                                ? ' bg-emerald-100 text-emerald-800'
+                                : (document.status.name() == 'REJECTED'
+                                    ? ' bg-rose-100 text-rose-800'
+                                    : ' bg-amber-100 text-amber-800')}"
+                  th:text="${document.statusLabel}">
+              Trạng thái tài liệu
+            </span>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <form th:if="${document.status.name() == 'REJECTED'
+                                    and (detail.status.name() == 'REJECTED'
+                                         or detail.status.name() == 'UNDER_REVIEW')}"
+                  method="post"
+                  enctype="multipart/form-data"
+                  th:action="@{/customer/seller-applications/{appId}/documents/{docId}/replace(
+                                appId=${detail.applicationId},
+                                docId=${document.documentId}
+                            )}"
+                  class="flex flex-wrap items-center gap-2">
+              <input type="file"
+                     name="file"
+                     accept=".pdf,.jpg,.jpeg,.png"
+                     required
+                     class="max-w-xs rounded-lg border border-slate-300 p-2 text-sm">
+              <button type="submit"
+                      class="rounded-lg bg-rose-700 px-3 py-2 text-sm
+                             font-semibold text-white hover:bg-rose-800">
+                Thay giấy tờ
+              </button>
+            </form>
+
+            <span th:if="${document.status.name() == 'VERIFIED'}"
+                  class="text-sm font-medium text-emerald-700">
+              Đã xác minh — không cần chỉnh sửa
+            </span>
+          </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3">
-          <a th:if="${document.fileUrl != null}"
-             th:href="${document.fileUrl}"
-             target="_blank"
-             rel="noopener"
-             class="rounded-lg border px-3 py-2 text-sm font-semibold hover:bg-slate-50">
-            Xem tài liệu
-          </a>
+        <button th:if="${document.imagePreview and document.fileUrl != null}"
+                type="button"
+                th:attr="data-preview-src=${document.fileUrl}"
+                aria-label="Phóng to ảnh giấy tờ"
+       class="group block max-w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-left">
+          <img th:src="${document.fileUrl}"
+               th:alt="${document.documentType}"
+               class="max-h-72 max-w-full object-contain transition group-hover:opacity-90">
+          <span class="block border-t border-slate-200 px-3 py-2 text-xs font-medium text-slate-600">
+            Bấm vào ảnh để phóng to
+          </span>
+        </button>
 
-          <form th:if="${document.status.name() == 'REJECTED'
-                                  and (detail.status.name() == 'REJECTED'
-                                       or detail.status.name() == 'UNDER_REVIEW')}"
-                method="post"
-                enctype="multipart/form-data"
-                th:action="@{/customer/seller-applications/{appId}/documents/{docId}/replace(
-                              appId=${detail.applicationId},
-                              docId=${document.documentId}
-                          )}"
-                class="flex flex-wrap items-center gap-2">
-            <input type="file"
-                   name="file"
-                   accept=".pdf,.jpg,.jpeg,.png"
-                   required
-                   class="max-w-xs rounded-lg border border-slate-300 p-2 text-sm">
-            <button class="rounded-lg bg-rose-700 px-3 py-2 text-sm
-                                       font-semibold text-white hover:bg-rose-800">
-              Thay giấy tờ
-            </button>
-          </form>
-
-          <span th:if="${document.status.name() == 'VERIFIED'}"
-                class="text-sm font-medium text-emerald-700">
-                        Đã xác minh — không cần chỉnh sửa
-                    </span>
+        <div th:if="${not document.imagePreview and document.fileUrl != null}"
+             class="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+          <iframe th:src="${document.fileUrl}"
+                  th:title="'Xem ' + ${document.documentType}"
+                  class="h-[65vh] min-h-[360px] w-full"
+                  referrerpolicy="no-referrer"></iframe>
         </div>
+
+        <p th:if="${document.fileUrl == null}"
+           class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+          Không thể tải bản xem trước của tài liệu này.
+        </p>
       </article>
     </div>
   </section>
+
+  <div id="documentImageModal"
+       class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/90 p-4"
+       role="dialog"
+       aria-modal="true"
+       aria-label="Ảnh giấy tờ phóng to">
+    <button id="closeDocumentImageModal"
+            type="button"
+            class="absolute right-4 top-4 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow"
+            aria-label="Đóng ảnh phóng to">
+      Đóng ✕
+    </button>
+    <div id="documentImageModalContent"
+         class="flex max-h-[90vh] max-w-[92vw] items-center justify-center"></div>
+  </div>
 
   <section th:if="${detail.status.name() == 'REJECTED'}"
            class="mt-6 rounded-2xl border bg-white p-5 shadow-sm">
@@ -198,5 +234,75 @@
     </ol>
   </section>
 </main>
+<script>
+  (() => {
+    const modal = document.getElementById("documentImageModal");
+    const modalContent = document.getElementById("documentImageModalContent");
+    const closeButton = document.getElementById("closeDocumentImageModal");
+    let lastPreviewButton = null;
+    let previewImage = null;
+    let originalImageParent = null;
+    let originalImageNextSibling = null;
+    let originalImageStyle = null;
+
+    const closeModal = () => {
+      if (modal.classList.contains("hidden")) {
+        return;
+      }
+
+      if (previewImage && originalImageParent) {
+        originalImageParent.insertBefore(previewImage, originalImageNextSibling);
+        if (originalImageStyle === null) {
+          previewImage.removeAttribute("style");
+        } else {
+          previewImage.setAttribute("style", originalImageStyle);
+        }
+      }
+
+      modalContent.replaceChildren();
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+      document.body.classList.remove("overflow-hidden");
+      lastPreviewButton?.focus();
+      previewImage = null;
+      originalImageParent = null;
+      originalImageNextSibling = null;
+      originalImageStyle = null;
+    };
+
+    document.querySelectorAll("[data-preview-src]").forEach((previewButton) => {
+      previewButton.addEventListener("click", () => {
+        previewImage = previewButton.querySelector("img");
+        if (!previewImage) {
+          return;
+        }
+
+        lastPreviewButton = previewButton;
+        originalImageParent = previewImage.parentNode;
+        originalImageNextSibling = previewImage.nextSibling;
+        originalImageStyle = previewImage.getAttribute("style");
+        previewImage.style.maxHeight = "90vh";
+        previewImage.style.maxWidth = "92vw";
+        modalContent.appendChild(previewImage);
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        document.body.classList.add("overflow-hidden");
+        closeButton.focus();
+      });
+    });
+
+    closeButton.addEventListener("click", closeModal);
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) {
+        closeModal();
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closeModal();
+      }
+    });
+  })();
+</script>
 </body>
 </html>

@@ -16,7 +16,7 @@ public class CatalogServiceImpl implements CatalogService {
     private final CatalogVariantRepository variants;
     private final CheckoutInventoryBatchRepository inventory;
     public boolean isVisible(CatalogProduct p) {
-        if (p == null || !"ACTIVE".equals(p.getStatus()) || !"APPROVED".equals(p.getApprovalStatus())
+        if (p == null || !"ACTIVE".equals(p.getStatus()) || p.isModerationBlocked()
                 || p.getShop() == null || !"ACTIVE".equals(p.getShop().getStatus())) return false;
         var activeIds = VietFreshHub.catalog.service.CatalogCategoryPolicy.activeIds(products.findCatalogCategories());
         return p.getCategories().stream().anyMatch(c -> activeIds.contains(c.getCategoryId()))
