@@ -23,8 +23,12 @@
                 <form th:if="${purchasable and #authorization.expression('hasRole(''CUSTOMER'')')}" th:action="@{/cart/add}" method="post" class="detail-form">
                     <input type="hidden" name="variantId" th:value="${variantId}"><input type="hidden" name="redirect" value="detail">
                     <label for="quantity">Số lượng</label>
-                    <input id="quantity" type="number" name="quantity" min="1" th:max="${availableStock}"
-                           th:value="${requestedQuantity != null ? requestedQuantity : 1}" required>
+                    <div class="quantity" data-quantity-picker>
+                        <button type="button" data-step="-1" aria-label="Giảm số lượng">−</button>
+                        <input id="quantity" type="number" inputmode="numeric" step="1" name="quantity" min="1" th:max="${availableStock}"
+                               th:value="${requestedQuantity != null ? requestedQuantity : 1}" required>
+                        <button type="button" data-step="1" aria-label="Tăng số lượng">+</button>
+                    </div>
                     <button class="button full" type="submit">Thêm vào giỏ hàng</button>
                 </form>
                 <a th:if="${purchasable and #authorization.expression('!isAuthenticated()')}" class="button full" th:href="@{/login(continue=${'/product-detail/' + variantId})}">Đăng nhập để thêm vào giỏ</a>

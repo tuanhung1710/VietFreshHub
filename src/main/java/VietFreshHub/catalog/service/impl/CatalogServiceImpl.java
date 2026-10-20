@@ -33,8 +33,12 @@ public class CatalogServiceImpl implements CatalogService {
     public org.springframework.data.domain.Page<CatalogProductResponse> listProducts(int page, String keyword) {
         if (page < 1 || page > 10000) throw new IllegalArgumentException("Trang không hợp lệ.");
         if (keyword == null || keyword.length() > 100) throw new IllegalArgumentException("Từ khóa tìm kiếm tối đa 100 ký tự.");
-        var result = products.findVisibleCatalog(keyword.trim(), org.springframework.data.domain.PageRequest.of(page - 1, 12,
-                org.springframework.data.domain.Sort.by("productId").descending()));
+        var pageable = org.springframework.data.domain.PageRequest.of(page - 1, 12,
+                org.springframework.data.domain.Sort.by("productId").descending());
+        var result = products.findVisibleCatalog(keyword.trim(), pageable);
+        if (result.getTotalPages() > 0 && pageable.getPageNumber() >= result.getTotalPages()) {
+            result = products.findVisibleCatalog(keyword.trim(), pageable.withPage(result.getTotalPages() - 1));
+        }
         var stocks = inventory.getAvailableStocks(result.getContent().stream().flatMap(p -> p.getVariants().stream())
                 .map(CatalogVariant::getVariantId).distinct().toList());
         return result.map(p -> toResponse(p, null, stocks));

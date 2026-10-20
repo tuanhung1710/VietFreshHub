@@ -276,7 +276,11 @@ public class AuthController {
     }
 
     @GetMapping("/home")
-    public String customerHome() {
+    public String customerHome(@RequestParam(defaultValue = "1") int page,
+                               @RequestParam(defaultValue = "") String keyword,
+                               RedirectAttributes redirectAttributes) {
+        redirectAttributes.addAttribute("page", page);
+        if (!keyword.isBlank()) redirectAttributes.addAttribute("keyword", keyword);
         return "redirect:/customer/home";
     }
 }

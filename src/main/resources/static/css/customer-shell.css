@@ -1,0 +1,9 @@
+/* Shared storefront pages use the same fixed navigation and palette as /home. */
+:root { --green: #006b2c; --bg: #f8f9ff; --dark: #0b1c30; --line: #dfe7e1; }
+body { background: var(--bg); color: var(--dark); font-family: 'Be Vietnam Pro', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
+body > main.page { padding-top: 120px; flex: 1; }
+.button { border-radius: 8px; font-size: 14px; font-weight: 600; }
+.button:hover { background: #00873a; }
+.button.secondary:hover { background: #edf5ec; color: #006b2c; }
+.panel { border-radius: 12px; }
+@media(max-width:760px) { body > main.page { padding-top: 112px; } }

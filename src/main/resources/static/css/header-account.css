@@ -1,0 +1,20 @@
+.header-account { position: relative; color: #18362b; }
+.header-account summary { display: flex; align-items: center; gap: 9px; cursor: pointer; list-style: none; border-radius: 8px; padding: 6px; }
+.header-account summary::-webkit-details-marker { display: none; }
+.header-account summary:hover, .header-account[open] summary { background: #e9f2e6; }
+.header-account-avatar { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: #006b2c; color: white; font-size: 22px; }
+.header-account-label { display: flex; flex-direction: column; max-width: 150px; text-align: left; line-height: 1.5; }
+.header-account-label small, .header-account-heading small { font-size: 11px; color: #64736c; }
+.header-account-label strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.header-account-chevron { font-size: 20px; transition: transform .15s; }
+.header-account[open] .header-account-chevron { transform: rotate(180deg); }
+.header-account-dropdown { position: absolute; top: calc(100% + 12px); right: 0; width: 270px; max-width: calc(100vw - 28px); max-height: calc(100dvh - 110px); overflow-y: auto; background: #fff; border: 1px solid #dfe7e1; border-radius: 12px; padding: 8px; box-shadow: 0 12px 36px #18362b24; }
+.header-account-heading { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px 14px; margin-bottom: 6px; border-bottom: 1px solid #e5e8eb; overflow-wrap: anywhere; }
+.header-account-heading strong { font-size: 14px; }
+.header-account-dropdown a, .header-account-dropdown button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 6px; background: transparent; color: #18362b; font: inherit; font-size: 13px; text-align: left; text-decoration: none; cursor: pointer; }
+.header-account-dropdown a:hover, .header-account-dropdown button:hover { background: #edf5ec; color: #006b2c; text-decoration: none; }
+.header-account-dropdown .material-symbols-outlined { font-size: 20px; }
+.header-account-dropdown form { margin-top: 6px; padding-top: 6px; border-top: 1px solid #e5e8eb; }
+.header-account-dropdown button { color: #9d3030; }
+.header-account :is(summary,a,button):focus-visible { outline: 2px solid #006b2c; outline-offset: 2px; }
+@media(max-width:640px) { .header-account-label { display: none; } .header-account summary { gap: 2px; padding: 2px; } }

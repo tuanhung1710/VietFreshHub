@@ -80,8 +80,6 @@ class CheckoutSqlServerIntegrationTest {
         assertTrue(name.matches("VietFreshHub_TV3_Test_[a-f0-9]{32}"),"Connected database is not a disposable TV3 database");
         assertEquals(name,jdbc.queryForObject("select cast(value as nvarchar(128)) from sys.extended_properties where class=0 and name='TV3_TASK3_TEST'",String.class));
         assertEquals(60,jdbc.queryForObject("select count(*) from sys.tables where is_ms_shipped=0",Integer.class));
-        String paymentSql=java.nio.file.Files.readString(java.nio.file.Path.of("scripts/tv3-vnpay-sandbox.sql"));
-        for(String batch:paymentSql.split("(?im)^GO\\s*$")) if(!batch.isBlank()) jdbc.execute(batch);
         var configuration=new Configuration();
         configuration.getProperties().put("hibernate.connection.datasource",datasource);
         configuration.setProperty("hibernate.hbm2ddl.auto","none");
@@ -136,7 +134,7 @@ class CheckoutSqlServerIntegrationTest {
     }
     CheckoutService checkout(InventoryReservationService reservation) {
         return transactional(new CheckoutServiceImpl(repo(UserRepository.class),repo(CartRepository.class),cart,repo(CheckoutAddressRepository.class),
-                addresses,repo(PaymentMethodRepository.class),repo(OrderRepository.class),catalog,reservation,shipping,em,events,mock(VietFreshHub.payment.service.VnpayPaymentService.class)));
+                addresses,repo(PaymentMethodRepository.class),repo(OrderRepository.class),catalog,reservation,shipping,em,events));
     }
     long insert(String sql,Object... parameters) {
         var key=new GeneratedKeyHolder();
@@ -719,103 +717,6 @@ class CheckoutSqlServerIntegrationTest {
         assertTrue(result.stream().noneMatch(card -> List.of(source, empty, expired, blocked).contains(card.productId())));
         assertEquals(before, stock()); assertEquals(orderCount, count("orders", "1=1"));
         assertEquals(cartCount, count("carts", "1=1")); assertEquals(ledgerCount, count("inventory_transactions", "1=1"));
-    }
-    VietFreshHub.payment.service.VnpayPaymentService vnpay() throws Exception {
-        var settings=new VietFreshHub.payment.config.VnpayProperties(true,"DEMOV210","test-secret",
-                "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html","http://localhost:8080/payments/vnpay/return");
-        return transactional(new VietFreshHub.payment.service.impl.VnpayPaymentServiceImpl(settings,
-                new VietFreshHub.payment.service.impl.VnpayGatewayImpl(settings),
-                repo(VietFreshHub.payment.repository.PaymentRepository.class),repo(PaymentMethodRepository.class),
-                repo(VietFreshHub.payment.repository.PaymentTransactionRepository.class),repo(OrderRepository.class),
-                repo(VietFreshHub.order.repository.ShopOrderRepository.class),
-                transactional(new VietFreshHub.order.service.OrderInventoryReleaseService(em)),em,events,15));
-    }
-    CheckoutResult onlineOrder(Buyer buyer,VietFreshHub.payment.service.VnpayPaymentService online) {
-        cart.addToCart(buyer.user(),new AddToCartRequest(variants.getFirst(),1));
-        var draft=draft(buyer); var form=request(buyer,draft); form.setPaymentMethodCode("VNPAY");
-        var service=transactional(new CheckoutServiceImpl(repo(UserRepository.class),repo(CartRepository.class),cart,
-                repo(CheckoutAddressRepository.class),addresses,repo(PaymentMethodRepository.class),repo(OrderRepository.class),
-                catalog,inventory,shipping,em,events,online));
-        var result=service.confirm(buyer.user(),draft,form);
-        assertEquals(result,service.confirm(buyer.user(),draft,form));
-        assertEquals(1,count("payments","order_id=?",result.orderId()));
-        return result;
-    }
-    Map<String,List<String>> signedVnpay(long orderId,String response,String transaction) throws Exception {
-        var p=jdbc.queryForMap("select top(1) transaction_reference,amount from dbo.payments where order_id=? order by payment_id desc",orderId);
-        Map<String,List<String>> data=new TreeMap<>();
-        data.put("vnp_TmnCode",List.of("DEMOV210")); data.put("vnp_TxnRef",List.of(p.get("transaction_reference").toString()));
-        data.put("vnp_Amount",List.of(((BigDecimal)p.get("amount")).movePointRight(2).toBigIntegerExact().toString()));
-        data.put("vnp_ResponseCode",List.of(response)); data.put("vnp_TransactionStatus",List.of("00".equals(response) ? "00" : "02"));
-        data.put("vnp_TransactionNo",List.of(transaction));
-        String query=data.entrySet().stream().map(e -> e.getKey()+"="+java.net.URLEncoder.encode(e.getValue().getFirst(),java.nio.charset.StandardCharsets.UTF_8))
-                .collect(java.util.stream.Collectors.joining("&"));
-        var mac=javax.crypto.Mac.getInstance("HmacSHA512");
-        mac.init(new javax.crypto.spec.SecretKeySpec("test-secret".getBytes(java.nio.charset.StandardCharsets.UTF_8),"HmacSHA512"));
-        data.put("vnp_SecureHash",List.of(HexFormat.of().formatHex(mac.doFinal(query.getBytes(java.nio.charset.StandardCharsets.UTF_8)))));
-        return data;
-    }
-    @Test void vnpayRealCheckoutGateSignedIpnAndDuplicateAreTransactional() throws Exception {
-        var online=vnpay(); var buyer=buyer(); var result=onlineOrder(buyer,online);
-        assertTrue(online.available()); assertTrue(online.page(buyer.user(),result.orderId()).canPay());
-        var uri=online.start(buyer.user(),result.orderId(),"127.0.0.1");
-        assertEquals("sandbox.vnpayment.vn",uri.getHost()); assertTrue(uri.getRawQuery().contains("vnp_ExpireDate="));
-        assertThrows(org.springframework.dao.DataAccessException.class,() -> jdbc.update("update dbo.shop_orders set status='CONFIRMED' where order_id=?",result.orderId()));
-        var signed=signedVnpay(result.orderId(),"00",Long.toString(System.nanoTime()));
-        assertTrue(online.validReturn(signed)); assertEquals(1,count("orders","order_id=? and payment_status='UNPAID'",result.orderId()));
-        var outcomes=concurrent(() -> online.receiveIpn(signed),() -> online.receiveIpn(signed));
-        assertTrue(outcomes.stream().allMatch(o -> o instanceof Map),outcomes.toString());
-        assertEquals(Set.of("00","02"),outcomes.stream().map(o -> ((Map<?,?>)o).get("RspCode")).collect(java.util.stream.Collectors.toSet()));
-        assertEquals(1,count("payments","order_id=? and status='PAID' and paid_at is not null",result.orderId()));
-        assertEquals(1,count("orders","order_id=? and payment_status='PAID'",result.orderId()));
-        assertEquals(1,count("payment_transactions","event_type='VNPAY_RECEIPT' and payment_id in(select payment_id from dbo.payments where order_id=?)",result.orderId()));
-        assertFalse(online.page(buyer.user(),result.orderId()).canPay());
-        jdbc.update("update dbo.shop_orders set status='CONFIRMED' where order_id=?",result.orderId());
-        assertThrows(org.springframework.web.server.ResponseStatusException.class,() -> online.page(buyer().user(),result.orderId()));
-    }
-    @Test void vnpayFailedRetryUsesNewReferenceAndOldSuccessBlocksFurtherPayment() throws Exception {
-        var online=vnpay(); var buyer=buyer(); var order=onlineOrder(buyer,online);
-        var oldSuccess=signedVnpay(order.orderId(),"00",Long.toString(System.nanoTime()));
-        assertEquals("00",online.receiveIpn(signedVnpay(order.orderId(),"24","0")).get("RspCode"));
-        var first=online.page(buyer.user(),order.orderId()); assertEquals("FAILED",first.status());
-        online.start(buyer.user(),order.orderId(),"127.0.0.1");
-        assertEquals(2,count("payments","order_id=?",order.orderId()));
-        assertEquals(first.expiresAt(),online.page(buyer.user(),order.orderId()).expiresAt());
-        assertEquals("00",online.receiveIpn(oldSuccess).get("RspCode"));
-        assertEquals("REVIEW",online.page(buyer.user(),order.orderId()).status());
-        assertFalse(online.page(buyer.user(),order.orderId()).canPay());
-        assertThrows(CheckoutException.class,() -> online.start(buyer.user(),order.orderId(),"127.0.0.1"));
-    }
-    @Test void vnpayExpiryReleasesStockAndLateReceiptCannotResurrectOrder() throws Exception {
-        var online=vnpay(); var buyer=buyer(); var before=stock(); var order=onlineOrder(buyer,online);
-        var success=signedVnpay(order.orderId(),"00",Long.toString(System.nanoTime()));
-        jdbc.update("update dbo.payment_transactions set provider_payload=? where event_type='VNPAY_INIT' and payment_id in(select payment_id from dbo.payments where order_id=?)",
-                java.time.Instant.now().minusSeconds(1).toString(),order.orderId());
-        online.expire(order.orderId()); online.expire(order.orderId());
-        assertEquals(before,stock()); assertEquals(1,count("orders","order_id=? and status='CANCELLED'",order.orderId()));
-        assertEquals("00",online.receiveIpn(success).get("RspCode"));
-        assertEquals(1,count("orders","order_id=? and status='CANCELLED' and payment_status='UNPAID'",order.orderId()));
-        assertEquals("REVIEW",online.page(buyer.user(),order.orderId()).status()); assertEquals(before,stock());
-    }
-    @Test void vnpayReceiptFailureRollsBackPaymentAndCanBeRetried() throws Exception {
-        var online=vnpay(); var buyer=buyer(); var order=onlineOrder(buyer,online);
-        long paymentId=jdbc.queryForObject("select payment_id from dbo.payments where order_id=?",Long.class,order.orderId());
-        var signed=signedVnpay(order.orderId(),"00",Long.toString(System.nanoTime()));
-        jdbc.execute("alter table dbo.payment_transactions add constraint TV3_Vnpay_RejectReceipt check(payment_id<>"+paymentId+" or event_type<>'VNPAY_RECEIPT')");
-        try { assertThrows(RuntimeException.class,() -> online.receiveIpn(signed)); }
-        finally { jdbc.execute("alter table dbo.payment_transactions drop constraint TV3_Vnpay_RejectReceipt"); }
-        assertEquals(1,count("orders","order_id=? and payment_status='UNPAID'",order.orderId()));
-        assertEquals(1,count("payments","order_id=? and status='PENDING'",order.orderId()));
-        assertEquals("00",online.receiveIpn(signed).get("RspCode"));
-    }
-    @Test void vnpayCustomerCanCancelUnpaidAndLateSuccessStaysInReview() throws Exception {
-        var online=vnpay(); var buyer=buyer(); var before=stock(); var order=onlineOrder(buyer,online);
-        var success=signedVnpay(order.orderId(),"00",Long.toString(System.nanoTime()));
-        var customerOrders=cancellation();
-        customerOrders.cancel(buyer.user(),order.orderId(),"Chưa cần mua nữa");
-        assertEquals(before,stock()); assertEquals(1,count("orders","order_id=? and status='CANCELLED'",order.orderId()));
-        assertEquals("00",online.receiveIpn(success).get("RspCode"));
-        assertEquals("REVIEW",online.page(buyer.user(),order.orderId()).status()); assertEquals(before,stock());
     }
     @AfterAll void close() { if(em!=null) em.close(); if(factory!=null) factory.close(); }
 }

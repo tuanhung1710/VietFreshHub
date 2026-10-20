@@ -1,0 +1,50 @@
+/* Compact customer UI without shrinking text or touch targets through browser zoom. */
+body:has(.storefront-header) { font-size: 14px; }
+.storefront-header > .h-20 { height: 68px; gap: 18px; }
+.storefront-header > .h-20 > div:first-child img { height: 28px; }
+.storefront-header .header-account-label strong { max-width: 140px; }
+body:has(.storefront-header) > main.page { padding-top: 100px; padding-bottom: 40px; }
+body:has(.storefront-header) > main .container,
+body:has(.storefront-header) > main.container { width: min(1080px, calc(100% - 32px)); }
+body:has(.storefront-header) main h1 { font-size: clamp(22px, 2.3vw, 28px); }
+body:has(.storefront-header) main .panel { padding: 18px; }
+body:has(.storefront-header) main .product-card { padding: 0; }
+body:has(.storefront-header) main .button { min-height: 40px; padding: 8px 16px; font-size: 13px; }
+body:has(.storefront-header) main .page-heading { margin-bottom: 20px; }
+body:has(.storefront-header) main .checkout-title { font-size: 25px; }
+body:has(.storefront-header) main .summary { top: 90px; }
+body:has(.storefront-header) main .detail-grid { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 24px; align-items: start; }
+body:has(.storefront-header) main .detail-grid > .detail-image { width: 100%; height: auto; max-height: 380px; aspect-ratio: 1; object-fit: contain; background: #fff; border: 1px solid var(--line, #dfe7e1); border-radius: 10px; }
+body:has(.storefront-header) main .detail-grid h1 { font-size: 24px; margin-bottom: 10px; }
+body:has(.storefront-header) main .detail-grid .description { font-size: 13px; line-height: 1.6; margin-bottom: 14px; overflow-wrap: anywhere; }
+body:has(.storefront-header) main .detail-price { font-size: 24px; margin: 14px 0; }
+body:has(.storefront-header) main .variant-list { gap: 8px; margin: 12px 0; }
+body:has(.storefront-header) main .variant-option { padding: 7px 11px; min-height: 38px; }
+body:has(.storefront-header) main .detail-form { gap: 10px; }
+body:has(.storefront-header) main .detail-form input { padding: 5px 8px; }
+body:has(.storefront-header) main .quantity { display: inline-flex; align-items: stretch; }
+body:has(.storefront-header) main .quantity button { width: 44px; height: 44px; padding: 0; font-size: 22px; line-height: 1; background: #fff; color: #006b2c; border: 1px solid #dfe7e1; }
+body:has(.storefront-header) main .quantity button:first-child { border-radius: 8px 0 0 8px; }
+body:has(.storefront-header) main .quantity button:last-child { border-radius: 0 8px 8px 0; }
+body:has(.storefront-header) main .quantity button:hover:not(:disabled) { background: #edf5ec; }
+body:has(.storefront-header) main .quantity button:disabled { opacity: .4; cursor: not-allowed; }
+body:has(.storefront-header) main .quantity input { width: 52px; height: 44px; padding: 0 4px; text-align: center; border: 1px solid #dfe7e1; border-left: 0; border-right: 0; border-radius: 0; background: #fff; font-size: 14px; appearance: textfield; }
+body:has(.storefront-header) main .quantity input::-webkit-inner-spin-button,
+body:has(.storefront-header) main .quantity input::-webkit-outer-spin-button { appearance: none; margin: 0; }
+body:has(.storefront-header) main .market-hero { min-height: 240px; }
+body:has(.storefront-header) main .hero-copy { padding: 28px 32px; }
+body:has(.storefront-header) main .hero-copy h1 { font-size: clamp(28px, 3vw, 36px); }
+body:has(.storefront-header) main .hero-photo { margin: 18px; }
+body:has(.storefront-header) main .hero-photo img { max-height: 240px; }
+body:has(.storefront-header) main .catalog-title { font-size: 23px; }
+body:has(.storefront-header) main .product-grid { gap: 16px; }
+body:has(.storefront-header) main .card-content h3 { font-size: 14px; min-height: 40px; }
+body:has(.storefront-header) main .catalog-pagination { gap: 8px; margin-top: 24px; }
+body:has(.storefront-header) main .catalog-pagination .page-number { font-size: 16px; }
+@media(max-width:760px) {
+    .storefront-header > .h-20 { gap: 8px; padding-left: 16px; padding-right: 16px; }
+    body:has(.storefront-header) main .detail-grid { grid-template-columns: 1fr; gap: 16px; }
+    body:has(.storefront-header) main .detail-grid > .detail-image { max-height: 300px; }
+    body:has(.storefront-header) main .hero-copy { padding: 22px; }
+    body:has(.storefront-header) main .product-grid { gap: 12px; }
+}

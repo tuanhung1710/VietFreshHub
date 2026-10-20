@@ -7,7 +7,7 @@
     <p><a th:href="@{/customer/orders}">← Đơn hàng của tôi</a></p>
     <div class="page-heading"><h1 class="checkout-title">Lịch sử thanh toán</h1>
         <p class="muted">Theo dõi các bản ghi thanh toán và đơn hàng liên quan.</p></div>
-    <p class="notice info">Mỗi dòng là một lần thanh toán. Khoản chờ thanh toán, thất bại hoặc đã hủy không phải số tiền đã thu; giao dịch đang đối soát hoặc hoàn tiền cần được kiểm tra riêng. Mở chi tiết đơn để tiếp tục thanh toán VNPAY.</p>
+    <p class="notice info">Mỗi dòng là một bản ghi thanh toán. Khoản chờ thanh toán, thất bại hoặc đã hủy không phải số tiền đã thu; các bản ghi hoàn tiền cần được đối soát riêng.</p>
     <p th:if="${filterError != null}" class="notice error" role="alert" th:text="${filterError}"></p>
     <p th:if="${pageNotice != null}" class="notice info" role="status" th:text="${pageNotice}"></p>
     <form class="panel order-filters" th:action="@{/customer/payments}" th:object="${filter}" method="get">

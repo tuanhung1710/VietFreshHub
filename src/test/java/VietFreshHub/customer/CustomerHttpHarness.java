@@ -47,19 +47,10 @@ public final class CustomerHttpHarness implements AutoCloseable {
             CatalogService catalog, CheckoutService checkout, CheckoutShippingQuoteService shipping,
             CheckoutDraftStore drafts, CustomerAddressService addresses, CustomerOrderService orders,
             CustomerOrderQueryService details, CustomerPaymentHistoryService payments) {
-        this(users,roles,cart,catalog,checkout,shipping,drafts,addresses,orders,details,payments,
-                mock(VietFreshHub.payment.service.VnpayPaymentService.class));
-    }
-    public CustomerHttpHarness(UserRepository users, UserRoleRepository roles, CartService cart,
-            CatalogService catalog, CheckoutService checkout, CheckoutShippingQuoteService shipping,
-            CheckoutDraftStore drafts, CustomerAddressService addresses, CustomerOrderService orders,
-            CustomerOrderQueryService details, CustomerPaymentHistoryService payments,
-            VietFreshHub.payment.service.VnpayPaymentService online) {
         context = new AnnotationConfigWebApplicationContext();
         context.setServletContext(new MockServletContext());
         context.register(WebConfiguration.class, CustomerCartViewController.class, CheckoutController.class,
-                CustomerOrderController.class, CustomerOrderDetailsController.class, CustomerPaymentHistoryController.class,
-                VietFreshHub.payment.controller.CustomerVnpayController.class, VietFreshHub.payment.controller.VnpayCallbackController.class);
+                CustomerOrderController.class, CustomerOrderDetailsController.class, CustomerPaymentHistoryController.class);
         context.addBeanFactoryPostProcessor(beans -> {
             beans.registerSingleton("userRepository", users);
             beans.registerSingleton("userRoleRepository", roles);
@@ -69,7 +60,6 @@ public final class CustomerHttpHarness implements AutoCloseable {
             beans.registerSingleton("catalogService", catalog);
             beans.registerSingleton("productRecommendations", mock(VietFreshHub.recommendation.service.ProductRecommendationService.class));
             beans.registerSingleton("checkoutService", checkout);
-            beans.registerSingleton("vnpayPayments", online);
             beans.registerSingleton("shippingQuotes", shipping);
             beans.registerSingleton("drafts", drafts);
             beans.registerSingleton("checkoutAddresses", mock(CheckoutAddressService.class));
@@ -86,7 +76,7 @@ public final class CustomerHttpHarness implements AutoCloseable {
     @Configuration(proxyBeanMethods = false)
     @EnableWebMvc
     @EnableWebSecurity
-    @Import({SecurityConfig.class,VietFreshHub.payment.config.VnpayCallbackSecurity.class})
+    @Import(SecurityConfig.class)
     static class WebConfiguration {
         @Bean ClientRegistrationRepository clientRegistrationRepository() {
             // Satisfies the production OAuth configuration; no login/provider request is executed.

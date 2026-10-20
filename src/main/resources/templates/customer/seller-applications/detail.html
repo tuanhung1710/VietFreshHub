@@ -1,13 +1,8 @@
 <!doctype html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Chi tiết hồ sơ đăng ký</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
+<head th:replace="~{fragments/head :: head('Hồ sơ bán hàng | VietFresh Hub')}"></head>
 <body class="min-h-screen bg-slate-100 text-slate-900">
-<main class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+<div th:replace="~{fragments/header :: header}"></div><div class="pt-24"></div><main class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
   <a th:href="@{/customer/seller-applications}"
      class="text-sm font-semibold text-emerald-700 hover:underline">
     ← Hồ sơ của tôi
@@ -198,5 +193,5 @@
     </ol>
   </section>
 </main>
-</body>
+<div th:replace="~{fragments/footer :: footer}"></div></body>
 </html>

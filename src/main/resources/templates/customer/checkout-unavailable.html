@@ -1,17 +1,14 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
+<head><th:block th:replace="~{fragments/head :: assets}"></th:block>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Kiểm tra kết quả đặt hàng | VietFresh Hub</title>
     <link rel="stylesheet" th:href="@{/css/storefront.css}">
     <link rel="stylesheet" th:href="@{/css/checkout-recovery.css}">
-</head>
+<link rel="stylesheet" th:href="@{/css/customer-shell.css}"></head>
 <body class="checkout-recovery">
-<header class="site-header"><nav class="container nav" aria-label="Điều hướng chính">
-    <a class="brand" th:href="@{/customer/home}">VietFresh Hub</a>
-    <a th:href="@{/customer/orders}">Đơn hàng của tôi</a>
-</nav></header>
+<header th:replace="~{fragments/header :: header}"></header>
 <main class="container page">
     <section class="panel recovery-panel" aria-labelledby="recovery-title">
         <p class="eyebrow">Thông tin đặt hàng</p>

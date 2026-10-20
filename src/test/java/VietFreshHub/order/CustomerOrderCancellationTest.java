@@ -75,7 +75,7 @@ class CustomerOrderCancellationTest {
     }
 
     @Test void blocksPaidOrders() { order.setPaymentStatus("PAID"); assertBlocked(); }
-    @Test void blocksOnlinePayments() { payment.getPaymentMethod().setMethodCode("VNPAY"); assertBlocked(); }
+    @Test void blocksUnsupportedPaymentMethods() { payment.getPaymentMethod().setMethodCode("UNSUPPORTED"); assertBlocked(); }
     @Test void blocksDiscountPendingReconciliation() { child.setDiscountTotal(BigDecimal.ONE); assertBlocked(); }
     @Test void blocksPickedUpDelivery() {
         OrderDeliveryView delivery = new OrderDeliveryView(); delivery.setStatus("PICKED_UP");

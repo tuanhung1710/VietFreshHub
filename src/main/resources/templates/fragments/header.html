@@ -1,6 +1,9 @@
 <header th:fragment="header"
         xmlns:th="http://www.thymeleaf.org"
-        class="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+        class="storefront-header fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+  <link rel="stylesheet" th:href="@{/css/header-account.css}">
+  <link rel="stylesheet" th:href="@{/css/storefront-density.css}">
+  <script defer th:src="@{/js/header-account.js}"></script>
   <div class="bg-primary text-on-primary py-1 px-margin text-center text-label-sm font-label-md">
     <div class="max-w-[1280px] mx-auto flex items-center justify-between">
       <div class="flex items-center gap-space-md"></div>
@@ -14,25 +17,48 @@
         </span>
       </a>
     </div>
-    <div class="hidden lg:flex flex-1 max-w-xl mx-space-md">
+    <form th:action="@{/home}" method="get" role="search" class="hidden lg:flex flex-1 min-w-0 max-w-xl mx-space-md">
       <div class="relative w-full flex items-center bg-surface-container-lowest rounded-lg shadow-[0_1px_3px_0_rgba(15,23,42,0.04)] p-1">
         <span class="material-symbols-outlined text-outline ml-space-sm">search</span>
-        <input class="w-full bg-transparent px-space-sm py-1.5 text-body-md font-body-md text-on-surface focus:outline-none placeholder:text-outline" placeholder="Tìm kiếm trái cây tươi, bưởi da xanh, xoài cát..." type="text">
-        <button class="bg-primary text-on-primary font-label-md text-label-md px-space-md py-2 rounded-lg hover:bg-primary-container hover:text-on-primary-container transition-colors">Tìm kiếm</button></div></div><nav class="hidden xl:flex items-center gap-space-md shrink-0" data-active-classes="text-primary font-title-md">
+        <input aria-label="Tìm kiếm trái cây" name="keyword" maxlength="100" th:value="${keyword}" class="w-full min-w-0 bg-transparent px-space-sm py-1.5 text-body-md font-body-md text-on-surface focus:outline-none placeholder:text-outline" placeholder="Tìm kiếm trái cây tươi, bưởi da xanh, xoài cát..." type="search">
+        <button class="bg-primary text-on-primary font-label-md text-label-md px-space-md py-2 rounded-lg hover:bg-primary-container hover:text-on-primary-container transition-colors">Tìm kiếm</button></div></form><nav class="hidden xl:flex items-center gap-space-md shrink-0" data-active-classes="text-primary font-title-md">
     <a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors py-2" data-path="he-thong-cua-hang" href="#">Hệ Thống Cửa Hàng</a></nav>
     <div class="flex items-center gap-space-md shrink-0">
       <span th:replace="~{fragments/notifications :: bell}"></span>
       <a class="relative flex items-center justify-center p-2 rounded-full hover:bg-surface-container hover:text-on-surface text-on-surface-variant transition-colors" data-path="gio-hang" th:href="@{/cart}" title="Giỏ hàng">
         <span class="material-symbols-outlined text-2xl">shopping_cart</span>
-        <span class="absolute 0 top-0.5 right-0.5 min-w-[20px] h-[20px] px-1 bg-tertiary text-on-tertiary text-label-sm font-label-md rounded-full flex items-center justify-center" th:text="${cart != null ? cart.totalItems : 0}">0</span></a>
+        <span class="absolute 0 top-0.5 right-0.5 min-w-[20px] h-[20px] px-1 bg-tertiary text-on-tertiary text-label-sm font-label-md rounded-full flex items-center justify-center" th:text="${cartBadgeTotal != null ? cartBadgeTotal : (cart != null ? cart.totalItems : 0)}">0</span></a>
       <div class="h-6 w-px bg-outline-variant hidden sm:block"></div>
-      <div class="flex items-center gap-space-sm">
+      <div th:if="${not #authorization.expression('isAuthenticated()')}" class="flex items-center gap-space-sm">
         <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
           <span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
         </div><div class="hidden md:flex flex-col text-left"><a class="font-label-md text-label-md text-on-surface hover:text-primary transition-colors" data-path="tai-khoan" th:href="@{/customer/profile}">Tài khoản</a>
-        <a class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors" data-path="dang-nhap" href="#">Đăng nhập / Đăng ký</a>
+        <span class="font-label-sm text-label-sm text-on-surface-variant"><a th:href="@{/login}">Đăng nhập</a> / <a th:href="@{/register}">Đăng ký</a></span>
       </div>
       </div>
+      <details th:if="${#authorization.expression('isAuthenticated()')}" class="header-account" data-header-account>
+        <summary aria-label="Mở menu tài khoản">
+          <span class="header-account-avatar material-symbols-outlined" aria-hidden="true">person</span>
+          <span class="header-account-label"><small>Xin chào,</small><strong th:text="${headerAccountName != null ? headerAccountName : #authentication.name}">Người dùng</strong></span>
+          <span class="material-symbols-outlined header-account-chevron" aria-hidden="true">expand_more</span>
+        </summary>
+        <div class="header-account-dropdown">
+          <div class="header-account-heading"><small>Tài khoản của bạn</small><strong th:text="${headerAccountName != null ? headerAccountName : #authentication.name}"></strong></div>
+          <div th:if="${#authorization.expression('hasRole(&quot;CUSTOMER&quot;)')}">
+            <a th:href="@{/customer/profile}"><span class="material-symbols-outlined" aria-hidden="true">person</span>Tài khoản của tôi</a>
+            <a th:href="@{/customer/orders}"><span class="material-symbols-outlined" aria-hidden="true">receipt_long</span>Đơn mua</a>
+            <a th:href="@{/customer/addresses}"><span class="material-symbols-outlined" aria-hidden="true">location_on</span>Sổ địa chỉ</a>
+            <a th:href="@{/customer/payments}"><span class="material-symbols-outlined" aria-hidden="true">payments</span>Lịch sử thanh toán</a>
+            <a th:href="@{/customer/chat}"><span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>Tin nhắn với cửa hàng</a>
+            <a th:href="@{/cart}"><span class="material-symbols-outlined" aria-hidden="true">shopping_cart</span>Giỏ hàng</a>
+          </div>
+          <a th:href="@{/notifications}"><span class="material-symbols-outlined" aria-hidden="true">notifications</span>Thông báo</a>
+          <form th:action="@{/logout}" method="post">
+            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <button type="submit"><span class="material-symbols-outlined" aria-hidden="true">logout</span>Đăng xuất</button>
+          </form>
+        </div>
+      </details>
     </div>
   </div>
 </header>

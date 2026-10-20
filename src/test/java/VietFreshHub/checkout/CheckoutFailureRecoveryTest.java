@@ -47,7 +47,7 @@ class CheckoutFailureRecoveryTest {
     final CartService carts=mock(CartService.class);
     final Authentication authentication=mock(Authentication.class);
     final CheckoutController controller=new CheckoutController(current,checkout,shipping,drafts,
-            mock(CheckoutAddressService.class),mock(CustomerAddressService.class),mock(VietMapService.class),carts,mock(VietFreshHub.payment.service.VnpayPaymentService.class));
+            mock(CheckoutAddressService.class),mock(CustomerAddressService.class),mock(VietMapService.class),carts);
 
     static Stream<RuntimeException> infrastructureFailures() {
         return Stream.of(new CannotAcquireLockException("test lock failure"),
@@ -86,14 +86,15 @@ class CheckoutFailureRecoveryTest {
         var session=new MockHttpSession(); var draft=draft(session);
         when(current.requireCustomerId(authentication)).thenReturn(7L);
         when(checkout.confirm(eq(7L),eq(draft),any())).thenThrow(new TransactionSystemException("test commit failure"));
-        try(var context=new StaticWebApplicationContext()) {
-            context.setServletContext(new MockServletContext()); context.refresh();
-            var resolver=new SpringResourceTemplateResolver(); resolver.setApplicationContext(context);
-            resolver.setPrefix("classpath:/templates/"); resolver.setSuffix(".html"); resolver.setCharacterEncoding("UTF-8");
-            var engine=new SpringTemplateEngine(); engine.setTemplateResolver(resolver);
-            var views=new ThymeleafViewResolver(); views.setTemplateEngine(engine); views.setCharacterEncoding("UTF-8");
-            // No security filter chain here: ownership/CSRF need separate security integration tests.
-            var mvc=MockMvcBuilders.standaloneSetup(controller).setViewResolvers(views).build();
+        try(var context=new org.springframework.web.context.support.AnnotationConfigWebApplicationContext()) {
+            context.setServletContext(new MockServletContext());
+            context.register(RenderConfiguration.class);
+            context.addBeanFactoryPostProcessor(beans -> beans.registerSingleton("checkoutController",controller));
+            org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+                    new org.springframework.security.authentication.AnonymousAuthenticationToken("test","anonymous",
+                            org.springframework.security.core.authority.AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS")));
+            context.refresh();
+            var mvc=MockMvcBuilders.webAppContextSetup(context).build();
             var response=mvc.perform(post("/customer/checkout").session(session).principal(authentication)
                     .param("addressId","5").param("paymentMethodCode","COD").param("checkoutToken",draft.token()))
                     .andReturn().getResponse();
@@ -102,10 +103,28 @@ class CheckoutFailureRecoveryTest {
             assertTrue(html.contains("Chưa xác nhận được kết quả đặt hàng"));
             assertTrue(html.contains("/customer/orders?keyword=VF-"+draft.token()));
             assertTrue(html.contains("/customer/checkout?checkoutToken="+draft.token()));
-            assertFalse(html.contains("<form")); assertFalse(html.contains("Đơn hàng chưa được tạo"));
+            assertFalse(html.contains("id=\"checkout-form\"")); assertFalse(html.contains("Đơn hàng chưa được tạo"));
             Path output=Path.of("target","tv3-task03"); Files.createDirectories(output);
             Files.writeString(output.resolve("checkout-unavailable.html"),html,StandardCharsets.UTF_8);
-        }
+        } finally { org.springframework.security.core.context.SecurityContextHolder.clearContext(); }
         verifyNoInteractions(shipping,carts);
+    }
+    @org.springframework.context.annotation.Configuration(proxyBeanMethods=false)
+    @org.springframework.web.servlet.config.annotation.EnableWebMvc
+    static class RenderConfiguration {
+        @org.springframework.context.annotation.Bean
+        org.springframework.security.access.expression.SecurityExpressionHandler<org.springframework.security.web.FilterInvocation> webSecurityExpressionHandler() {
+            return new org.springframework.security.config.annotation.web.builders.WebSecurity(
+                    org.springframework.security.config.ObjectPostProcessor.identity()).getExpressionHandler();
+        }
+        @org.springframework.context.annotation.Bean
+        ThymeleafViewResolver views(org.springframework.context.ApplicationContext context) {
+            var resolver=new SpringResourceTemplateResolver(); resolver.setApplicationContext(context);
+            resolver.setPrefix("classpath:/templates/"); resolver.setSuffix(".html"); resolver.setCharacterEncoding("UTF-8");
+            var engine=new SpringTemplateEngine(); engine.setTemplateResolver(resolver);
+            engine.addDialect(new org.thymeleaf.extras.springsecurity6.dialect.SpringSecurityDialect());
+            var views=new ThymeleafViewResolver(); views.setTemplateEngine(engine); views.setCharacterEncoding("UTF-8");
+            return views;
+        }
     }
 }

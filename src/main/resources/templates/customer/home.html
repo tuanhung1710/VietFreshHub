@@ -5,19 +5,7 @@
 <div th:replace="~{fragments/header :: header}"></div>
 <main class="w-full pt-24 bg-surface flex-1">
     <style>@import url('/css/storefront.css');</style>
-    <section class="max-w-[1280px] mx-auto px-margin py-space-md" aria-label="Tiện ích khách hàng">
-        <div class="flex flex-wrap items-center gap-3">
-            <a th:href="@{/customer/chat}" class="rounded-lg bg-green-700 px-5 py-3 font-semibold text-white">Tin nhắn với cửa hàng</a>
-            <a th:href="@{/cart}" class="rounded-lg bg-green-600 px-5 py-3 font-semibold text-white">Giỏ hàng</a>
-            <a th:href="@{/customer/orders}" class="rounded-lg bg-green-600 px-5 py-3 font-semibold text-white">Đơn hàng của tôi</a>
-            <a th:href="@{/customer/profile}" class="rounded-lg bg-green-600 px-5 py-3 font-semibold text-white">Hồ sơ của tôi</a>
-            <form th:action="@{/logout}" method="post">
-                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                <button type="submit" class="rounded-lg border px-5 py-3 font-semibold">Đăng xuất</button>
-            </form>
-        </div>
-    </section>
-    <div class="container page marketplace-page">
+<div class="container page marketplace-page">
         <div th:replace="~{fragments/storefront :: messages}"></div>
     <section th:if="${#strings.isEmpty(keyword)}" class="market-hero" aria-label="Khám phá trái cây">
         <div class="hero-copy"><span class="hero-kicker">VIETFRESH HUB · TRÁI CÂY THEO MÙA</span>
@@ -49,7 +37,8 @@
                 <a class="card-image" th:href="@{/product-detail(productId=${product.productId})}">
                     <img th:src="${product.imageUrl}" th:alt="${product.name}" loading="lazy" width="280" height="240">
                     <span th:if="${product.selectedVariant != null and product.selectedVariant.purchasable}" class="stock-label">Có sẵn</span>
-                    <span th:if="${product.selectedVariant == null or !product.selectedVariant.purchasable}" class="stock-label unavailable">Chưa nhận đơn</span>
+                    <span th:if="${product.selectedVariant == null or !product.selectedVariant.purchasable}" class="stock-label unavailable"
+                          th:text="${product.selectedVariant == null or product.selectedVariant.availableStock <= 0 or product.selectedVariant.status == 'OUT_OF_STOCK'} ? 'Hết hàng' : 'Tạm ngừng nhận đơn'">Hết hàng</span>
                 </a>
                 <div class="card-content"><p class="shop-label" th:text="${product.shopName}"></p>
                     <h3><a th:href="@{/product-detail(productId=${product.productId})}" th:text="${product.name}"></a></h3>
@@ -60,10 +49,20 @@
                 </div>
             </article>
         </div>
-        <nav th:if="${productPage.totalPages > 1}" class="pagination" aria-label="Phân trang sản phẩm">
-            <a th:if="${productPage.hasPrevious()}" class="button secondary" th:href="@{/home(page=${productPage.number},keyword=${keyword})}">← Trang trước</a>
-            <span class="muted" th:text="'Trang ' + ${productPage.number + 1} + ' / ' + ${productPage.totalPages}"></span>
-            <a th:if="${productPage.hasNext()}" class="button secondary" th:href="@{/home(page=${productPage.number + 2},keyword=${keyword})}">Trang tiếp →</a>
+        <nav th:if="${productPage.totalPages > 1}" class="pagination catalog-pagination" aria-label="Phân trang sản phẩm"
+             th:with="current=${productPage.number + 1}, total=${productPage.totalPages}, start=${T(java.lang.Math).max(1, T(java.lang.Math).min(current - 2, total - 4))}, end=${T(java.lang.Math).min(total, start + 4)}">
+            <a th:if="${productPage.hasPrevious()}" class="page-direction" th:href="@{/home(page=${current - 1},keyword=${keyword})} + '#catalog'" aria-label="Trang trước"><span aria-hidden="true">‹</span><span class="page-direction-label">Trang trước</span></a>
+            <span th:unless="${productPage.hasPrevious()}" class="page-direction disabled" aria-disabled="true"><span aria-hidden="true">‹</span><span class="page-direction-label">Trang trước</span></span>
+            <a th:if="${start > 1}" class="page-number" th:href="@{/home(page=1,keyword=${keyword})} + '#catalog'">1</a>
+            <span th:if="${start > 2}" class="page-ellipsis" aria-hidden="true">…</span>
+            <th:block th:each="pageNumber : ${#numbers.sequence(start, end)}">
+                <span th:if="${pageNumber == current}" class="page-number active" aria-current="page" th:text="${pageNumber}"></span>
+                <a th:unless="${pageNumber == current}" class="page-number" th:href="@{/home(page=${pageNumber},keyword=${keyword})} + '#catalog'" th:text="${pageNumber}" th:aria-label="'Trang ' + ${pageNumber}"></a>
+            </th:block>
+            <span th:if="${end < total - 1}" class="page-ellipsis" aria-hidden="true">…</span>
+            <a th:if="${end < total}" class="page-number" th:href="@{/home(page=${total},keyword=${keyword})} + '#catalog'" th:text="${total}"></a>
+            <a th:if="${productPage.hasNext()}" class="page-direction" th:href="@{/home(page=${current + 1},keyword=${keyword})} + '#catalog'" aria-label="Trang tiếp"><span class="page-direction-label">Trang tiếp</span><span aria-hidden="true">›</span></a>
+            <span th:unless="${productPage.hasNext()}" class="page-direction disabled" aria-disabled="true"><span class="page-direction-label">Trang tiếp</span><span aria-hidden="true">›</span></span>
         </nav>
     </section>
     </div>
