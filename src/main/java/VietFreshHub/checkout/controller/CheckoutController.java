@@ -20,7 +20,6 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.TransientDataAccessException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.transaction.TransactionException;
 import org.springframework.security.core.Authentication;
@@ -103,10 +102,14 @@ public class CheckoutController {
                 return "redirect:/customer/orders/"+order.orderId()+"/confirmation";
             } catch(CheckoutException ex) {
                 errors.reject("checkout",ex.getMessage());
-            } catch(TransientDataAccessException ex) {
-                log.warn("Checkout needs retry for customerId={}, errorType={}",customerId,ex.getClass().getSimpleName());
+            } catch(DataAccessException | TransactionException ex) {
+                log.warn("Checkout outcome needs verification for customerId={}, errorType={}",customerId,ex.getClass().getSimpleName());
                 response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-                errors.reject("checkout","Đơn hàng chưa được tạo. Vui lòng kiểm tra lại và thử xác nhận lần nữa.");
+                // A connection/commit failure may leave the outcome unknown. Keep the original
+                // idempotency token and avoid another database/provider call on the error path.
+                model.addAttribute("checkoutToken",draft.token());
+                model.addAttribute("orderCode","VF-"+draft.token());
+                return "customer/checkout-unavailable";
             }
         }
         CheckoutPreview preview=checkout.preview(customerId,draft.selectedItemIds());

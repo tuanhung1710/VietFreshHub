@@ -1,7 +1,6 @@
 package VietFreshHub.order.repository;
 
 import VietFreshHub.order.entity.Order;
-import VietFreshHub.order.entity.ShopOrder;
 import VietFreshHub.payment.entity.Payment;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;

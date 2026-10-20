@@ -1,6 +1,5 @@
 package VietFreshHub.checkout.entity;
 import VietFreshHub.auth.entity.User;
-import VietFreshHub.checkout.entity.CheckoutInventoryBatch;
 import VietFreshHub.catalog.entity.CatalogVariant;
 import jakarta.persistence.*;
 import lombok.Getter;

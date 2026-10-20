@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kiểm tra kết quả đặt hàng | VietFresh Hub</title>
+    <link rel="stylesheet" th:href="@{/css/storefront.css}">
+    <link rel="stylesheet" th:href="@{/css/checkout-recovery.css}">
+</head>
+<body class="checkout-recovery">
+<header class="site-header"><nav class="container nav" aria-label="Điều hướng chính">
+    <a class="brand" th:href="@{/customer/home}">VietFresh Hub</a>
+    <a th:href="@{/customer/orders}">Đơn hàng của tôi</a>
+</nav></header>
+<main class="container page">
+    <section class="panel recovery-panel" aria-labelledby="recovery-title">
+        <p class="eyebrow">Thông tin đặt hàng</p>
+        <h1 id="recovery-title">Chưa xác nhận được kết quả đặt hàng</h1>
+        <p role="alert">Hệ thống đang gặp sự cố. Yêu cầu có thể đã được ghi nhận, nhưng hiện chúng tôi chưa thể xác nhận kết quả.</p>
+        <p>Mã tham chiếu: <strong class="recovery-code" th:text="${orderCode}"></strong></p>
+        <p class="muted">Vui lòng kiểm tra mã này trong Đơn hàng của tôi trước khi thử lại. Nếu đơn đã xuất hiện, bạn có thể mở để theo dõi.</p>
+        <div class="recovery-actions">
+            <a class="button" th:href="@{/customer/orders(keyword=${orderCode})}">Kiểm tra đơn hàng</a>
+            <a class="button secondary" th:href="@{/customer/checkout(checkoutToken=${checkoutToken})}">Xem lại bước đặt hàng</a>
+        </div>
+        <p class="muted">Nếu hệ thống vẫn chưa truy cập được, vui lòng thử lại sau.</p>
+    </section>
+</main>
+<footer th:replace="~{fragments/storefront :: footer}"></footer>
+</body></html>

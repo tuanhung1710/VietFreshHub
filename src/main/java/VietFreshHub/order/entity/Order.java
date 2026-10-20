@@ -33,6 +33,8 @@ public class Order {
     private BigDecimal shippingFee=BigDecimal.ZERO;
     @Column(name="grand_total", nullable=false, precision=18, scale=2)
     private BigDecimal grandTotal=BigDecimal.ZERO;
+    // DATETIME2 stores our UTC wall time directly; avoid a second JDBC timezone conversion.
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     @Column(name="placed_at", nullable=false, updatable=false)
     private LocalDateTime placedAt;
     @Column(name="cancelled_at") private LocalDateTime cancelledAt;

@@ -8,6 +8,10 @@
     <div class="tracking-shops"><section th:each="shop : ${tracking.shops}" class="panel tracking-shop">
         <div class="order-shop-heading"><h2 th:text="${shop.shopName}"></h2></div>
         <p><strong class="order-state" th:attr="data-status=${shop.deliveryStatusCode}" th:text="${shop.deliveryStatus}"></strong></p>
+        <div th:if="${shop.deliveryStatusCode == 'FAILED'}" class="notice error" role="status">
+            <strong>Lý do giao hàng thất bại:</strong>
+            <p th:text="${shop.failureReason != null ? shop.failureReason : 'Chưa ghi nhận lý do. Vui lòng liên hệ cửa hàng để được hỗ trợ.'}"></p>
+        </div>
         <p th:if="${#lists.isEmpty(shop.events)}" class="muted">Chưa có lịch sử cập nhật.</p>
         <ol class="order-timeline"><li th:each="event : ${shop.events}"><time th:if="${event.occurredAt != null}" th:text="${#temporals.format(event.occurredAt,'HH:mm dd/MM/yyyy')}"></time><span th:if="${event.occurredAt == null}" class="muted">Chưa ghi nhận thời gian</span><div><strong th:text="${event.label}"></strong><p th:if="${event.note != null}" class="muted" th:text="${event.note}"></p></div></li></ol>
     </section></div>

@@ -2,6 +2,7 @@
 <head th:replace="~{fragments/order-pages :: head('Đơn hàng của tôi')}"></head><body>
 <header th:replace="~{fragments/storefront :: header}"></header><main class="container page order-history-page">
     <div class="page-heading"><p class="eyebrow">Mua sắm của bạn</p><h1 class="checkout-title">Đơn hàng của tôi</h1><p class="muted">Xem lịch sử, theo dõi tiến trình và mua lại sản phẩm.</p></div>
+    <p><a class="button secondary" th:href="@{/customer/payments}">Lịch sử thanh toán</a></p>
     <div th:replace="~{fragments/storefront :: messages}"></div>
     <p th:if="${filterError != null}" class="notice error" role="alert" th:text="${filterError}"></p>
     <p th:if="${pageNotice != null}" class="notice info" role="status" th:text="${pageNotice}"></p>
