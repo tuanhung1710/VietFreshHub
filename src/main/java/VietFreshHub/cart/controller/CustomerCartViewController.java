@@ -22,6 +22,7 @@ public class CustomerCartViewController {
     private final CartService cartService;
     private final CatalogService catalogService;
     private final CurrentCustomerService currentCustomer;
+    private final VietFreshHub.recommendation.service.ProductRecommendationService recommendations;
 
     private CartDto populateActiveCart(Authentication authentication) {
         boolean customer = authentication != null && authentication.isAuthenticated()
@@ -51,6 +52,7 @@ public class CustomerCartViewController {
         var product = catalogService.getProduct(variantId, productId, slug);
         var selected = product.getSelectedVariant();
         model.addAttribute("product", product);
+        model.addAttribute("recommendations", recommendations.relatedTo(product.getProductId()));
         model.addAttribute("variants", product.getVariants());
         model.addAttribute("selectedVariant", selected);
         model.addAttribute("variantId", selected == null ? null : selected.getVariantId());

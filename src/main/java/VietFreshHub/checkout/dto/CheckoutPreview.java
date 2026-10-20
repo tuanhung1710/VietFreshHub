@@ -9,9 +9,10 @@ public record CheckoutPreview(CartDto cart,List<AddressOption> addresses,Long ad
     public CheckoutPreview { shopQuotes=Map.copyOf(shopQuotes); }
     public record AddressOption(Long addressId,String recipientName,String phone,String addressText,boolean defaultAddress,
                                 boolean locationComplete) {}
-    public boolean canConfirm() { return !cart.getItems().isEmpty() && !cart.isHasUnavailableItems()
+    public boolean canConfirm() { return canConfirm(false); }
+    public boolean canConfirm(boolean onlineAvailable) { return !cart.getItems().isEmpty() && !cart.isHasUnavailableItems()
         && addressId!=null && addresses.stream().anyMatch(a -> addressId.equals(a.addressId()) && a.locationComplete())
-        && !deliveryOutOfRange && shippingError==null && shippingFee!=null && grandTotal!=null && codAvailable
+        && !deliveryOutOfRange && shippingError==null && shippingFee!=null && grandTotal!=null && (codAvailable || onlineAvailable)
         && shopQuotes.keySet().equals(cart.getItems().stream().map(VietFreshHub.cart.dto.CartItemDto::getShopId)
                 .collect(java.util.stream.Collectors.toSet())); }
 }

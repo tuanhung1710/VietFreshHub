@@ -1,0 +1,14 @@
+ M docs/TV3_IMPLEMENTATION_WORKFLOW.md
+ M docs/TV3_WORKFLOW_TASKS.md
+ M scripts/tv3-sqlserver-tests.ps1
+ M src/main/java/VietFreshHub/cart/controller/CustomerCartViewController.java
+ M src/main/resources/templates/customer/product-detail.html
+ M src/test/java/VietFreshHub/cart/CustomerCartIdentityTest.java
+ M src/test/java/VietFreshHub/checkout/CheckoutSqlServerIntegrationTest.java
+ M src/test/java/VietFreshHub/customer/CustomerHttpHarness.java
+?? .codex/
+?? docs/TV3_TASK_12_RESULTS.md
+?? docs/TV3_TASK_STATUS_01_17.md
+?? src/main/java/VietFreshHub/recommendation/
+?? src/main/resources/templates/customer/fragments/
+?? src/test/java/VietFreshHub/recommendation/

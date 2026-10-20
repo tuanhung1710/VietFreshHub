@@ -126,7 +126,8 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         if(delivery.stream().anyMatch(d -> !Set.of("UNASSIGNED","ASSIGNED","ACCEPTED","CANCELLED").contains(d.getStatus())))
             return "Đơn đã được lấy hoặc đang giao, không thể hủy.";
         if("PAID".equals(order.getPaymentStatus()) || "PARTIALLY_REFUNDED".equals(order.getPaymentStatus()) || "REFUNDED".equals(order.getPaymentStatus())
-                || pay.stream().anyMatch(p -> !"COD".equals(p.getPaymentMethod().getMethodCode()) || p.getPaidAt()!=null
+                || pay.stream().anyMatch(p -> (!"COD".equals(p.getPaymentMethod().getMethodCode())
+                    && !("VNPAY".equals(p.getPaymentMethod().getMethodCode()) && "VNPAY".equals(p.getProvider()))) || p.getPaidAt()!=null
                 || !Set.of(Payment.Status.PENDING,Payment.Status.FAILED,Payment.Status.CANCELLED).contains(p.getStatus())))
             return "Đơn có giao dịch cần đối soát/hoàn tiền. Vui lòng liên hệ hỗ trợ để hủy an toàn.";
         if(order.getDiscountTotal().signum()>0 || children.stream().anyMatch(c -> c.getDiscountTotal().signum()>0))

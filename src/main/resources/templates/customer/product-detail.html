@@ -34,4 +34,5 @@
             <p th:if="${selectedVariant == null}" class="muted">Cửa hàng chưa có phân loại để bán.</p>
         </section>
     </article>
+    <div th:replace="~{customer/fragments/recommendations :: section}"></div>
 </main><footer th:replace="~{fragments/storefront :: footer}"></footer></body></html>

@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="no-referrer"><title>Kết quả VNPAY</title><link rel="stylesheet" th:href="@{/css/storefront.css}"></head>
+<body><main class="container page"><section class="panel">
+    <h1>Kết quả thanh toán VNPAY</h1>
+    <p th:if="${valid}">Đã nhận kết quả từ VNPAY. Hệ thống đang đối chiếu xác nhận thanh toán.</p>
+    <p th:unless="${valid}" role="alert">Không thể xác minh thông tin trên đường dẫn này. Vui lòng kiểm tra lịch sử thanh toán.</p>
+    <p>Kết quả chính thức được hiển thị trong tài khoản của bạn. Không thanh toán thêm nếu ngân hàng đã trừ tiền.</p>
+    <a class="button" th:href="@{/customer/payments}">Xem lịch sử thanh toán</a>
+</section></main></body></html>

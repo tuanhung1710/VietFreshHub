@@ -46,6 +46,7 @@ public class CheckoutController {
     private final CustomerAddressService customerAddresses;
     private final VietMapService vietMapService;
     private final VietFreshHub.cart.service.CartService carts;
+    private final VietFreshHub.payment.service.VnpayPaymentService vnpay;
     @InitBinder("addressForm")
     public void bindAddressForm(WebDataBinder binder) {
         binder.setAllowedFields("recipientName","phone","refId","searchText","checkoutToken");
@@ -99,6 +100,8 @@ public class CheckoutController {
         if(!errors.hasErrors()) {
             try {
                 var order=checkout.confirm(customerId,draft,form);
+                if(vnpay.isOnlineOrder(customerId,order.orderId()))
+                    return "redirect:/customer/payments/orders/"+order.orderId();
                 return "redirect:/customer/orders/"+order.orderId()+"/confirmation";
             } catch(CheckoutException ex) {
                 errors.reject("checkout",ex.getMessage());
@@ -235,6 +238,10 @@ public class CheckoutController {
         var draft=drafts.issue(session,customerId,preview); form.setCheckoutToken(draft.token());
         form.setAddressId(preview.addressId());
         model.addAttribute("form",form); model.addAttribute("checkout",preview); model.addAttribute("cart",preview.cart());
+        boolean onlineAvailable=vnpay.available();
+        if(!preview.codAvailable() && onlineAvailable && "COD".equals(form.getPaymentMethodCode()))
+            form.setPaymentMethodCode("VNPAY");
+        model.addAttribute("vnpayAvailable",onlineAvailable);
         model.addAttribute("cartBadgeTotal",carts.getActiveCart(customerId).getTotalItems());
         model.addAttribute("shopGroups",preview.cart().getItems().stream().collect(Collectors.groupingBy(
                 CartItemDto::getShopId,LinkedHashMap::new,Collectors.toList())));

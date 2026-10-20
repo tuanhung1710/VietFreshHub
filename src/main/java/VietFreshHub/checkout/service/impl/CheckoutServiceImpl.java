@@ -61,7 +61,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 /**
- * Điều phối checkout COD: kiểm tra dữ liệu, tạo đơn, giữ kho và ghi nhận payment chờ thu.
+ * Điều phối checkout: kiểm tra dữ liệu, tạo đơn, giữ kho và khởi tạo payment COD/VNPAY.
  * Các helper ghi dữ liệu dùng chung transaction của confirm().
  */
 @Service
@@ -79,6 +79,7 @@ public class CheckoutServiceImpl implements CheckoutService {
     private final CheckoutShippingQuoteService shippingQuoteService;
     private final EntityManager entityManager;
     private final ApplicationEventPublisher eventPublisher;
+    private final VietFreshHub.payment.service.VnpayPaymentService vnpay;
 
     @Override
     @Transactional(readOnly = true)
@@ -117,7 +118,7 @@ public class CheckoutServiceImpl implements CheckoutService {
         }
 
         // 2. Kiểm tra lại địa chỉ, mặt hàng và báo giá ngay trước khi tạo đơn.
-        PaymentMethod paymentMethod = requireCod(request.getPaymentMethodCode());
+        PaymentMethod paymentMethod = requirePaymentMethod(request.getPaymentMethodCode());
         Address deliveryAddress = lockAddress(customerId, request.getAddressId());
         Cart cart = requireActiveCart(customerId, draft.cartId());
         List<CartItem> selectedItems = requireSelectedItems(cart, draft.selectedItemIds());
@@ -127,7 +128,7 @@ public class CheckoutServiceImpl implements CheckoutService {
         BigDecimal shippingFee = shippingQuoteService.validateForConfirmation(
                 draft, deliveryAddress, itemsByShopId.keySet());
 
-        // 3. Tạo đơn tổng, đơn từng shop, giữ kho và ghi nhận COD chưa thu tiền.
+        // 3. Tạo đơn tổng, đơn từng shop, giữ kho và khởi tạo thanh toán chưa thu tiền.
         Order order = createOrder(buyer, orderCode, subtotal, shippingFee, deliveryAddress);
         CreatedShopOrders createdShopOrders = createShopOrders(order, buyer, itemsByShopId, draft.shopQuotes());
         inventoryReservationService.reserve(createdShopOrders.reservations(), customerId);
@@ -170,12 +171,12 @@ public class CheckoutServiceImpl implements CheckoutService {
         return buyer;
     }
 
-    private PaymentMethod requireCod(String methodCode) {
-        if (!"COD".equals(methodCode)) {
-            throw new CheckoutException("Hiện chỉ hỗ trợ thanh toán khi nhận hàng.");
+    private PaymentMethod requirePaymentMethod(String methodCode) {
+        if (!"COD".equals(methodCode) && !("VNPAY".equals(methodCode) && vnpay.available())) {
+            throw new CheckoutException("Phương thức thanh toán hiện chưa khả dụng.");
         }
-        PaymentMethod paymentMethod = paymentMethodRepository.findByMethodCodeAndStatus("COD", "ACTIVE")
-                .orElseThrow(() -> new CheckoutException("Thanh toán khi nhận hàng hiện chưa khả dụng."));
+        PaymentMethod paymentMethod = paymentMethodRepository.findByMethodCodeAndStatus(methodCode, "ACTIVE")
+                .orElseThrow(() -> new CheckoutException("Phương thức thanh toán hiện chưa khả dụng."));
         entityManager.refresh(paymentMethod, LockModeType.PESSIMISTIC_READ);
         if (!"ACTIVE".equals(paymentMethod.getStatus())) {
             throw new CheckoutException("Thanh toán khi nhận hàng hiện chưa khả dụng.");
@@ -269,7 +270,9 @@ public class CheckoutServiceImpl implements CheckoutService {
             entityManager.refresh(product, LockModeType.PESSIMISTIC_READ);
         }
         for (CatalogVariant variant : variantsById.values()) {
-            entityManager.refresh(variant, LockModeType.PESSIMISTIC_READ);
+            // Serialize checkouts of the same SKU before order-item snapshot triggers run.
+            // Shared locks here can deadlock while both transactions insert/update snapshots.
+            entityManager.refresh(variant, LockModeType.PESSIMISTIC_WRITE);
         }
 
         // Quan hệ shop/product có thể đã đổi trước khi lấy khóa.
@@ -351,7 +354,7 @@ public class CheckoutServiceImpl implements CheckoutService {
         history.setShopOrder(shopOrder);
         history.setStatus("PENDING");
         history.setChangedBy(buyer);
-        history.setNote("Khách hàng đặt đơn COD.");
+        history.setNote("Khách hàng đặt đơn.");
         entityManager.persist(history);
     }
 
@@ -361,6 +364,7 @@ public class CheckoutServiceImpl implements CheckoutService {
         payment.setPaymentMethod(paymentMethod);
         payment.setAmount(order.getGrandTotal());
         entityManager.persist(payment);
+        if("VNPAY".equals(paymentMethod.getMethodCode())) vnpay.prepare(payment);
     }
 
     // Tính toán và chuyển đổi dữ liệu, không ghi DB.

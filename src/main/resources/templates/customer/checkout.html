@@ -30,6 +30,9 @@
                 <section class="panel"><h2><span class="section-number">2</span>Phương thức thanh toán</h2>
                     <label class="payment-option"><input type="radio" th:field="*{paymentMethodCode}" value="COD" th:disabled="${!checkout.codAvailable}">
                         <span><strong>Thanh toán khi nhận hàng (COD)</strong><span class="muted">Bạn thanh toán cho nhân viên giao hàng khi nhận sản phẩm.</span></span></label>
+                    <label class="payment-option"><input type="radio" th:field="*{paymentMethodCode}" value="VNPAY" th:disabled="${!vnpayAvailable}" aria-describedby="vnpay-description">
+                        <span><strong>Thanh toán qua VNPAY (Sandbox)</strong><span id="vnpay-description" class="muted">Chọn ngân hàng hoặc quét QR trên cổng VNPAY. Thời hạn thanh toán 15 phút.</span></span></label>
+                    <p th:unless="${vnpayAvailable}" class="muted">VNPAY chưa khả dụng. Bạn vui lòng chọn COD để đặt hàng.</p>
                     <p th:unless="${checkout.codAvailable}" class="item-error">Thanh toán khi nhận hàng hiện chưa khả dụng.</p><p class="item-error" th:errors="*{paymentMethodCode}"></p>
                 </section>
                 <section class="panel"><h2><span class="section-number">3</span>Sản phẩm trong đơn</h2>
@@ -54,7 +57,7 @@
                 <p th:if="${checkout.shippingError != null}" class="item-error" role="alert" data-shipping-error th:text="${checkout.shippingError}"></p>
                 <a th:if="${checkout.shippingError != null}" th:href="@{/customer/checkout(checkoutToken=${form.checkoutToken},addressId=${form.addressId})}" class="button secondary">Tính lại phí giao hàng</a>
                 <div class="summary-line summary-total"><span>Tổng thanh toán</span><strong class="price" data-grand-total th:if="${checkout.grandTotal != null}" th:text="${#numbers.formatInteger(checkout.grandTotal,0,'POINT')} + ' ₫'"></strong><strong data-grand-total th:if="${checkout.grandTotal == null}">Chưa thể xác định</strong></div>
-                <button class="button full" type="submit" th:disabled="${!checkout.canConfirm()}" data-confirm-order>Xác nhận đặt hàng</button>
+                <button class="button full" type="submit" th:disabled="${!checkout.canConfirm(vnpayAvailable)}" data-confirm-order>Xác nhận đặt hàng</button>
                 <a th:href="@{/cart}" class="checkout-back">← Quay lại giỏ hàng</a>
             </aside>
         </div>

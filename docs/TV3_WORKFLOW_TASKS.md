@@ -1,5 +1,9 @@
 # Phạm vi và trạng thái công việc TV3
 
+**Đánh số chính thức: dùng [bảng gốc 01–17](TV3_TASK_STATUS_01_17.md).** Các “Task 06–08” trong báo cáo cũ là tên lượt bị lệch; xem bảng ánh xạ, không coi pickup/COD/notification đã xong. Lượt hiện tại thực hiện task gốc 12.
+
+Task gốc 12 đã hoàn thành: gợi ý khả dụng dưới product detail, 10/10 test gợi ý PASS sau sửa fixture SQL; xem [Task 12](TV3_TASK_12_RESULTS.md). Tiếp tục dùng bảng gốc để theo dõi phụ thuộc và phần nghiệm thu còn thiếu.
+
 Rà soát ngày 20/10/2026 theo tài liệu gốc và source hiện tại. Bản này thay bảng theo dõi cũ vốn mô tả nhiều file và test không còn tồn tại. Có source không đồng nghĩa đã nghiệm thu với SQL Server.
 
 Cập nhật sau rà soát: Task 02 và Task 03 đã được triển khai; nghiệm thu trên schema `D:/Download/vietfresh_hub_script.sql` và seed `D:/Download/data.sql` mới đạt **87/87 tests (79 hồi quy + 8 SQL Server thật)** trên DB test tách biệt. Xem [Task 03](TV3_TASK_03_RESULTS.md), [workflow thực thi](TV3_IMPLEMENTATION_WORKFLOW.md) và [chuẩn bị Task 04](TV3_TASK_04_PREPARATION.md). Các mô tả tinh gọn source bên dưới là lịch sử baseline, không có nghĩa các test mới chưa tồn tại.

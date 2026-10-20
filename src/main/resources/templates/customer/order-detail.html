@@ -39,6 +39,7 @@
                 <p th:if="${#lists.isEmpty(order.payments)}" class="muted">Chưa có bản ghi thanh toán.</p>
                 <article th:each="payment : ${order.payments}" class="payment-record" th:with="pendingCod=${payment.methodCode == 'COD' and payment.status == 'PENDING'}">
                     <strong th:text="${payment.methodName}"></strong>
+                    <p th:if="${payment.methodCode == 'VNPAY'}"><a th:href="@{/customer/payments/orders/{id}(id=${order.orderId})}">Kiểm tra / tiếp tục thanh toán VNPAY</a></p>
                     <p class="muted" th:text="'Mã giao dịch: #' + ${payment.paymentId}"></p>
                     <p class="payment-state" th:attr="data-state=${payment.status}"><strong th:text="|Trạng thái: ${pendingCod ? 'Chờ thu tiền' : payment.statusLabel}|"></strong></p>
                     <p th:text="${(pendingCod ? 'Số tiền cần thu: ' : 'Số tiền: ') + #numbers.formatDecimal(payment.amount,1,'POINT',payment.amount.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA') + ' ₫'}"></p>

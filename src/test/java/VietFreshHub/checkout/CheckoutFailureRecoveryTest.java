@@ -47,7 +47,7 @@ class CheckoutFailureRecoveryTest {
     final CartService carts=mock(CartService.class);
     final Authentication authentication=mock(Authentication.class);
     final CheckoutController controller=new CheckoutController(current,checkout,shipping,drafts,
-            mock(CheckoutAddressService.class),mock(CustomerAddressService.class),mock(VietMapService.class),carts);
+            mock(CheckoutAddressService.class),mock(CustomerAddressService.class),mock(VietMapService.class),carts,mock(VietFreshHub.payment.service.VnpayPaymentService.class));
 
     static Stream<RuntimeException> infrastructureFailures() {
         return Stream.of(new CannotAcquireLockException("test lock failure"),

@@ -45,8 +45,9 @@ class CheckoutServiceImplTest {
     final CheckoutShippingQuoteService shipping=mock(CheckoutShippingQuoteService.class);
     final EntityManager em=mock(EntityManager.class);
     final ApplicationEventPublisher events=mock(ApplicationEventPublisher.class);
+    final VietFreshHub.payment.service.VnpayPaymentService vnpay=mock(VietFreshHub.payment.service.VnpayPaymentService.class);
     final CheckoutServiceImpl service=new CheckoutServiceImpl(users,carts,cartService,addresses,customerAddresses,
-            methods,orders,catalog,inventory,shipping,em,events);
+            methods,orders,catalog,inventory,shipping,em,events,vnpay);
     final User buyer=new User();
     final Address address=new Address();
     final Cart cart=new Cart();
@@ -122,6 +123,19 @@ class CheckoutServiceImplTest {
         assertEquals(0,new BigDecimal("170000").compareTo(preview.cart().getTotalAmount()));
         assertEquals(address.getFormattedAddress(),preview.addresses().getFirst().addressText());
         assertTrue(preview.codAvailable()); assertFalse(preview.canConfirm()); // No shipping quote yet.
+        assertNoOrderCreated();
+    }
+    @Test void onlineCheckoutPreparesGatewayWithinTheOrderTransaction() {
+        var draft=draft(1L); var form=request(draft); form.setPaymentMethodCode("VNPAY");
+        PaymentMethod online=new PaymentMethod(); online.setMethodCode("VNPAY"); online.setStatus("ACTIVE");
+        when(vnpay.available()).thenReturn(true);
+        when(methods.findByMethodCodeAndStatus("VNPAY","ACTIVE")).thenReturn(Optional.of(online));
+        service.confirm(7L,draft,form);
+        verify(vnpay).prepare(argThat(p -> p.getPaymentMethod()==online && p.getAmount().signum()>0));
+    }
+    @Test void disabledOnlineCheckoutCannotCreateOrderOrReserveStock() {
+        var draft=draft(1L); var form=request(draft); form.setPaymentMethodCode("VNPAY");
+        assertThrows(CheckoutException.class,() -> service.confirm(7L,draft,form));
         assertNoOrderCreated();
     }
     @Test void previewRejectsEmptyOrForeignSelection() {

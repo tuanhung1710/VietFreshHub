@@ -1,5 +1,9 @@
 # Workflow triển khai TV3 — VietFresh Hub
 
+**Từ lượt này dùng số task gốc 01–17:** [bảng trạng thái và ánh xạ](TV3_TASK_STATUS_01_17.md). Các cập nhật theo số lượt bên dưới giữ làm lịch sử; chúng không thay bảng task người dùng đã xác nhận.
+
+Task gốc 12 đã thực hiện và kiểm chứng gợi ý/read-only; xem [kết quả Task 12](TV3_TASK_12_RESULTS.md). Task 06 còn đồng bộ đa shop với TV4; 08–10 chờ phối hợp; 17 chưa đo coverage/browser toàn luồng.
+
 Ngày lập: **20/10/2026**. Baseline: working tree hiện tại tại `D:/S5/SWP391/FinalProject`, bao gồm các thay đổi chưa commit. Đây là kế hoạch thực hiện, không xác nhận các task chưa làm đã hoàn thành.
 
 Cập nhật thực thi: Task 02 (unit test draft/checkout COD, phần A2/B2) đã có 29 test PASS; xem [TV3_TASK_02_RESULTS.md](TV3_TASK_02_RESULTS.md). Các nhận xét “chưa có test” bên dưới mô tả baseline khi lập kế hoạch, không phải trạng thái sau Task 02. Chưa nghiệm thu DB hoặc đo coverage.

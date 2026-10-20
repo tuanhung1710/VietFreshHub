@@ -20,7 +20,7 @@ class CustomerCartIdentityTest {
         CurrentCustomerService current=mock(CurrentCustomerService.class);
         Authentication auth=mock(Authentication.class);
         when(current.requireCustomerId(auth)).thenReturn(7L);
-        var controller=new CustomerCartViewController(cart,mock(CatalogService.class),current);
+        var controller=new CustomerCartViewController(cart,mock(CatalogService.class),current,mock(VietFreshHub.recommendation.service.ProductRecommendationService.class));
         var errors=mock(BindingResult.class);
         var flash=new RedirectAttributesModelMap();
         var add=new AddToCartRequest(11L,2);
@@ -35,7 +35,7 @@ class CustomerCartIdentityTest {
         CartService cart=mock(CartService.class);
         CurrentCustomerService current=mock(CurrentCustomerService.class);
         when(current.requireCustomerId(null)).thenThrow(new AccessDeniedException("Denied"));
-        var controller=new CustomerCartViewController(cart,mock(CatalogService.class),current);
+        var controller=new CustomerCartViewController(cart,mock(CatalogService.class),current,mock(VietFreshHub.recommendation.service.ProductRecommendationService.class));
         var errors=mock(BindingResult.class); var flash=new RedirectAttributesModelMap();
         var update=new UpdateCartQuantityRequest(); update.setVariantId(11L); update.setQuantity(1);
         assertThrows(AccessDeniedException.class,()->controller.handleAddToCart(new AddToCartRequest(11L,1),errors,null,null,flash));

@@ -42,7 +42,7 @@ try {
     & sqlcmd -S 'tcp:127.0.0.1,1433' -d master -U $env:TV3_TEST_SQL_USER -C -l 5 -t 60 -f 65001 -b -i $taskSqlPath
     if($LASTEXITCODE -ne 0) { throw "Could not initialize isolated test database $taskDatabase. Tests were not started." }
     $env:TV3_TEST_JDBC_URL="jdbc:sqlserver://127.0.0.1:1433;databaseName=$taskDatabase;encrypt=true;trustServerCertificate=true;loginTimeout=5;lockTimeout=60000"
-    & .\mvnw.cmd -o '-Dtest=CartServiceImplTest,CustomerCartIdentityTest,CheckoutDraftStoreTest,CheckoutServiceImplTest,CheckoutShippingQuoteServiceTest,CheckoutFailureRecoveryTest,CheckoutSqlServerIntegrationTest,CustomerOrderCancellationTest,CustomerOrderTrackingTest,CustomerOrderHistoryTest,CustomerOrderReorderTest,CustomerOrderHistoryControllerTest,CustomerHttpSecurityTest,CustomerPaymentHistoryTest,CustomerPaymentHistoryControllerTest' test
+    & .\mvnw.cmd -o '-Dtest=CartServiceImplTest,CustomerCartIdentityTest,CheckoutDraftStoreTest,CheckoutServiceImplTest,CheckoutShippingQuoteServiceTest,CheckoutFailureRecoveryTest,CheckoutSqlServerIntegrationTest,CustomerOrderCancellationTest,CustomerOrderTrackingTest,CustomerOrderHistoryTest,CustomerOrderReorderTest,CustomerOrderHistoryControllerTest,CustomerHttpSecurityTest,CustomerPaymentHistoryTest,CustomerPaymentHistoryControllerTest,ProductRecommendationTest,ProductRecommendationViewTest,VnpayGatewayTest,VnpayPaymentServiceTest,VnpayHttpSecurityTest,VnpayViewTest' test
     if($LASTEXITCODE -ne 0) { throw "TV3 tests failed; inspect target/surefire-reports. Isolated DB retained: $taskDatabase" }
     Write-Output "TV3 tests passed. Isolated DB retained for review: $taskDatabase"
 } finally {
