@@ -24,7 +24,7 @@ function setup(valid = true) {
     };
     const form = {
         action: 'https://vietfresh.test/customer/checkout',
-        elements: { checkoutToken: { value: 'token' }, couponCode: { value: 'SAVE10' }, pointsToUse: { value: '100' } },
+        elements: { checkoutToken: { value: 'token' }, couponCode: { value: 'SAVE10' }, rewardAmountToUse: { value: '100' } },
         querySelector: () => confirm,
         querySelectorAll: selector => selector === 'input[name="addressId"]'
             ? [{ value: '42', addEventListener: (name, handler) => { handlers.addressChange = handler; } }]
@@ -61,7 +61,7 @@ test('valid order confirmation locks its submitter and announces order processin
     assert.equal(app.attributes['aria-busy'], 'true');
 });
 
-for (const action of ['coupon', 'points']) {
+for (const action of ['coupon', 'reward']) {
     for (const valid of [true, false]) {
         test(`${action} preview leaves order state unchanged even when form validity is ${valid}`, () => {
             const app = setup(valid);
@@ -95,7 +95,7 @@ test('address change requotes shipping and preserves applied discounts', () => {
     const destination = new URL(app.state().destination);
     assert.equal(destination.searchParams.get('addressId'), '42');
     assert.equal(destination.searchParams.get('couponCode'), 'SAVE10');
-    assert.equal(destination.searchParams.get('pointsToUse'), '100');
+    assert.equal(destination.searchParams.get('rewardAmountToUse'), '100');
     assert.equal(app.confirm.disabled, true);
     assert.equal(app.shippingError.hidden, true);
     assert.equal(app.attributes['aria-busy'], 'true');

@@ -17,6 +17,8 @@ import VietFreshHub.loyalty.dto.LoyaltyBalanceResponse;
 import VietFreshHub.loyalty.dto.LoyaltyRedemptionResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.Authentication;
 import org.springframework.test.web.servlet.MockMvc;
@@ -83,6 +85,33 @@ class CheckoutCouponFormTest {
         when(coupons.preview(1L, "SAVE10", List.of(20L))).thenReturn(
                 new CouponApplicationResponse(2L, "SAVE10", 3L, 30L,
                         new BigDecimal("100000"), new BigDecimal("10000"), new BigDecimal("90000")));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"-1", "1000.5", "10000000000000000"})
+    void invalidHiddenRewardAmountCannotConfirmOrder(String input) throws Exception {
+        when(loyalty.previewRedemption(eq(1L), eq(new BigDecimal(input)), any()))
+                .thenThrow(new IllegalArgumentException("Tiền thưởng phải là số đồng nguyên hợp lệ"));
+        mvc.perform(post("/customer/checkout").principal(authentication).session(session)
+                        .param("checkoutToken", token).param("addressId", "42")
+                        .param("rewardAmountToUse", input))
+                .andExpect(status().isOk())
+                .andExpect(model().attributeHasFieldErrors("form", "rewardAmountToUse"))
+                .andExpect(model().attribute("loyaltyDiscount", BigDecimal.ZERO));
+        verify(checkout, never()).confirm(anyLong(), any(), any());
+        verify(loyalty, never()).redeemToOrder(anyLong(), anyLong(), any());
+    }
+
+    @Test
+    void fractionalRewardPreviewRendersErrorWithoutCreatingOrder() throws Exception {
+        when(loyalty.previewRedemption(1L, new BigDecimal("1000.5"), new BigDecimal("100000")))
+                .thenThrow(new IllegalArgumentException("Tiền thưởng phải là số đồng nguyên"));
+        mvc.perform(post("/customer/checkout/reward/preview").principal(authentication).session(session)
+                        .param("checkoutToken", token).param("rewardAmountInput", "1000.5"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("loyaltyError", "Tiền thưởng phải là số đồng nguyên"))
+                .andExpect(model().attribute("loyaltyDiscount", BigDecimal.ZERO));
+        verify(checkout, never()).confirm(anyLong(), any(), any());
     }
 
     @Test

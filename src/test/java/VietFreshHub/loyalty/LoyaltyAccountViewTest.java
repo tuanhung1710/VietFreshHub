@@ -85,9 +85,9 @@ class LoyaltyAccountViewTest {
                 .updatedAt(LocalDateTime.of(2026, 10, 18, 10, 20, 30)).build()));
         mvc.perform(get("/customer/loyalty").principal(customer).param("userId", "999"))
                 .andExpect(status().isOk()).andExpect(view().name("loyalty/loyalty-account"))
-                .andExpect(content().string(containsString(">1.250</p>")))
-                .andExpect(content().string(containsString(">2.000</p>")))
-                .andExpect(content().string(containsString(">750</p>")))
+                .andExpect(content().string(containsString(">1.250 ₫</p>")))
+                .andExpect(content().string(containsString(">2.000 ₫</p>")))
+                .andExpect(content().string(containsString(">750 ₫</p>")))
                 .andExpect(content().string(containsString("18/10/2026 10:20:30")));
         verify(accounts).findByUser_UserId(7L);
         verify(accounts, never()).findByUser_UserId(999L);
@@ -99,35 +99,35 @@ class LoyaltyAccountViewTest {
     void customerWithoutAccountSeesZeroAndEmptyHistoryWithoutCreatingAccount() throws Exception {
         mvc.perform(get("/customer/loyalty").principal(customer))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString(">0</p>")))
-                .andExpect(content().string(containsString("Bạn chưa có điểm thưởng")))
-                .andExpect(content().string(containsString("Chưa có giao dịch điểm thưởng.")))
-                .andExpect(content().string(not(containsString("aria-label=\"Phân trang giao dịch điểm\""))));
+                .andExpect(content().string(containsString(">0 ₫</p>")))
+                .andExpect(content().string(containsString("Bạn chưa có tiền thưởng")))
+                .andExpect(content().string(containsString("Chưa có giao dịch tiền thưởng.")))
+                .andExpect(content().string(not(containsString("aria-label=\"Phân trang giao dịch tiền thưởng\""))));
         verify(accounts, never()).save(any());
     }
 
     @Test
-    void rendersAllTransactionTypesOrderLinksSignedPointsAndEscapedNotes() throws Exception {
+    void rendersAllTransactionTypesOrderLinksSignedRewardAndEscapedNotes() throws Exception {
         var order = new Order();
         order.setOrderId(42L);
         order.setOrderCode("VF-42");
         var entries = List.of(
                 transaction(1L, LoyaltyTransactionType.EARN, 100, 100, order, "Tích từ đơn hàng"),
                 transaction(2L, LoyaltyTransactionType.REDEEM, -30, 70, order, null),
-                transaction(3L, LoyaltyTransactionType.REFUND, 30, 100, order, "Hoàn điểm"),
+                transaction(3L, LoyaltyTransactionType.REFUND, 30, 100, order, "Hoàn tiền thưởng"),
                 transaction(4L, LoyaltyTransactionType.ADJUSTMENT, -10, 90, null, "<script>alert(1)</script>"));
         when(transactions.findByLoyaltyAccount_User_UserIdOrderByCreatedAtDescLoyaltyTransactionIdDesc(
                 7L, PageRequest.of(0, 10))).thenReturn(new PageImpl<>(entries));
         mvc.perform(get("/customer/loyalty").principal(customer))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Tích điểm")))
-                .andExpect(content().string(containsString("Đổi điểm")))
-                .andExpect(content().string(containsString("Hoàn điểm")))
+                .andExpect(content().string(containsString("Tích thưởng")))
+                .andExpect(content().string(containsString("Dùng tiền thưởng")))
+                .andExpect(content().string(containsString("Hoàn tiền thưởng")))
                 .andExpect(content().string(containsString("Điều chỉnh")))
                 .andExpect(content().string(containsString("href=\"/customer/orders/42\"")))
                 .andExpect(content().string(containsString("VF-42")))
-                .andExpect(content().string(containsString(">-30</td>")))
-                .andExpect(content().string(containsString(">70</td>")))
+                .andExpect(content().string(containsString(">-30 ₫</td>")))
+                .andExpect(content().string(containsString(">70 ₫</td>")))
                 .andExpect(content().string(containsString("&lt;script&gt;alert(1)&lt;/script&gt;")))
                 .andExpect(content().string(not(containsString("href=\"/customer/orders/null\""))));
     }
