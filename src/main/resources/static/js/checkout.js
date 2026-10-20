@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
             url.searchParams.set('addressId', address.value);
             url.searchParams.set('selectionSubmitted', 'true');
             url.searchParams.set('couponCode', form.elements.couponCode.value);
-            url.searchParams.set('pointsToUse', form.elements.pointsToUse.value);
+            url.searchParams.set('rewardAmountToUse', form.elements.rewardAmountToUse.value);
             window.location.assign(url.toString());
         });
     });

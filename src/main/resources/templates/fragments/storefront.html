@@ -20,7 +20,7 @@
         <div class="nav-links">
             <a th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}"
                th:href="@{/customer/loyalty}"
-               class="button secondary">Điểm thưởng</a>
+               class="button secondary">Tiền thưởng</a>
             <span th:replace="~{fragments/notifications :: bell}"></span>
             <a th:href="@{/cart}" class="cart-link"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h3l3 13h11l3-9H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg> Giỏ hàng <span class="badge" th:text="${cartBadgeTotal != null ? cartBadgeTotal : cart.totalItems}">0</span></a>
             <a th:if="${#authorization.expression('!isAuthenticated()')}" th:href="@{/login}">Đăng nhập</a>
@@ -28,7 +28,7 @@
                 <div class="account-dropdown"><span th:text="${#authentication.name}"></span>
                     <a th:href="@{/notifications}">Thông báo</a>
                     <a th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" th:href="@{/customer/orders}">Đơn hàng của tôi</a>
-                    <a th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" th:href="@{/customer/loyalty}">Điểm thưởng của tôi</a>
+                    <a th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" th:href="@{/customer/loyalty}">Tiền thưởng của tôi</a>
                     <form th:action="@{/logout}" method="post"><button type="submit">Đăng xuất</button></form></div>
             </details>
         </div>
