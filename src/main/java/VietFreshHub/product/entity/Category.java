@@ -1,43 +1,44 @@
 package VietFreshHub.product.entity;
 
-import jakarta.persistence.*;
+import VietFreshHub.product.enums.CategoryStatus;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 import org.hibernate.annotations.Nationalized;
-import java.time.LocalDateTime;
 
 @Entity
-@Table(schema = "dbo", name = "categories")
-@Getter @Setter @NoArgsConstructor
+@Table(name = "categories", schema = "dbo")
+@Getter
+@Setter
+@NoArgsConstructor
 public class Category {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "category_id")
     private Long categoryId;
+
     @Column(name = "parent_category_id")
     private Long parentCategoryId;
-    @Nationalized @Column(nullable = false, length = 150)
+
+    @Nationalized
+    @Column(name = "name", length = 150)
     private String name;
-    @Column(nullable = false, length = 200)
+
+    @Column(name = "slug", length = 200)
     private String slug;
-    @Nationalized @Column(length = 1000)
-    private String description;
-    @Column(nullable = false, length = 20)
-    private String status = "ACTIVE";
-     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
 
-    @PrePersist
-    void initializeUtcTimestamps() {
-        var now = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
-        if (createdAt == null) createdAt = now;
-        if (updatedAt == null) updatedAt = now;
-    }
-
-    @PreUpdate
-    void updateUtcTimestamps() {
-        updatedAt = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
-    }
+    @Column(name = "status", length = 30)
+    @Enumerated(EnumType.STRING)
+    private CategoryStatus status;
 }

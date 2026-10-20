@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Giám sát giao hàng | VietFresh Hub</title>
+    <style>
+        body { margin: 0; background: #f5f7f6; color: #20362b; font-family: Arial, sans-serif; line-height: 1.5; }
+        .monitoring-page { max-width: 1440px; margin: 28px auto; padding: 0 24px; }
+        .monitoring-page a { color: #16633f; }
+        .back-link { display: inline-block; margin-bottom: 16px; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+        .page-header h1 { margin: 0; font-size: 28px; }
+        .page-header p { margin: 6px 0 0; color: #56655d; }
+        .page-description { margin: 12px 0 24px; color: #56655d; font-size: 14px; }
+        .page-header + .filters-card { margin-top: 24px; }
+        .filters-card { padding: 20px; border: 1px solid #d9e2dc; border-radius: 8px; background: white; }
+        .monitoring-filters { display: grid; grid-template-columns: minmax(220px, 1.4fr) minmax(200px, 1fr) minmax(220px, 1fr) auto; gap: 16px; align-items: end; }
+        .filter-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+        .filter-field label { font-size: 14px; font-weight: 600; }
+        .filter-field input, .filter-field select { width: 100%; height: 42px; box-sizing: border-box; padding: 8px 10px; border: 1px solid #b8c8be; border-radius: 5px; background: white; color: inherit; font: inherit; }
+        .filter-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+        .filter-actions .button { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; box-sizing: border-box; padding: 8px 14px; border: 1px solid #16633f; border-radius: 5px; background: #16633f; color: white; font: inherit; text-decoration: none; cursor: pointer; white-space: nowrap; }
+        .filter-actions .button.secondary { border-color: #b8c8be; background: white; color: #20362b; }
+        .monitoring-page :focus-visible { outline: 2px solid #16633f; outline-offset: 3px; }
+        .sort-note { margin: 12px 0 0; color: #56655d; font-size: 13px; }
+        .table-container { margin-top: 24px; overflow-x: auto; border: 1px solid #d9e2dc; border-radius: 8px; background: white; }
+        .delivery-table { width: 100%; min-width: 1060px; border-collapse: collapse; font-size: 14px; }
+        .delivery-table th, .delivery-table td { padding: 14px 12px; border-bottom: 1px solid #e3e9e5; text-align: left; vertical-align: middle; }
+        .delivery-table th { background: #edf3ef; font-size: 13px; font-weight: 600; }
+        .delivery-table tbody tr:last-child td { border-bottom: 0; }
+        .delivery-table tbody tr:hover { background: #f8faf9; }
+        .delivery-table .row-number { width: 40px; text-align: center; }
+        .delivery-table .order-code { min-width: 190px; max-width: 240px; overflow-wrap: anywhere; }
+        .delivery-table .shop-name { min-width: 130px; }
+        .delivery-table .delivery-status { min-width: 150px; }
+        .delivery-table .staff-name { min-width: 130px; }
+        .delivery-table .date-cell, .delivery-table .detail-link { white-space: nowrap; }
+        .delivery-time { color: #56655d; }
+        .empty-state { margin: 0; padding: 32px 20px; color: #56655d; text-align: center; }
+        .pagination { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 20px; font-size: 14px; }
+        @media (max-width: 1100px) {
+            .monitoring-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 600px) {
+            .monitoring-page { margin: 16px auto; padding: 0 12px; }
+            .page-header { align-items: flex-start; }
+            .page-header h1 { font-size: 23px; }
+            .filters-card { padding: 16px; }
+            .monitoring-filters { grid-template-columns: 1fr; }
+            .filter-actions .button { flex: 1; }
+            .pagination { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+<main class="monitoring-page" th:with="sellerView=${basePath == '/seller/deliveries'}">
+    <a class="back-link" th:href="@{${homePath}}" th:text="${sellerView ? 'Trang chủ' : 'Quay lại trang quản lý'}">Trang chủ</a>
+    <header class="page-header">
+        <div>
+            <h1>Giám sát giao hàng</h1>
+            <p th:unless="${sellerView}" th:text="${scopeLabel}"></p>
+        </div>
+        <span th:replace="~{fragments/notifications :: bell}"></span>
+    </header>
+    <p class="page-description" th:unless="${sellerView}">Thông tin chỉ đọc. Thời gian hiển thị theo giờ Việt Nam.</p>
+
+    <section class="filters-card" aria-label="Bộ lọc giao hàng">
+        <form class="monitoring-filters" method="get" th:action="@{${basePath}}">
+            <div class="filter-field">
+                <label for="order-code" th:text="${sellerView ? 'Tìm kiếm' : 'Mã đơn hàng'}">Tìm kiếm</label>
+                <input id="order-code" type="search" name="orderCode" th:value="${orderCode}"
+                       th:placeholder="${sellerView ? 'Mã đơn hàng, Nhân viên giao hàng' : 'Nhập mã đơn hàng'}">
+            </div>
+            <div class="filter-field">
+                <label for="delivery-status">Trạng thái giao hàng</label>
+                <select id="delivery-status" name="status">
+                    <option value="" th:selected="${selectedStatus == null}">Tất cả trạng thái</option>
+                    <option th:each="option : ${statusOptions}" th:value="${option.key}"
+                            th:selected="${selectedStatus == option.key}" th:text="${option.value}"></option>
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="sort-direction">Thời gian giao thành công</label>
+                <select id="sort-direction" name="direction">
+                    <option value="desc" th:selected="${direction == 'desc'}">Mới nhất trước</option>
+                    <option value="asc" th:selected="${direction == 'asc'}">Cũ nhất trước</option>
+                </select>
+            </div>
+            <div class="filter-actions">
+                <button class="button" type="submit">Tìm kiếm / Lọc</button>
+                <a class="button secondary" th:href="@{${basePath}}">Xóa bộ lọc</a>
+            </div>
+        </form>
+        <p class="sort-note" th:unless="${sellerView}">Sắp xếp theo thời gian giao thành công; các đơn chưa có thời gian này nằm cuối danh sách.</p>
+    </section>
+
+    <div class="table-container">
+        <p class="empty-state" th:if="${deliveriesPage.empty}">Không có đơn giao hàng trong phạm vi hoặc bộ lọc hiện tại.</p>
+        <table class="delivery-table" aria-label="Danh sách giao hàng" th:unless="${deliveriesPage.empty}">
+            <thead>
+            <tr>
+                <th class="row-number" scope="col">STT</th>
+                <th scope="col">Mã đơn hàng</th>
+                <th scope="col" th:unless="${sellerView}">Cửa hàng</th>
+                <th scope="col">Trạng thái giao hàng</th>
+                <th scope="col">Nhân viên giao hàng</th>
+                <th scope="col">Thời gian giao hàng thành công</th>
+                <th scope="col" th:text="${sellerView ? 'Trạng thái hoàn hàng' : 'Trả hàng về cửa hàng'}">Trạng thái hoàn hàng</th>
+                <th scope="col">Chi tiết</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="delivery, rowStat : ${deliveriesPage.content}">
+                <td class="row-number" th:text="${deliveriesPage.pageable.offset + rowStat.count}"></td>
+                <td class="order-code" th:text="${delivery.orderCode}"></td>
+                <td class="shop-name" th:unless="${sellerView}">
+                    <span th:text="${delivery.shopName == null ? 'Cửa hàng' : delivery.shopName}"></span>
+                </td>
+                <td class="delivery-status" th:text="${delivery.deliveryStatusLabel}"></td>
+                <td class="staff-name" th:text="${delivery.deliveryStaffName}"></td>
+                <td class="date-cell">
+                    <th:block th:if="${delivery.deliveredAt != null}">
+                        <span th:text="${#temporals.format(delivery.deliveredAt, 'dd-MM-yyyy')}"></span><br>
+                        <span class="delivery-time" th:text="${#temporals.format(delivery.deliveredAt, 'HH:mm')}"></span>
+                    </th:block>
+                </td>
+                <td th:text="${delivery.returnStatusLabel}"></td>
+                <td><a class="detail-link" th:href="@{${basePath + '/' + delivery.deliveryId}}">Xem chi tiết</a></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <nav class="pagination" aria-label="Phân trang giao hàng">
+        <a th:if="${deliveriesPage.hasPrevious()}"
+           th:href="@{${basePath}(page=${deliveriesPage.number - 1},status=${selectedStatus},orderCode=${orderCode},direction=${direction})}">Trang trước</a>
+        <span th:text="|Trang ${deliveriesPage.number + 1} / ${deliveriesPage.totalPages == 0 ? 1 : deliveriesPage.totalPages}|"></span>
+        <a th:if="${deliveriesPage.hasNext()}"
+           th:href="@{${basePath}(page=${deliveriesPage.number + 1},status=${selectedStatus},orderCode=${orderCode},direction=${direction})}">Trang sau</a>
+    </nav>
+</main>
+</body>
+</html>

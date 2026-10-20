@@ -111,7 +111,10 @@ public class NotificationServiceImpl implements NotificationService {
         notification.setEntityType(validEntityType);
         notification.setEntityId(entityId);
 
+        notification.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC).withNano(0));
         notificationRepository.save(notification);
+        entityManager.persist(new VietFreshHub.notification.entity.NotificationDelivery(
+                notification, notification.getCreatedAt()));
     }
 
     private String requireText(

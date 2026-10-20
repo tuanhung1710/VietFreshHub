@@ -35,6 +35,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class CheckoutCouponFormTest {
+    private final VietFreshHub.checkout.service.CheckoutShippingQuoteService shipping = mock(VietFreshHub.checkout.service.CheckoutShippingQuoteService.class);
     private final CheckoutService checkout = mock(CheckoutService.class);
     private final CouponApplicationService coupons = mock(CouponApplicationService.class);
     private final LoyaltyService loyalty = mock(LoyaltyService.class);
@@ -52,8 +53,8 @@ class CheckoutCouponFormTest {
                 .totalAmount(new BigDecimal("100000"))
                 .items(List.of(CartItemDto.builder().cartItemId(20L).shopId(30L).build()))
                 .build();
-        var preview = new CheckoutPreview(cart, List.of(), new BigDecimal("20000"),
-                new BigDecimal("20000"), new BigDecimal("120000"), true, "fingerprint");
+        var preview = new CheckoutPreview(cart, List.of(), null, java.util.Map.of(),
+                new BigDecimal("20000"), new BigDecimal("120000"), true, "fingerprint", null, false);
         token = drafts.issue(session, 1L, preview).token();
         when(currentCustomer.requireCustomerId(authentication)).thenReturn(1L);
         when(carts.getActiveCart(1L)).thenReturn(cart);
@@ -61,8 +62,17 @@ class CheckoutCouponFormTest {
         when(loyalty.getBalance(1L)).thenReturn(new LoyaltyBalanceResponse(null, 1L, 1000, 1000, 0, null));
         when(loyalty.previewRedemption(eq(1L), eq(0), any()))
                 .thenReturn(new LoyaltyRedemptionResponse(0, BigDecimal.ZERO, 1000));
-        var controller = new CheckoutController(currentCustomer, checkout, drafts,
-                mock(CheckoutAddressService.class), carts, coupons, loyalty);
+        when(shipping.quote(eq(1L), any(), nullable(Long.class))).thenAnswer(call -> {
+            CheckoutPreview input = call.getArgument(1);
+            Long addressId = call.getArgument(2);
+            return new CheckoutPreview(input.cart(), input.addresses(), addressId, input.shopQuotes(),
+                    input.shippingFee(), input.grandTotal(), input.codAvailable(), input.fingerprint(),
+                    input.shippingError(), input.deliveryOutOfRange());
+        });
+        var controller = new CheckoutController(currentCustomer, checkout, shipping, drafts,
+                mock(CheckoutAddressService.class),
+                mock(VietFreshHub.customer.service.CustomerAddressService.class),
+                mock(VietFreshHub.vietmap.service.VietMapService.class), carts, coupons, loyalty);
         mvc = MockMvcBuilders.standaloneSetup(controller)
                 .setViewResolvers((name, locale) -> name.startsWith("redirect:")
                         ? new RedirectView(name.substring("redirect:".length()))

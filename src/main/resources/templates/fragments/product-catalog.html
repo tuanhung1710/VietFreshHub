@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="filters">
+    <input type="hidden" name="q" th:value="${filters.q}">
+    <input type="hidden" name="category" th:value="${filters.category}">
+    <input type="hidden" name="tab" th:value="${filters.tab}">
+    <input type="hidden" name="stock" th:value="${filters.stock}">
+    <input type="hidden" name="sort" th:value="${filters.sort}">
+    <input type="hidden" name="eligibility" th:value="${filters.eligibility}">
+    <input type="hidden" name="createdFrom" th:value="${filters.createdFrom}">
+    <input type="hidden" name="createdTo" th:value="${filters.createdTo}">
+    <input type="hidden" name="minPrice" th:value="${filters.minPrice}">
+    <input type="hidden" name="maxPrice" th:value="${filters.maxPrice}">
+</th:block>
+<span th:fragment="money(value)" th:text="${#numbers.formatDecimal(value,0,'POINT',0,'COMMA') + 'đ'}"></span>
+</body>
+</html>

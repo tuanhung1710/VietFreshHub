@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/storefront :: head(${addressFormTitle})}"></head>
+<body>
+<header th:replace="~{fragments/storefront :: header}"></header>
+<main class="container page checkout-address-page">
+    <div class="page-heading"><h1 class="checkout-title" th:text="${addressFormTitle}">Địa chỉ giao hàng</h1></div>
+    <section class="panel" aria-label="Thông tin địa chỉ giao hàng">
+        <form th:action="@{${addressFormAction}}" th:object="${addressForm}" method="post" class="address-create-form" data-customer-address-autocomplete th:data-autocomplete-url="@{/api/vietmap/autocomplete}" th:data-address-original-text="${currentAddress != null ? currentAddress.searchText : null}">
+            <th:block th:if="${checkoutAddressForm}">
+                <input type="hidden" name="checkoutToken" th:value="${addressCheckoutToken}">
+                <th:block th:unless="${checkoutAddressEditing == true}">
+                    <p class="item-error" th:errors="*{checkoutToken}"></p>
+                </th:block>
+            </th:block>
+            <th:block th:if="${!checkoutAddressForm or checkoutAddressEditing == true}">
+                <input type="hidden" th:field="*{addressId}">
+                <p class="item-error" th:errors="*{addressId}"></p>
+            </th:block>
+            <input type="hidden" th:field="*{refId}" data-address-ref-id>
+            <div th:if="${#fields.hasGlobalErrors()}" class="notice error" role="alert"><p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p></div>
+            <div class="address-form-grid">
+                <div>
+                    <label for="recipient-name">Tên người nhận</label>
+                    <input id="recipient-name" th:field="*{recipientName}" autocomplete="name" maxlength="150" required>
+                    <small th:errors="*{recipientName}"></small>
+                </div>
+                <div>
+                    <label for="recipient-phone">Số điện thoại</label>
+                    <input id="recipient-phone" th:field="*{phone}" type="tel" autocomplete="tel" maxlength="30" required>
+                    <small th:errors="*{phone}"></small>
+                </div>
+                <div class="address-location">
+                    <label for="address-search">Địa chỉ giao hàng</label>
+                    <input id="address-search" th:field="*{searchText}" data-address-search autocomplete="off" required>
+                    <ul data-address-suggestions aria-label="Gợi ý địa chỉ"></ul>
+                    <p data-address-status role="status" aria-live="polite" class="muted"></p>
+                    <small th:errors="*{refId}"></small>
+                </div>
+            </div>
+            <th:block th:unless="${checkoutAddressForm}">
+                <p>
+                    <label><input type="checkbox" th:field="*{default}"> Đặt làm địa chỉ mặc định</label>
+                </p>
+                <p class="item-error" th:errors="*{default}"></p>
+            </th:block>
+            <div class="checkout-address-actions">
+                <button class="button" type="submit" data-address-save th:text="${addressSubmitLabel}">Lưu địa chỉ</button>
+                <th:block th:if="${checkoutAddressForm}">
+                    <a class="button secondary" th:href="@{/customer/checkout(checkoutToken=${addressCheckoutToken},selectionSubmitted=true)}">Quay lại đặt hàng</a>
+                </th:block>
+                <th:block th:unless="${checkoutAddressForm}">
+                    <a class="button secondary" th:href="@{/customer/addresses}">Quay lại quản lý địa chỉ</a>
+                </th:block>
+            </div>
+        </form>
+    </section>
+</main>
+<footer th:replace="~{fragments/storefront :: footer}"></footer>
+<script defer th:src="@{/js/customer-address-autocomplete.js}"></script>
+<script defer th:src="@{/js/checkout.js}"></script>
+</body>
+</html>

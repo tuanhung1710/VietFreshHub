@@ -24,38 +24,72 @@ public interface DeliveryAssignmentRepository extends JpaRepository<DeliveryAssi
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<DeliveryAssignment> findForUpdateByAssignmentId(Long assignmentId);
 
-    boolean existsByDeliveryStaff_UserIdAndStatusIn(Long userId, List<DeliveryAssignmentStatus> statuses);
+    @EntityGraph(attributePaths = {"delivery", "deliveryStaff"})
+    List<DeliveryAssignment> findByDelivery_DeliveryIdInOrderByAssignedAtDescAssignmentIdDesc(List<Long> deliveryIds);
+
+    @Query("""
+            select a from DeliveryAssignment a
+            join fetch a.deliveryStaff
+            where a.delivery.shopOrder.order.orderId = :orderId
+              and a.delivery.shopOrder.order.customer.userId = :customerId
+              and a.acceptedAt is not null
+            order by a.acceptedAt desc, a.assignmentId desc
+            """)
+    List<DeliveryAssignment> findAcceptedAssignmentsForCustomerOrder(@Param("customerId") Long customerId,
+                                                                   @Param("orderId") Long orderId);
+
+    long countByDeliveryStaff_UserIdAndStatusIn(Long userId, List<DeliveryAssignmentStatus> statuses);
 
     boolean existsByDelivery_DeliveryIdAndStatusIn(Long deliveryId, List<DeliveryAssignmentStatus> statuses);
 
-    Optional<DeliveryAssignment> findTopByDeliveryStaff_UserIdOrderByAssignedAtDesc(Long userId);
+    Optional<DeliveryAssignment> findTopByDeliveryStaff_UserIdOrderByAssignedAtDescAssignmentIdDesc(Long userId);
 
-    Optional<DeliveryAssignment> findTopByDelivery_DeliveryIdAndStatusOrderByAssignedAtDescAssignmentIdDesc(
-            Long deliveryId, DeliveryAssignmentStatus status);
+    Optional<DeliveryAssignment> findTopByDelivery_DeliveryIdOrderByAssignedAtDescAssignmentIdDesc(Long deliveryId);
 
     @Query("""
             select distinct a.deliveryStaff.userId from DeliveryAssignment a
             where a.delivery.deliveryId = :deliveryId
               and a.status in :statuses
-              and (a.assignedAt > :baselineAssignedAt
-                   or (a.assignedAt = :baselineAssignedAt and a.assignmentId > :baselineAssignmentId))
+              and a.assignedAt > :assignedAfter
             order by a.deliveryStaff.userId asc
             """)
-    List<Long> findFailedOfferStaffIdsAfterAssignment(@Param("deliveryId") Long deliveryId,
-                                                     @Param("statuses") List<DeliveryAssignmentStatus> statuses,
-                                                     @Param("baselineAssignedAt") LocalDateTime baselineAssignedAt,
-                                                     @Param("baselineAssignmentId") Long baselineAssignmentId);
+    List<Long> findRecentFailedOfferStaffIds(@Param("deliveryId") Long deliveryId,
+                                            @Param("statuses") List<DeliveryAssignmentStatus> statuses,
+                                            @Param("assignedAfter") LocalDateTime assignedAfter);
+
+    @Query("select a.delivery.deliveryId from DeliveryAssignment a where a.assignmentId = :assignmentId")
+    Optional<Long> findDeliveryIdByAssignmentId(@Param("assignmentId") Long assignmentId);
+
+    @Query("""
+            select a.delivery.deliveryId from DeliveryAssignment a
+            where a.assignmentId = :assignmentId and a.deliveryStaff.userId = :staffId
+            """)
+    Optional<Long> findDeliveryIdByAssignmentIdAndStaffId(@Param("assignmentId") Long assignmentId,
+                                                        @Param("staffId") Long staffId);
+
+    @Query("""
+            select a.delivery.shopOrder.order.orderId from DeliveryAssignment a
+            where a.assignmentId = :assignmentId and a.deliveryStaff.userId = :staffId
+            """)
+    Optional<Long> findOrderIdByAssignmentIdAndStaffId(@Param("assignmentId") Long assignmentId,
+                                                     @Param("staffId") Long staffId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<DeliveryAssignment> findForUpdateByDelivery_DeliveryIdAndStatus(
+            Long deliveryId, DeliveryAssignmentStatus status);
 
     @Query("""
             select a.assignmentId from DeliveryAssignment a
             where a.status = :assignmentStatus
               and a.delivery.status = :deliveryStatus
+              and a.delivery.redeliveryRequestedAt is null and a.delivery.redeliveryScheduledAt is null
+              and a.assignedAt is not null
               and a.assignedAt <= :threshold
             order by a.assignedAt asc, a.assignmentId asc
             """)
-    List<Long> findTimedOutRedeliveryAssignmentIds(@Param("assignmentStatus") DeliveryAssignmentStatus assignmentStatus,
-                                                  @Param("deliveryStatus") DeliveryStatus deliveryStatus,
-                                                  @Param("threshold") LocalDateTime threshold);
+    List<Long> findTimedOutAssignmentIds(@Param("assignmentStatus") DeliveryAssignmentStatus assignmentStatus,
+                                         @Param("deliveryStatus") DeliveryStatus deliveryStatus,
+                                         @Param("threshold") LocalDateTime threshold);
 
     @EntityGraph(attributePaths = {"delivery", "delivery.shopOrder", "delivery.shopOrder.order"})
     List<DeliveryAssignment> findByDeliveryStaff_UserIdAndStatusInOrderByAssignedAtAscAssignmentIdAsc(

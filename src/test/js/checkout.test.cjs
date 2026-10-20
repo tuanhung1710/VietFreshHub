@@ -13,9 +13,9 @@ function setup(valid = true) {
     const attributes = {};
     let validationCalls = 0;
     let reloads = 0;
-    let focused = false;
-    let scrolled = false;
-    const details = { open: false };
+    let destination;
+    const shippingAmount = { textContent: '20000' };
+    const shippingError = { hidden: false };
     const addressButton = { disabled: false, textContent: 'Lưu và dùng địa chỉ này' };
     const addressForm = {
         checkValidity: () => valid,
@@ -23,17 +23,19 @@ function setup(valid = true) {
         addEventListener: (name, handler) => { handlers.addressSubmit = handler; }
     };
     const form = {
+        action: 'https://vietfresh.test/customer/checkout',
+        elements: { checkoutToken: { value: 'token' }, couponCode: { value: 'SAVE10' }, pointsToUse: { value: '100' } },
+        querySelector: () => confirm,
+        querySelectorAll: selector => selector === 'input[name="addressId"]'
+            ? [{ value: '42', addEventListener: (name, handler) => { handlers.addressChange = handler; } }]
+            : selector === '[data-shipping-error]' ? [shippingError] : [shippingAmount],
         checkValidity: () => { validationCalls++; return valid; },
         addEventListener: (name, handler) => { handlers.submit = handler; },
         setAttribute: (name, value) => { attributes[name] = value; }
     };
     const elements = {
         'checkout-form': form,
-        'checkout-address-section': {
-            querySelector: () => details,
-            scrollIntoView: () => { scrolled = true; }
-        },
-        'recipient-name': { focus: () => { focused = true; } }
+
     };
     const document = {
         getElementById: id => elements[id],
@@ -44,11 +46,11 @@ function setup(valid = true) {
     };
     const window = {
         addEventListener: (name, handler) => { handlers.pageshow = handler; },
-        location: { reload: () => { reloads++; } }
+        location: { reload: () => { reloads++; }, assign: url => { destination = url; } }
     };
-    vm.runInNewContext(source, { document, window });
-    return { handlers, confirm, preview, attributes, details, addressButton,
-        state: () => ({ validationCalls, reloads, focused, scrolled }) };
+    vm.runInNewContext(source, { document, window, URL });
+    return { handlers, confirm, preview, attributes, addressButton, shippingAmount, shippingError,
+        state: () => ({ validationCalls, reloads, destination }) };
 }
 
 test('valid order confirmation locks its submitter and announces order processing', () => {
@@ -87,23 +89,28 @@ test('submission without a submitter does not imply order confirmation', () => {
     assert.equal(app.attributes['aria-busy'], undefined);
 });
 
-test('address link still opens, scrolls to and focuses the address form', () => {
+test('address change requotes shipping and preserves applied discounts', () => {
     const app = setup();
+    app.handlers.addressChange();
+    const destination = new URL(app.state().destination);
+    assert.equal(destination.searchParams.get('addressId'), '42');
+    assert.equal(destination.searchParams.get('couponCode'), 'SAVE10');
+    assert.equal(destination.searchParams.get('pointsToUse'), '100');
+    assert.equal(app.confirm.disabled, true);
+    assert.equal(app.shippingError.hidden, true);
+    assert.equal(app.attributes['aria-busy'], 'true');
     let prevented = false;
-    app.handlers.addressClick({ preventDefault: () => { prevented = true; } });
+    app.handlers.submit({ submitter: app.confirm, preventDefault: () => { prevented = true; } });
     assert.equal(prevented, true);
-    assert.equal(app.details.open, true);
-    assert.equal(app.state().scrolled, true);
-    assert.equal(app.state().focused, true);
 });
 
 test('address submit keeps its saving state and validity check', () => {
     const valid = setup();
-    valid.handlers.addressSubmit();
+    valid.handlers.addressSubmit({ defaultPrevented: false });
     assert.equal(valid.addressButton.disabled, true);
     assert.equal(valid.addressButton.textContent, 'Đang lưu địa chỉ…');
     const invalid = setup(false);
-    invalid.handlers.addressSubmit();
+    invalid.handlers.addressSubmit({ defaultPrevented: false });
     assert.equal(invalid.addressButton.disabled, false);
 });
 

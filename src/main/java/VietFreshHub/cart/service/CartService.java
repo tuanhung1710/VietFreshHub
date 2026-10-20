@@ -2,7 +2,7 @@ package VietFreshHub.cart.service;
 
 import VietFreshHub.cart.dto.AddToCartRequest;
 import VietFreshHub.cart.dto.AddToCartResponse;
-import VietFreshHub.product.dto.StockCheckResponse;
+import VietFreshHub.catalog.dto.StockCheckResponse;
 
 public interface CartService {
 

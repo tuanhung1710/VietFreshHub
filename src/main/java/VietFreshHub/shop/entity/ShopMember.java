@@ -1,5 +1,8 @@
 package VietFreshHub.shop.entity;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import VietFreshHub.auth.entity.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,6 +16,8 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(schema = "dbo", name = "shop_members")
+@Getter
+@Setter
 public class ShopMember {
 
     @Id
@@ -34,7 +39,7 @@ public class ShopMember {
     @Column(nullable = false, length = 30)
     private String status;
 
-    protected ShopMember() {
+    public ShopMember() {
     }
 
     public Shop getShop() {
@@ -43,5 +48,51 @@ public class ShopMember {
 
     public String getMemberRole() {
         return memberRole;
+    }
+
+    // Keep scalar-ID queries used by seller management alongside the shared relationship.
+    @Column(name = "shop_id", insertable = false, updatable = false)
+    private Long shopId;
+
+    public Long getShopId() {
+        return shop == null ? shopId : shop.getShopId();
+    }
+
+    public void setShopId(Long id) {
+        this.shopId = id;
+        if (id == null) {
+            this.shop = null;
+        } else if (this.shop == null || !id.equals(this.shop.getShopId())) {
+            this.shop = new Shop();
+            this.shop.setShopId(id);
+        }
+    }
+
+    public void setShop(Shop shop) {
+        this.shop = shop;
+        this.shopId = shop == null ? null : shop.getShopId();
+    }
+
+    // Keep scalar-ID queries used by seller management alongside the shared relationship.
+    @Column(name = "user_id", insertable = false, updatable = false)
+    private Long userId;
+
+    public Long getUserId() {
+        return user == null ? userId : user.getUserId();
+    }
+
+    public void setUserId(Long id) {
+        this.userId = id;
+        if (id == null) {
+            this.user = null;
+        } else if (this.user == null || !id.equals(this.user.getUserId())) {
+            this.user = new User();
+            this.user.setUserId(id);
+        }
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+        this.userId = user == null ? null : user.getUserId();
     }
 }

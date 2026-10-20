@@ -2,7 +2,7 @@ package VietFreshHub.cart.controller;
 import VietFreshHub.auth.service.CurrentCustomerService;
 import VietFreshHub.cart.dto.*;
 import VietFreshHub.cart.service.CartService;
-import VietFreshHub.product.service.CatalogService;
+import VietFreshHub.catalog.service.CatalogService;
 import VietFreshHub.exception.OutOfStockException;
 import VietFreshHub.exception.ResourceNotFoundException;
 import jakarta.validation.Valid;
@@ -22,7 +22,6 @@ public class CustomerCartViewController {
     private final CartService cartService;
     private final CatalogService catalogService;
     private final CurrentCustomerService currentCustomer;
-    private final VietFreshHub.checkout.service.ShippingQuoteService shipping;
 
     private CartDto populateActiveCart(Authentication authentication) {
         boolean customer = authentication != null && authentication.isAuthenticated()
@@ -64,11 +63,7 @@ public class CustomerCartViewController {
         CartDto cart = populateActiveCart(authentication);
         model.addAttribute("cart", cart);
         var eligible=cart.getItems().stream().filter(CartItemDto::isPurchasable).toList();
-        var fee=shipping.feePerShop();
-        long shopCount=eligible.stream().map(CartItemDto::getShopId).distinct().count();
-        model.addAttribute("selectableCount",eligible.size()); model.addAttribute("shippingFeePerShop",fee);
-        model.addAttribute("selectedShippingFee",fee==null ? null : fee.multiply(BigDecimal.valueOf(shopCount)));
-        model.addAttribute("selectedGrandTotal",fee==null ? cart.getTotalAmount() : cart.getTotalAmount().add(fee.multiply(BigDecimal.valueOf(shopCount))));
+        model.addAttribute("selectableCount",eligible.size());
         model.addAttribute("shopGroups", cart.getItems().stream().collect(Collectors.groupingBy(
                 CartItemDto::getShopId, java.util.LinkedHashMap::new, Collectors.toList())));
         return "customer/cart";
