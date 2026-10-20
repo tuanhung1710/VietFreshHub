@@ -13,6 +13,9 @@ import java.util.Optional;
 
 public interface CouponRepository extends JpaRepository<Coupon, Long> {
     @EntityGraph(attributePaths = "promotion")
+    List<Coupon> findByPromotion_ShopIdInOrderByCodeAsc(List<Long> shopIds);
+
+    @EntityGraph(attributePaths = "promotion")
     List<Coupon> findByPromotion_ShopIdOrderByCouponIdDesc(Long shopId);
 
     @EntityGraph(attributePaths = "promotion")

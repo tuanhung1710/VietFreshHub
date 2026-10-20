@@ -1,5 +1,6 @@
 package VietFreshHub.loyalty.entity;
 
+import java.math.BigDecimal;
 import VietFreshHub.auth.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -26,16 +27,16 @@ public class LoyaltyAccount {
     private User user;
 
     @Builder.Default
-    @Column(name = "points_balance", nullable = false)
-    private Integer pointsBalance = 0;
+    @Column(name = "reward_balance", nullable = false, precision = 18, scale = 2)
+    private BigDecimal rewardBalance = BigDecimal.ZERO;
 
     @Builder.Default
-    @Column(name = "total_earned", nullable = false)
-    private Integer totalEarned = 0;
+    @Column(name = "total_earned_amount", nullable = false, precision = 18, scale = 2)
+    private BigDecimal totalEarnedAmount = BigDecimal.ZERO;
 
     @Builder.Default
-    @Column(name = "total_redeemed", nullable = false)
-    private Integer totalRedeemed = 0;
+    @Column(name = "total_redeemed_amount", nullable = false, precision = 18, scale = 2)
+    private BigDecimal totalRedeemedAmount = BigDecimal.ZERO;
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;

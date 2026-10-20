@@ -3,8 +3,8 @@ package VietFreshHub.loyalty.dto;
 import java.math.BigDecimal;
 
 public record LoyaltyRedemptionResponse(
-        Integer pointsUsed,
+        BigDecimal rewardAmountUsed,
         BigDecimal discountAmount,
-        Integer balanceAfter
+        BigDecimal balanceAfterAmount
 ) {
 }

@@ -26,6 +26,7 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.spring6.view.ThymeleafViewResolver;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -80,7 +81,7 @@ class LoyaltyAccountViewTest {
     @Test
     void rendersBalanceTotalsAndTimestampForAuthenticatedCustomerOnly() throws Exception {
         when(accounts.findByUser_UserId(7L)).thenReturn(Optional.of(LoyaltyAccount.builder()
-                .loyaltyAccountId(1L).user(user).pointsBalance(1250).totalEarned(2000).totalRedeemed(750)
+                .loyaltyAccountId(1L).user(user).rewardBalance(new BigDecimal("1250")).totalEarnedAmount(new BigDecimal("2000")).totalRedeemedAmount(new BigDecimal("750"))
                 .updatedAt(LocalDateTime.of(2026, 10, 18, 10, 20, 30)).build()));
         mvc.perform(get("/customer/loyalty").principal(customer).param("userId", "999"))
                 .andExpect(status().isOk()).andExpect(view().name("loyalty/loyalty-account"))
@@ -176,10 +177,10 @@ class LoyaltyAccountViewTest {
         verifyNoInteractions(accounts, transactions);
     }
 
-    private LoyaltyTransaction transaction(Long id, LoyaltyTransactionType type, int points,
+    private LoyaltyTransaction transaction(Long id, LoyaltyTransactionType type, int reward,
                                            int after, Order order, String note) {
         return LoyaltyTransaction.builder().loyaltyTransactionId(id).order(order)
-                .transactionType(type).points(points).balanceAfter(after).note(note)
+                .transactionType(type).amount(BigDecimal.valueOf(reward)).balanceAfterAmount(BigDecimal.valueOf(after)).note(note)
                 .createdAt(LocalDateTime.of(2026, 10, 18, 10, 0)).build();
     }
 }

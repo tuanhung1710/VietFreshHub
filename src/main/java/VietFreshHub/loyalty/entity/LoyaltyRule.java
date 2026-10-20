@@ -26,18 +26,14 @@ public class LoyaltyRule {
     @Column(name = "rule_id", nullable = false)
     private Long ruleId;
 
-    @Column(name = "earning_amount", nullable = false, precision = 18, scale = 2)
-    private BigDecimal earningAmount;
+    @Column(name = "earning_percent", nullable = false, precision = 5, scale = 2)
+    private BigDecimal earningPercent;
 
     @Column(name = "earning_enabled", nullable = false)
     private boolean earningEnabled;
 
-    @Column(name = "redemption_value", nullable = false, precision = 18, scale = 2
-    )
-    private BigDecimal redemptionValue;
-
-    @Column(name = "min_redemption_points", nullable = false)
-    private Integer minRedemptionPoints;
+    @Column(name = "min_redemption_amount", nullable = false, precision = 18, scale = 2)
+    private BigDecimal minRedemptionAmount;
 
     @Column(name = "max_redemption_percent", nullable = false)
     private Integer maxRedemptionPercent;

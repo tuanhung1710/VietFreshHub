@@ -46,9 +46,9 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 .orElseGet(() -> new LoyaltyBalanceResponse(
                         null,
                         customerId,
-                        0,
-                        0,
-                        0,
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
+                        BigDecimal.ZERO,
                         null
                 ));
     }
@@ -74,9 +74,9 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         return new LoyaltyBalanceResponse(
                 account.getLoyaltyAccountId(),
                 account.getUser().getUserId(),
-                account.getPointsBalance(),
-                account.getTotalEarned(),
-                account.getTotalRedeemed(),
+                account.getRewardBalance(),
+                account.getTotalEarnedAmount(),
+                account.getTotalRedeemedAmount(),
                 account.getUpdatedAt()
         );
     }
@@ -91,8 +91,8 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 order == null ? null : order.getOrderId(),
                 order == null ? null : order.getOrderCode(),
                 transaction.getTransactionType(),
-                transaction.getPoints(),
-                transaction.getBalanceAfter(),
+                transaction.getAmount(),
+                transaction.getBalanceAfterAmount(),
                 transaction.getNote(),
                 transaction.getCreatedAt()
         );
@@ -107,7 +107,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
     }
     @Override
     @Transactional
-    public int earnPoints(Long orderId) {
+    public BigDecimal earnReward(Long orderId) {
         if (orderId == null || orderId <= 0) {
             throw new IllegalArgumentException("ID đơn hàng không hợp lệ");
         }
@@ -121,7 +121,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         Long customerId = order.getCustomer().getUserId();
 
         // Khóa User trước, thống nhất với luồng Checkout.
-        // Đồng thời bảo vệ việc tạo tài khoản điểm lần đầu.
+        // Đồng thời bảo vệ việc tạo tài khoản tiền thưởng lần đầu.
         User customer = em.find(User.class, customerId);
 
         em.refresh(customer, LockModeType.PESSIMISTIC_WRITE);
@@ -133,10 +133,10 @@ public class LoyaltyServiceImpl implements LoyaltyService {
             );
         }
 
-        // Chưa hoàn tất hoặc chưa nhận đủ tiền thì chưa tích điểm.
+        // Chưa hoàn tất hoặc chưa nhận đủ tiền thì chưa tích thưởng.
         if (order.getStatus() != Order.Status.COMPLETED
                 || !"PAID".equals(order.getPaymentStatus())) {
-            return 0;
+            return BigDecimal.ZERO;
         }
 
         // Chống cộng lặp, kể cả khi xử lý lại cùng một đơn.
@@ -146,23 +146,24 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                         orderId,
                         LoyaltyTransactionType.EARN
                 )) {
-            return 0;
+            return BigDecimal.ZERO;
         }
 
         var rule = ruleRepository.findById(1L)
                 .orElseThrow(() -> new IllegalStateException(
-                        "Chưa cấu hình quy tắc điểm thưởng"
+                        "Chưa cấu hình quy tắc tiền thưởng"
                 ));
 
         if (!rule.isEarningEnabled()) {
-            return 0;
+            return BigDecimal.ZERO;
         }
 
-        BigDecimal earningAmount = rule.getEarningAmount();
+        BigDecimal earningPercent = rule.getEarningPercent();
 
-        if (earningAmount == null || earningAmount.signum() <= 0) {
+        if (earningPercent == null || earningPercent.signum() <= 0
+                || earningPercent.compareTo(new BigDecimal("100")) > 0) {
             throw new IllegalStateException(
-                    "Mức tiền để tích một điểm không hợp lệ"
+                    "Tỷ lệ tích thưởng phải lớn hơn 0 và không quá 100%"
             );
         }
 
@@ -171,15 +172,14 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 .subtract(order.getDiscountTotal());
 
         if (eligibleAmount.signum() <= 0) {
-            return 0;
+            return BigDecimal.ZERO;
         }
 
-        int earnedPoints = eligibleAmount
-                .divide(earningAmount, 0, RoundingMode.DOWN)
-                .intValueExact();
+        BigDecimal earnedReward = eligibleAmount.multiply(earningPercent)
+                .divide(new BigDecimal("100"), 0, RoundingMode.DOWN);
 
-        if (earnedPoints == 0) {
-            return 0;
+        if (earnedReward.signum() == 0) {
+            return BigDecimal.ZERO;
         }
 
         LoyaltyAccount account = accountRepository
@@ -196,54 +196,48 @@ public class LoyaltyServiceImpl implements LoyaltyService {
             em.refresh(account, LockModeType.PESSIMISTIC_WRITE);
         }
 
-        int newBalance = Math.addExact(
-                account.getPointsBalance(),
-                earnedPoints
-        );
+        BigDecimal newBalance = account.getRewardBalance().add(earnedReward);
 
-        int newTotalEarned = Math.addExact(
-                account.getTotalEarned(),
-                earnedPoints
-        );
+        BigDecimal newTotalEarnedAmount = account.getTotalEarnedAmount().add(earnedReward);
 
-        account.setPointsBalance(newBalance);
-        account.setTotalEarned(newTotalEarned);
+        account.setRewardBalance(newBalance);
+        account.setTotalEarnedAmount(newTotalEarnedAmount);
 
         LoyaltyTransaction transaction = LoyaltyTransaction.builder()
                 .loyaltyAccount(account)
                 .order(order)
                 .transactionType(LoyaltyTransactionType.EARN)
-                .points(earnedPoints)
-                .balanceAfter(newBalance)
+                .amount(earnedReward)
+                .balanceAfterAmount(newBalance)
                 .note(
-                        "Tích điểm từ đơn " + order.getOrderCode()
-                                + "; mỗi "
-                                + earningAmount.toPlainString()
-                                + "đ được 1 điểm"
+                        "Tích thưởng từ đơn " + order.getOrderCode()
+                                + "; tỷ lệ "
+                                + earningPercent.toPlainString()
+                                + "%"
                 )
                 .build();
 
         transactionRepository.saveAndFlush(transaction);
 
-        return earnedPoints;
+        return earnedReward;
     }
 
     @Override
     public LoyaltyRedemptionResponse previewRedemption(
             Long customerId,
-            Integer pointsToUse,
+            BigDecimal rewardAmountToUse,
             BigDecimal goodsAmountAfterCoupon
     ) {
         requireCustomerId(customerId);
-        validatePointsToUse(pointsToUse);
+        validateRewardAmountToUse(rewardAmountToUse);
 
-        int balance = accountRepository.findByUser_UserId(customerId)
-                .map(LoyaltyAccount::getPointsBalance)
-                .orElse(0);
+        BigDecimal balance = accountRepository.findByUser_UserId(customerId)
+                .map(LoyaltyAccount::getRewardBalance)
+                .orElse(BigDecimal.ZERO);
 
-        if (pointsToUse == 0) {
+        if (rewardAmountToUse.signum() == 0) {
             return new LoyaltyRedemptionResponse(
-                    0,
+                    BigDecimal.ZERO,
                     BigDecimal.ZERO,
                     balance
             );
@@ -252,7 +246,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         LoyaltyRule rule = getRedemptionRule();
 
         return calculateRedemption(
-                pointsToUse,
+                rewardAmountToUse,
                 balance,
                 goodsAmountAfterCoupon,
                 rule
@@ -264,10 +258,10 @@ public class LoyaltyServiceImpl implements LoyaltyService {
     public LoyaltyRedemptionResponse redeemToOrder(
             Long customerId,
             Long orderId,
-            Integer pointsToUse
+            BigDecimal rewardAmountToUse
     ) {
         requireCustomerId(customerId);
-        validatePointsToUse(pointsToUse);
+        validateRewardAmountToUse(rewardAmountToUse);
 
         if (orderId == null || orderId <= 0) {
             throw new IllegalArgumentException("ID đơn hàng không hợp lệ");
@@ -304,7 +298,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         if (order.getStatus() != Order.Status.PENDING
                 || !"UNPAID".equals(order.getPaymentStatus())) {
             throw new IllegalArgumentException(
-                    "Chỉ dùng điểm khi tạo đơn chưa thanh toán"
+                    "Chỉ dùng tiền thưởng khi tạo đơn chưa thanh toán"
             );
         }
 
@@ -315,7 +309,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                         LoyaltyTransactionType.REDEEM
                 )) {
             throw new IllegalArgumentException(
-                    "Đơn hàng đã được đổi điểm"
+                    "Đơn hàng đã được dùng tiền thưởng"
             );
         }
 
@@ -329,7 +323,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
 
         if (paymentCount > 0) {
             throw new IllegalArgumentException(
-                    "Phải đổi điểm trước khi tạo thanh toán"
+                    "Phải dùng tiền thưởng trước khi tạo thanh toán"
             );
         }
 
@@ -341,11 +335,11 @@ public class LoyaltyServiceImpl implements LoyaltyService {
             em.refresh(account, LockModeType.PESSIMISTIC_WRITE);
         }
 
-        int balance = account == null ? 0 : account.getPointsBalance();
+        BigDecimal balance = account == null ? BigDecimal.ZERO : account.getRewardBalance();
 
-        if (pointsToUse == 0) {
+        if (rewardAmountToUse.signum() == 0) {
             return new LoyaltyRedemptionResponse(
-                    0,
+                    BigDecimal.ZERO,
                     BigDecimal.ZERO,
                     balance
             );
@@ -353,7 +347,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
 
         if (account == null) {
             throw new IllegalArgumentException(
-                    "Bạn chưa có điểm thưởng để sử dụng"
+                    "Bạn chưa có tiền thưởng để sử dụng"
             );
         }
 
@@ -363,7 +357,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 .subtract(order.getDiscountTotal());
 
         LoyaltyRedemptionResponse response = calculateRedemption(
-                pointsToUse,
+                rewardAmountToUse,
                 balance,
                 goodsAmount,
                 rule
@@ -449,20 +443,20 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                         .add(order.getShippingFee())
         );
 
-        account.setPointsBalance(response.balanceAfter());
+        account.setRewardBalance(response.balanceAfterAmount());
 
-        account.setTotalRedeemed(
-                Math.addExact(account.getTotalRedeemed(), pointsToUse)
+        account.setTotalRedeemedAmount(
+                account.getTotalRedeemedAmount().add(rewardAmountToUse)
         );
 
         LoyaltyTransaction transaction = LoyaltyTransaction.builder()
                 .loyaltyAccount(account)
                 .order(order)
                 .transactionType(LoyaltyTransactionType.REDEEM)
-                .points(-pointsToUse)
-                .balanceAfter(response.balanceAfter())
+                .amount(rewardAmountToUse.negate())
+                .balanceAfterAmount(response.balanceAfterAmount())
                 .note(
-                        "Dùng điểm cho đơn " + order.getOrderCode()
+                        "Dùng tiền thưởng cho đơn " + order.getOrderCode()
                                 + "; giảm "
                                 + response.discountAmount().toPlainString()
                                 + "đ"
@@ -474,10 +468,12 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         return response;
     }
 
-    private void validatePointsToUse(Integer pointsToUse) {
-        if (pointsToUse == null || pointsToUse < 0) {
+    private void validateRewardAmountToUse(BigDecimal rewardAmountToUse) {
+        if (rewardAmountToUse == null || rewardAmountToUse.signum() < 0
+                || rewardAmountToUse.stripTrailingZeros().scale() > 0
+                || rewardAmountToUse.compareTo(new BigDecimal("9999999999999999")) > 0) {
             throw new IllegalArgumentException(
-                    "Số điểm sử dụng phải từ 0 trở lên"
+                    "Tiền thưởng sử dụng phải là số đồng nguyên từ 0 đến 9.999.999.999.999.999"
             );
         }
     }
@@ -485,24 +481,23 @@ public class LoyaltyServiceImpl implements LoyaltyService {
     private LoyaltyRule getRedemptionRule() {
         LoyaltyRule rule = ruleRepository.findById(1L)
                 .orElseThrow(() -> new IllegalStateException(
-                        "Chưa cấu hình đổi điểm thưởng"
+                        "Chưa cấu hình sử dụng tiền thưởng"
                 ));
 
         if (!rule.isRedemptionEnabled()) {
             throw new IllegalArgumentException(
-                    "Chức năng đổi điểm hiện đang tắt"
+                    "Chức năng dùng tiền thưởng hiện đang tắt"
             );
         }
 
-        if (rule.getRedemptionValue() == null
-                || rule.getRedemptionValue().signum() <= 0
-                || rule.getMinRedemptionPoints() == null
-                || rule.getMinRedemptionPoints() <= 0
+        if (rule.getMinRedemptionAmount() == null
+                || rule.getMinRedemptionAmount().signum() <= 0
+                || rule.getMinRedemptionAmount().stripTrailingZeros().scale() > 0
                 || rule.getMaxRedemptionPercent() == null
                 || rule.getMaxRedemptionPercent() < 1
                 || rule.getMaxRedemptionPercent() > 100) {
             throw new IllegalStateException(
-                    "Cấu hình đổi điểm không hợp lệ"
+                    "Cấu hình dùng tiền thưởng không hợp lệ"
             );
         }
 
@@ -510,34 +505,33 @@ public class LoyaltyServiceImpl implements LoyaltyService {
     }
 
     private LoyaltyRedemptionResponse calculateRedemption(
-            int pointsToUse,
-            int balance,
+            BigDecimal rewardAmountToUse,
+            BigDecimal balance,
             BigDecimal goodsAmount,
             LoyaltyRule rule
     ) {
-        if (pointsToUse < rule.getMinRedemptionPoints()) {
+        if (rewardAmountToUse.compareTo(rule.getMinRedemptionAmount()) < 0) {
             throw new IllegalArgumentException(
                     "Cần dùng tối thiểu "
-                            + rule.getMinRedemptionPoints()
-                            + " điểm mỗi lần"
+                            + java.text.NumberFormat.getIntegerInstance(java.util.Locale.forLanguageTag("vi-VN"))
+                                    .format(rule.getMinRedemptionAmount())
+                            + " ₫ mỗi lần"
             );
         }
 
-        if (pointsToUse > balance) {
+        if (rewardAmountToUse.compareTo(balance) > 0) {
             throw new IllegalArgumentException(
-                    "Số dư điểm thưởng không đủ"
+                    "Số dư tiền thưởng không đủ"
             );
         }
 
         if (goodsAmount == null || goodsAmount.signum() <= 0) {
             throw new IllegalArgumentException(
-                    "Đơn hàng không còn tiền hàng để giảm bằng điểm"
+                    "Đơn hàng không còn tiền hàng để giảm bằng tiền thưởng"
             );
         }
 
-        BigDecimal discount = rule.getRedemptionValue()
-                .multiply(BigDecimal.valueOf(pointsToUse))
-                .setScale(2, RoundingMode.DOWN);
+        BigDecimal discount = rewardAmountToUse;
 
         BigDecimal maximumDiscount = goodsAmount
                 .multiply(BigDecimal.valueOf(
@@ -547,22 +541,22 @@ public class LoyaltyServiceImpl implements LoyaltyService {
 
         if (discount.signum() <= 0) {
             throw new IllegalArgumentException(
-                    "Số điểm chưa tạo ra mức giảm hợp lệ"
+                    "Số tiền thưởng chưa tạo ra mức giảm hợp lệ"
             );
         }
 
         if (discount.compareTo(maximumDiscount) > 0) {
             throw new IllegalArgumentException(
-                    "Điểm sử dụng vượt mức giảm tối đa "
+                    "Tiền thưởng sử dụng vượt mức giảm tối đa "
                             + rule.getMaxRedemptionPercent()
                             + "% tiền hàng sau coupon"
             );
         }
 
         return new LoyaltyRedemptionResponse(
-                pointsToUse,
+                rewardAmountToUse,
                 discount,
-                balance - pointsToUse
+                balance.subtract(rewardAmountToUse)
         );
     }
 
@@ -599,7 +593,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
 
         if (remainder.signum() != 0) {
             throw new IllegalStateException(
-                    "Không phân bổ được mức giảm điểm thưởng"
+                    "Không phân bổ được mức giảm tiền thưởng"
             );
         }
 

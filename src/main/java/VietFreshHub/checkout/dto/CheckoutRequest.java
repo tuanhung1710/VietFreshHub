@@ -1,4 +1,5 @@
 package VietFreshHub.checkout.dto;
+import java.math.BigDecimal;
 import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,7 +16,8 @@ public class CheckoutRequest {
     private String checkoutToken;
     @Size(max = 100, message = "Mã coupon tối đa 100 ký tự")
     private String couponCode;
-    @NotNull(message = "Vui lòng nhập số điểm sử dụng")
-    @Min(value = 0, message = "Số điểm sử dụng không được âm")
-    private Integer pointsToUse = 0;
+    @NotNull(message = "Vui lòng nhập số tiền thưởng sử dụng")
+    @DecimalMin(value = "0", message = "Số tiền thưởng sử dụng không được âm")
+    @Digits(integer = 16, fraction = 0, message = "Tiền thưởng phải là số đồng nguyên, tối đa 16 chữ số")
+    private BigDecimal rewardAmountToUse = BigDecimal.ZERO;
 }

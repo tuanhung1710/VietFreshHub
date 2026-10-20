@@ -63,11 +63,11 @@ public class CheckoutController {
                        @RequestParam(required=false) String checkoutToken,
                        @RequestParam(required=false) Long addressId,
                        @RequestParam(required=false) String couponCode,
-                       @RequestParam(defaultValue="0") Integer pointsToUse) {
+                       @RequestParam(defaultValue="0") BigDecimal rewardAmountToUse) {
         Long customerId=currentCustomer.requireCustomerId(authentication);
         var form=new CheckoutRequest();
         form.setCouponCode(couponCode);
-        form.setPointsToUse(pointsToUse);
+        form.setRewardAmountToUse(rewardAmountToUse);
         var draft=checkoutToken==null ? null : requireCheckoutDraft(session,checkoutToken,customerId);
         CheckoutPreview preview;
         if(draft!=null) preview=previewDraft(customerId,draft);
@@ -253,6 +253,8 @@ public class CheckoutController {
         model.addAttribute("redemption", null);
         model.addAttribute("loyaltyError", null);
         model.addAttribute("loyaltyBalance", loyaltyService.getBalance(customerId));
+        model.addAttribute("availableCoupons", couponApplicationService.getAvailableCoupons(
+                customerId, draft.selectedItemIds()));
 
         boolean couponValid = true;
         String couponCode = form.getCouponCode();
@@ -281,7 +283,7 @@ public class CheckoutController {
             try {
                 var redemption = loyaltyService.previewRedemption(
                         customerId,
-                        form.getPointsToUse(),
+                        form.getRewardAmountToUse(),
                         goodsAmountAfterCoupon
                 );
                 loyaltyDiscount = redemption.discountAmount();
@@ -301,10 +303,10 @@ public class CheckoutController {
         );
     }
 
-    @PostMapping("/points/preview")
-    public String previewPoints(
+    @PostMapping("/reward/preview")
+    public String previewReward(
             @ModelAttribute("form") CheckoutRequest form,
-            @RequestParam(defaultValue = "0") Integer pointsInput,
+            @RequestParam(defaultValue = "0") BigDecimal rewardAmountInput,
             Authentication authentication,
             HttpSession session,
             Model model
@@ -317,7 +319,7 @@ public class CheckoutController {
             );
         }
 
-        form.setPointsToUse(pointsInput);
+        form.setRewardAmountToUse(rewardAmountInput);
         var preview = checkout.preview(customerId, draft.selectedItemIds());
         preview = shippingQuotes.quote(customerId, preview, form.getAddressId() == null ? draft.addressId() : form.getAddressId());
         populate(customerId, form, preview, session, model);

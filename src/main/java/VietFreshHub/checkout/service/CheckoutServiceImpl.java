@@ -195,20 +195,22 @@ public class CheckoutServiceImpl implements CheckoutService {
             }
         }
 
-        Integer pointsToUse = request.getPointsToUse();
+        BigDecimal rewardAmountToUse = request.getRewardAmountToUse();
 
-        if (pointsToUse == null || pointsToUse < 0) {
+        if (rewardAmountToUse == null || rewardAmountToUse.signum() < 0
+                || rewardAmountToUse.stripTrailingZeros().scale() > 0
+                || rewardAmountToUse.compareTo(new BigDecimal("9999999999999999")) > 0) {
             throw new CheckoutException(
-                    "Số điểm sử dụng không hợp lệ"
+                    "Tiền thưởng phải là số đồng nguyên không âm, tối đa 16 chữ số"
             );
         }
 
-        if (pointsToUse > 0) {
+        if (rewardAmountToUse.signum() > 0) {
             try {
                 loyaltyService.redeemToOrder(
                         customerId,
                         order.getOrderId(),
-                        pointsToUse
+                        rewardAmountToUse
                 );
             } catch (IllegalArgumentException ex) {
                 throw new CheckoutException(ex.getMessage());

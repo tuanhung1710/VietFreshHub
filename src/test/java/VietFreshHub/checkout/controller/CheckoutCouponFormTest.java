@@ -59,9 +59,9 @@ class CheckoutCouponFormTest {
         when(currentCustomer.requireCustomerId(authentication)).thenReturn(1L);
         when(carts.getActiveCart(1L)).thenReturn(cart);
         when(checkout.preview(1L, List.of(20L))).thenReturn(preview);
-        when(loyalty.getBalance(1L)).thenReturn(new LoyaltyBalanceResponse(null, 1L, 1000, 1000, 0, null));
-        when(loyalty.previewRedemption(eq(1L), eq(0), any()))
-                .thenReturn(new LoyaltyRedemptionResponse(0, BigDecimal.ZERO, 1000));
+        when(loyalty.getBalance(1L)).thenReturn(new LoyaltyBalanceResponse(null, 1L, new BigDecimal("20000"), new BigDecimal("20000"), BigDecimal.ZERO, null));
+        when(loyalty.previewRedemption(eq(1L), eq(BigDecimal.ZERO), any()))
+                .thenReturn(new LoyaltyRedemptionResponse(BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("20000")));
         when(shipping.quote(eq(1L), any(), nullable(Long.class))).thenAnswer(call -> {
             CheckoutPreview input = call.getArgument(1);
             Long addressId = call.getArgument(2);
@@ -86,67 +86,67 @@ class CheckoutCouponFormTest {
     }
 
     @Test
-    void pointsPreviewUsesAppliedCouponAndDoesNotRedeem() throws Exception {
+    void rewardPreviewUsesAppliedCouponAndDoesNotRedeem() throws Exception {
         validCoupon();
-        when(loyalty.previewRedemption(1L, 100, new BigDecimal("90000")))
-                .thenReturn(new LoyaltyRedemptionResponse(100, new BigDecimal("5000"), 900));
-        var result = mvc.perform(post("/customer/checkout/points/preview")
+        when(loyalty.previewRedemption(1L, new BigDecimal("5000"), new BigDecimal("90000")))
+                .thenReturn(new LoyaltyRedemptionResponse(new BigDecimal("5000"), new BigDecimal("5000"), new BigDecimal("15000")));
+        var result = mvc.perform(post("/customer/checkout/reward/preview")
                         .principal(authentication).session(session).param("checkoutToken", token)
                         .param("couponCode", "SAVE10").param("couponInput", "NOT_APPLIED")
-                        .param("pointsToUse", "0").param("pointsInput", "100"))
+                        .param("rewardAmountToUse", "0").param("rewardAmountInput", "5000"))
                 .andExpect(status().isOk()).andExpect(view().name("customer/checkout"))
                 .andExpect(model().attribute("loyaltyDiscount", new BigDecimal("5000")))
                 .andExpect(model().attribute("checkoutTotal", new BigDecimal("105000")))
                 .andReturn();
-        assertEquals(100, ((CheckoutRequest) result.getModelAndView().getModel().get("form")).getPointsToUse());
-        verify(loyalty, never()).redeemToOrder(anyLong(), anyLong(), anyInt());
+        assertEquals(new BigDecimal("5000"), ((CheckoutRequest) result.getModelAndView().getModel().get("form")).getRewardAmountToUse());
+        verify(loyalty, never()).redeemToOrder(anyLong(), anyLong(), any(BigDecimal.class));
         verify(checkout, never()).confirm(anyLong(), any(), any());
     }
 
     @Test
-    void changingCouponRecalculatesAppliedPointsInsteadOfEditedInput() throws Exception {
+    void changingCouponRecalculatesAppliedRewardInsteadOfEditedInput() throws Exception {
         validCoupon();
-        when(loyalty.previewRedemption(1L, 100, new BigDecimal("90000")))
-                .thenThrow(new IllegalArgumentException("Vượt giới hạn đổi điểm"));
+        when(loyalty.previewRedemption(1L, new BigDecimal("5000"), new BigDecimal("90000")))
+                .thenThrow(new IllegalArgumentException("Vượt giới hạn dùng tiền thưởng"));
         mvc.perform(post("/customer/checkout/coupon/preview")
                         .principal(authentication).session(session).param("checkoutToken", token)
-                        .param("couponInput", "SAVE10").param("pointsToUse", "100").param("pointsInput", "200"))
+                        .param("couponInput", "SAVE10").param("rewardAmountToUse", "5000").param("rewardAmountInput", "200"))
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("loyaltyError", "Vượt giới hạn đổi điểm"))
+                .andExpect(model().attribute("loyaltyError", "Vượt giới hạn dùng tiền thưởng"))
                 .andExpect(model().attribute("loyaltyDiscount", BigDecimal.ZERO))
                 .andExpect(model().attribute("checkoutTotal", new BigDecimal("110000")));
     }
 
     @Test
-    void zeroPointsRemovesAppliedPoints() throws Exception {
-        mvc.perform(post("/customer/checkout/points/preview")
+    void zeroRewardRemovesAppliedReward() throws Exception {
+        mvc.perform(post("/customer/checkout/reward/preview")
                         .principal(authentication).session(session).param("checkoutToken", token)
-                        .param("pointsToUse", "100").param("pointsInput", "0"))
+                        .param("rewardAmountToUse", "5000").param("rewardAmountInput", "0"))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("loyaltyDiscount", BigDecimal.ZERO))
                 .andExpect(model().attribute("checkoutTotal", new BigDecimal("120000")));
-        verify(loyalty).previewRedemption(1L, 0, new BigDecimal("100000"));
+        verify(loyalty).previewRedemption(1L, BigDecimal.ZERO, new BigDecimal("100000"));
     }
 
     @Test
-    void negativePointsRendersErrorWithoutDiscount() throws Exception {
-        when(loyalty.previewRedemption(1L, -1, new BigDecimal("100000")))
-                .thenThrow(new IllegalArgumentException("Số điểm sử dụng phải từ 0 trở lên"));
-        mvc.perform(post("/customer/checkout/points/preview")
+    void negativeRewardRendersErrorWithoutDiscount() throws Exception {
+        when(loyalty.previewRedemption(1L, new BigDecimal("-1"), new BigDecimal("100000")))
+                .thenThrow(new IllegalArgumentException("Số tiền thưởng sử dụng phải từ 0 trở lên"));
+        mvc.perform(post("/customer/checkout/reward/preview")
                         .principal(authentication).session(session).param("checkoutToken", token)
-                        .param("pointsInput", "-1"))
+                        .param("rewardAmountInput", "-1"))
                 .andExpect(status().isOk())
-                .andExpect(model().attribute("loyaltyError", "Số điểm sử dụng phải từ 0 trở lên"))
+                .andExpect(model().attribute("loyaltyError", "Số tiền thưởng sử dụng phải từ 0 trở lên"))
                 .andExpect(model().attribute("loyaltyDiscount", BigDecimal.ZERO))
                 .andExpect(model().attribute("checkoutTotal", new BigDecimal("120000")));
-        verify(loyalty, never()).redeemToOrder(anyLong(), anyLong(), anyInt());
+        verify(loyalty, never()).redeemToOrder(anyLong(), anyLong(), any(BigDecimal.class));
     }
 
     @Test
-    void expiredPointsPreviewDoesNotAccessLoyalty() throws Exception {
-        mvc.perform(post("/customer/checkout/points/preview")
+    void expiredRewardPreviewDoesNotAccessLoyalty() throws Exception {
+        mvc.perform(post("/customer/checkout/reward/preview")
                         .principal(authentication).session(session).param("checkoutToken", "expired")
-                        .param("pointsInput", "100"))
+                        .param("rewardAmountInput", "5000"))
                 .andExpect(redirectedUrl("/cart"));
         verifyNoInteractions(loyalty, checkout, coupons);
     }
@@ -193,7 +193,8 @@ class CheckoutCouponFormTest {
                 .andReturn();
         var form = (CheckoutRequest) result.getModelAndView().getModel().get("form");
         assertEquals("", form.getCouponCode());
-        verifyNoInteractions(coupons);
+        verify(coupons).getAvailableCoupons(1L, List.of(20L));
+        verifyNoMoreInteractions(coupons);
     }
 
     @Test

@@ -16,24 +16,13 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class LoyaltyRedemptionRuleForm {
 
-    @NotNull(message = "Vui lòng nhập giá trị giảm của 1 điểm")
+    @NotNull(message = "Vui lòng nhập số tiền thưởng đổi tối thiểu")
     @DecimalMin(
-            value = "0.01",
-            message = "Giá trị giảm của 1 điểm phải lớn hơn 0"
+            value = "1",
+            message = "Số tiền thưởng đổi tối thiểu phải lớn hơn 0"
     )
-    @Digits(
-            integer = 16,
-            fraction = 2,
-            message = "Giá trị giảm tối đa 16 chữ số nguyên và 2 chữ số thập phân"
-    )
-    private BigDecimal redemptionValue;
-
-    @NotNull(message = "Vui lòng nhập số điểm đổi tối thiểu")
-    @Min(
-            value = 1,
-            message = "Số điểm đổi tối thiểu phải lớn hơn 0"
-    )
-    private Integer minRedemptionPoints;
+    @Digits(integer = 16, fraction = 0, message = "Tiền thưởng phải là số đồng nguyên, tối đa 16 chữ số")
+    private BigDecimal minRedemptionAmount;
 
     @NotNull(message = "Vui lòng nhập phần trăm giảm tối đa")
     @Min(

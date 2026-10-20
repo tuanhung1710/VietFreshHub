@@ -33,7 +33,7 @@ public class LoyaltyRuleServiceImpl implements LoyaltyRuleService {
         LoyaltyRule rule = findRule();
 
         LoyaltyEarningRuleForm form = new LoyaltyEarningRuleForm();
-        form.setEarningAmount(rule.getEarningAmount());
+        form.setEarningPercent(rule.getEarningPercent());
         form.setEarningEnabled(rule.isEarningEnabled());
 
         return form;
@@ -46,8 +46,7 @@ public class LoyaltyRuleServiceImpl implements LoyaltyRuleService {
         LoyaltyRedemptionRuleForm form =
                 new LoyaltyRedemptionRuleForm();
 
-        form.setRedemptionValue(rule.getRedemptionValue());
-        form.setMinRedemptionPoints(rule.getMinRedemptionPoints());
+        form.setMinRedemptionAmount(rule.getMinRedemptionAmount().setScale(0, java.math.RoundingMode.UNNECESSARY));
         form.setMaxRedemptionPercent(rule.getMaxRedemptionPercent());
         form.setRedemptionEnabled(rule.isRedemptionEnabled());
 
@@ -63,7 +62,7 @@ public class LoyaltyRuleServiceImpl implements LoyaltyRuleService {
 
         LoyaltyRule rule = findRuleForUpdate();
 
-        rule.setEarningAmount(form.getEarningAmount());
+        rule.setEarningPercent(form.getEarningPercent());
         rule.setEarningEnabled(form.isEarningEnabled());
 
         LoyaltyRule savedRule =
@@ -81,8 +80,7 @@ public class LoyaltyRuleServiceImpl implements LoyaltyRuleService {
 
         LoyaltyRule rule = findRuleForUpdate();
 
-        rule.setRedemptionValue(form.getRedemptionValue());
-        rule.setMinRedemptionPoints(form.getMinRedemptionPoints());
+        rule.setMinRedemptionAmount(form.getMinRedemptionAmount());
         rule.setMaxRedemptionPercent(form.getMaxRedemptionPercent());
         rule.setRedemptionEnabled(form.isRedemptionEnabled());
 
@@ -115,10 +113,9 @@ public class LoyaltyRuleServiceImpl implements LoyaltyRuleService {
     private LoyaltyRuleResponse toResponse(LoyaltyRule rule) {
         return new LoyaltyRuleResponse(
                 rule.getRuleId(),
-                rule.getEarningAmount(),
+                rule.getEarningPercent(),
                 rule.isEarningEnabled(),
-                rule.getRedemptionValue(),
-                rule.getMinRedemptionPoints(),
+                rule.getMinRedemptionAmount(),
                 rule.getMaxRedemptionPercent(),
                 rule.isRedemptionEnabled(),
                 rule.getUpdatedAt()

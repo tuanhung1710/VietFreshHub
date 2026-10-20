@@ -5,10 +5,9 @@ import java.time.LocalDateTime;
 
 public record LoyaltyRuleResponse(
         Long ruleId,
-        BigDecimal earningAmount,
+        BigDecimal earningPercent,
         boolean earningEnabled,
-        BigDecimal redemptionValue,
-        Integer minRedemptionPoints,
+        BigDecimal minRedemptionAmount,
         Integer maxRedemptionPercent,
         boolean redemptionEnabled,
         LocalDateTime updatedAt

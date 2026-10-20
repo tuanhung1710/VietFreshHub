@@ -1,5 +1,6 @@
 package VietFreshHub.loyalty.entity;
 
+import java.math.BigDecimal;
 import VietFreshHub.order.entity.Order;
 import jakarta.persistence.*;
 import lombok.*;
@@ -34,11 +35,11 @@ public class LoyaltyTransaction {
     @Column(name = "transaction_type", nullable = false, length = 30)
     private LoyaltyTransactionType transactionType;
 
-    @Column(name = "points", nullable = false)
-    private Integer points;
+    @Column(name = "amount", nullable = false, precision = 18, scale = 2)
+    private BigDecimal amount;
 
-    @Column(name = "balance_after", nullable = false)
-    private Integer balanceAfter;
+    @Column(name = "balance_after_amount", nullable = false, precision = 18, scale = 2)
+    private BigDecimal balanceAfterAmount;
 
     @Nationalized
     @Column(name = "note", length = 500)

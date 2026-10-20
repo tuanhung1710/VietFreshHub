@@ -10,31 +10,31 @@ import java.math.BigDecimal;
 
 public interface LoyaltyService {
 
-    // Xem số dư điểm của khách hàng.
+    // Xem số dư tiền thưởng của khách hàng.
     LoyaltyBalanceResponse getBalance(Long customerId);
 
-    // Xem lịch sử giao dịch điểm, có phân trang.
+    // Xem lịch sử giao dịch tiền thưởng, có phân trang.
     Page<LoyaltyTransactionResponse> getTransactionHistory(
             Long customerId,
             Pageable pageable
     );
 
-    // Trả số điểm vừa cộng; trả 0 nếu không cộng.
-    int earnPoints(Long orderId);
+    // Trả số tiền thưởng vừa cộng; trả 0 nếu không cộng.
+    BigDecimal earnReward(Long orderId);
 
-    // Tính thử mức giảm, chưa trừ điểm.
+    // Tính thử mức giảm, chưa trừ tiền thưởng.
 // goodsAmountAfterCoupon phải do backend tính.
     LoyaltyRedemptionResponse previewRedemption(
             Long customerId,
-            Integer pointsToUse,
+            BigDecimal rewardAmountToUse,
             BigDecimal goodsAmountAfterCoupon
     );
 
-    // Dùng điểm cho đơn đã tạo, sau bước áp dụng coupon.
-// Cập nhật tiền đơn, trừ điểm và lưu giao dịch.
+    // Dùng tiền thưởng cho đơn đã tạo, sau bước áp dụng coupon.
+// Cập nhật tiền đơn, trừ tiền thưởng và lưu giao dịch.
     LoyaltyRedemptionResponse redeemToOrder(
             Long customerId,
             Long orderId,
-            Integer pointsToUse
+            BigDecimal rewardAmountToUse
     );
 }

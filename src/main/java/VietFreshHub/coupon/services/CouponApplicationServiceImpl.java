@@ -46,6 +46,35 @@ public class CouponApplicationServiceImpl
             String code,
             List<Long> cartItemIds
     ) {
+        List<CartItem> items = selectedItems(customerId, cartItemIds);
+
+        Coupon coupon = couponRepository
+                .findByCodeIgnoreCase(normalizeCode(code))
+                .orElseThrow(() -> invalid("Mã coupon không tồn tại"));
+
+        return previewCoupon(customerId, coupon, items);
+    }
+
+    @Override
+    public List<CouponApplicationResponse> getAvailableCoupons(Long customerId, List<Long> cartItemIds) {
+        requireId(customerId);
+        if (cartItemIds != null && cartItemIds.isEmpty()) return List.of();
+        List<CartItem> items = selectedItems(customerId, cartItemIds);
+        List<Long> shopIds = items.stream()
+                .map(item -> item.getVariant().getProduct().getShop().getShopId())
+                .distinct().toList();
+        var available = new java.util.ArrayList<CouponApplicationResponse>();
+        for (Coupon coupon : couponRepository.findByPromotion_ShopIdInOrderByCodeAsc(shopIds)) {
+            try {
+                available.add(previewCoupon(customerId, coupon, items));
+            } catch (IllegalArgumentException ignored) {
+                // Expired, exhausted, or ineligible coupons must not be selectable.
+            }
+        }
+        return List.copyOf(available);
+    }
+
+    private List<CartItem> selectedItems(Long customerId, List<Long> cartItemIds) {
         requireId(customerId);
 
         if (cartItemIds == null || cartItemIds.isEmpty()
@@ -80,10 +109,10 @@ public class CouponApplicationServiceImpl
             );
         }
 
-        Coupon coupon = couponRepository
-                .findByCodeIgnoreCase(normalizeCode(code))
-                .orElseThrow(() -> invalid("Mã coupon không tồn tại"));
+        return items;
+    }
 
+    private CouponApplicationResponse previewCoupon(Long customerId, Coupon coupon, List<CartItem> items) {
         validateCoupon(coupon, customerId);
 
         Promotion promotion = coupon.getPromotion();
