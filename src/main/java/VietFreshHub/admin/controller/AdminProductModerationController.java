@@ -32,13 +32,23 @@ public class AdminProductModerationController {
             Model model) {
         String selectedDateRange = normalizeDateRange(dateRange);
         Page<?> products = moderationService.search(tab, keyword, selectedDateRange, page);
+        int pageNumber = products.getNumber() + 1;
+        int pageCount = Math.max(products.getTotalPages(), 1);
+        int firstVisiblePage = Math.max(1, Math.min(pageNumber - 2, pageCount - 4));
+        int lastVisiblePage = Math.min(pageCount, firstVisiblePage + 4);
         model.addAttribute("productsPage", products);
         model.addAttribute("products", products.getContent());
         model.addAttribute("tab", normalizeTab(tab));
         model.addAttribute("keyword", keyword == null ? "" : keyword);
         model.addAttribute("dateRange", selectedDateRange);
-        model.addAttribute("pageNumber", products.getNumber() + 1);
-        model.addAttribute("pageCount", Math.max(products.getTotalPages(), 1));
+        model.addAttribute("pageNumber", pageNumber);
+        model.addAttribute("pageCount", pageCount);
+        model.addAttribute("firstVisiblePage", firstVisiblePage);
+        model.addAttribute("lastVisiblePage", lastVisiblePage);
+        model.addAttribute("pageNumbers", java.util.stream.IntStream
+                .rangeClosed(firstVisiblePage, lastVisiblePage)
+                .boxed()
+                .toList());
         model.addAttribute("pendingCount", moderationService.countPending());
         model.addAttribute("lockedCount", moderationService.countLocked());
         model.addAttribute("reviewedCount", moderationService.countReviewed());

@@ -42,7 +42,11 @@
         .actions form { display: grid; gap: 6px; }
         .actions textarea { min-height: 60px; font-size: 13px; }
         .empty { padding: 42px; text-align: center; color: var(--muted); }
-        .pagination { display: flex; justify-content: center; align-items: center; gap: 16px; padding: 18px; }
+        .pagination { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; padding: 18px; }
+        .pagination a, .pagination .current { min-width: 38px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; text-align: center; background: white; }
+        .pagination a:hover { border-color: var(--green); }
+        .pagination .current { background: var(--green); border-color: var(--green); color: white; font-weight: 700; }
+        .pagination .ellipsis { padding: 0 3px; color: var(--muted); }
         @media (max-width: 640px) { header { padding: 16px 20px; } main { margin-top: 20px; padding: 0 14px 30px; } h1 { font-size: 25px; } }
     </style>
 </head>
@@ -72,7 +76,7 @@
 
     <form class="search" method="get" th:action="@{/admin/products}">
         <input type="hidden" name="tab" th:value="${tab}">
-        <input type="search" name="keyword" maxlength="100" placeholder="Tên sản phẩm, SKU hoặc cửa hàng" th:value="${keyword}">
+        <input type="search" name="keyword" maxlength="100" placeholder="Tên sản phẩm hoặc cửa hàng" th:value="${keyword}">
         <label for="dateRange" class="muted" style="align-self:center;white-space:nowrap">Ngày đăng</label>
         <select id="dateRange" name="dateRange">
             <option value="ALL" th:selected="${dateRange == 'ALL'}">Tất cả</option>
@@ -106,17 +110,17 @@
                         <img th:if="${product.imageUrl != null and !product.imageUrl.isBlank()}" th:src="${product.imageUrl}" th:alt="${product.name}">
                         <div>
                             <a class="product-name" th:href="@{/admin/products/{id}(id=${product.productId})}" th:text="${product.name}">Tên sản phẩm</a>
-                            <div class="muted" th:text="${product.variantCount + ' phân loại · ' + product.slug}">2 phân loại</div>
+                            <div class="muted" th:text="${product.variantCount + ' phân loại'}">2 phân loại</div>
                             <div class="description" th:text="${product.description}">Mô tả sản phẩm</div>
-                            <div th:if="${product.moderationBlocked}" class="badge locked" th:text="${'Đang khóa: ' + product.moderationReason}">Đang khóa</div>
+                            <div th:if="${product.moderationBlocked}" class="badge locked" th:text="${'Lý do khóa: ' + product.moderationReason}">Lý do khóa</div>
                         </div>
                     </div>
                 </td>
                 <td th:text="${product.shopName}">Cửa hàng</td>
                 <td>
-                    <span class="badge" th:if="${product.approvalStatus == 'PENDING'}">Chờ hậu kiểm, vẫn đang hiển thị</span>
-                    <span class="badge" th:if="${product.approvalStatus == 'APPROVED'}">Đã duyệt</span>
-                    <span class="badge" th:if="${product.approvalStatus == 'REJECTED'}">Đã từ chối trước đó</span>
+                    <span class="badge" th:if="${!product.moderationBlocked and product.approvalStatus == 'PENDING'}">Chờ hậu kiểm, vẫn đang hiển thị</span>
+                    <span class="badge" th:if="${!product.moderationBlocked and product.approvalStatus == 'APPROVED'}">Đã duyệt</span>
+                    <span class="badge" th:if="${!product.moderationBlocked and product.approvalStatus == 'REJECTED'}">Đã từ chối</span>
                     <span class="badge locked" th:if="${product.moderationBlocked}">Đang bị khóa</span>
                 </td>
                 <td th:text="${#temporals.format(product.createdAt, 'dd/MM/yyyy HH:mm')}">19/10/2026</td>
@@ -156,9 +160,19 @@
             </tbody>
         </table>
         <div class="pagination">
+            <a th:if="${firstVisiblePage > 1}" th:href="@{/admin/products(tab=${tab},keyword=${keyword},dateRange=${dateRange},page=1)}" aria-label="Trang đầu">« Đầu</a>
             <a th:if="${productsPage.hasPrevious()}" th:href="@{/admin/products(tab=${tab},keyword=${keyword},dateRange=${dateRange},page=${pageNumber - 1})}">← Trang trước</a>
+            <span class="ellipsis" th:if="${firstVisiblePage > 2}">…</span>
+            <span th:each="page : ${pageNumbers}">
+                <span class="current" th:if="${page == pageNumber}" th:text="${page}" aria-current="page">1</span>
+                <a th:unless="${page == pageNumber}"
+                   th:href="@{/admin/products(tab=${tab},keyword=${keyword},dateRange=${dateRange},page=${page})}"
+                   th:text="${page}">1</a>
+            </span>
+            <span class="ellipsis" th:if="${lastVisiblePage < pageCount - 1}">…</span>
             <span th:text="${'Trang ' + pageNumber + ' / ' + pageCount}">Trang 1 / 1</span>
             <a th:if="${productsPage.hasNext()}" th:href="@{/admin/products(tab=${tab},keyword=${keyword},dateRange=${dateRange},page=${pageNumber + 1})}">Trang sau →</a>
+            <a th:if="${productsPage.hasNext()}" th:href="@{/admin/products(tab=${tab},keyword=${keyword},dateRange=${dateRange},page=${pageCount})}" aria-label="Trang cuối">Cuối »</a>
         </div>
     </div>
     <div class="table-wrap empty" th:if="${#lists.isEmpty(products)}">Không có sản phẩm trong danh sách này.</div>
