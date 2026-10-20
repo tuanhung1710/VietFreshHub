@@ -48,6 +48,9 @@ public class SecurityConfig {
         http.authorizeHttpRequests(authorize -> {
             authorize.requestMatchers(
                     "/", "/login", "/register", "/verify-email",
+                            "/seller-onboarding/register",
+                            "/seller-onboarding/verify-email",
+                            "/seller-onboarding/verify-email/resend",
                             "/forgot-password", "/reset-password",
                             "/verify-email/resend", "/error",
                     "/css/**", "/js/**", "/images/**","/oauth2/**", "/login/oauth2/**"
@@ -63,6 +66,10 @@ public class SecurityConfig {
 
                     .requestMatchers("/delivery", "/delivery/**")
                     .hasRole("DELIVERY_STAFF")
+
+                    // Applicants without a customer role may view and manage only their own applications.
+                    .requestMatchers("/customer/seller-applications", "/customer/seller-applications/**")
+                    .authenticated()
 
                     .requestMatchers(
                             "/home", "/customer", "/customer/**", "/cart", "/cart/**", "/product-detail", "/product-detail/**"

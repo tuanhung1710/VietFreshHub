@@ -55,6 +55,19 @@ public class AuthService {
         }
     }
 
+    public void validateSellerApplicantRegistration(RegisterRequest request) {
+        String email = request.getEmail().trim();
+        String phone = request.getPhone().trim();
+
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            throw new RegistrationException("email", "Email này đã được sử dụng. Hãy đăng nhập để nộp hồ sơ bán hàng.");
+        }
+
+        if (userRepository.existsByPhone(phone)) {
+            throw new RegistrationException("phone", "Số điện thoại này đã được sử dụng");
+        }
+    }
+
     @Transactional
     public RegisterResponse registerVerified(PendingRegistration pending) {
         String email = pending.getEmail().trim();
@@ -109,6 +122,32 @@ public class AuthService {
     }
 
     @Transactional
+    public void registerSellerApplicant(PendingRegistration pending) {
+        String email = pending.getEmail().trim();
+        String phone = pending.getPhone().trim();
+
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            throw new RegistrationException("email", "Email này đã được sử dụng. Hãy đăng nhập để nộp hồ sơ bán hàng.");
+        }
+
+        if (userRepository.existsByPhone(phone)) {
+            throw new RegistrationException("phone", "Số điện thoại này đã được sử dụng");
+        }
+
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
+        User user = new User();
+        user.setFullName(pending.getFullName());
+        user.setEmail(email);
+        user.setPhone(phone);
+        user.setPasswordHash(pending.getPasswordHash());
+        user.setStatus("ACTIVE");
+        user.setEmailVerifiedAt(now);
+
+        // Tài khoản được tạo để theo dõi hồ sơ; role chỉ được cấp khi admin duyệt.
+        userRepository.save(user);
+    }
+
+    @Transactional
     public Authentication login(String email, String rawPassword) {
         if (email == null || email.isBlank() || rawPassword == null) {
             return null;
@@ -131,9 +170,7 @@ public class AuthService {
         return createAuthentication(user);
     }
 
-    /**
-     * Chỉ gọi sau khi OTP hợp lệ và registerVerified đã tạo user.
-     */
+    /** Creates an authentication after a verified registration flow has saved the user. */
     @Transactional(readOnly = true)
     public Authentication loginAfterEmailVerification(String email) {
         if (email == null || email.isBlank()) {

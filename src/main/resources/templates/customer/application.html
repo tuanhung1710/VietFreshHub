@@ -211,7 +211,7 @@
   <section class="w-full py-space-xl px-margin">
     <div class="max-w-5xl mx-auto">
       <form id="sellerApplicationForm"
-            th:action="@{/customer/apply}"
+            th:action="@{${applicationAction}}"
             th:object="${sellerApplicationForm}"
             method="post"
             enctype="multipart/form-data"
