@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cấu hình quy tắc tích điểm | VietFresh Hub</title>
+    <title>Cấu hình quy tắc tích thưởng | VietFresh Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
@@ -66,14 +66,14 @@
         <span>Quay lại trang quản trị</span>
     </a>
 
-    <nav class="d-flex flex-wrap gap-2 mb-3" aria-label="Cấu hình điểm thưởng">
-        <a th:href="@{/admin/loyalty-rules/earning}" class="btn btn-success" aria-current="page">Quy tắc tích điểm</a>
-        <a th:href="@{/admin/loyalty-rules/redemption}" class="btn btn-outline-success" >Quy tắc đổi điểm</a>
+    <nav class="d-flex flex-wrap gap-2 mb-3" aria-label="Cấu hình tiền thưởng">
+        <a th:href="@{/admin/loyalty-rules/earning}" class="btn btn-success" aria-current="page">Quy tắc tích thưởng</a>
+        <a th:href="@{/admin/loyalty-rules/redemption}" class="btn btn-outline-success" >Quy tắc dùng tiền thưởng</a>
     </nav>
 
     <div class="card border-0 shadow-sm rounded-3">
         <div class="card-body p-4">
-            <h1 class="h4 mb-4 fw-bold text-dark">Cấu hình quy tắc tích điểm</h1>
+            <h1 class="h4 mb-4 fw-bold text-dark">Cấu hình quy tắc tích thưởng</h1>
 
             <div th:if="${successMessage}" class="alert alert-success" role="status" th:text="${successMessage}"></div>
             <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
@@ -88,26 +88,26 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="earningAmount" class="form-label fw-semibold">
-                        Số tiền tương ứng với 1 điểm <span class="text-danger">*</span>
+                    <label for="earningPercent" class="form-label fw-semibold">
+                        Tỷ lệ tích thưởng <span class="text-danger">*</span>
                     </label>
                     <div class="input-group has-validation">
-                        <input id="earningAmount" type="number" class="form-control"
-                               th:field="*{earningAmount}" th:errorclass="is-invalid"
-                               min="0.01" step="0.01" placeholder="10000" aria-describedby="earningAmountHelp" required>
-                        <span class="input-group-text">VND</span>
-                        <div class="invalid-feedback" th:errors="*{earningAmount}"></div>
+                        <input id="earningPercent" type="number" class="form-control"
+                               th:field="*{earningPercent}" th:errorclass="is-invalid"
+                               min="0.01" step="0.01" max="100" placeholder="1.00" aria-describedby="earningPercentHelp" required>
+                        <span class="input-group-text">%</span>
+                        <div class="invalid-feedback" th:errors="*{earningPercent}"></div>
                     </div>
-                    <div id="earningAmountHelp" class="form-text">Ví dụ: nhập 10000 để quy đổi mỗi 10.000 VND thành 1 điểm.</div>
+                    <div id="earningPercentHelp" class="form-text">Nhập 1.00 nghĩa là 1% tiền hàng thực trả sau coupon và tiền thưởng đã dùng, không tính phí ship.</div>
                 </div>
                 <div class="mb-4">
                     <div class="form-check form-switch">
                         <input id="earningEnabled" type="checkbox" role="switch" class="form-check-input"
                                th:field="*{earningEnabled}" th:errorclass="is-invalid" aria-describedby="enabledHelp">
-                        <label for="earningEnabled" class="form-check-label fw-semibold">Bật tích điểm</label>
+                        <label for="earningEnabled" class="form-check-label fw-semibold">Bật tích thưởng</label>
                         <div class="invalid-feedback" th:errors="*{earningEnabled}"></div>
                     </div>
-                    <div id="enabledHelp" class="form-text">Bật để cho phép khách hàng tích điểm khi mua hàng.</div>
+                    <div id="enabledHelp" class="form-text">Bật để cho phép khách hàng tích thưởng khi mua hàng.</div>
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 border-top pt-3">

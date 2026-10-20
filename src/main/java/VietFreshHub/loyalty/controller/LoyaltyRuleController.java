@@ -73,7 +73,7 @@ public class LoyaltyRuleController {
         } catch (DataIntegrityViolationException exception) {
             bindingResult.reject(
                     "loyalty.earning.conflict",
-                    "Không thể lưu cấu hình tích điểm. "
+                    "Không thể lưu cấu hình tích thưởng. "
                             + "Vui lòng kiểm tra dữ liệu nhập."
             );
 
@@ -82,7 +82,7 @@ public class LoyaltyRuleController {
 
         redirectAttributes.addFlashAttribute(
                 "successMessage",
-                "Cập nhật quy tắc tích điểm thành công"
+                "Cập nhật quy tắc tích thưởng thành công"
         );
 
         return REDIRECT_EARNING;
@@ -121,7 +121,7 @@ public class LoyaltyRuleController {
         } catch (DataIntegrityViolationException exception) {
             bindingResult.reject(
                     "loyalty.redemption.conflict",
-                    "Không thể lưu cấu hình đổi điểm. "
+                    "Không thể lưu cấu hình dùng tiền thưởng. "
                             + "Vui lòng kiểm tra dữ liệu nhập."
             );
 
@@ -130,7 +130,7 @@ public class LoyaltyRuleController {
 
         redirectAttributes.addFlashAttribute(
                 "successMessage",
-                "Cập nhật quy tắc đổi điểm thành công"
+                "Cập nhật quy tắc dùng tiền thưởng thành công"
         );
 
         return REDIRECT_REDEMPTION;
