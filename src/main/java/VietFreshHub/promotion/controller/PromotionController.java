@@ -200,4 +200,10 @@ public class PromotionController {
 
         return "redirect:/seller/promotions";
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public String handleInvalidRequest(IllegalArgumentException exception, RedirectAttributes redirectAttributes) {
+        redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+        return "redirect:/seller/promotions";
+    }
 }
