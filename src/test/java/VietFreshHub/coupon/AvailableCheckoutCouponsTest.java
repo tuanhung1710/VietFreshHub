@@ -86,4 +86,30 @@ class AvailableCheckoutCouponsTest {
         assertThrows(IllegalArgumentException.class, () -> service.getAvailableCoupons(null, List.of(20L)));
         verifyNoInteractions(coupons, usages, em);
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void couponsSharingPromotionReuseScopeOnlyWithinOneListing() {
+        TypedQuery<CartItem> items = mock(TypedQuery.class, RETURNS_SELF);
+        when(em.createQuery(anyString(), eq(CartItem.class))).thenReturn(items);
+        var item = mock(CartItem.class, RETURNS_DEEP_STUBS);
+        when(item.getVariant().getProduct().getShop().getShopId()).thenReturn(30L);
+        when(item.getVariant().getProduct().getProductId()).thenReturn(40L);
+        when(item.getVariant().getVariantId()).thenReturn(50L);
+        when(item.getVariant().getPrice()).thenReturn(new BigDecimal("100000"));
+        when(item.getQuantity()).thenReturn(1);
+        when(items.getResultList()).thenReturn(List.of(item));
+        Query scope = mock(Query.class, RETURNS_SELF);
+        when(em.createNativeQuery(anyString())).thenReturn(scope);
+        when(scope.getSingleResult()).thenReturn(1);
+        var first = coupon(1L); var second = coupon(2L); second.setPromotion(first.getPromotion());
+        when(coupons.findByPromotion_ShopIdInOrderByCodeAsc(List.of(30L))).thenReturn(List.of(first, second));
+
+        assertEquals(2, service.getAvailableCoupons(7L, List.of(20L)).size());
+        verify(scope, times(1)).getSingleResult();
+        // A later request must read the scope again, including an exclusion result.
+        when(scope.getSingleResult()).thenReturn(0);
+        assertTrue(service.getAvailableCoupons(7L, List.of(20L)).isEmpty());
+        verify(scope, times(2)).getSingleResult();
+    }
 }

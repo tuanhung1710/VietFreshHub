@@ -27,8 +27,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -52,7 +54,7 @@ public class CouponApplicationServiceImpl
                 .findByCodeIgnoreCase(normalizeCode(code))
                 .orElseThrow(() -> invalid("Mã coupon không tồn tại"));
 
-        return previewCoupon(customerId, coupon, items);
+        return previewCoupon(customerId, coupon, items, new HashMap<>());
     }
 
     @Override
@@ -64,9 +66,12 @@ public class CouponApplicationServiceImpl
                 .map(item -> item.getVariant().getProduct().getShop().getShopId())
                 .distinct().toList();
         var available = new java.util.ArrayList<CouponApplicationResponse>();
+        // Coupons can share a promotion; scope is identical for the same line.
+        // Keep results within this read only invocation, never across requests.
+        Map<ScopeKey, Boolean> scopeMatches = new HashMap<>();
         for (Coupon coupon : couponRepository.findByPromotion_ShopIdInOrderByCodeAsc(shopIds)) {
             try {
-                available.add(previewCoupon(customerId, coupon, items));
+                available.add(previewCoupon(customerId, coupon, items, scopeMatches));
             } catch (IllegalArgumentException ignored) {
                 // Expired, exhausted, or ineligible coupons must not be selectable.
             }
@@ -112,7 +117,10 @@ public class CouponApplicationServiceImpl
         return items;
     }
 
-    private CouponApplicationResponse previewCoupon(Long customerId, Coupon coupon, List<CartItem> items) {
+    private record ScopeKey(Long promotionId, Long productId, Long variantId) {}
+
+    private CouponApplicationResponse previewCoupon(Long customerId, Coupon coupon, List<CartItem> items,
+                                                     Map<ScopeKey, Boolean> scopeMatches) {
         validateCoupon(coupon, customerId);
 
         Promotion promotion = coupon.getPromotion();
@@ -127,11 +135,9 @@ public class CouponApplicationServiceImpl
                 continue;
             }
 
-            if (matchesScope(
-                    promotion.getPromotionId(),
-                    product.getProductId(),
-                    variant.getVariantId()
-            )) {
+            var key = new ScopeKey(promotion.getPromotionId(), product.getProductId(), variant.getVariantId());
+            if (scopeMatches.computeIfAbsent(key, scope -> matchesScope(
+                    scope.promotionId(), scope.productId(), scope.variantId()))) {
                 eligibleSubtotal = eligibleSubtotal.add(
                         lineTotal(variant.getPrice(), item.getQuantity())
                 );
