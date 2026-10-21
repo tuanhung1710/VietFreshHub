@@ -9,6 +9,7 @@ import VietFreshHub.subscription.entity.SubscriptionStatus;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import java.time.format.DateTimeFormatter;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SubscriptionReminderService {
     private static final String TYPE = "SUBSCRIPTION_EXPIRING";
     private static final String ENTITY_TYPE = "SHOP_SUBSCRIPTION";
@@ -51,7 +53,10 @@ public class SubscriptionReminderService {
 
         var ownerIds = shopMemberRepository.findActiveOwnerUserIds(shopId);
         if (ownerIds.isEmpty()) {
-            throw new IllegalStateException("Shop " + shopId + " chưa có chủ shop đang hoạt động");
+            // Not a delivery failure. Do not mark as sent: a later run can find
+            // the owner after membership is repaired, within the reminder window.
+            log.debug("Bỏ qua nhắc đăng ký {}: shop {} chưa có owner đang hoạt động", subscriptionId, shopId);
+            return;
         }
 
         String endAt = subscription.getEndAt()

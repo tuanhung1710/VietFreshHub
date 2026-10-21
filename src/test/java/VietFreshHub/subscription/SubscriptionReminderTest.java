@@ -90,12 +90,16 @@ class SubscriptionReminderTest {
     }
 
     @Test
-    void missingSubscriptionReturnsAndMissingOwnersFails() {
+    void missingSubscriptionReturnsAndMissingOwnersCanBeAddedBeforeNextRun() {
         service.remind(99L);
         verifyNoInteractions(sender, members);
         when(members.findActiveOwnerUserIds(2L)).thenReturn(List.of());
-        assertThrows(IllegalStateException.class, () -> service.remind(1L));
-        verifyNoInteractions(sender);
+        assertDoesNotThrow(() -> service.remind(1L));
+        assertDoesNotThrow(() -> service.remind(1L));
+        verifyNoInteractions(sender, notifications);
+        when(members.findActiveOwnerUserIds(2L)).thenReturn(List.of(7L));
+        service.remind(1L);
+        verify(sender).send(eq(7L), eq("SUBSCRIPTION_EXPIRING"), anyString(), anyString(), eq("SHOP_SUBSCRIPTION"), eq(1L));
     }
 
     @Test
