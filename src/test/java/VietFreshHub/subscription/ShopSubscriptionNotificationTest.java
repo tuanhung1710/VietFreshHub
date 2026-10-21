@@ -96,4 +96,19 @@ class ShopSubscriptionNotificationTest {
         assertThrows(IllegalArgumentException.class, () -> service.cancelSubscription(1L, 4L));
         verifyNoMoreInteractions(notifications);
     }
+
+    @Test
+    void expiredActiveSubscriptionIsUnavailableAndHistoryDerivesExpiredWithoutWriting() {
+        var now = LocalDateTime.now(ZoneOffset.UTC);
+        var expired = ShopSubscription.builder().subscriptionId(4L).shop(shop).plan(plan)
+                .status(SubscriptionStatus.ACTIVE).autoRenew(true)
+                .startAt(now.minusDays(5)).endAt(now.minusSeconds(1)).build();
+        when(subscriptions.findByShop_ShopIdAndStatus(1L, SubscriptionStatus.ACTIVE)).thenReturn(Optional.of(expired));
+        when(subscriptions.findByShop_ShopIdOrderByCreatedAtDescSubscriptionIdDesc(1L)).thenReturn(List.of(expired));
+        assertTrue(service.getCurrentSubscription(1L).isEmpty());
+        assertEquals(SubscriptionStatus.EXPIRED, service.getSubscriptionHistory(1L).getFirst().status());
+        assertEquals(SubscriptionStatus.ACTIVE, expired.getStatus());
+        verify(subscriptions, never()).flush(); verify(subscriptions, never()).save(any());
+        verifyNoInteractions(notifications);
+    }
 }

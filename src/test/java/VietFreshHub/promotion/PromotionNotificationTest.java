@@ -20,6 +20,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 class PromotionNotificationTest {
     private final EntityManager em = mock(EntityManager.class);
@@ -114,5 +115,15 @@ class PromotionNotificationTest {
         new PromotionNotificationScheduler(promotions, notifier).sendPromotionNotifications();
         verify(notifier).notifyFollowers(1L);
         verify(notifier).notifyFollowers(2L);
+    }
+
+    @Test
+    void activeStatusCannotBypassAnExpiredEndTimeDuringActivation() {
+        promotion.setEndAt(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(1));
+        when(promotions.findByPromotionIdAndShopId(1L, 2L)).thenReturn(java.util.Optional.of(promotion));
+        var manager = new VietFreshHub.promotion.services.PromotionServiceImpl(promotions, mock(jakarta.validation.Validator.class));
+        assertThrows(IllegalStateException.class, () -> manager.activate(1L, 2L));
+        assertEquals(PromotionStatus.ACTIVE, promotion.getStatus());
+        verify(promotions, never()).save(any());
     }
 }

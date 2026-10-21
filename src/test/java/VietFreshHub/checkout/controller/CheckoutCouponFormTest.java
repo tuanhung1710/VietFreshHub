@@ -31,6 +31,8 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -265,5 +267,52 @@ class CheckoutCouponFormTest {
                 .andExpect(model().attribute("checkoutTotal", new BigDecimal("110000")));
         verify(checkout).confirm(eq(1L), any(), argThat(form -> "SAVE10".equals(form.getCouponCode())));
         verify(coupons).preview(1L, "SAVE10", List.of(20L));
+    }
+
+    @Test
+    void businessCheckoutErrorPreservesAppliedRewardCouponAndAddress() throws Exception {
+        validCoupon();
+        when(checkout.confirm(eq(1L), any(), any())).thenThrow(new CheckoutException("Coupon vừa hết lượt"));
+        when(loyalty.previewRedemption(1L, new BigDecimal("5000"), new BigDecimal("90000")))
+                .thenReturn(new LoyaltyRedemptionResponse(new BigDecimal("5000"), new BigDecimal("5000"), new BigDecimal("15000")));
+        var result = mvc.perform(post("/customer/checkout").principal(authentication).session(session)
+                        .param("checkoutToken", token).param("addressId", "42").param("paymentMethodCode", "COD")
+                        .param("couponCode", "SAVE10").param("rewardAmountToUse", "5000"))
+                .andExpect(status().isOk()).andExpect(view().name("customer/checkout"))
+                .andExpect(model().attributeHasErrors("form"))
+                .andExpect(model().attribute("loyaltyDiscount", new BigDecimal("5000"))).andReturn();
+        var form = (CheckoutRequest) result.getModelAndView().getModel().get("form");
+        assertEquals("SAVE10", form.getCouponCode()); assertEquals(42L, form.getAddressId());
+        assertEquals("COD", form.getPaymentMethodCode()); assertEquals(new BigDecimal("5000"), form.getRewardAmountToUse());
+        var binding = (org.springframework.validation.BindingResult) result.getModelAndView().getModel().get("org.springframework.validation.BindingResult.form");
+        assertEquals("Coupon vừa hết lượt", binding.getGlobalError().getDefaultMessage());
+    }
+
+    @Test
+    void transientCheckoutFailureReturnsRetryMessageAndKeepsForm() throws Exception {
+        when(checkout.confirm(eq(1L), any(), any())).thenThrow(new org.springframework.dao.CannotAcquireLockException("internal lock details"));
+        var result = mvc.perform(post("/customer/checkout").principal(authentication).session(session)
+                        .param("checkoutToken", token).param("addressId", "42").param("paymentMethodCode", "COD"))
+                .andExpect(status().isServiceUnavailable()).andExpect(view().name("customer/checkout"))
+                .andExpect(model().attributeHasErrors("form")).andReturn();
+        var form = (CheckoutRequest) result.getModelAndView().getModel().get("form");
+        assertEquals(42L, form.getAddressId()); assertEquals("COD", form.getPaymentMethodCode());
+        var binding = (org.springframework.validation.BindingResult) result.getModelAndView().getModel().get("org.springframework.validation.BindingResult.form");
+        assertEquals("Đơn hàng chưa được tạo. Vui lòng kiểm tra lại và thử xác nhận lần nữa.", binding.getGlobalError().getDefaultMessage());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"schema", "integrity", "unexpected"})
+    void systemCheckoutFailuresPropagateInsteadOfBecomingBusinessErrors(String kind) {
+        RuntimeException failure = switch (kind) {
+            case "schema" -> new org.springframework.jdbc.BadSqlGrammarException("checkout", "SELECT test", new java.sql.SQLException("invalid object"));
+            case "integrity" -> new org.springframework.dao.DataIntegrityViolationException("constraint");
+            default -> new IllegalStateException("Loyalty rule is missing");
+        };
+        when(checkout.confirm(eq(1L), any(), any())).thenThrow(failure);
+        var thrown = assertThrows(jakarta.servlet.ServletException.class, () -> mvc.perform(post("/customer/checkout")
+                .principal(authentication).session(session).param("checkoutToken", token).param("addressId", "42")));
+        assertSame(failure, thrown.getCause());
+        verify(checkout, never()).preview(anyLong(), anyList());
     }
 }

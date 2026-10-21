@@ -29,6 +29,8 @@ import jakarta.persistence.*;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.jpa.repository.support.JpaRepositoryFactory;
 import org.springframework.orm.jpa.JpaTransactionManager;
@@ -172,10 +174,13 @@ class LoyaltyCheckoutTransactionTest {
         });
     }
 
-    @Test
-    void failureAfterPaymentFlushRollsBackRewardCouponOrderAndCart() {
-        doThrow(new IllegalStateException("simulated order failure")).when(events).publishEvent(any(Object.class));
-        assertThrows(IllegalStateException.class, () -> tx.execute(status -> checkout.confirm(customerId, draft, request)));
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void failureAfterPaymentFlushRollsBackRewardCouponOrderAndCart(boolean businessFailure) {
+        RuntimeException failure = businessFailure ? new VietFreshHub.exception.CheckoutException("simulated checkout rejection")
+                : new IllegalStateException("simulated order failure");
+        doThrow(failure).when(events).publishEvent(any(Object.class));
+        assertSame(failure, assertThrows(failure.getClass(), () -> tx.execute(status -> checkout.confirm(customerId, draft, request))));
         tx.executeWithoutResult(status -> {
             amount("50000", loyalty.getBalance(customerId).rewardBalance());
             for (String entity : List.of("Order", "ShopOrder", "Payment", "LoyaltyTransaction", "CouponUsage"))
