@@ -20,6 +20,7 @@ import VietFreshHub.order.repository.OrderDeliveryReadRepository;
 import VietFreshHub.order.repository.OrderItemRepository;
 import VietFreshHub.order.repository.ShopOrderRepository;
 import VietFreshHub.order.service.OrderService;
+import VietFreshHub.order.service.OrderLifecycleLock;
 import VietFreshHub.shop.service.ShopService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
@@ -64,6 +65,7 @@ public class OrderServiceImpl implements OrderService {
     private final DeliveryCreationService deliveryCreationService;
     private final AuthService authService;
     private final EntityManager entityManager;
+    private final OrderLifecycleLock lifecycleLock;
 
     @Override
     @Transactional(readOnly = true)
@@ -166,11 +168,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void lockOrderForDeliveryCompletion(Long orderId) {
-        Order order = entityManager.find(Order.class, orderId);
-        if (order == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng.");
-        }
-        entityManager.refresh(order, LockModeType.PESSIMISTIC_WRITE);
+        Order order = lifecycleLock.lock(orderId);
         if (order.getStatus() == Order.Status.CANCELLED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Không thể hoàn tất đơn hàng đã hủy.");
         }
@@ -181,6 +179,8 @@ public class OrderServiceImpl implements OrderService {
     public void startShopOrderDelivery(Long shopOrderId, Long changedBy) {
         ShopOrder shopOrder = shopOrderRepository.findById(shopOrderId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng."));
+        lockOrderForDeliveryCompletion(shopOrder.getOrder().getOrderId());
+        entityManager.refresh(shopOrder, LockModeType.PESSIMISTIC_WRITE);
         if (!"READY_FOR_DELIVERY".equals(shopOrder.getStatus())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Chỉ có thể bắt đầu giao hàng cho đơn hàng sẵn sàng giao hàng.");
@@ -402,9 +402,7 @@ public class OrderServiceImpl implements OrderService {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
             orderIds.add(shopOrder.getOrder().getOrderId());
         }
-        for (Long orderId : orderIds) {
-            Order order = entityManager.getReference(Order.class, orderId);
-            entityManager.refresh(order, LockModeType.PESSIMISTIC_WRITE);
+        for (Order order : lifecycleLock.lockAll(orderIds)) {
             if (order.getStatus() == Order.Status.CANCELLED) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Không thể xử lý đơn hàng đã hủy.");
             }

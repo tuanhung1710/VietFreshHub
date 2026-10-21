@@ -2,6 +2,7 @@ package VietFreshHub.delivery.service;
 
 import VietFreshHub.auth.entity.User;
 import VietFreshHub.auth.service.AuthService;
+import VietFreshHub.order.service.OrderLifecycleLock;
 import VietFreshHub.delivery.entity.Delivery;
 import VietFreshHub.delivery.entity.DeliveryAssignment;
 import VietFreshHub.delivery.entity.DeliveryAssignmentStatus;
@@ -41,6 +42,7 @@ public class AutoAssignmentService {
     private final EntityManager entityManager;
     private final DeliveryStatusHistoryWriter deliveryStatusHistoryWriter;
     private final DeliveryNotificationService deliveryNotificationService;
+    private final OrderLifecycleLock lifecycleLock;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public List<Long> findUnassignedDeliveryIds() {
@@ -53,6 +55,7 @@ public class AutoAssignmentService {
             return Optional.empty();
         }
 
+        lifecycleLock.lockForDelivery(deliveryId);
         List<Long> staffIds = authService.lockActiveDeliveryStaffIdsForAssignment();
         Delivery delivery = deliveryRepository.findForUpdateByDeliveryId(deliveryId).orElse(null);
         if (delivery == null || delivery.getStatus() != DeliveryStatus.UNASSIGNED

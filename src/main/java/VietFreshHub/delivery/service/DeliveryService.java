@@ -3,6 +3,7 @@ package VietFreshHub.delivery.service;
 import VietFreshHub.delivery.entity.Delivery;
 import VietFreshHub.delivery.entity.DeliveryStatus;
 import VietFreshHub.delivery.repository.DeliveryRepository;
+import VietFreshHub.order.service.OrderLifecycleLock;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import java.time.ZoneOffset;
 public class DeliveryService {
 
     private final DeliveryRepository deliveryRepository;
+    private final OrderLifecycleLock lifecycleLock;
 
     @Transactional
     public void releaseAssignment(Long deliveryId) {
@@ -75,6 +77,7 @@ public class DeliveryService {
     }
 
     private Delivery getDeliveryForUpdate(Long deliveryId) {
+        lifecycleLock.lockForDelivery(deliveryId);
         return deliveryRepository.findForUpdateByDeliveryId(deliveryId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Không tìm thấy thông tin giao hàng."));

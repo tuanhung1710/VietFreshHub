@@ -10,6 +10,7 @@ import VietFreshHub.delivery.repository.DeliveryAssignmentRepository;
 import VietFreshHub.delivery.repository.DeliveryRepository;
 import VietFreshHub.delivery.repository.DeliveryStatusHistoryRepository;
 import VietFreshHub.order.service.OrderService;
+import VietFreshHub.order.service.OrderLifecycleLock;
 import VietFreshHub.shop.service.ShopService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -40,6 +41,7 @@ public class DeliveryAssignmentService {
     private final OrderService orderService;
     private final ApplicationEventPublisher events;
     private final DeliveryNotificationService deliveryNotificationService;
+    private final OrderLifecycleLock lifecycleLock;
 
     @Transactional(readOnly = true)
     public List<DeliveryTrackingStaff> getTrackingStaff(Long customerId, Long orderId) {
@@ -52,6 +54,7 @@ public class DeliveryAssignmentService {
     @Transactional
     public void accept(Long assignmentId, Authentication authentication) {
         Long deliveryStaffId = authService.getCurrentDeliveryStaffId(authentication);
+        lockOrderForAssignment(assignmentId, deliveryStaffId);
         if (!authService.lockActiveDeliveryStaffIdsForAssignment().contains(deliveryStaffId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tài khoản không còn đủ điều kiện nhận đơn.");
         }
@@ -148,6 +151,7 @@ public class DeliveryAssignmentService {
     public void confirmGoodsReturn(Long deliveryId, Authentication authentication) {
         Long shopId = shopService.getManagedShopId(authentication);
         Long managerId = authService.getCurrentUserId(authentication);
+        lifecycleLock.lockForDelivery(deliveryId);
         Delivery delivery = deliveryRepository.findForUpdateByDeliveryIdAndShopOrder_ShopId(deliveryId, shopId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Không tìm thấy thông tin giao hàng."));
@@ -192,6 +196,7 @@ public class DeliveryAssignmentService {
     }
 
     private Delivery getDeliveryForUpdate(Long deliveryId) {
+        lifecycleLock.lockForDelivery(deliveryId);
         return deliveryRepository.findForUpdateByDeliveryId(deliveryId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Không tìm thấy thông tin giao hàng."));
@@ -200,6 +205,12 @@ public class DeliveryAssignmentService {
     private boolean isOfferExpired(DeliveryAssignment assignment, LocalDateTime now) {
         return assignment.getAssignedAt() == null
                 || !now.isBefore(assignment.getAssignedAt().plusSeconds(OFFER_TIMEOUT_SECONDS));
+    }
+
+    private void lockOrderForAssignment(Long assignmentId, Long staffId) {
+        Long orderId = deliveryAssignmentRepository.findOrderIdByAssignmentIdAndStaffId(assignmentId, staffId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy phân công giao hàng."));
+        lifecycleLock.lock(orderId);
     }
 
     private void requireStatus(DeliveryAssignment assignment, DeliveryAssignmentStatus requiredStatus) {

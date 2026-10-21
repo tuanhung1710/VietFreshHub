@@ -5,6 +5,9 @@ import VietFreshHub.delivery.entity.DeliveryAssignment;
 import VietFreshHub.delivery.entity.DeliveryStatus;
 import VietFreshHub.order.entity.ShopOrder;
 import VietFreshHub.order.service.OrderService;
+import VietFreshHub.payment.service.PaymentService;
+import VietFreshHub.loyalty.services.LoyaltyService;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
@@ -23,6 +26,9 @@ public class DeliveryStaffActionService {
     private final OrderService orderService;
     private final DeliveryNotificationService deliveryNotificationService;
     private final ApplicationEventPublisher events;
+    private final PaymentService paymentService;
+    private final LoyaltyService loyaltyService;
+    private final EntityManager em;
 
     @Transactional
     public void confirmPickup(Long assignmentId, Authentication authentication) {
@@ -77,6 +83,12 @@ public class DeliveryStaffActionService {
                 assignment.getDeliveryStaff().getUserId());
         deliveryStatusHistoryWriter.record(delivery, assignment.getDeliveryStaff().getUserId(), null);
         assignment.complete();
+        Long orderId = shopOrder.getOrder().getOrderId();
+        if (paymentService.recordCodCollection(orderId, shopOrder.getShopOrderId())) {
+            // earnReward refreshes Order: keep COMPLETED/PAID in the database first.
+            em.flush();
+            loyaltyService.earnReward(orderId);
+        }
         deliveryNotificationService.notifyCompleted(delivery);
         events.publishEvent(new DeliveryAssignmentRetryEvent());
     }

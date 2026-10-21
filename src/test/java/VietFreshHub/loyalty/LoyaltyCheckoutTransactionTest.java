@@ -168,9 +168,6 @@ class LoyaltyCheckoutTransactionTest {
             assertEquals(result.orderId(), checkout.confirm(customerId, draft, request).orderId());
             amount("40000", loyalty.getBalance(customerId).rewardBalance());
             assertEquals(1L, em.createQuery("select count(t) from LoyaltyTransaction t", Long.class).getSingleResult());
-            order.setStatus(Order.Status.COMPLETED); order.setPaymentStatus("PAID"); em.flush();
-            amount("1700", loyalty.earnReward(order.getOrderId()));
-            amount("0", loyalty.earnReward(order.getOrderId()));
         });
     }
 

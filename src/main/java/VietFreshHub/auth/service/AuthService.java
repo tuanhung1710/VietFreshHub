@@ -216,6 +216,12 @@ public class AuthService {
 
     @Transactional
     public List<Long> lockActiveDeliveryStaffIdsForAssignment() {
+        // Serialize capacity decisions on the delivery role, not every staff User.
+        // Delivery callers already hold Customer -> Order. Locking staff Users here
+        // could invert that order when a customer also has a delivery staff role.
+        if (roleRepository.findForUpdateByRoleName("ROLE_DELIVERY_STAFF").isEmpty()) {
+            return List.of();
+        }
         List<User> deliveryStaff =
                 userRepository.findByStatusIgnoreCaseAndUserRoles_Role_RoleNameOrderByUserIdAsc(
                         "ACTIVE", "ROLE_DELIVERY_STAFF");

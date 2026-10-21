@@ -38,6 +38,5 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
             @Param("excludedUserId") Long excludedUserId
     );
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
     List<User> findByStatusIgnoreCaseAndUserRoles_Role_RoleNameOrderByUserIdAsc(String status, String roleName);
 }
