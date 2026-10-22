@@ -19,6 +19,15 @@ public class OrderInventoryReleaseService {
     private final EntityManager em;
     @Transactional(propagation=Propagation.MANDATORY)
     public void release(List<Line> lines,Long actorId) {
+        release(lines, actorId, "Giải phóng kho khi khách hàng hủy đơn.");
+    }
+
+    @Transactional(propagation=Propagation.MANDATORY)
+    public void releaseReturnedGoods(List<Line> lines, Long actorId) {
+        release(lines, actorId, "Giải phóng kho sau khi cửa hàng xác nhận nhận lại hàng giao thất bại.");
+    }
+
+    private void release(List<Line> lines, Long actorId, String note) {
         if(lines.isEmpty()) throw invalid();
         var ids=lines.stream().map(Line::orderItemId).toList();
         var allocations=em.createQuery("select a from CheckoutStockAllocation a where a.orderItem.orderItemId in :ids order by a.allocationId",CheckoutStockAllocation.class)
@@ -71,7 +80,7 @@ public class OrderInventoryReleaseService {
             CheckoutStockMovement released=new CheckoutStockMovement(); released.setVariant(batch.getVariant()); released.setBatch(batch);
             released.setTransactionType("RELEASE"); released.setQuantity(-allocation.getQuantity()); released.setReferenceType("ORDER_ITEM");
             released.setReferenceId(allocation.getOrderItem().getOrderItemId()); released.setCreatedBy(em.getReference(User.class,actorId));
-            released.setNote("Giải phóng kho khi khách hàng hủy đơn."); em.persist(released);
+            released.setNote(note); em.persist(released);
         }
     }
     private CustomerOrderException invalid() {

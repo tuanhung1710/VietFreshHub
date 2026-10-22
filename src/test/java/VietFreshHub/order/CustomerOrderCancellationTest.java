@@ -74,9 +74,58 @@ class CustomerOrderCancellationTest {
         child.setStatus(status); assertBlocked();
     }
 
-    @Test void blocksPaidOrders() { order.setPaymentStatus("PAID"); assertBlocked(); }
-    @Test void blocksUnsupportedPaymentMethods() { payment.getPaymentMethod().setMethodCode("UNSUPPORTED"); assertBlocked(); }
-    @Test void blocksDiscountPendingReconciliation() { child.setDiscountTotal(BigDecimal.ONE); assertBlocked(); }
+    @Test void pendingOnlinePaymentDoesNotBlockCancellation() {
+        payment.getPaymentMethod().setMethodCode("VNPAY");
+        assertTrue(service.actions(1L,10L).cancellable());
+        service.cancel(1L,10L,null);
+        assertEquals(Order.Status.CANCELLED,order.getStatus());
+        assertEquals(Payment.Status.CANCELLED,payment.getStatus());
+        verify(inventory).release(anyList(),eq(1L));
+    }
+    @Test void paidOrderCanCancelFulfillmentWithoutPretendingToRefund() {
+        order.setPaymentStatus("PAID");payment.setStatus(Payment.Status.PAID);
+        var paidAt=java.time.LocalDateTime.of(2026,10,20,3,0);payment.setPaidAt(paidAt);
+        child.setStatus("CONFIRMED");
+        assertTrue(service.actions(1L,10L).cancellable());
+        service.cancel(1L,10L,null);
+        assertEquals(Order.Status.CANCELLED,order.getStatus());
+        assertEquals("PAID",order.getPaymentStatus());assertEquals(Payment.Status.PAID,payment.getStatus());
+        assertEquals(paidAt,payment.getPaidAt());
+        verify(inventory).release(anyList(),eq(1L));
+    }
+    @Test void discountsDoNotBlockCancellationOrChangeHistoricalAmounts() {
+        child.setDiscountTotal(BigDecimal.ONE);order.setDiscountTotal(BigDecimal.TEN);
+        assertTrue(service.actions(1L,10L).cancellable());
+        service.cancel(1L,10L,null);
+        assertEquals(Order.Status.CANCELLED,order.getStatus());
+        assertEquals(BigDecimal.ONE,child.getDiscountTotal());assertEquals(BigDecimal.TEN,order.getDiscountTotal());
+    }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(Payment.Status.class)
+    void financialRecordsKeepProcessingCollectionAndRefundEvidence(Payment.Status original) {
+        payment.setStatus(original);
+        assertTrue(service.actions(1L,10L).cancellable());service.cancel(1L,10L,null);
+        assertEquals(original==Payment.Status.PENDING || original==Payment.Status.FAILED ? Payment.Status.CANCELLED : original,payment.getStatus());
+        assertEquals(Order.Status.CANCELLED,order.getStatus());
+    }
+    @Test void collectionTimestampIsPreservedEvenIfPaymentStatusIsStale() {
+        var paidAt=java.time.LocalDateTime.of(2026,10,20,3,0);payment.setPaidAt(paidAt);
+        service.cancel(1L,10L,null);
+        assertEquals(Payment.Status.PENDING,payment.getStatus());assertEquals(paidAt,payment.getPaidAt());
+    }
+    @Test void shopStatesTakePriorityOverStaleParentProcessingStatus() {
+        order.setStatus(Order.Status.PROCESSING);
+        assertTrue(service.actions(1L,10L).cancellable());service.cancel(1L,10L,null);
+        assertEquals(Order.Status.CANCELLED,order.getStatus());
+    }
+    @Test void mixedPendingConfirmedShopsCanCancelButAnyPreparingShopBlocks() {
+        var other=new ShopOrder();other.setShopOrderId(21L);other.setOrder(order);other.setStatus("PREPARING");
+        when(shops.findByOrderOrderIdOrderByShopOrderIdAsc(10L)).thenReturn(List.of(child,other));
+        assertBlocked();
+        other.setStatus("CONFIRMED");
+        assertTrue(service.actions(1L,10L).cancellable());service.cancel(1L,10L,null);
+        assertEquals("CANCELLED",child.getStatus());assertEquals("CANCELLED",other.getStatus());
+    }
     @Test void blocksPickedUpDelivery() {
         OrderDeliveryView delivery = new OrderDeliveryView(); delivery.setStatus("PICKED_UP");
         when(deliveries.findByShopOrderOrderOrderIdOrderByDeliveryIdAsc(10L)).thenReturn(List.of(delivery));

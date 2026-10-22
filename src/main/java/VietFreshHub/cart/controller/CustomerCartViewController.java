@@ -32,14 +32,17 @@ public class CustomerCartViewController {
     }
     @GetMapping("/customer/home")
     public String showHomePage(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "") String keyword,
-                              Authentication authentication, Model model) {
+                              @RequestParam(defaultValue = "") String category, Authentication authentication, Model model) {
         if (page < 1 || page > 10000) return "redirect:/home";
         if (keyword.length() > 100) {
             model.addAttribute("errorMessage", "Từ khóa tìm kiếm tối đa 100 ký tự.");
             keyword = "";
         }
         model.addAttribute("cart", populateActiveCart(authentication));
-        var products = catalogService.listProducts(page, keyword.trim());
+        var products = category.isBlank() ? catalogService.listProducts(page, keyword.trim())
+                : catalogService.listProducts(page, keyword.trim(), category);
+        model.addAttribute("categories", catalogService.categories());
+        model.addAttribute("category", category);
         model.addAttribute("products", products.getContent());
         model.addAttribute("productPage", products);
         model.addAttribute("keyword", keyword.trim());

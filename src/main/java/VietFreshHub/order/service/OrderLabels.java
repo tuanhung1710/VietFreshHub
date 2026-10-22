@@ -23,9 +23,13 @@ public final class OrderLabels {
         case "FAILED" -> "Thanh toán thất bại"; default -> "Cập nhật thanh toán";
     }; }
     public static String paymentTransaction(VietFreshHub.payment.entity.Payment.Status status) { return switch(status) {
-        case PENDING -> "Chờ thanh toán"; case PROCESSING -> "Đang xử lý thanh toán"; case PAID -> "Đã thanh toán";
+        case PENDING -> "Chờ thanh toán"; case PROCESSING -> "Đang xử lý"; case PAID -> "Đã thanh toán";
         case FAILED -> "Thanh toán thất bại"; case CANCELLED -> "Đã hủy giao dịch"; case REFUNDED -> "Đã hoàn tiền";
         case PARTIALLY_REFUNDED -> "Hoàn tiền một phần";
     }; }
+    public static String paymentTransaction(VietFreshHub.payment.entity.Payment.Status status, String methodCode) {
+        return status == VietFreshHub.payment.entity.Payment.Status.PENDING && "COD".equals(methodCode)
+                ? "Chờ thu COD" : paymentTransaction(status);
+    }
     public static LocalDateTime local(LocalDateTime utc) { return utc==null ? null : LocalDateTime.ofInstant(utc.toInstant(ZoneOffset.UTC),ZoneId.of("Asia/Ho_Chi_Minh")); }
 }

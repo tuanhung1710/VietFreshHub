@@ -87,6 +87,13 @@ class CustomerOrderTrackingTest {
         assertEquals(utc.plusHours(6), events.getFirst().occurredAt());
         assertTrue(events.getFirst().label().contains("đã xác nhận"));
     }
+    @Test void inferredConfirmationWithoutTimestampIsNotVerifiedHistory() {
+        child.setStatus("PREPARING");
+        var confirmation=tracking().events().stream().filter(e -> e.label().contains("đã xác nhận")).findFirst().orElseThrow();
+        assertFalse(confirmation.verified()); assertNull(confirmation.occurredAt());
+        child.setConfirmedAt(utc);
+        assertTrue(tracking().events().stream().filter(e -> e.label().contains("đã xác nhận")).findFirst().orElseThrow().verified());
+    }
     @Test void hidesUnrelatedStaffName() {
         var accepted = event("ACCEPTED", utc); accepted.setChangedBy(99L); history(accepted);
         when(assignments.getTrackingStaff(1L, 10L)).thenReturn(List.of(new DeliveryTrackingStaff(999L, 99L, "Không được lộ")));

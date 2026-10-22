@@ -21,26 +21,26 @@ class CustomerOrderHistoryTest {
     final CustomerOrderServiceImpl service = new CustomerOrderServiceImpl(orders, null, null, null, null,
             null, null, null, null, null, null, null, null, null, null, null);
     final CustomerOrderFilterRequest filter = new CustomerOrderFilterRequest();
-    void emptyResult() { when(orders.findHistory(anyLong(), any(), anyString(), any(), any(), anyBoolean(), any())).thenReturn(Page.empty()); }
+    void emptyResult() { when(orders.findHistory(anyLong(), any(), anyString(), any(), any(), any())).thenReturn(Page.empty()); }
 
     @Test void convertsInclusiveVietnamDateToHalfOpenUtcRangeAndTrimsKeyword() {
         emptyResult(); filter.setFromDate(LocalDate.of(2026,10,20)); filter.setToDate(LocalDate.of(2026,10,20)); filter.setKeyword("  VF-123  ");
         service.history(1L, filter);
-        verify(orders).findHistory(eq(1L), isNull(), eq("VF-123"), eq(LocalDateTime.of(2026,10,19,17,0)),
-                eq(LocalDateTime.of(2026,10,20,17,0)), eq(false), argThat(p -> p.getPageNumber()==0 && p.getPageSize()==10
+        verify(orders).findHistory(eq(1L), eq(""), eq("VF-123"), eq(LocalDateTime.of(2026,10,19,17,0)),
+                eq(LocalDateTime.of(2026,10,20,17,0)), argThat(p -> p.getPageNumber()==0 && p.getPageSize()==10
                         && p.getSort().equals(Sort.by(Sort.Order.desc("placedAt"), Sort.Order.desc("orderId")))));
     }
     @Test void maximumDateDoesNotBindYear10000() {
         emptyResult(); filter.setToDate(LocalDate.of(9999,12,31)); service.history(1L, filter);
-        verify(orders).findHistory(eq(1L), isNull(), eq(""), isNull(), isNull(), eq(false), any());
+        verify(orders).findHistory(eq(1L), eq(""), eq(""), isNull(), isNull(), any());
     }
     @Test void minimumDateDoesNotBindYearZero() {
         emptyResult(); filter.setFromDate(LocalDate.of(1,1,1)); service.history(1L, filter);
-        verify(orders).findHistory(eq(1L), isNull(), eq(""), eq(LocalDateTime.of(1,1,1,0,0)), isNull(), eq(false), any());
+        verify(orders).findHistory(eq(1L), eq(""), eq(""), eq(LocalDateTime.of(1,1,1,0,0)), isNull(), any());
     }
     @Test void deliveringUsesChildStatusRatherThanAnInvalidParentEnum() {
-        emptyResult(); filter.setStatus("OUT_FOR_DELIVERY"); service.history(1L, filter);
-        verify(orders).findHistory(eq(1L), isNull(), eq(""), isNull(), isNull(), eq(true), any());
+        emptyResult(); filter.setStatus("AWAITING_DELIVERY"); service.history(1L, filter);
+        verify(orders).findHistory(eq(1L), eq("AWAITING_DELIVERY"), eq(""), isNull(), isNull(), any());
     }
     @ParameterizedTest @ValueSource(strings={"PROCESSING","PARTIALLY_COMPLETED","INVALID"})
     void rejectsRemovedOrInvalidStatus(String status) {
@@ -57,10 +57,10 @@ class CustomerOrderHistoryTest {
     @Test void clampsMissingPageToLastExistingPage() {
         filter.setPage(100);
         var row = new OrderListRow(10L,"VF-10",Order.Status.PENDING,"UNPAID",BigDecimal.ONE,LocalDateTime.now());
-        when(orders.findHistory(anyLong(), any(), anyString(), any(), any(), anyBoolean(), argThat(p -> p!=null && p.getPageNumber()==99)))
+        when(orders.findHistory(anyLong(), any(), anyString(), any(), any(), argThat(p -> p!=null && p.getPageNumber()==99)))
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(99,10), 11));
         var last = new PageImpl<>(List.of(row), PageRequest.of(1,10), 11);
-        when(orders.findHistory(anyLong(), any(), anyString(), any(), any(), anyBoolean(), argThat(p -> p!=null && p.getPageNumber()==1))).thenReturn(last);
+        when(orders.findHistory(anyLong(), any(), anyString(), any(), any(), argThat(p -> p!=null && p.getPageNumber()==1))).thenReturn(last);
         assertSame(last, service.history(1L, filter));
     }
     @Test void emptyResultsReturnFirstPage() {

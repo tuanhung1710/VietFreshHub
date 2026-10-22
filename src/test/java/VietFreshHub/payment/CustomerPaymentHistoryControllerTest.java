@@ -77,7 +77,8 @@ class CustomerPaymentHistoryControllerTest {
         when(payments.history(eq(7L), any())).thenReturn(new PageImpl<>(List.of(row()), PageRequest.of(0,10), 11));
         String html = mvc.perform(get("/customer/payments").principal(auth).param("keyword", "VF-10")
                 .param("status", "PENDING").param("fromDate", "2026-10-20")).andReturn().getResponse().getContentAsString();
-        assertTrue(html.contains("Chờ thu tiền")); assertTrue(html.contains("10:00 20/10/2026"));
+        for (String label : List.of("Tất cả", "Chờ thanh toán / Chờ thu COD", "Đang xử lý", "Đã thanh toán", "Thanh toán thất bại", "Đã hủy giao dịch", "Đã hoàn tiền", "Hoàn tiền một phần")) assertTrue(html.contains(label));
+        assertTrue(html.contains("Chờ thu COD")); assertTrue(html.contains("10:00 20/10/2026"));
         assertTrue(html.contains("&lt;script&gt;")); assertFalse(html.contains("<script>alert(1)</script>"));
         assertTrue(html.contains("/customer/orders/10")); assertTrue(html.contains("page=2"));
         assertTrue(html.contains("fromDate=2026-10-20")); assertTrue(html.contains("keyword=VF-10"));
@@ -89,5 +90,75 @@ class CustomerPaymentHistoryControllerTest {
                 .andReturn().getResponse();
         assertEquals(200, response.getStatus()); assertTrue(response.getContentAsString().contains("Bộ lọc không hợp lệ"));
         verifyNoInteractions(payments);
+    }
+    String render() throws Exception {
+        return mvc.perform(get("/customer/payments").principal(auth)).andReturn().getResponse().getContentAsString();
+    }
+    String card(String html, long id) {
+        var pattern = java.util.regex.Pattern.compile("(?s)<article[^>]*data-payment-id=\""+id+"\".*?</article>");
+        var matcher = pattern.matcher(html); assertTrue(matcher.find(),"Missing card "+id); return matcher.group();
+    }
+    PaymentHistoryRow record(long id, String method, Payment.Status status, String reference, LocalDateTime paidAt) {
+        return new PaymentHistoryRow(id,10L,"VF-10",method.equals("COD") ? "Thanh toán khi nhận hàng" : "Thanh toán trực tuyến",
+                method,new BigDecimal("106000"),status,LocalDateTime.of(2026,10,20,3,0),paidAt,reference);
+    }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({
+        "COD,PENDING,Chờ thu COD", "VNPAY,PENDING,Chờ thanh toán", "VNPAY,PROCESSING,Đang xử lý",
+        "VNPAY,PAID,Đã thanh toán", "VNPAY,FAILED,Thanh toán thất bại", "COD,CANCELLED,Đã hủy giao dịch",
+        "VNPAY,REFUNDED,Đã hoàn tiền", "VNPAY,PARTIALLY_REFUNDED,Hoàn tiền một phần"})
+    void eachBadgeDescribesOnlyItsPayment(String method, Payment.Status status, String expected) throws Exception {
+        when(payments.history(eq(7L),any())).thenReturn(new PageImpl<>(List.of(record(1L,method,status,null,null))));
+        String html = render(); String payment = card(html,1L);
+        assertTrue(payment.contains("data-payment-status=\""+status.name()+"\""));
+        assertTrue(payment.contains(expected));
+        assertEquals(method.equals("COD") && status==Payment.Status.PENDING,payment.contains("Hệ thống chưa xác nhận đã thu tiền COD"));
+        assertFalse(payment.contains("Thời điểm ghi nhận thanh toán"));
+        assertFalse(payment.contains("Mã tham chiếu thanh toán"));
+        assertFalse(html.contains("Trạng thái đơn hàng")); assertFalse(html.contains("WAITING_PAYMENT"));
+        assertFalse(html.contains("method=\"post\""));
+    }
+    @Test void distinctAttemptsSameOrderKeepTheirOwnIdStatusAndOptionalFields() throws Exception {
+        var rows = List.of(record(1L,"VNPAY",Payment.Status.FAILED,null,null),
+                record(2L,"VNPAY",Payment.Status.PAID,"VN-<script>alert(1)</script>",LocalDateTime.of(2026,10,20,4,30)));
+        when(payments.history(eq(7L),any())).thenReturn(new PageImpl<>(rows));
+        String html = render(); String failed = card(html,1L); String paid = card(html,2L);
+        assertTrue(failed.contains("Bản ghi #1")); assertTrue(paid.contains("Bản ghi #2"));
+        assertTrue(failed.contains("Thanh toán thất bại")); assertTrue(paid.contains("Đã thanh toán"));
+        assertTrue(failed.contains("/customer/orders/10")); assertTrue(paid.contains("/customer/orders/10"));
+        assertFalse(failed.contains("Mã tham chiếu thanh toán")); assertFalse(failed.contains("Thời điểm ghi nhận thanh toán"));
+        assertTrue(paid.contains("VN-&lt;script&gt;")); assertFalse(paid.contains("<script>alert(1)</script>"));
+        assertTrue(paid.contains("11:30 20/10/2026")); assertTrue(paid.contains("106.000"));
+    }
+    @Test void filteredEmptyStateAndSelectedStatusKeepAllPaginationParameters() throws Exception {
+        when(payments.history(eq(7L),any())).thenReturn(new PageImpl<>(List.of(row()),PageRequest.of(0,10),11));
+        String html = mvc.perform(get("/customer/payments").principal(auth).param("keyword","VF-10").param("status","PENDING")
+                .param("fromDate","2026-10-20").param("toDate","2026-10-21")).andReturn().getResponse().getContentAsString();
+        for (String value : List.of("page=2","keyword=VF-10","status=PENDING","fromDate=2026-10-20","toDate=2026-10-21")) assertTrue(html.contains(value),value);
+        assertTrue(html.matches("(?s).*<option[^>]*value=\"PENDING\"[^>]*selected=\"selected\".*"));
+        when(payments.history(eq(7L),any())).thenReturn(Page.empty());
+        html = mvc.perform(get("/customer/payments").principal(auth).param("keyword","missing")).andReturn().getResponse().getContentAsString();
+        assertTrue(html.contains("Không tìm thấy thanh toán phù hợp")); assertTrue(html.contains("Xóa bộ lọc"));
+        assertFalse(html.contains("data-payment-id="));
+    }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({"status,SHIPPING","page,0","fromDate,not-a-date"})
+    void invalidFiltersDoNotCallThePaymentService(String key, String value) throws Exception {
+        String html = mvc.perform(get("/customer/payments").principal(auth).param(key,value)).andReturn().getResponse().getContentAsString();
+        assertTrue(html.contains("Bộ lọc không hợp lệ")); verifyNoInteractions(payments);
+    }
+    @Test void unauthenticatedIdentityCannotReachThePaymentService() {
+        when(current.requireCustomerId(auth)).thenThrow(new org.springframework.security.access.AccessDeniedException("Denied"));
+        assertThrows(Exception.class,() -> mvc.perform(get("/customer/payments").principal(auth)));
+        verifyNoInteractions(payments);
+    }
+    @Test void exportActualTemplateForResponsiveReview() throws Exception {
+        var rows = List.of(record(101L,"COD",Payment.Status.PENDING,null,null),
+                record(102L,"VNPAY",Payment.Status.PAID,"VFH-20261020-102",LocalDateTime.of(2026,10,20,4,30)),
+                record(103L,"VNPAY",Payment.Status.FAILED,null,null));
+        when(payments.history(eq(7L),any())).thenReturn(new PageImpl<>(rows,PageRequest.of(0,10),11));
+        String html = render(); assertTrue(html.contains("payment-history-page"));
+        java.nio.file.Files.createDirectories(java.nio.file.Path.of(".document-analysis"));
+        java.nio.file.Files.writeString(java.nio.file.Path.of(".document-analysis/phase4-payments-preview.html"),html);
     }
 }

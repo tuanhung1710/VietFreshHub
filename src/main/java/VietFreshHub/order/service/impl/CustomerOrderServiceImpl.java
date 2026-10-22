@@ -56,13 +56,9 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         if(filter==null || filter.getPage()<1 || filter.getPage()>10000 || filter.getKeyword()==null
                 || filter.getKeyword().length()>100 || !filter.isDateRangeValid() || !filter.isDatabaseDateRangeValid())
             throw new CustomerOrderException("Bộ lọc đơn hàng không hợp lệ.");
-        Order.Status status;
         String statusText=filter.getStatus()==null ? "" : filter.getStatus().trim();
-        boolean delivering = "OUT_FOR_DELIVERY".equals(statusText);
-        if ("PROCESSING".equals(statusText) || "PARTIALLY_COMPLETED".equals(statusText)) {
-            throw new CustomerOrderException("Trạng thái lọc không hợp lệ.");
-        }
-        try { status=statusText.isEmpty() || delivering ? null : Order.Status.valueOf(statusText); }
+        String status;
+        try { status=statusText.isEmpty() ? "" : CustomerOrderStage.valueOf(statusText).name(); }
         catch(IllegalArgumentException ex) { throw new CustomerOrderException("Trạng thái lọc không hợp lệ."); }
         filter.setKeyword(filter.getKeyword().trim()); filter.setStatus(statusText);
         ZoneId zone=ZoneId.of("Asia/Ho_Chi_Minh");
@@ -73,18 +69,76 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         LocalDateTime until=filter.getToDate()==null || filter.getToDate().equals(LocalDate.of(9999,12,31))
                 ? null : LocalDateTime.ofInstant(filter.getToDate().plusDays(1).atStartOfDay(zone).toInstant(),ZoneOffset.UTC);
         var sort=Sort.by(Sort.Order.desc("placedAt"),Sort.Order.desc("orderId"));
-        var page=orders.findHistory(customerId,status,filter.getKeyword(),from,until,delivering,PageRequest.of(filter.getPage()-1,10,sort));
+        var page=orders.findHistory(customerId,status,filter.getKeyword(),from,until,PageRequest.of(filter.getPage()-1,10,sort));
         if(page.getTotalElements()==0) return Page.empty(PageRequest.of(0,10,sort));
         if(page.getNumber()>=page.getTotalPages())
-            return orders.findHistory(customerId,status,filter.getKeyword(),from,until,delivering,PageRequest.of(page.getTotalPages()-1,10,sort));
+            return orders.findHistory(customerId,status,filter.getKeyword(),from,until,PageRequest.of(page.getTotalPages()-1,10,sort));
         return page;
+    }
+
+    /** Four batch reads for at most one history page; reuse cancellation policy without per-card queries. */
+    @Override @Transactional(readOnly=true)
+    public Map<Long,OrderHistorySummary> historySummaries(Long customerId,List<Long> orderIds) {
+        if (customerId == null || customerId < 1 || orderIds == null || orderIds.size() > 10
+                || orderIds.stream().anyMatch(id -> id == null || id < 1))
+            throw new CustomerOrderException("Danh sách đơn hàng không hợp lệ.");
+        if (orderIds.isEmpty()) return Map.of();
+        var parents = orders.findCustomerHistoryOrders(customerId,orderIds);
+        if (parents.isEmpty()) return Map.of();
+        var ownedIds = parents.stream().map(Order::getOrderId).toList();
+        var children = shopOrders.findCustomerHistoryShops(customerId,ownedIds).stream()
+                .collect(java.util.stream.Collectors.groupingBy(s -> s.getOrder().getOrderId()));
+        var paymentRows = payments.findCustomerHistoryPayments(customerId,ownedIds).stream()
+                .collect(java.util.stream.Collectors.groupingBy(p -> p.getOrder().getOrderId()));
+        var deliveryRows = deliveries.findCustomerHistoryDeliveries(customerId,ownedIds).stream()
+                .collect(java.util.stream.Collectors.groupingBy(d -> d.getShopOrder().getOrder().getOrderId()));
+        Map<Long,OrderHistorySummary> result = new LinkedHashMap<>();
+        for (var parent : parents) {
+            Long id = parent.getOrderId();
+            var shops = children.getOrDefault(id,List.of());
+            var pay = paymentRows.getOrDefault(id,List.of());
+            var delivery = deliveryRows.getOrDefault(id,List.of());
+            var lines = shops.stream().flatMap(s -> s.getItems().stream())
+                    .sorted(Comparator.comparing(OrderItem::getOrderItemId)).toList();
+            var products = lines.stream().limit(3).map(i -> {
+                String image = i.getVariant() == null ? null : i.getVariant().getThumbnailUrl();
+                return new OrderHistorySummary.Product(i.getProductNameSnapshot(),i.getVariantNameSnapshot(),
+                        i.getQuantity(),image == null || image.isBlank() ? null : image);
+            }).toList();
+            var shopLabels = shops.stream().map(s -> {
+                var d = delivery.stream().filter(row -> row.getShopOrder().getShopOrderId().equals(s.getShopOrderId()))
+                        .findFirst().orElse(null);
+                return new OrderHistorySummary.Shop(s.getShop().getShopName(),
+                        d != null && "OUT_FOR_DELIVERY".equals(s.getStatus()) ? "Vận chuyển" : OrderLabels.shop(s.getStatus()),
+                        d == null ? null : d.getStatus(),d == null ? null : historyDeliveryLabel(d.getStatus()));
+            }).toList();
+            var payLabels = pay.stream().sorted(Comparator.comparing(Payment::getPaymentId).reversed()).limit(3)
+                    .map(p -> new OrderDetailsResponse.PaymentInfo(p.getPaymentId(),p.getPaymentMethod().getName(),
+                            p.getPaymentMethod().getMethodCode(),p.getStatus().name(),
+                            OrderLabels.paymentTransaction(p.getStatus(),p.getPaymentMethod().getMethodCode()),
+                            p.getAmount(),OrderLabels.local(p.getPaidAt()))).toList();
+            result.put(id,new OrderHistorySummary(products,lines.size(),lines.stream().mapToLong(OrderItem::getQuantity).sum(),
+                    shopLabels,payLabels,pay.size(),cancellationHint(parent,shops,delivery)==null,
+                    !lines.isEmpty(),!shops.isEmpty()));
+        }
+        return Map.copyOf(result);
+    }
+
+    private String historyDeliveryLabel(String status) {
+        return switch (status) {
+            case "OUT_FOR_DELIVERY" -> "Đang giao";
+            case "FAILED" -> "Giao hàng thất bại";
+            case "REDELIVERY_SCHEDULED" -> "Chờ giao lại";
+            case "DELIVERED" -> "Đã giao hàng";
+            default -> OrderLabels.delivery(status);
+        };
     }
 
     @Override @Transactional(readOnly=true)
     public OrderActionsResponse actions(Long customerId,Long orderId) {
         Order order=owned(customerId,orderId); var children=shopOrders.findByOrderOrderIdOrderByShopOrderIdAsc(orderId);
         var pay=payments.findByOrderOrderIdOrderByPaymentIdAsc(orderId); var delivery=deliveries.findByShopOrderOrderOrderIdOrderByDeliveryIdAsc(orderId);
-        String hint=cancellationHint(order,children,pay,delivery);
+        String hint=cancellationHint(order,children,delivery);
         return new OrderActionsResponse(hint==null,hint,pay.isEmpty() ? "Chưa có phương thức thanh toán" : pay.getFirst().getPaymentMethod().getName());
     }
     @Override @Transactional
@@ -96,7 +150,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         children.forEach(child -> em.refresh(child,LockModeType.PESSIMISTIC_WRITE));
         var pay=payments.findByOrderOrderIdOrderByPaymentIdAsc(orderId); pay.forEach(p -> em.refresh(p,LockModeType.PESSIMISTIC_WRITE));
         var delivery=deliveries.findByShopOrderOrderOrderIdOrderByDeliveryIdAsc(orderId); delivery.forEach(d -> em.refresh(d,LockModeType.PESSIMISTIC_READ));
-        String hint=cancellationHint(order,children,pay,delivery); if(hint!=null) throw new CustomerOrderException(hint);
+        String hint=cancellationHint(order,children,delivery); if(hint!=null) throw new CustomerOrderException(hint);
         var lines=children.stream().flatMap(child -> child.getItems().stream())
                 .map(item -> new OrderInventoryReleaseService.Line(item.getOrderItemId(),item.getVariant().getVariantId(),item.getQuantity())).toList();
         inventory.release(lines,customerId);
@@ -106,10 +160,15 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
             child.setStatus("CANCELLED"); child.setCancelledAt(now);
             OrderStatusHistory history=new OrderStatusHistory(); history.setShopOrder(child); history.setStatus("CANCELLED"); history.setChangedBy(actor); history.setNote(note); em.persist(history);
         }
-        pay.forEach(p -> p.setStatus(Payment.Status.CANCELLED)); order.setStatus(Order.Status.CANCELLED); order.setCancelledAt(now);
+        // Cancel only uncollected, inactive attempts. Processing/collected/refunded records
+        // remain financial evidence; canceling fulfillment does not perform a gateway refund.
+        pay.stream().filter(p -> p.getPaidAt()==null
+                && (p.getStatus()==Payment.Status.PENDING || p.getStatus()==Payment.Status.FAILED))
+                .forEach(p -> p.setStatus(Payment.Status.CANCELLED));
+        order.setStatus(Order.Status.CANCELLED); order.setCancelledAt(now);
         em.flush(); events.publishEvent(new OrderCancelledEvent(orderId,customerId));
     }
-    private String cancellationHint(Order order,List<ShopOrder> children,List<Payment> pay,List<OrderDeliveryView> delivery) {
+    private String cancellationHint(Order order,List<ShopOrder> children,List<OrderDeliveryView> delivery) {
         if(order.getStatus()==Order.Status.CANCELLED) return "Đơn hàng đã được hủy.";
         if(children.isEmpty()) return "Đơn hàng chưa có thông tin cửa hàng, không thể hủy.";
         if(children.stream().anyMatch(c -> "CANCELLED".equals(c.getStatus())))
@@ -120,17 +179,10 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
                 return "Một cửa hàng đã bắt đầu chuẩn bị hoặc xử lý đơn. Bạn không thể hủy toàn bộ đơn này.";
             }
         }
-        if (order.getStatus() != Order.Status.PENDING && order.getStatus() != Order.Status.CONFIRMED) {
-            return "Đơn đã bắt đầu xử lý, không còn đủ điều kiện hủy.";
-        }
         if(delivery.stream().anyMatch(d -> !Set.of("UNASSIGNED","ASSIGNED","ACCEPTED","CANCELLED").contains(d.getStatus())))
             return "Đơn đã được lấy hoặc đang giao, không thể hủy.";
-        if("PAID".equals(order.getPaymentStatus()) || "PARTIALLY_REFUNDED".equals(order.getPaymentStatus()) || "REFUNDED".equals(order.getPaymentStatus())
-                || pay.stream().anyMatch(p -> !"COD".equals(p.getPaymentMethod().getMethodCode()) || p.getPaidAt()!=null
-                || !Set.of(Payment.Status.PENDING,Payment.Status.FAILED,Payment.Status.CANCELLED).contains(p.getStatus())))
-            return "Đơn có giao dịch cần đối soát/hoàn tiền. Vui lòng liên hệ hỗ trợ để hủy an toàn.";
-        if(order.getDiscountTotal().signum()>0 || children.stream().anyMatch(c -> c.getDiscountTotal().signum()>0))
-            return "Đơn có ưu đãi cần đối soát trước khi hủy. Vui lòng liên hệ hỗ trợ.";
+        // Group policy: eligibility follows every shop's fulfillment progress, not
+        // payment method, payment state, discounts, or an aggregate parent that may lag.
         return null;
     }
 
@@ -252,7 +304,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         boolean confirmed=child.getConfirmedAt()!=null || confirmedStates.contains(child.getStatus())
                 || history.stream().anyMatch(entry -> confirmedStates.contains(entry.getStatus()));
         if(!confirmed) return;
-        var confirmation=new OrderTrackingResponse.Event(OrderLabels.local(child.getConfirmedAt()),trackingShopLabel("CONFIRMED"),null,"ORDER");
+        var confirmation=new OrderTrackingResponse.Event(OrderLabels.local(child.getConfirmedAt()),trackingShopLabel("CONFIRMED"),null,"ORDER",child.getConfirmedAt()!=null);
         int position=0;
         for(int i=0;i<timeline.size();i++) {
             var entry=timeline.get(i);

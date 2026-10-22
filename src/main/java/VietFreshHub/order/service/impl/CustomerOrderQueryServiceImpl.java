@@ -41,25 +41,45 @@ public class CustomerOrderQueryServiceImpl implements CustomerOrderQueryService 
 
         // Fixed query count; no lazy catalog traversal or per-shop/per-item database reads.
         Map<Long, List<OrderDetailsResponse.Item>> items = groupItems(customerId, orderId);
+        var deliveryRows = reads.findDeliveries(customerId,orderId).stream()
+                .collect(Collectors.toMap(CustomerOrderReadRepository.DeliverySummary::getShopOrderId,row -> row));
         var groups = reads.findShops(customerId, orderId).stream()
                 .map(shop -> new OrderDetailsResponse.ShopGroup(
                         shop.getShopOrderId(), shop.getShopName(), OrderLabels.shop(shop.getStatus()),
                         shop.getShippingFee(), shop.getTotalAmount(),
                         List.copyOf(items.getOrDefault(shop.getShopOrderId(), List.of())),
-                        shop.getSubtotal(), shop.getDiscountTotal()))
+                        shop.getSubtotal(), shop.getDiscountTotal(),shop.getStatus(),
+                        deliveryInfo(deliveryRows.get(shop.getShopOrderId()))))
                 .toList();
         var payments = reads.findPayments(customerId, orderId).stream()
                 .map(payment -> new OrderDetailsResponse.PaymentInfo(
                         payment.getPaymentId(), payment.getMethodName(), payment.getMethodCode(),
-                        payment.getStatus().name(), OrderLabels.paymentTransaction(payment.getStatus()),
-                        payment.getAmount(), OrderLabels.local(payment.getPaidAt())))
+                        payment.getStatus().name(), OrderLabels.paymentTransaction(payment.getStatus(), payment.getMethodCode()),
+                        payment.getAmount(), OrderLabels.local(payment.getPaidAt()),
+                        OrderLabels.local(payment.getCreatedAt()),payment.getTransactionReference()))
                 .toList();
 
         return new OrderDetailsResponse(
-                orderId, order.getOrderCode(), OrderLabels.order(order.getStatus()),
+                orderId, order.getOrderCode(), VietFreshHub.order.dto.CustomerOrderStage.valueOf(
+                        orders.findCustomerStage(orderId, customerId).orElseThrow(this::notFound)).label(),
                 OrderLabels.payment(order.getPaymentStatus()), address.getRecipientName(), address.getPhone(),
                 addressText(address), order.getSubtotal(), order.getDiscountTotal(), order.getShippingFee(),
                 order.getGrandTotal(), OrderLabels.local(order.getPlacedAt()), groups, payments);
+    }
+
+    private OrderDetailsResponse.DeliveryInfo deliveryInfo(CustomerOrderReadRepository.DeliverySummary row) {
+        if (row==null) return null;
+        String label=switch (row.getStatus()) {
+            case "FAILED" -> "Giao hàng thất bại";
+            case "REDELIVERY_SCHEDULED" -> "Chờ giao lại";
+            case "DELIVERED" -> "Đã giao hàng";
+            default -> OrderLabels.delivery(row.getStatus());
+        };
+        String reason="FAILED".equals(row.getStatus()) && row.getFailureReason()!=null && !row.getFailureReason().isBlank()
+                ? row.getFailureReason().strip() : null;
+        return new OrderDetailsResponse.DeliveryInfo(row.getStatus(),label,OrderLabels.local(row.getAssignedAt()),
+                OrderLabels.local(row.getPickedUpAt()),OrderLabels.local(row.getDeliveredAt()),
+                OrderLabels.local(row.getRedeliveryScheduledAt()),reason);
     }
 
     private Map<Long, List<OrderDetailsResponse.Item>> groupItems(Long customerId, Long orderId) {

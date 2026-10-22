@@ -34,7 +34,11 @@ class CustomerOrderHistoryControllerTest {
         when(orders.history(eq(1L), any())).thenReturn(Page.empty());
         var model = mvc.perform(get("/customer/orders").principal(authentication)).andReturn().getModelAndView().getModel();
         Map<?, ?> options = (Map<?, ?>) model.get("statusOptions");
-        assertEquals("Đang giao", options.get("OUT_FOR_DELIVERY"));
+        assertEquals("Chờ giao hàng", options.get("AWAITING_DELIVERY"));
+        assertEquals(7, options.size());
+        assertEquals("Chờ xác nhận", options.get("WAITING_CONFIRMATION"));
+        assertEquals("Đang chuẩn bị", options.get("PREPARING"));
+        assertFalse(options.containsKey("RETURN_REFUND"));
         assertFalse(options.containsKey("PROCESSING")); assertFalse(options.containsKey("PARTIALLY_COMPLETED"));
     }
     @Test void malformedPageDoesNotRunHistoryQuery() throws Exception {

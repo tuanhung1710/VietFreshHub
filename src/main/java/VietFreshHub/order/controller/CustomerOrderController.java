@@ -42,20 +42,21 @@ public class CustomerOrderController {
                 return error.getDefaultMessage();
             }).toList());
             model.addAttribute("orderPage",Page.empty());
+            model.addAttribute("orderSummaries",Map.of());
         } else {
             int requestedPage=filter.getPage();
             var page=orders.history(customerId,filter);
             model.addAttribute("orderPage",page);
+            model.addAttribute("orderSummaries",orders.historySummaries(customerId,
+                    page.getContent().stream().map(OrderListRow::orderId).toList()));
             if(requestedPage!=page.getNumber()+1)
                 model.addAttribute("pageNotice","Trang yêu cầu không còn tồn tại. Đang hiển thị trang " + (page.getNumber()+1) + ".");
         }
         model.addAttribute("cartBadgeTotal",readOrders.getCartBadgeTotal(customerId));
         Map<String,String> options=new LinkedHashMap<>();
-        options.put("PENDING", "Chờ cửa hàng xác nhận");
-        options.put("CONFIRMED", "Đã xác nhận");
-        options.put("OUT_FOR_DELIVERY", "Đang giao");
-        options.put("COMPLETED", "Hoàn thành");
-        options.put("CANCELLED", "Đã hủy");
+        for (var stage : java.util.List.of(CustomerOrderStage.WAITING_PAYMENT, CustomerOrderStage.WAITING_CONFIRMATION,
+                CustomerOrderStage.PREPARING, CustomerOrderStage.AWAITING_DELIVERY, CustomerOrderStage.SHIPPING,
+                CustomerOrderStage.COMPLETED, CustomerOrderStage.CANCELLED)) options.put(stage.name(), stage.label());
         model.addAttribute("statusOptions",options);
         return "customer/orders";
     }

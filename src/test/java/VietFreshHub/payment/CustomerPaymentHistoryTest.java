@@ -62,9 +62,33 @@ class CustomerPaymentHistoryTest {
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(998,10), 11), last);
         assertSame(last, service.history(7L, filter));
     }
+    @ParameterizedTest @ValueSource(strings={"WAITING_PAYMENT","WAITING_CONFIRMATION","PREPARING","SHIPPING","AWAITING_DELIVERY","COMPLETED","RETURN_REFUND"})
+    void orderStagesAreNotPaymentFilters(String status) {
+        filter.setStatus(status);
+        assertThrows(IllegalArgumentException.class, () -> service.history(7L, filter));
+        verifyNoInteractions(payments);
+    }
+    @Test void paymentLabelsFollowTheRecordAndActualMethod() {
+        var labels = java.util.Map.of(
+                Payment.Status.PENDING, "Chờ thanh toán", Payment.Status.PROCESSING, "Đang xử lý",
+                Payment.Status.PAID, "Đã thanh toán", Payment.Status.FAILED, "Thanh toán thất bại",
+                Payment.Status.CANCELLED, "Đã hủy giao dịch", Payment.Status.REFUNDED, "Đã hoàn tiền",
+                Payment.Status.PARTIALLY_REFUNDED, "Hoàn tiền một phần");
+        for (var status : Payment.Status.values()) {
+            var online = new PaymentHistoryRow(1L,10L,"VF-10","Online","VNPAY",BigDecimal.TEN,status,null,null);
+            assertEquals(labels.get(status), online.statusLabel());
+            assertEquals(status==Payment.Status.PENDING ? "Chờ thu COD" : labels.get(status), row(status).statusLabel());
+        }
+    }
+    @Test void blankOptionalReferenceIsOmittedAndCodNoteUsesActualMethod() {
+        var blank = new PaymentHistoryRow(1L,10L,"VF-10","COD","COD",BigDecimal.TEN,Payment.Status.PENDING,null,null,"  ");
+        assertNull(blank.transactionReference()); assertTrue(blank.pendingCod());
+        var online = new PaymentHistoryRow(1L,10L,"VF-10","Online","VNPAY",BigDecimal.TEN,Payment.Status.PENDING,null,null);
+        assertFalse(online.pendingCod()); assertFalse(row(Payment.Status.PAID).pendingCod());
+    }
     @Test void codPendingDoesNotClaimMoneyWasCollected() {
-        assertEquals("Chờ thu tiền", row(Payment.Status.PENDING).statusLabel());
-        assertEquals("Đã thanh toán", row(Payment.Status.PAID).statusLabel());
+        assertEquals("Chờ thu COD", row(Payment.Status.PENDING).transactionStatusLabel());
+        assertEquals("Đã thanh toán", row(Payment.Status.PAID).transactionStatusLabel());
         assertEquals(LocalDateTime.of(2026,10,20,10,0), row(Payment.Status.PENDING).createdAtLocal());
         assertNull(row(Payment.Status.PENDING).paidAtLocal());
     }

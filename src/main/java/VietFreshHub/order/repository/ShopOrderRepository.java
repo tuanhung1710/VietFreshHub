@@ -30,6 +30,14 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, Jpa
     @EntityGraph(attributePaths = {"shop", "items.variant.product"})
     List<ShopOrder> findByOrderOrderIdOrderByShopOrderIdAsc(Long orderId);
 
+    // Page IDs are already paginated; fetch one collection only, never paginate a collection fetch.
+    @org.springframework.data.jpa.repository.Query("select distinct s from ShopOrder s join fetch s.shop "
+            + "left join fetch s.items i left join fetch i.variant "
+            + "where s.order.customer.userId=:customerId and s.order.orderId in :orderIds order by s.shopOrderId")
+    List<ShopOrder> findCustomerHistoryShops(
+            @org.springframework.data.repository.query.Param("customerId") Long customerId,
+            @org.springframework.data.repository.query.Param("orderIds") List<Long> orderIds);
+
     boolean existsByOrder_OrderIdAndStatusNot(Long orderId, String status);
 
     long countByShopId(Long shopId);

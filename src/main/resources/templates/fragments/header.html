@@ -20,7 +20,7 @@
     <form th:action="@{/home}" method="get" role="search" class="hidden lg:flex flex-1 min-w-0 max-w-xl mx-space-md">
       <div class="relative w-full flex items-center bg-surface-container-lowest rounded-lg shadow-[0_1px_3px_0_rgba(15,23,42,0.04)] p-1">
         <span class="material-symbols-outlined text-outline ml-space-sm">search</span>
-        <input aria-label="Tìm kiếm trái cây" name="keyword" maxlength="100" th:value="${keyword}" class="w-full min-w-0 bg-transparent px-space-sm py-1.5 text-body-md font-body-md text-on-surface focus:outline-none placeholder:text-outline" placeholder="Tìm kiếm trái cây tươi, bưởi da xanh, xoài cát..." type="search">
+        <input th:if="${category != null and not #strings.isEmpty(category)}" type="hidden" name="category" th:value="${category}"><input aria-label="Tìm kiếm trái cây" name="keyword" maxlength="100" th:value="${keyword}" class="w-full min-w-0 bg-transparent px-space-sm py-1.5 text-body-md font-body-md text-on-surface focus:outline-none placeholder:text-outline" placeholder="Tìm kiếm trái cây tươi, bưởi da xanh, xoài cát..." type="search">
         <button class="bg-primary text-on-primary font-label-md text-label-md px-space-md py-2 rounded-lg hover:bg-primary-container hover:text-on-primary-container transition-colors">Tìm kiếm</button></div></form><nav class="hidden xl:flex items-center gap-space-md shrink-0" data-active-classes="text-primary font-title-md">
     <a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors py-2" data-path="he-thong-cua-hang" href="#">Hệ Thống Cửa Hàng</a></nav>
     <div class="flex items-center gap-space-md shrink-0">

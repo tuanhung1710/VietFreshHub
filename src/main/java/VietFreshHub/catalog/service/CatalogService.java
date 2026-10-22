@@ -10,5 +10,7 @@ public interface CatalogService {
     boolean isPurchasable(CatalogVariant variant);
     Page<CatalogProductResponse> listProducts(int page);
     Page<CatalogProductResponse> listProducts(int page, String keyword);
+    Page<CatalogProductResponse> listProducts(int page, String keyword, String category);
+    java.util.List<VietFreshHub.catalog.dto.CatalogCategoryResponse> categories();
     CatalogProductResponse getProduct(Long variantId, Long productId, String slug);
 }

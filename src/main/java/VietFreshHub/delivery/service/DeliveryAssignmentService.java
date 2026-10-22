@@ -10,6 +10,8 @@ import VietFreshHub.delivery.repository.DeliveryAssignmentRepository;
 import VietFreshHub.delivery.repository.DeliveryRepository;
 import VietFreshHub.delivery.repository.DeliveryStatusHistoryRepository;
 import VietFreshHub.order.service.OrderService;
+import VietFreshHub.order.service.OrderInventoryReleaseService;
+import VietFreshHub.exception.CustomerOrderException;
 import VietFreshHub.shop.service.ShopService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -40,6 +42,7 @@ public class DeliveryAssignmentService {
     private final OrderService orderService;
     private final ApplicationEventPublisher events;
     private final DeliveryNotificationService deliveryNotificationService;
+    private final OrderInventoryReleaseService inventoryRelease;
 
     @Transactional(readOnly = true)
     public List<DeliveryTrackingStaff> getTrackingStaff(Long customerId, Long orderId) {
@@ -168,6 +171,14 @@ public class DeliveryAssignmentService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Cửa hàng đã xác nhận nhận lại hàng.");
         }
 
+        var lines = delivery.getShopOrder().getItems().stream()
+                .map(item -> new OrderInventoryReleaseService.Line(
+                        item.getOrderItemId(), item.getVariant().getVariantId(), item.getQuantity())).toList();
+        try {
+            inventoryRelease.releaseReturnedGoods(lines, managerId);
+        } catch (CustomerOrderException ex) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, ex.getMessage(), ex);
+        }
         assignment.complete();
         deliveryStatusHistoryWriter.record(delivery, managerId, confirmationNote);
         deliveryNotificationService.notifyGoodsReturnConfirmed(assignment);

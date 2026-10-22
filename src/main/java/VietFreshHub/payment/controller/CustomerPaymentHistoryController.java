@@ -2,9 +2,9 @@ package VietFreshHub.payment.controller;
 
 import VietFreshHub.auth.service.CurrentCustomerService;
 import VietFreshHub.order.service.CustomerOrderQueryService;
-import VietFreshHub.order.service.OrderLabels;
 import VietFreshHub.payment.dto.PaymentHistoryFilter;
 import VietFreshHub.payment.entity.Payment;
+import VietFreshHub.order.service.OrderLabels;
 import VietFreshHub.payment.service.CustomerPaymentHistoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +42,8 @@ public class CustomerPaymentHistoryController {
         }
         Map<String,String> options = new LinkedHashMap<>();
         for (Payment.Status status : Payment.Status.values()) {
-            options.put(status.name(), status == Payment.Status.PENDING ? "Chờ thanh toán / thu tiền" : OrderLabels.paymentTransaction(status));
+            options.put(status.name(), status == Payment.Status.PENDING
+                    ? "Chờ thanh toán / Chờ thu COD" : OrderLabels.paymentTransaction(status));
         }
         model.addAttribute("statusOptions", options);
         model.addAttribute("cartBadgeTotal", orders.getCartBadgeTotal(customerId));

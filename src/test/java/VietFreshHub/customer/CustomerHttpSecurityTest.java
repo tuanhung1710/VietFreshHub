@@ -35,7 +35,7 @@ class CustomerHttpSecurityTest {
     }
     @AfterEach void close() { http.close(); }
 
-    @ParameterizedTest @ValueSource(strings={"/cart","/customer/checkout","/customer/orders","/customer/orders/10","/customer/orders/10/tracking","/customer/payments"})
+    @ParameterizedTest @ValueSource(strings={"/cart","/customer/checkout","/customer/orders","/customer/orders/10","/customer/orders/10/confirmation","/customer/orders/10/tracking","/customer/payments"})
     void anonymousGetsLoginBeforeAnyBusinessCall(String path) throws Exception {
         http.mvc.perform(get(path)).andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/login"));
         verifyNoInteractions(cart, checkout, orders, details);
@@ -43,8 +43,10 @@ class CustomerHttpSecurityTest {
     @ParameterizedTest @ValueSource(strings={"ADMIN","STORE_MANAGER","DELIVERY_STAFF"})
     void wrongRoleCannotEnterCustomerPages(String role) throws Exception {
         when(roles.findRoleNamesByUserId(1L)).thenReturn(List.of("ROLE_" + role));
-        http.mvc.perform(get("/customer/orders").with(user("buyer@test.invalid").roles(role))).andExpect(status().isForbidden());
-        http.mvc.perform(get("/customer/payments").with(user("buyer@test.invalid").roles(role))).andExpect(status().isForbidden());
+        for (String path:List.of("/customer/orders","/customer/orders/10","/customer/orders/10/confirmation",
+                "/customer/orders/10/tracking","/customer/payments")) {
+            http.mvc.perform(get(path).with(user("buyer@test.invalid").roles(role))).andExpect(status().isForbidden());
+        }
         for (String path : List.of("/cart/clear", "/customer/checkout", "/customer/orders/10/cancel", "/customer/orders/10/reorder")) {
             http.mvc.perform(post(path).with(user("buyer@test.invalid").roles(role)).with(csrf())).andExpect(status().isForbidden());
         }
@@ -55,9 +57,10 @@ class CustomerHttpSecurityTest {
         http.mvc.perform(post(path).with(user("buyer@test.invalid").roles("CUSTOMER"))).andExpect(status().isForbidden());
         verifyNoInteractions(cart, checkout, orders, details);
     }
-    @Test void invalidCsrfIsRejected() throws Exception {
-        http.mvc.perform(post("/cart/clear").with(user("buyer@test.invalid").roles("CUSTOMER")).with(csrf().useInvalidToken()))
-                .andExpect(status().isForbidden()); verifyNoInteractions(cart);
+    @ParameterizedTest @ValueSource(strings={"/cart/clear","/customer/orders/10/cancel","/customer/orders/10/reorder"})
+    void invalidCsrfIsRejected(String path) throws Exception {
+        http.mvc.perform(post(path).with(user("buyer@test.invalid").roles("CUSTOMER")).with(csrf().useInvalidToken()))
+                .andExpect(status().isForbidden()); verifyNoInteractions(cart,orders);
     }
     @Test void validCsrfUsesServerResolvedCustomerInsteadOfPostedId() throws Exception {
         http.mvc.perform(post("/cart/clear").param("customerId","999").with(user("buyer@test.invalid").roles("CUSTOMER")).with(csrf()))
@@ -73,5 +76,18 @@ class CustomerHttpSecurityTest {
         when(roles.findRoleNamesByUserId(1L)).thenReturn(List.of("ROLE_STORE_MANAGER"));
         http.mvc.perform(get("/customer/orders").with(user("buyer@test.invalid").roles("CUSTOMER")))
                 .andExpect(redirectedUrl("/login?accountRolesChanged=true")); verifyNoInteractions(orders);
+    }
+    @ParameterizedTest @ValueSource(strings={"/customer/orders","/customer/orders/10","/customer/orders/10/tracking","/customer/payments"})
+    void inactiveAccountCannotReadCustomerPages(String path) throws Exception {
+        users.findByEmailIgnoreCase("buyer@test.invalid").orElseThrow().setStatus("BLOCKED");
+        http.mvc.perform(get(path).with(user("buyer@test.invalid").roles("CUSTOMER")))
+                .andExpect(redirectedUrl("/login?accountStatusChanged=true"));
+        verifyNoInteractions(orders,details,cart,checkout);
+    }
+    @ParameterizedTest @ValueSource(strings={"/customer/orders/10/cancel","/customer/orders/10/reorder"})
+    void navigationCannotInvokePostActionsViaGet(String path) throws Exception {
+        http.mvc.perform(get(path).with(user("buyer@test.invalid").roles("CUSTOMER")))
+                .andExpect(status().isMethodNotAllowed());
+        verifyNoInteractions(orders);
     }
 }

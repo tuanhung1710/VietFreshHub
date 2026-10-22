@@ -25,7 +25,12 @@ public class CustomerOrderDetailsController {
     }
     private String render(Long orderId,Authentication authentication,Model model,boolean confirmation) {
         Long customerId=currentCustomer.requireCustomerId(authentication);
-        model.addAttribute("order",orders.getDetails(customerId,orderId));
+        var order=orders.getDetails(customerId,orderId);
+        model.addAttribute("order",order);
+        var tracking=order.shops().isEmpty() ? null : lifecycle.tracking(customerId,orderId);
+        model.addAttribute("trackingShops",tracking==null ? java.util.Map.of() : tracking.shops().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        VietFreshHub.order.dto.OrderTrackingResponse.ShopTracking::shopOrderId,shop -> shop)));
         model.addAttribute("cartBadgeTotal",orders.getCartBadgeTotal(customerId));
         model.addAttribute("confirmation",confirmation);
         model.addAttribute("actions",lifecycle.actions(customerId,orderId));

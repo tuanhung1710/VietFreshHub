@@ -41,7 +41,24 @@ public interface CustomerOrderReadRepository extends Repository<Order, Long> {
         Payment.Status getStatus();
         BigDecimal getAmount();
         LocalDateTime getPaidAt();
+        LocalDateTime getCreatedAt();
+        String getTransactionReference();
     }
+    interface DeliverySummary {
+        Long getShopOrderId();
+        String getStatus();
+        LocalDateTime getAssignedAt();
+        LocalDateTime getPickedUpAt();
+        LocalDateTime getDeliveredAt();
+        LocalDateTime getRedeliveryScheduledAt();
+        String getFailureReason();
+    }
+    @Query("select d.shopOrder.shopOrderId as shopOrderId,d.status as status,d.assignedAt as assignedAt,"
+            + "d.pickedUpAt as pickedUpAt,d.deliveredAt as deliveredAt,d.redeliveryScheduledAt as redeliveryScheduledAt,"
+            + "d.failureReason as failureReason from OrderDeliveryView d "
+            + "where d.shopOrder.order.orderId=:orderId and d.shopOrder.order.customer.userId=:customerId")
+    List<DeliverySummary> findDeliveries(@Param("customerId") Long customerId,@Param("orderId") Long orderId);
+
     @Query("select s.shopOrderId as shopOrderId, s.shop.shopName as shopName, s.status as status, "
             + "s.subtotal as subtotal, s.discountTotal as discountTotal, s.shippingFee as shippingFee, s.totalAmount as totalAmount "
             + "from ShopOrder s where s.order.orderId=:orderId and s.order.customer.userId=:customerId order by s.shopOrderId")
@@ -55,7 +72,7 @@ public interface CustomerOrderReadRepository extends Repository<Order, Long> {
     List<ItemSnapshot> findItems(@Param("customerId") Long customerId, @Param("orderId") Long orderId);
 
     @Query("select p.paymentId as paymentId, p.paymentMethod.name as methodName, p.paymentMethod.methodCode as methodCode, "
-            + "p.status as status, p.amount as amount, p.paidAt as paidAt from Payment p "
+            + "p.status as status, p.amount as amount, p.paidAt as paidAt,p.createdAt as createdAt,p.transactionReference as transactionReference from Payment p "
             + "where p.order.orderId=:orderId and p.order.customer.userId=:customerId order by p.paymentId desc")
     List<PaymentSummary> findPayments(@Param("customerId") Long customerId, @Param("orderId") Long orderId);
 }

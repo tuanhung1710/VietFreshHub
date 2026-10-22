@@ -528,20 +528,31 @@ class CheckoutSqlServerIntegrationTest {
         assertEquals(1, service.history(other.user(), filter).getTotalElements());
     }
 
-    @Test void deliveringFilterUsesShopAndDeliveryStatusEvenWhenParentIsStillPending() {
+    @Test void shippingFilterUsesChildFulfillmentEvenWhenParentIsStale() {
         var buyer = buyer(); cart.addToCart(buyer.user(), new AddToCartRequest(variants.getFirst(), 1));
         var draft = draft(buyer);
         long orderId = checkout(inventory).confirm(buyer.user(), draft, request(buyer, draft)).orderId();
         long childId = jdbc.queryForObject("select shop_order_id from dbo.shop_orders where order_id=?", Long.class, orderId);
         jdbc.update("update dbo.shop_orders set status='OUT_FOR_DELIVERY' where shop_order_id=?", childId);
         long deliveryId = insert("insert dbo.deliveries(shop_order_id,status,failure_reason) values(?,'FAILED',N'Test failure')", childId);
-        var filter = new VietFreshHub.order.dto.CustomerOrderFilterRequest(); filter.setStatus("OUT_FOR_DELIVERY");
-        var service = customerOrders(); assertTrue(service.history(buyer.user(), filter).isEmpty());
+        var filter = new VietFreshHub.order.dto.CustomerOrderFilterRequest(); filter.setStatus("SHIPPING");
+        var service = customerOrders();
+        // Phase 2: failed delivery is unresolved fulfillment, not a return/refund category.
+        assertEquals(List.of(orderId),service.history(buyer.user(),filter).stream().map(VietFreshHub.order.dto.OrderListRow::orderId).toList());
         jdbc.update("update dbo.deliveries set status='OUT_FOR_DELIVERY' where delivery_id=?", deliveryId);
-        assertEquals(List.of(orderId), service.history(buyer.user(), filter).stream().map(VietFreshHub.order.dto.OrderListRow::orderId).toList());
-        jdbc.update("update dbo.orders set status='CANCELLED' where order_id=?", orderId);
-        try { assertTrue(service.history(buyer.user(), filter).isEmpty()); }
-        finally { jdbc.update("update dbo.orders set status='PENDING' where order_id=?", orderId); }
+        assertEquals(List.of(orderId),service.history(buyer.user(),filter).stream().map(VietFreshHub.order.dto.OrderListRow::orderId).toList());
+        jdbc.update("update dbo.orders set status='CANCELLED' where order_id=?",orderId);
+        try {
+            // Child state is authoritative for display; a stale parent cannot hide active fulfillment.
+            assertEquals(List.of(orderId),service.history(buyer.user(),filter).stream().map(VietFreshHub.order.dto.OrderListRow::orderId).toList());
+            jdbc.update("update dbo.shop_orders set status='CANCELLED' where shop_order_id=?",childId);
+            assertTrue(service.history(buyer.user(),filter).isEmpty());
+            filter.setStatus("CANCELLED");
+            assertEquals(List.of(orderId),service.history(buyer.user(),filter).stream().map(VietFreshHub.order.dto.OrderListRow::orderId).toList());
+        } finally {
+            jdbc.update("update dbo.orders set status='PENDING' where order_id=?",orderId);
+            jdbc.update("update dbo.shop_orders set status='OUT_FOR_DELIVERY' where shop_order_id=?",childId);
+        }
     }
     Buyer securedBuyer() {
         var buyer = buyer();
@@ -661,12 +672,16 @@ class CheckoutSqlServerIntegrationTest {
             var page = (org.springframework.data.domain.Page<?>) response.getModelAndView().getModel().get("paymentPage");
             assertEquals(2, page.getTotalElements());
             var paid = (VietFreshHub.payment.dto.PaymentHistoryRow) page.getContent().getFirst();
-            assertEquals(orderId, paid.orderId()); assertEquals("Đã thanh toán", paid.statusLabel());
+            assertEquals(orderId, paid.orderId()); assertEquals("Đã thanh toán", paid.transactionStatusLabel());
             assertEquals(java.time.LocalDateTime.of(2026,10,20,23,59,59), paid.paidAtLocal());
             assertFalse(page.getContent().toString().contains("PRIVATE_PAYLOAD_MUST_NOT_LEAK"));
             var pending = http.mvc.perform(get("/customer/payments").with(customer(buyer)).param("status", "PENDING"))
                     .andExpect(status().isOk()).andReturn();
             assertEquals(1, ((org.springframework.data.domain.Page<?>) pending.getModelAndView().getModel().get("paymentPage")).getTotalElements());
+            var invalid = http.mvc.perform(get("/customer/payments").with(customer(buyer)).param("status","SHIPPING"))
+                    .andExpect(status().isOk()).andReturn().getModelAndView().getModel();
+            assertEquals(true,invalid.get("invalidFilter"));
+            assertTrue(((org.springframework.data.domain.Page<?>)invalid.get("paymentPage")).isEmpty());
             var all = http.mvc.perform(get("/customer/payments").with(customer(buyer)).param("page", "999")
                     .param("fromDate", "0001-01-01").param("toDate", "9999-12-31")).andExpect(status().isOk()).andReturn();
             var last = (org.springframework.data.domain.Page<?>) all.getModelAndView().getModel().get("paymentPage");

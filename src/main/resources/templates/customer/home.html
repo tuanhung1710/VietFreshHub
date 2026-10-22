@@ -21,16 +21,18 @@
             <h2 class="catalog-title" th:if="${#strings.isEmpty(keyword)}">Danh sách sản phẩm</h2></div>
             <p class="muted" th:text="${productPage.totalElements} + ' sản phẩm'"></p>
         </div>
-        <div class="category-chips" aria-label="Tìm theo loại trái cây">
-            <a th:href="@{/home}" th:classappend="${#strings.isEmpty(keyword)} ? 'active'">Tất cả</a>
-            <a th:href="@{/home(keyword='Bưởi')}" th:classappend="${keyword == 'Bưởi'} ? 'active'">Bưởi</a>
-            <a th:href="@{/home(keyword='Sầu riêng')}" th:classappend="${keyword == 'Sầu riêng'} ? 'active'">Sầu riêng</a>
-            <a th:href="@{/home(keyword='Xoài')}" th:classappend="${keyword == 'Xoài'} ? 'active'">Xoài</a>
-            <a th:href="@{/home(keyword='Vải')}" th:classappend="${keyword == 'Vải'} ? 'active'">Vải</a>
-        </div>
+        <nav class="category-chips" aria-label="Lọc theo nhóm sản phẩm">
+            <a th:href="@{/home(keyword=${keyword})} + '#catalog'"
+               th:classappend="${#strings.isEmpty(category)} ? 'active'"
+               th:attr="aria-current=${#strings.isEmpty(category) ? 'true' : null}">Tất cả</a>
+            <a th:each="option : ${categories}" th:text="${option.name}"
+               th:href="@{/home(category=${option.slug},keyword=${keyword})} + '#catalog'"
+               th:classappend="${category == option.slug} ? 'active'"
+               th:attr="aria-current=${category == option.slug ? 'true' : null}"></a>
+        </nav>
         <section th:if="${#lists.isEmpty(products)}" class="panel empty">
             <h2 th:text="${#strings.isEmpty(keyword)} ? 'Chưa có sản phẩm để hiển thị' : 'Không tìm thấy sản phẩm phù hợp'"></h2>
-            <p class="muted">Bạn có thể thử từ khóa khác hoặc xem tất cả sản phẩm.</p><a class="button secondary" th:href="@{/home}">Xem tất cả sản phẩm</a>
+            <p class="muted">Nhóm này hiện chưa có sản phẩm phù hợp. Bạn có thể chọn nhóm khác hoặc xem tất cả sản phẩm.</p><a class="button secondary" th:href="@{/home}">Xem tất cả sản phẩm</a>
         </section>
         <div class="product-grid" aria-label="Danh sách sản phẩm">
             <article th:each="product : ${products}" class="panel product-card">
@@ -51,17 +53,17 @@
         </div>
         <nav th:if="${productPage.totalPages > 1}" class="pagination catalog-pagination" aria-label="Phân trang sản phẩm"
              th:with="current=${productPage.number + 1}, total=${productPage.totalPages}, start=${T(java.lang.Math).max(1, T(java.lang.Math).min(current - 2, total - 4))}, end=${T(java.lang.Math).min(total, start + 4)}">
-            <a th:if="${productPage.hasPrevious()}" class="page-direction" th:href="@{/home(page=${current - 1},keyword=${keyword})} + '#catalog'" aria-label="Trang trước"><span aria-hidden="true">‹</span><span class="page-direction-label">Trang trước</span></a>
+            <a th:if="${productPage.hasPrevious()}" class="page-direction" th:href="@{/home(page=${current - 1},keyword=${keyword},category=${category})} + '#catalog'" aria-label="Trang trước"><span aria-hidden="true">‹</span><span class="page-direction-label">Trang trước</span></a>
             <span th:unless="${productPage.hasPrevious()}" class="page-direction disabled" aria-disabled="true"><span aria-hidden="true">‹</span><span class="page-direction-label">Trang trước</span></span>
-            <a th:if="${start > 1}" class="page-number" th:href="@{/home(page=1,keyword=${keyword})} + '#catalog'">1</a>
+            <a th:if="${start > 1}" class="page-number" th:href="@{/home(page=1,keyword=${keyword},category=${category})} + '#catalog'">1</a>
             <span th:if="${start > 2}" class="page-ellipsis" aria-hidden="true">…</span>
             <th:block th:each="pageNumber : ${#numbers.sequence(start, end)}">
                 <span th:if="${pageNumber == current}" class="page-number active" aria-current="page" th:text="${pageNumber}"></span>
-                <a th:unless="${pageNumber == current}" class="page-number" th:href="@{/home(page=${pageNumber},keyword=${keyword})} + '#catalog'" th:text="${pageNumber}" th:aria-label="'Trang ' + ${pageNumber}"></a>
+                <a th:unless="${pageNumber == current}" class="page-number" th:href="@{/home(page=${pageNumber},keyword=${keyword},category=${category})} + '#catalog'" th:text="${pageNumber}" th:aria-label="'Trang ' + ${pageNumber}"></a>
             </th:block>
             <span th:if="${end < total - 1}" class="page-ellipsis" aria-hidden="true">…</span>
-            <a th:if="${end < total}" class="page-number" th:href="@{/home(page=${total},keyword=${keyword})} + '#catalog'" th:text="${total}"></a>
-            <a th:if="${productPage.hasNext()}" class="page-direction" th:href="@{/home(page=${current + 1},keyword=${keyword})} + '#catalog'" aria-label="Trang tiếp"><span class="page-direction-label">Trang tiếp</span><span aria-hidden="true">›</span></a>
+            <a th:if="${end < total}" class="page-number" th:href="@{/home(page=${total},keyword=${keyword},category=${category})} + '#catalog'" th:text="${total}"></a>
+            <a th:if="${productPage.hasNext()}" class="page-direction" th:href="@{/home(page=${current + 1},keyword=${keyword},category=${category})} + '#catalog'" aria-label="Trang tiếp"><span class="page-direction-label">Trang tiếp</span><span aria-hidden="true">›</span></a>
             <span th:unless="${productPage.hasNext()}" class="page-direction disabled" aria-disabled="true"><span class="page-direction-label">Trang tiếp</span><span aria-hidden="true">›</span></span>
         </nav>
     </section>

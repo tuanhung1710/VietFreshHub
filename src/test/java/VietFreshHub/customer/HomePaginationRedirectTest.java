@@ -12,6 +12,8 @@ class HomePaginationRedirectTest {
         mvc.perform(get("/home").param("page", "2").param("keyword", "xoai"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/customer/home?page=2&keyword=xoai"));
+        mvc.perform(get("/home").param("page", "2").param("keyword", "tao").param("category", "trai-cay-nhap-khau"))
+                .andExpect(redirectedUrl("/customer/home?page=2&category=trai-cay-nhap-khau&keyword=tao"));
         mvc.perform(get("/home").param("page", "2"))
                 .andExpect(redirectedUrl("/customer/home?page=2"));
     }

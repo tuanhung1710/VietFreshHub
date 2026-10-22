@@ -46,6 +46,10 @@ class CustomerHeaderViewTest {
             int count = Math.max(0, Math.min(12, total - (page - 1) * 12));
             model.addAttribute("products", List.of());
             model.addAttribute("keyword", "xoài");
+            model.addAttribute("category", "trai-cay-nhap-khau");
+            model.addAttribute("categories", List.of(
+                    new VietFreshHub.catalog.dto.CatalogCategoryResponse("trai-cay-nhap-khau", "Trái cây nhập khẩu"),
+                    new VietFreshHub.catalog.dto.CatalogCategoryResponse("qua-tang-trai-cay", "Giỏ quà trái cây")));
             model.addAttribute("productPage", new org.springframework.data.domain.PageImpl<>(
                     java.util.Collections.nCopies(count, "product"), org.springframework.data.domain.PageRequest.of(page - 1, 12), total));
             return "customer/home";
@@ -80,6 +84,10 @@ class CustomerHeaderViewTest {
             assertTrue(html.contains("VIETFRESH HUB"));
             String first = mvc.perform(get("/catalog")).andReturn().getResponse().getContentAsString();
             assertTrue(first.contains("page=2"));
+            assertTrue(first.contains("Trái cây nhập khẩu"));
+            assertTrue(first.contains("Giỏ quà trái cây"));
+            assertTrue(first.contains("category=trai-cay-nhap-khau"));
+            assertTrue(first.contains("name=\"category\""));
             assertTrue(first.contains("aria-current=\"page\">1</span>"));
             assertFalse(first.contains("customer-taskbar"));
             String second = mvc.perform(get("/catalog").param("page", "2")).andReturn().getResponse().getContentAsString();
