@@ -114,6 +114,9 @@
                          class="mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800">
                         Bạn đã đăng xuất thành công.
                     </div>
+                    <div th:if="${successMessage}"
+                         class="mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800"
+                         role="status" th:text="${successMessage}"></div>
                     <!-- Spring Security CSRF Hidden Input -->
 <!--                    <input name="_csrf" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" type="hidden" value="c92e92c2-8703-4927-b648-csrf-token-sample">-->
                     <!-- Email Input Group -->
@@ -133,7 +136,7 @@
                     <div class="flex flex-col gap-1.5">
                         <div class="flex items-center justify-between">
                             <label class="font-title-md text-title-md text-on-surface" for="password">Mật khẩu</label>
-                            <a class="font-label-md text-label-md text-primary hover:text-primary-container transition-colors hover:underline" data-path="quen-mat-khau" href="#">
+                            <a class="font-label-md text-label-md text-primary hover:text-primary-container transition-colors hover:underline" data-path="quen-mat-khau" th:href="@{/forgot-password}">
                                 Quên mật khẩu?
                             </a>
                         </div>
@@ -190,6 +193,13 @@
                     <a class="font-title-md text-title-md text-primary hover:text-primary-container hover:underline ml-1 inline-flex items-center gap-0.5" data-path="dang-ky" href="register">
                         <span class="">Đăng ký ngay</span>
                         <span class="material-symbols-outlined text-base">arrow_forward</span>
+                    </a>
+                </div>
+                <div class="mt-space-sm text-center">
+                    <a class="font-title-md text-title-md text-primary hover:text-primary-container hover:underline inline-flex items-center gap-1"
+                       th:href="@{/seller-onboarding/register}">
+                        <span class="material-symbols-outlined text-base">storefront</span>
+                        <span>Đăng ký bán hàng</span>
                     </a>
                 </div>
                 <!-- Privacy & Security Guarantee Footer Notice -->

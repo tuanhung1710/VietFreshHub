@@ -493,13 +493,6 @@
                         th:replace="~{fragments/product-inventory :: productStatus(${r})}"
                       ></span>
                     </div>
-                    <details
-                      class="vf-catalog-reason"
-                      th:if="${r.managementState.code == 'unavailable' or r.managementState.code == 'violation'}"
-                    >
-                      <summary>Lý do</summary>
-                      <p th:text="${r.managementState.reason}"></p>
-                    </details>
                   </td>
                   <td>
                     <button
@@ -643,7 +636,7 @@
                               <th scope="col">Phân loại</th>
                               <th scope="col">SKU</th>
                               <th scope="col" class="text-end">Giá bán</th>
-                              <th scope="col" class="text-end">Giá gốc</th>
+                              <th scope="col" class="text-end">Giá trước giảm</th>
                               <th scope="col" class="text-end">Khả dụng</th>
                               <th scope="col">Cấu hình phân loại</th>
                               <th scope="col">Thao tác</th>

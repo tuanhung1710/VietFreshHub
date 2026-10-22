@@ -30,6 +30,8 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, Jpa
     @EntityGraph(attributePaths = {"shop", "items.variant.product"})
     List<ShopOrder> findByOrderOrderIdOrderByShopOrderIdAsc(Long orderId);
 
+    boolean existsByOrder_OrderIdAndStatusNot(Long orderId, String status);
+
     long countByShopId(Long shopId);
 
     long countByShopIdAndStatus(Long shopId, String status);

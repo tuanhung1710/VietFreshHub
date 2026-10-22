@@ -14,7 +14,7 @@ import java.util.*;
 
 @Service @RequiredArgsConstructor
 public class OrderInventoryReleaseService {
-    public record Line(Long orderItemId,Long variantId,int quantity) {}
+    public record Line(Long orderItemId,Long variantId,int quantity,boolean reservationRequired) {}
 
     private final EntityManager em;
     @Transactional(propagation=Propagation.MANDATORY)
@@ -37,7 +37,11 @@ public class OrderInventoryReleaseService {
             held.merge(new Key(line.orderItemId(),allocation.getBatch().getBatchId()),
                     allocation.getStatus()==CheckoutStockAllocation.Status.RESERVED ? allocation.getQuantity().longValue() : 0L,Long::sum);
         }
-        for(Line line:lines) if(allocatedByItem.getOrDefault(line.orderItemId(),0L)!=line.quantity()) throw invalid();
+        for(Line line:lines) {
+            long allocated=allocatedByItem.getOrDefault(line.orderItemId(),0L);
+            if(allocated==0 && !line.reservationRequired()) continue;
+            if(allocated!=line.quantity()) throw invalid();
+        }
         // Allocation is the source of truth; audit must agree before any stock is released.
         var movements=em.createQuery("select m from CheckoutStockMovement m where m.referenceType='ORDER_ITEM' "
                         +"and m.referenceId in :ids and m.transactionType in ('RESERVE','RELEASE','SALE')",CheckoutStockMovement.class)

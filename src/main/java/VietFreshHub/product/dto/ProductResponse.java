@@ -32,6 +32,14 @@ public class ProductResponse {
     private BigDecimal minComparePrice;
     private BigDecimal maxComparePrice;
 
+    // Use all variants/lots, even when the inventory screen is filtered to one SKU or lot.
+    public long getExpiredDisposableBatchCount() {
+        if (variants == null) return 0;
+        return variants.stream().filter(v -> v.getBatches() != null)
+                .flatMap(v -> v.getBatches().stream()).filter(VietFreshHub.inventory.dto.BatchResponse::isCanDispose)
+                .count();
+    }
+
     public boolean isCanDelete() {
         return product.getStatus() != VietFreshHub.product.enums.ProductStatus.DELETED
                 && variants != null && variants.stream().noneMatch(v -> v.getReserved() > 0);

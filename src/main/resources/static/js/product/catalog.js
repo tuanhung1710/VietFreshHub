@@ -1,9 +1,8 @@
 "use strict";
 
 (() => {
-    // Selection is independent of the rendered page. The existing service still
-    // checks ownership, capabilities and the 50-product transaction limit.
-    function createSelection(maximum = 50) {
+    // Selection is presentation state. Limits and permissions are checked by the service.
+    function createSelection() {
         const items = new Map();
         function normalize(item) {
             if (!item || !/^[1-9]\d{0,18}$/.test(String(item.id))) return null;
@@ -24,14 +23,11 @@
                 const entry = normalize(item);
                 if (!entry) return false;
                 if (!checked) { items.delete(entry.id); return true; }
-                if (!items.has(entry.id) && items.size >= maximum) return false;
                 items.set(entry.id, entry);
                 return true;
             },
             selectPage(entries, checked) {
                 const valid = entries.map(normalize).filter(Boolean);
-                const newIds = new Set(valid.filter(item => !items.has(item.id)).map(item => item.id));
-                if (checked && items.size + newIds.size > maximum) return false;
                 valid.forEach(item => {
                     if (checked) items.set(item.id, item);
                     else items.delete(item.id);
@@ -124,11 +120,10 @@
         const target = event.target;
         if (!target.matches("[data-vf-select-all], [data-vf-select-product]")) return;
         selectionError();
-        const accepted = target.matches("[data-vf-select-all]")
+        target.matches("[data-vf-select-all]")
             ? selection.selectPage(checksOnPage().map(readItem), target.checked)
             : selection.select(readItem(target), target.checked);
         manualMode = false;
-        if (!accepted) selectionError("Tối đa 50 sản phẩm mỗi lần thao tác. Bỏ bớt lựa chọn trước khi chọn thêm hoặc chọn cả trang.");
         updateSelection();
     });
     page.addEventListener("click", event => {
@@ -146,13 +141,6 @@
             (start.hidden ? filterForm.elements.namedItem("q") : start)?.focus({preventScroll: true});
         }
     });
-    page.addEventListener("vf:list-updated", () => {
-        // Restore visible checks from the full selection, including off-page items.
-        selectionError();
-        updateSelection();
-        updateAdvancedIndicator();
-    });
-
     function syncReturnFilters(form) {
         for (const [name, value] of new FormData(filterForm)) {
             const input = form.elements.namedItem(name);

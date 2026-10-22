@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -23,18 +24,19 @@ public class SellerApplicationController {
     private final SellerApplicationService applicationService;
     private final UserRepository userRepository;
 
-    @GetMapping("/customer/apply")
-    public String showForm(Authentication authentication, Model model) {
+    @GetMapping({"/customer/apply", "/seller-onboarding/apply"})
+    public String showForm(Authentication authentication, Model model, HttpServletRequest request) {
         User user = getCurrentUser(authentication);
 
         model.addAttribute("applicant", user);
         model.addAttribute("sellerApplicationForm", new SellerApplicationForm());
+        model.addAttribute("applicationAction", applicationAction(request));
 
         return "customer/application";
     }
 
     @PostMapping(
-            value = "/customer/apply",
+            value = {"/customer/apply", "/seller-onboarding/apply"},
             consumes = "multipart/form-data"
     )
     public String submit(
@@ -43,9 +45,11 @@ public class SellerApplicationController {
             BindingResult bindingResult,
             Authentication authentication,
             Model model,
-            RedirectAttributes redirectAttributes
+            RedirectAttributes redirectAttributes,
+            HttpServletRequest request
     ) {
         User user = getCurrentUser(authentication);
+        String applicationAction = applicationAction(request);
 
         if (form.getIdentityCard() == null || form.getIdentityCard().isEmpty()) {
             bindingResult.rejectValue(
@@ -66,6 +70,7 @@ public class SellerApplicationController {
 
         if (bindingResult.hasErrors()) {
             model.addAttribute("applicant", user);
+            model.addAttribute("applicationAction", applicationAction);
             return "customer/application";
         }
 
@@ -74,6 +79,7 @@ public class SellerApplicationController {
         } catch (IllegalArgumentException | IOException e) {
             bindingResult.reject("uploadError", e.getMessage());
             model.addAttribute("applicant", user);
+            model.addAttribute("applicationAction", applicationAction);
             return "customer/application";
         }
 
@@ -82,12 +88,14 @@ public class SellerApplicationController {
                 "Hồ sơ đã được gửi để xét duyệt."
         );
 
-        return "redirect:/customer/apply/success";
+        return request.getServletPath().startsWith("/seller-onboarding/")
+                ? "redirect:/customer/seller-applications"
+                : "redirect:/customer/apply/success";
     }
 
     @GetMapping("/customer/apply/success")
     public String showSuccessPage() {
-        return "customer/home";
+        return "redirect:/customer/home";
     }
 
     private User getCurrentUser(Authentication authentication) {
@@ -95,5 +103,11 @@ public class SellerApplicationController {
                 .orElseThrow(() -> new IllegalStateException(
                         "Không tìm thấy tài khoản đang đăng nhập"
                 ));
+    }
+
+    private String applicationAction(HttpServletRequest request) {
+        return request.getServletPath().startsWith("/seller-onboarding/")
+                ? "/seller-onboarding/apply"
+                : "/customer/apply";
     }
 }

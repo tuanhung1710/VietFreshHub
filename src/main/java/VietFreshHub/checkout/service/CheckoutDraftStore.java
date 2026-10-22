@@ -20,10 +20,15 @@ public class CheckoutDraftStore {
             for(CheckoutDraft existing:drafts.values()) {
                 if(customerId.equals(existing.customerId()) && Objects.equals(preview.cart().getCartId(),existing.cartId())
                         && preview.fingerprint().equals(existing.fingerprint())
-                        && Objects.equals(preview.shippingFeePerShop(),existing.shippingFeePerShop())) return existing;
+                        && Objects.equals(preview.addressId(),existing.addressId())
+                        && preview.shopQuotes().equals(existing.shopQuotes())
+                        && Objects.equals(preview.shippingFee(),existing.shippingFee())
+                        && preview.cart().getItems().stream().map(VietFreshHub.cart.dto.CartItemDto::getCartItemId).sorted().toList()
+                                .equals(existing.selectedItemIds())) return existing;
             }
             String token=UUID.randomUUID().toString().replace("-","");
-            CheckoutDraft draft=new CheckoutDraft(token,customerId,preview.cart().getCartId(),preview.fingerprint(),preview.shippingFeePerShop(),
+            CheckoutDraft draft=new CheckoutDraft(token,customerId,preview.cart().getCartId(),preview.fingerprint(),preview.addressId(),
+                    preview.shopQuotes(),preview.shippingFee(),
                     preview.cart().getItems().stream().map(VietFreshHub.cart.dto.CartItemDto::getCartItemId).sorted().toList());
             drafts.put(token,draft);
             while(drafts.size()>MAX_DRAFTS) drafts.remove(drafts.keySet().iterator().next());

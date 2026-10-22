@@ -41,9 +41,12 @@
                     </a>
                 </li>
                 <li th:if="${row.canDispose}">
-                    <a class="dropdown-item text-danger" th:href="@{/seller/inventory/batches/{id}/dispose(id=${row.batch.batchId})}">
-                        <svg class="vf-icon" aria-hidden="true"><use href="#vf-trash"/></svg><span>Ghi nhận hủy hàng hết hạn</span>
-                    </a>
+                    <form class="m-0" th:action="@{/seller/inventory/batches/{id}/dispose(id=${row.batch.batchId})}" method="post">
+                        <button type="submit" class="dropdown-item text-danger">
+                            <svg class="vf-icon" aria-hidden="true"><use href="#vf-trash"/></svg>
+                            <span th:text="${'Hủy '+row.disposableQuantity+' '+row.unit+' hết hạn'}">Hủy hàng hết hạn</span>
+                        </button>
+                    </form>
                 </li>
                 <li th:if="${showMarkdown}">
                     <a class="dropdown-item" th:href="@{/seller/inventory/batches/{id}/markdown(id=${row.batch.batchId})}">

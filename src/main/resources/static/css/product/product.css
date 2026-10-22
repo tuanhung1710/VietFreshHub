@@ -342,6 +342,39 @@
     max-width: 100%;
 }
 
+.vf-variant-image-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 12px;
+}
+
+.vf-variant-image-controls > .form-label {
+    min-width: 0;
+    margin: 0;
+}
+
+.vf-variant-image-controls .form-control {
+    margin-top: 4px;
+    min-width: 0;
+}
+
+.vf-variant-image-controls .form-control,
+.vf-variant-image-controls .copy-image {
+    height: 36px;
+    min-height: 36px;
+}
+
+@media (max-width: 767px) {
+    .vf-variant-image-controls {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .vf-variant-image-controls .copy-image {
+        width: 100%;
+    }
+}
+
 .initial-stock {
     background: #f1f5f9;
     border-radius: 8px;

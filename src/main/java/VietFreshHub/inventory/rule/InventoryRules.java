@@ -7,6 +7,7 @@ import VietFreshHub.product.exception.CatalogException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -16,6 +17,7 @@ import java.time.temporal.ChronoUnit;
 public final class InventoryRules {
 
     public static final ZoneId SHOP_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    public static final String EXPIRED_DISPOSAL_REASON = "Hủy toàn bộ hàng hết hạn chưa giữ cho đơn hàng.";
     private static final BigDecimal MINIMUM_PRICE = new BigDecimal("10000");
 
     private InventoryRules() {
@@ -103,6 +105,20 @@ public final class InventoryRules {
         return value.trim();
     }
 
+    public static LocalDate resolveExpiryDate(LocalDate receivedDate, Integer shelfLifeDays, LocalDate expiryDate) {
+        if (shelfLifeDays == null) return expiryDate;
+        require(receivedDate != null, "Chọn ngày nhập kho để tính hạn sử dụng.");
+        require(shelfLifeDays >= 0, "Số ngày bảo quản phải lớn hơn hoặc bằng 0.");
+        try {
+            LocalDate calculated = receivedDate.plusDays(shelfLifeDays);
+            require(calculated.getYear() >= 1 && calculated.getYear() <= 9999,
+                    "Hạn sử dụng vượt giới hạn cho phép.");
+            return calculated;
+        } catch (DateTimeException exception) {
+            throw new CatalogException("Hạn sử dụng vượt giới hạn cho phép.");
+        }
+    }
+
     public static void dates(LocalDate receivedDate, LocalDate expiryDate, LocalDate date) {
         require(
                 receivedDate != null && !receivedDate.isAfter(date),
@@ -125,6 +141,11 @@ public final class InventoryRules {
                 nextQuantity >= batch.getReservedQuantity() && nextQuantity <= Integer.MAX_VALUE,
                 "Tồn kho sau điều chỉnh không được thấp hơn số lượng đã giữ cho đơn hàng hoặc vượt giới hạn cho phép.");
         return (int) nextQuantity;
+    }
+
+    public static int disposableQuantity(InventoryBatch batch, LocalDate date) {
+        if (!expired(batch, date) || batch.getQuantityOnHand() == null || batch.getReservedQuantity() == null) return 0;
+        return Math.max(0, batch.getQuantityOnHand() - batch.getReservedQuantity());
     }
 
     public static int disposedQuantity(InventoryBatch batch, int quantity, LocalDate date) {

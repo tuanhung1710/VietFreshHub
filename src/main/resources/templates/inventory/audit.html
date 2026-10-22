@@ -19,7 +19,7 @@
                                placeholder="Nội dung, sản phẩm, SKU hoặc mã lô" maxlength="200">
                     </div>
                     <div>
-                        <label class="form-label" for="activity-action">Loại hoạt động</label>
+                        <label class="form-label" for="activity-action">Hoạt động</label>
                         <select class="form-select" id="activity-action" data-vf-fit-select="250" name="action">
                             <option value="">Tất cả hoạt động</option>
                             <option th:each="a : ${activityActions}" th:value="${a.key}" th:text="${a.value}"
@@ -66,8 +66,8 @@
                             <tr>
                                 <th scope="col">Thời gian</th>
                                 <th scope="col">Hoạt động</th>
-                                <th scope="col">Nội dung liên quan</th>
-                                <th scope="col">Lý do / Thông tin liên quan</th>
+                                <th scope="col">Nội dung</th>
+                                <th scope="col">Ghi chú</th>
                             </tr>
                         </thead>
                         <tbody>

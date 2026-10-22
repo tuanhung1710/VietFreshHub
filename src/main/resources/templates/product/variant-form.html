@@ -39,7 +39,6 @@
                 </div>
                 <div
                     class="variant-row"
-                    th:attr="data-auto-sku=${variantId==null},data-product-name=${row.product.name}"
                 >
                     <h2 class="h5 mb-3">
                         Thông tin phân loại
@@ -59,14 +58,14 @@
                             >
                         </label>
                         <label class="col-md-6 form-label"  for="sku">
-                            SKU (để trống để cấp tự động)
+                            <span th:text="${variantId==null?'SKU (tự động cấp khi lưu)':'SKU'}"></span>
                             <input
                                 class="form-control mt-1 sku-input"
                                 id="sku"
                                 th:field="*{sku}"
                                 maxlength="100"
                                 placeholder="Tự động cấp khi lưu"
-                                th:readonly="${variantId!=null}"
+                                readonly
                             >
                         </label>
                         <div class="col-12 image-picker">
@@ -114,7 +113,7 @@
                             >
                         </label>
                         <label class="col-md-6 form-label" for="compareAtPrice">
-                            Giá gốc (đ)
+                            Giá trước giảm (đ)
                             <input
                                 class="form-control mt-1"
                                 id="compareAtPrice"
@@ -217,6 +216,7 @@
                             Số ngày bảo quản
                             <input
                                 class="form-control mt-1 batch-shelf-life-days"
+                                th:field="*{shelfLifeDays}"
                                 type="number"
                                 min="0"
                                 step="1"
@@ -236,7 +236,7 @@
                             >
                         </label>
                         <p class="col-12 small text-body-secondary mb-0">
-                            Hạn sử dụng = ngày nhập kho + số ngày bảo quản. Bạn có thể chọn trực tiếp hạn sử dụng. Nếu nhập 0, hạn sử dụng trùng với ngày nhập kho.
+                            Khi lưu, hạn sử dụng được tính bằng ngày nhập kho + số ngày bảo quản (0 là trong ngày nhập). Để trống số ngày nếu chọn hạn sử dụng trực tiếp.
                         </p>
                     </div>
                 </div>

@@ -29,9 +29,12 @@
                 </p>
                 <h1 class="h4" th:text="${row.productName}">
                 </h1>
-                <h2 class="h5 mb-3" th:text="${'Lô hàng ' + row.batch.batchCode}">
-                </h2>
-                <button type="button" class="vf-copy-sku mb-3" th:attr="data-vf-copy-code=${row.batch.batchCode},aria-label=${'Sao chép mã lô '+row.batch.batchCode}">Sao chép mã lô</button>
+                <div class="d-flex flex-wrap align-items-center gap-1 mb-3">
+                    <h2 class="h5 mb-0" th:text="${'Lô hàng ' + row.batch.batchCode}">
+                    </h2>
+                    <button type="button" class="vf-copy-sku no-print"
+                            th:attr="data-vf-copy-code=${row.batch.batchCode},aria-label=${'Sao chép mã lô '+row.batch.batchCode}">Sao chép</button>
+                </div>
                 <dl class="row mb-0">
                     <dt class="col-5">Phân loại</dt>
                     <dd class="col-7 text-break" th:text="${row.variantName}"></dd>
@@ -108,7 +111,7 @@
                                     Số lượng
                                 </th>
                                 <th scope="col">
-                                    Trạng thái phân bổ
+                                    Trạng thái
                                 </th>
                             </tr>
                         </thead>

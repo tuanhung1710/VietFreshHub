@@ -4,7 +4,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Immutable;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Nationalized;
+import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 @Entity @Table(schema="dbo",name="delivery_status_history") @Immutable
 @Getter @Setter @NoArgsConstructor
@@ -14,5 +16,6 @@ public class OrderDeliveryHistoryView {
     @Column(nullable=false,length=30) private String status;
     @Column(name="changed_by") private Long changedBy;
     @Nationalized @Column(length=1000) private String note;
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     @Column(name="created_at",nullable=false) private LocalDateTime createdAt;
 }

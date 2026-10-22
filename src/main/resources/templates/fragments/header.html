@@ -21,10 +21,7 @@
         <button class="bg-primary text-on-primary font-label-md text-label-md px-space-md py-2 rounded-lg hover:bg-primary-container hover:text-on-primary-container transition-colors">Tìm kiếm</button></div></div><nav class="hidden xl:flex items-center gap-space-md shrink-0" data-active-classes="text-primary font-title-md">
     <a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors py-2" data-path="he-thong-cua-hang" href="#">Hệ Thống Cửa Hàng</a></nav>
     <div class="flex items-center gap-space-md shrink-0">
-      <a class="relative flex items-center justify-center p-2 rounded-full hover:bg-surface-container hover:text-on-surface text-on-surface-variant transition-colors" data-path="thong-bao" href="#" title="Thông báo">
-        <span class="material-symbols-outlined text-2xl">notifications</span>
-        <span class="absolute top-0.5 right-0.5 min-w-[20px] h-[20px] px-1 bg-tertiary text-on-tertiary text-label-sm font-label-md rounded-full flex items-center justify-center">2</span>
-      </a>
+      <span th:replace="~{fragments/notifications :: bell}"></span>
       <a class="relative flex items-center justify-center p-2 rounded-full hover:bg-surface-container hover:text-on-surface text-on-surface-variant transition-colors" data-path="gio-hang" th:href="@{/cart}" title="Giỏ hàng">
         <span class="material-symbols-outlined text-2xl">shopping_cart</span>
         <span class="absolute 0 top-0.5 right-0.5 min-w-[20px] h-[20px] px-1 bg-tertiary text-on-tertiary text-label-sm font-label-md rounded-full flex items-center justify-center" th:text="${cart != null ? cart.totalItems : 0}">0</span></a>

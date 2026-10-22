@@ -34,6 +34,7 @@
                 method="post"
                 class="form-stack"
             >
+                <button type="submit" class="visually-hidden" tabindex="-1">Lưu sản phẩm</button>
                 <div th:replace="~{fragments/product-inventory :: errors}">
                 </div>
 
@@ -41,9 +42,7 @@
                     <h2 class="h5 mb-1">
                         Thông tin cơ bản
                     </h2>
-                    <p class="small text-body-secondary mb-4">
-                        Ảnh và tên giúp khách hàng nhận biết sản phẩm của cửa hàng.
-                    </p>
+
                     <div class="row g-3">
                         <label class="col-12 form-label" for="name">
                             Tên sản phẩm
@@ -61,7 +60,7 @@
                             <small class="field-error text-danger" th:errors="*{name}">
                             </small>
                         </label>
-                        <label class="col-md-6 form-label" for="categoryId">
+                        <label class="col-md-4 form-label" for="categoryId">
                             Danh mục
                             <span class="text-danger">
                                 *
@@ -83,7 +82,7 @@
                                 </option>
                             </select>
                         </label>
-                        <div class="col-md-6 image-picker">
+                        <div class="col-md-8 image-picker">
                             <label class="form-label w-100" for="imageUrl">
                                 Ảnh sản phẩm
                                 <span class="text-danger">
@@ -132,7 +131,8 @@
                         <h2 class="h5 mb-0">
                             Thông tin bán hàng
                         </h2>
-                        <button type="button" id="add-variant" class="btn btn-outline-success btn-sm">
+                        <button type="submit" id="add-variant" class="btn btn-outline-success btn-sm"
+                                th:formaction="@{/seller/products/draft}" formnovalidate name="addVariant" value="true">
                             Thêm phân loại
                         </button>
                     </div>
@@ -145,17 +145,18 @@
                             class="variant-row border rounded-3 p-3 bg-body-tertiary"
                             th:each="v,s : *{variants}"
                             th:attr="data-index=${s.index}"
-                            data-auto-sku="true"
                         >
                             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                                 <h3 class="h6 mb-0" th:text="${'Phân loại '+(s.index+1)}">
                                 </h3>
-                                <button class="remove-variant btn btn-outline-danger btn-sm" type="button">
+                                <button class="remove-variant btn btn-outline-danger btn-sm" type="submit"
+                                        th:formaction="@{/seller/products/draft}" formnovalidate
+                                        name="removeVariant" th:value="${s.index}">
                                     Xóa phân loại
                                 </button>
                             </div>
                             <div class="row g-3">
-                                <label class="col-12 form-label">
+                                <label class="col-md-12 form-label">
                                     Tên phân loại
                                     <span class="text-danger">
                                         *
@@ -168,39 +169,42 @@
                                         required
                                     >
                                 </label>
-                                <label class="col-md-6 form-label">
-                                    SKU (để trống để cấp tự động)
-                                    <input
-                                        class="form-control mt-1 sku-input"
-                                        th:field="*{variants[__${s.index}__].sku}"
-                                        maxlength="100"
-                                        placeholder="Tự động cấp khi lưu"
-                                    >
-                                </label>
+<!--                                <label class="col-md-5 form-label">-->
+<!--                                    SKU (tự động cấp khi lưu)-->
+<!--                                    <input-->
+<!--                                        class="form-control mt-1 sku-input"-->
+<!--                                        th:field="*{variants[__${s.index}__].sku}"-->
+<!--                                        maxlength="100"-->
+<!--                                        placeholder="Tự động cấp khi lưu"-->
+<!--                                        readonly-->
+<!--                                    >-->
+<!--                                </label>-->
                                 <div class="col-12 image-picker">
-                                    <label class="form-label w-100">
-                                        Ảnh phân loại
-                                        <span class="text-danger">
-                                            *
-                                        </span>
-                                        <input
-                                            class="form-control mt-1 image-url"
-                                            th:field="*{variants[__${s.index}__].thumbnailUrl}"
-                                            maxlength="1000"
-                                            required
-                                        >
-                                    </label>
-                                    <div class="d-flex flex-wrap align-items-end gap-2">
-                                        <label class="form-label mb-0 small text-body-secondary vf-image-upload-label">
+                                    <div class="vf-variant-image-controls">
+                                        <label class="form-label">
+                                            Ảnh phân loại
+                                            <span class="text-danger">
+                                                *
+                                            </span>
+                                            <input
+                                                class="form-control image-url"
+                                                th:field="*{variants[__${s.index}__].thumbnailUrl}"
+                                                maxlength="1000"
+                                                required
+                                            >
+                                        </label>
+                                        <label class="form-label small text-body-secondary vf-image-upload-label">
                                             Tải ảnh JPG hoặc PNG, tối đa 1 MB
                                             <input
-                                                class="form-control form-control-sm image-upload"
+                                                class="form-control image-upload"
                                                 type="file"
                                                 accept="image/jpeg,image/png"
                                             >
                                         </label>
                                         <button
-                                            type="button"
+                                            type="submit"
+                                            th:formaction="@{/seller/products/draft}" formnovalidate
+                                            name="useProductImage" th:value="${s.index}"
                                             class="copy-image btn btn-outline-secondary btn-sm"
                                         >
                                             Dùng ảnh sản phẩm
@@ -228,7 +232,7 @@
                                     >
                                 </label>
                                 <label class="col-md-6 form-label">
-                                    Giá gốc (đ)
+                                    Giá trước giảm (đ)
                                     <input
                                         class="form-control mt-1"
                                         type="number"
@@ -237,7 +241,17 @@
                                         th:field="*{variants[__${s.index}__].compareAtPrice}"
                                     >
                                 </label>
-                                <label class="col-md-4 form-label">
+                                <label class="col-md-5 form-label">
+                                    Định lượng bán
+                                    <input
+                                            class="form-control mt-1"
+                                            type="number"
+                                            min="0.001"
+                                            step="0.001"
+                                            th:field="*{variants[__${s.index}__].weight}"
+                                    >
+                                </label>
+                                <label class="col-md-2 form-label">
                                     Đơn vị bán
                                     <span class="text-danger">
                                         *
@@ -254,17 +268,7 @@
                                         </option>
                                     </select>
                                 </label>
-                                <label class="col-md-4 form-label">
-                                    Đơn vị
-                                    <input
-                                        class="form-control mt-1"
-                                        type="number"
-                                        min="0.001"
-                                        step="0.001"
-                                        th:field="*{variants[__${s.index}__].weight}"
-                                    >
-                                </label>
-                                <label class="col-md-4 form-label">
+                                <label class="col-md-5 form-label">
                                     Mức tồn kho cảnh báo
                                     <input
                                         class="form-control mt-1"
@@ -331,6 +335,7 @@
                                     Số ngày bảo quản
                                     <input
                                         class="form-control mt-1 batch-shelf-life-days"
+                                        th:field="*{variants[__${s.index}__].shelfLifeDays}"
                                         type="number"
                                         min="0"
                                         step="1"
@@ -350,7 +355,7 @@
                                     >
                                 </label>
                                 <p class="col-12 small text-body-secondary mb-0">
-                                    Hạn sử dụng = ngày nhập kho + số ngày bảo quản. Bạn có thể chọn trực tiếp hạn sử dụng. Nếu nhập 0, hạn sử dụng trùng với ngày nhập kho.
+                                    Khi lưu, hạn sử dụng được tính bằng ngày nhập kho + số ngày bảo quản (0 là trong ngày nhập). Để trống số ngày nếu chọn hạn sử dụng trực tiếp.
                                 </p>
                             </div>
                         </section>
@@ -378,7 +383,7 @@
                         <small class="field-error text-danger" th:errors="*{expiryWarningDays}"></small>
                     </label>
                     <p class="small text-body-secondary mb-4" id="expiryWarningDaysHelp">
-                        Cài đặt riêng cho sản phẩm, áp dụng cho mọi lô hàng của các phân loại. Mặc định 3 ngày; nhập 0 để nhắc trong ngày hết hạn. Mốc nhắc không thay đổi hạn sử dụng hoặc giá giảm của lô hàng.
+                        Cài đặt riêng cho sản phẩm, áp dụng cho mọi lô hàng của các phân loại. Mặc định 3 ngày; Mốc nhắc không thay đổi hạn sử dụng hoặc giá giảm của lô hàng.
                     </p>
                     <div class="form-check mb-3">
                         <input
@@ -429,7 +434,7 @@
                     class="sticky-actions bg-white border rounded-3 p-3 d-flex flex-wrap align-items-center justify-content-between gap-3"
                 >
                     <span class="small text-body-secondary">
-                        Sản phẩm được mở bán khi đủ điều kiện, không cần chờ Admin kiểm tra.
+
                     </span>
                     <div class="d-flex flex-wrap gap-2 vf-product-submit-buttons">
                         <a class="btn btn-outline-secondary" th:href="@{/seller/products}">

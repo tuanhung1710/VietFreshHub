@@ -23,4 +23,5 @@ public class OrderFilterRequest {
     private String priceRange;
     private String status;
     private String paymentStatus;
+    private String sort;
 }

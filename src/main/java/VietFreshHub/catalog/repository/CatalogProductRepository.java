@@ -11,11 +11,11 @@ import java.util.Optional;
 @Repository
 public interface CatalogProductRepository extends JpaRepository<CatalogProduct, Long> {
     @org.springframework.data.jpa.repository.Query(value = "select p from CatalogProduct p join fetch p.shop s "
-            + "where p.status = 'ACTIVE' and p.approvalStatus = 'APPROVED' and s.status = 'ACTIVE' "
+            + "where p.status = 'ACTIVE' and p.moderationBlocked = false and s.status = 'ACTIVE' "
             + "and exists (select c.categoryId from p.categories c where c.categoryId in :categoryIds) "
             + "and exists (select v.variantId from CatalogVariant v where v.product = p and v.status in ('ACTIVE','OUT_OF_STOCK')) "
             + "and (:keyword = '' or locate(lower(:keyword), lower(p.name)) > 0)",
-            countQuery = "select count(p) from CatalogProduct p join p.shop s where p.status = 'ACTIVE' and p.approvalStatus = 'APPROVED' "
+            countQuery = "select count(p) from CatalogProduct p join p.shop s where p.status = 'ACTIVE' and p.moderationBlocked = false "
             + "and s.status = 'ACTIVE' and exists (select c.categoryId from p.categories c where c.categoryId in :categoryIds) "
             + "and exists (select v.variantId from CatalogVariant v where v.product = p and v.status in ('ACTIVE','OUT_OF_STOCK')) "
             + "and (:keyword = '' or locate(lower(:keyword), lower(p.name)) > 0)")

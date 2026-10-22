@@ -36,8 +36,8 @@ public class VariantRequest {
     @Digits(integer = 16, fraction = 0, message = "Giá bán phải là số nguyên đồng, tối đa 16 chữ số.")
     private BigDecimal price;
 
-    @DecimalMin(value = "0", message = "Giá gốc không được âm.")
-    @Digits(integer = 16, fraction = 0, message = "Giá gốc phải là số nguyên đồng, tối đa 16 chữ số.")
+    @DecimalMin(value = "0", message = "Giá trước giảm không được âm.")
+    @Digits(integer = 16, fraction = 0, message = "Giá trước giảm phải là số nguyên đồng, tối đa 16 chữ số.")
     private BigDecimal compareAtPrice;
 
     @DecimalMin(value = "0.001", message = "Giá trị phải từ 0,001 kg.")
@@ -59,6 +59,9 @@ public class VariantRequest {
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate receivedDate;
+
+    @Min(value = 0, message = "Số ngày bảo quản phải lớn hơn hoặc bằng 0.")
+    private Integer shelfLifeDays;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate expiryDate;

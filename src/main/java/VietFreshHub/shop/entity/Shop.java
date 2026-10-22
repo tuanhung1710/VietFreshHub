@@ -63,7 +63,10 @@ public class Shop {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "shop", cascade = CascadeType.ALL, orphanRemoval = true)
+    // Checkout refreshes this row under lock; catalog children are refreshed separately.
+    @OneToMany(mappedBy = "shop", cascade = {
+            CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE, CascadeType.DETACH
+    }, orphanRemoval = true)
     private List<CatalogProduct> products = new ArrayList<>();
 
     @PrePersist

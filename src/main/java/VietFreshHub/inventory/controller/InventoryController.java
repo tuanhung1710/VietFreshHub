@@ -176,21 +176,23 @@ public class InventoryController {
     public String dispose(
             Authentication authentication,
             @PathVariable Long id,
-            @Valid @ModelAttribute("form") StockChangeRequest form,
-            BindingResult errors,
-            Model model,
             RedirectAttributes flash) {
-        if (errors.hasErrors()) {
-            return showBatchForm(authentication, id, "dispose", model);
-        }
         try {
-            inventoryService.dispose(authentication, id, form);
-            flash.addFlashAttribute("success", "Đã ghi nhận hủy hàng hết hạn.");
-            return INVENTORY_REDIRECT;
+            flash.addFlashAttribute("success", inventoryService.dispose(authentication, id).getMessage());
         } catch (CatalogException exception) {
-            errors.reject("business", exception.getMessage());
-            return showBatchForm(authentication, id, "dispose", model);
+            flash.addFlashAttribute("error", exception.getMessage());
         }
+        return INVENTORY_REDIRECT;
+    }
+
+    @PostMapping("/products/{id}/dispose-expired")
+    public String disposeProduct(Authentication authentication, @PathVariable Long id, RedirectAttributes flash) {
+        try {
+            flash.addFlashAttribute("success", inventoryService.disposeExpiredProduct(authentication, id).getMessage());
+        } catch (CatalogException exception) {
+            flash.addFlashAttribute("error", exception.getMessage());
+        }
+        return INVENTORY_REDIRECT;
     }
 
     @PostMapping("/batches/{id}/markdown")
@@ -256,6 +258,7 @@ public class InventoryController {
         model.addAttribute("batchId", batchId);
         model.addAttribute("action", action);
         model.addAttribute("today", InventoryRules.today());
+        model.addAttribute("disposalReason", InventoryRules.EXPIRED_DISPOSAL_REASON);
     }
 
     @GetMapping("/journal")

@@ -120,9 +120,13 @@ public class BatchResponse {
                 && batch.getQuantityOnHand() > 0 && !isFullyAllocated();
     }
 
+    public int getDisposableQuantity() {
+        return VietFreshHub.inventory.rule.InventoryRules.disposableQuantity(
+                batch, VietFreshHub.inventory.rule.InventoryRules.today());
+    }
+
     public boolean isCanDispose() {
-        return expired && batch.getQuantityOnHand() != null && batch.getReservedQuantity() != null
-                && batch.getQuantityOnHand() > batch.getReservedQuantity();
+        return getDisposableQuantity() > 0;
     }
 
     public boolean isCanBlock() {

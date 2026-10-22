@@ -18,6 +18,7 @@ import VietFreshHub.inventory.dto.ActivityHistoryFilter;
 import VietFreshHub.inventory.dto.BatchRequest;
 import VietFreshHub.inventory.dto.BatchResponse;
 import VietFreshHub.inventory.dto.JournalResponse;
+import VietFreshHub.inventory.dto.DisposalResult;
 import VietFreshHub.inventory.dto.MarkdownRequest;
 import VietFreshHub.inventory.dto.StockChangeRequest;
 import VietFreshHub.inventory.entity.AuditEvent;
@@ -67,6 +68,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Comparator;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Map;
@@ -106,6 +108,8 @@ public class InventoryServiceImpl implements InventoryService {
                 product.getStatus() != ProductStatus.DELETED
                         && variant.getStatus() != VariantStatus.DELETED,
                 "Không thể nhập kho cho sản phẩm hoặc phân loại đã ngừng kinh doanh.");
+        form.setExpiryDate(InventoryRules.resolveExpiryDate(
+                form.getReceivedDate(), form.getShelfLifeDays(), form.getExpiryDate()));
         InventoryRules.dates(form.getReceivedDate(), form.getExpiryDate(), today());
         require(form.getQuantity() != null && form.getQuantity() > 0, "Số lượng nhập phải lớn hơn 0.");
         String changeReason = reason(form.getReason());
@@ -167,6 +171,8 @@ public class InventoryServiceImpl implements InventoryService {
         InventoryBatch batch = getOwnedBatch(authentication, batchId, true);
         validateCost(form);
         String changeReason = reason(form.getReason());
+        form.setExpiryDate(InventoryRules.resolveExpiryDate(
+                form.getReceivedDate(), form.getShelfLifeDays(), form.getExpiryDate()));
         validateBatchDates(batch, form);
 
         String before = describeBatchDatesAndCost(batch);
@@ -239,20 +245,68 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     @Transactional
-    public void dispose(Authentication authentication, Long batchId, StockChangeRequest form) {
+    public DisposalResult dispose(Authentication authentication, Long batchId) {
         InventoryBatch batch = getOwnedBatch(authentication, batchId, true);
-        String changeReason = reason(form.getReason());
-        require(form.getQuantity() != null, "Vui lòng nhập số lượng đã hủy.");
+        LocalDate date = today();
+        require(expired(batch, date), "Chỉ sử dụng thao tác này cho lô đã hết hạn.");
+        validateDisposalBalance(batch);
+        int quantity = InventoryRules.disposableQuantity(batch, date);
+        if (quantity > 0) disposeBatch(batch, quantity, authService.getCurrentUserId(authentication), date);
+        return new DisposalResult(quantity > 0 ? 1 : 0, batch.getReservedQuantity() > 0 ? 1 : 0);
+    }
+
+    @Override
+    @Transactional
+    public DisposalResult disposeExpiredProduct(Authentication authentication, Long productId) {
+        Long shopId = shopService.getManagedShopId(authentication);
+        Product product = productRepository.lockOwned(productId, shopId)
+                .orElseThrow(() -> new AccessDeniedException("Sản phẩm không thuộc cửa hàng của bạn."));
+        inventoryLockHelper.refresh(product);
+        List<ProductVariant> variants = productVariantRepository.findByProductIdOrderByVariantId(productId);
+        // Match order confirmation/restock: product, variants in ID order, then lots in ID order.
+        for (ProductVariant snapshot : variants) {
+            inventoryLockHelper.refresh(productVariantRepository.lockById(snapshot.getVariantId()).orElseThrow());
+        }
+        if (variants.isEmpty()) return new DisposalResult(0, 0);
+        List<InventoryBatch> snapshots = inventoryBatchRepository.findByVariantIdInOrderByExpiryDateAscBatchIdAsc(
+                variants.stream().map(ProductVariant::getVariantId).toList());
+        LocalDate date = today();
+        Long actorId = authService.getCurrentUserId(authentication);
+        int disposedBatches = 0;
+        int reservedBatches = 0;
+        for (InventoryBatch snapshot : snapshots.stream().sorted(Comparator.comparing(InventoryBatch::getBatchId)).toList()) {
+            InventoryBatch batch = inventoryLockHelper.refresh(
+                    inventoryBatchRepository.lockById(snapshot.getBatchId()).orElseThrow());
+            if (!expired(batch, date)) continue;
+            validateDisposalBalance(batch);
+            if (batch.getReservedQuantity() > 0) reservedBatches++;
+            int quantity = InventoryRules.disposableQuantity(batch, date);
+            if (quantity > 0) {
+                disposeBatch(batch, quantity, actorId, date);
+                disposedBatches++;
+            }
+        }
+        return new DisposalResult(disposedBatches, reservedBatches);
+    }
+
+    private void validateDisposalBalance(InventoryBatch batch) {
+        require(batch.getQuantityOnHand() != null && batch.getReservedQuantity() != null
+                        && batch.getReservedQuantity() >= 0 && batch.getQuantityOnHand() >= batch.getReservedQuantity(),
+                "Dữ liệu tồn kho của lô không hợp lệ. Vui lòng kiểm tra trước khi hủy hàng.");
+    }
+
+    private void disposeBatch(InventoryBatch batch, int quantity, Long actorId, LocalDate date) {
+        String changeReason = InventoryRules.EXPIRED_DISPOSAL_REASON;
+        Long batchId = batch.getBatchId();
         int previousQuantity = batch.getQuantityOnHand();
-        int nextQuantity = InventoryRules.disposedQuantity(batch, form.getQuantity(), today());
+        int nextQuantity = InventoryRules.disposedQuantity(batch, quantity, date);
         updateQuantity(batch, nextQuantity);
 
-        Long actorId = authService.getCurrentUserId(authentication);
         inventoryJournalService.stock(
                 batch.getVariantId(),
                 batchId,
                 StockTransactionType.EXPIRED,
-                -form.getQuantity(),
+                -quantity,
                 actorId,
                 changeReason,
                 "BATCH",
@@ -419,10 +473,20 @@ public class InventoryServiceImpl implements InventoryService {
                     inventoryTransactionRepository.search(
                             shopId, variantId, batchId, transactionType, searchQuery, BusinessCodes.parse("LOT", searchQuery), BusinessCodes.parse("INV", searchQuery), start, end, pageable);
         }
-        return result.map(this::toJournalResponse);
+        Map<Long, InventoryTransactionRepository.StockBalance> balances = new HashMap<>();
+        if (!result.isEmpty()) {
+            List<Long> transactionIds = result.getContent().stream()
+                    .map(InventoryTransaction::getTransactionId).toList();
+            for (InventoryTransactionRepository.StockBalance balance :
+                    inventoryTransactionRepository.findStockBalances(shopId, transactionIds)) {
+                balances.put(balance.getTransactionId(), balance);
+            }
+        }
+        return result.map(transaction -> toJournalResponse(transaction, balances.get(transaction.getTransactionId())));
     }
 
-    private JournalResponse toJournalResponse(InventoryTransaction transaction) {
+    private JournalResponse toJournalResponse(
+            InventoryTransaction transaction, InventoryTransactionRepository.StockBalance balance) {
         ProductVariant variant =
                 productVariantRepository.findById(transaction.getVariantId()).orElseThrow();
         Product product = productRepository.findById(variant.getProductId()).orElseThrow();
@@ -436,7 +500,9 @@ public class InventoryServiceImpl implements InventoryService {
             User actor = userRepository.findById(transaction.getCreatedBy()).orElse(null);
             actorName = actor == null || !hasText(actor.getFullName()) ? "Người dùng" : actor.getFullName();
         }
-        return new JournalResponse(transaction, product.getName(), variant.getSku(), orderCode, actorName);
+        return new JournalResponse(transaction, product.getName(), variant.getSku(), orderCode, actorName,
+                balance == null ? null : balance.getQuantityOnHandAfter(),
+                balance == null ? null : balance.getReservedQuantityAfter());
     }
 
     private StockTransactionType parseStockType(String value) {

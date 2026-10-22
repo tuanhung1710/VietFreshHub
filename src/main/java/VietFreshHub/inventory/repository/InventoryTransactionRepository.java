@@ -10,10 +10,50 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
 public interface InventoryTransactionRepository extends JpaRepository<InventoryTransaction, Long> {
     boolean existsByVariantId(Long id);
+
+    interface StockBalance {
+        Long getTransactionId();
+
+        Long getQuantityOnHandAfter();
+
+        Long getReservedQuantityAfter();
+    }
+
+    /** Reconstruct each balance from the current batch, excluding all later movements. */
+    @Query(value = """
+            WITH batch_history AS (
+                SELECT t.transaction_id,
+                    CAST(b.quantity_on_hand AS BIGINT) - COALESCE(
+                        SUM(CASE WHEN t.transaction_type IN
+                            ('RESTOCK', 'SALE', 'RETURN', 'ADJUSTMENT', 'EXPIRED', 'DAMAGED')
+                            THEN CAST(t.quantity AS BIGINT) ELSE CAST(0 AS BIGINT) END)
+                        OVER (PARTITION BY t.batch_id ORDER BY t.created_at DESC, t.transaction_id DESC
+                            ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING), 0) AS quantity_on_hand_after,
+                    CAST(b.reserved_quantity AS BIGINT) - COALESCE(
+                        SUM(CASE WHEN t.transaction_type IN ('RESERVE', 'RELEASE', 'SALE')
+                            THEN CAST(t.quantity AS BIGINT) ELSE CAST(0 AS BIGINT) END)
+                        OVER (PARTITION BY t.batch_id ORDER BY t.created_at DESC, t.transaction_id DESC
+                            ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING), 0) AS reserved_quantity_after
+                FROM dbo.inventory_transactions t
+                JOIN dbo.inventory_batches b ON b.batch_id=t.batch_id AND b.variant_id=t.variant_id
+                JOIN dbo.product_variants v ON v.variant_id=b.variant_id
+                JOIN dbo.products p ON p.product_id=v.product_id
+                WHERE p.shop_id=:shop AND t.batch_id IN (
+                    SELECT selected.batch_id FROM dbo.inventory_transactions selected
+                    WHERE selected.transaction_id IN (:ids) AND selected.batch_id IS NOT NULL
+                )
+            )
+            SELECT transaction_id AS transactionId,
+                quantity_on_hand_after AS quantityOnHandAfter,
+                reserved_quantity_after AS reservedQuantityAfter
+            FROM batch_history WHERE transaction_id IN (:ids)
+            """, nativeQuery = true)
+    List<StockBalance> findStockBalances(Long shop, List<Long> ids);
 
     @Query(
             """

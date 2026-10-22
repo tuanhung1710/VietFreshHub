@@ -83,6 +83,7 @@
                         Số ngày bảo quản
                         <input
                             class="form-control mt-1 batch-shelf-life-days"
+                            th:field="*{shelfLifeDays}"
                             type="number"
                             min="0"
                             step="1"
@@ -100,11 +101,10 @@
                             type="date"
                             th:field="*{expiryDate}"
                             th:min="${today}"
-                            required
                         >
                     </label>
                     <p class="col-12 small text-body-secondary mb-0">
-                        Hạn sử dụng = ngày nhập kho + số ngày bảo quản. Bạn có thể chọn trực tiếp ngày hết hạn. Nhập 0 nếu hết hạn trong ngày nhập kho.
+                        Khi lưu, hạn sử dụng được tính bằng ngày nhập kho + số ngày bảo quản (0 là trong ngày nhập). Để trống số ngày nếu chọn hạn sử dụng trực tiếp.
                     </p>
                     <label class="col-12 form-label" for="reason">
                         Lý do nhập kho

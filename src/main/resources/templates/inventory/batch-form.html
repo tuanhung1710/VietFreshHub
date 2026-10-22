@@ -34,7 +34,6 @@
                 th:object="${form}"
                 th:action="@{/seller/inventory/batches/{id}/{action}(id=${batchId},action=${action})}"
                 method="post"
-                th:attr="data-confirm=${action=='dispose'?'Xác nhận đã hủy thực tế số lượng hàng hết hạn này?':''}"
             >
                 <div th:replace="~{fragments/product-inventory :: errors}">
                 </div>
@@ -69,6 +68,7 @@
                         Số ngày bảo quản
                         <input
                             class="form-control mt-1 batch-shelf-life-days"
+                            th:field="*{shelfLifeDays}"
                             type="number"
                             min="0"
                             step="1"
@@ -85,19 +85,17 @@
                             id="expiryDate"
                             type="date"
                             th:field="*{expiryDate}"
-                            required
                         >
                     </label>
                     <p class="col-12 small text-body-secondary mb-0">
-                        Hạn sử dụng = ngày nhập kho + số ngày bảo quản. Bạn có thể chọn trực tiếp ngày hết hạn. Nhập 0 nếu hết hạn trong ngày nhập kho.
+                        Khi lưu, hạn sử dụng được tính bằng ngày nhập kho + số ngày bảo quản (0 là trong ngày nhập). Để trống số ngày nếu chọn hạn sử dụng trực tiếp.
                     </p>
                     <p class="col-12 small text-body-secondary mb-0">
                         Chỉnh sửa thông tin lô không làm thay đổi số lượng tồn kho. Không thể đổi hạn sử dụng của lô đã hết hạn.
                     </p>
                 </div>
-                <label class="form-label" th:if="${action=='adjust'||action=='dispose'}" for="quantity">
-                    <span th:text="${action=='adjust'?'Số lượng điều chỉnh (+ tăng / − giảm)':'Số lượng đã hủy'}">
-                    </span>
+                <label class="form-label" th:if="${action=='adjust'}" for="quantity">
+                    Số lượng điều chỉnh (+ tăng / − giảm)
                     <span class="text-danger">
                         *
                     </span>
@@ -106,14 +104,17 @@
                         id="quantity"
                         type="number"
                         step="1"
-                        th:min="${action=='dispose'?1:null}"
                         th:field="*{quantity}"
                         required
                     >
                 </label>
-                <p class="alert alert-warning small mb-0" th:if="${action=='dispose'}">
-                    Chỉ ghi nhận hủy số lượng chưa giữ cho đơn hàng. Hàng đã giữ cho đơn cần được xử lý trong đơn hàng trước.
-                </p>
+                <div th:if="${action=='dispose'}">
+                    <p class="mb-2">Số lượng hủy tự động: <strong th:text="${row.disposableQuantity+' '+row.unit}"></strong></p>
+                    <p class="small text-body-secondary mb-0" th:text="${'Lý do được ghi tự động: '+disposalReason}"></p>
+                    <p class="alert alert-warning small mt-3 mb-0" th:if="${row.batch.reservedQuantity > 0}">
+                        Hàng đang giữ cho đơn cần được xử lý trong đơn hàng trước. Chỉ hủy phần chưa giữ cho đơn.
+                    </p>
+                </div>
                 <div class="row g-3" th:if="${action=='markdown'}">
                     <label class="col-md-6 form-label" for="price">
                         Giá giảm (₫/đơn vị)
@@ -149,7 +150,7 @@
                         Giá giảm phải từ 1 ₫ và thấp hơn giá bán của phân loại. Có thể thiết lập trong 7 ngày trước hạn sử dụng; giá chỉ có hiệu lực khi lô còn khả dụng và sẽ hết hạn trong 3 ngày. Giá bán của phân loại không thay đổi.
                     </p>
                 </div>
-                <label class="form-label mt-3" for="reason">
+                <label class="form-label mt-3" for="reason" th:if="${action!='dispose'}">
                     Lý do
                     <span class="text-danger">
                         *
@@ -163,7 +164,9 @@
                     >
                 </label>
                 <div class="d-flex flex-wrap gap-2 mt-3 vf-inventory-form-actions">
-                    <button type="submit" class="btn btn-success" th:text="${action=='edit'?'Lưu thay đổi':action=='adjust'?'Xác nhận điều chỉnh':action=='dispose'?'Ghi nhận hủy hàng':'Lưu giá giảm'}"></button>
+                    <button type="submit" class="btn" th:classappend="${action=='dispose'?'btn-danger':'btn-success'}"
+                            th:disabled="${action=='dispose'&&!row.canDispose}"
+                            th:text="${action=='edit'?'Lưu thay đổi':action=='adjust'?'Xác nhận điều chỉnh':action=='dispose'?'Hủy hàng hết hạn':'Lưu giá giảm'}"></button>
                     <a class="btn btn-outline-secondary" th:href="@{/seller/inventory}">
                         Hủy
                     </a>
