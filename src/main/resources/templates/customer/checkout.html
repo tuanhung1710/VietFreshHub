@@ -31,6 +31,9 @@
                     <label class="payment-option"><input type="radio" th:field="*{paymentMethodCode}" value="COD" th:disabled="${!checkout.codAvailable}">
                         <span><strong>Thanh toán khi nhận hàng (COD)</strong><span class="muted">Bạn thanh toán cho nhân viên giao hàng khi nhận sản phẩm.</span></span></label>
                     <p th:unless="${checkout.codAvailable}" class="item-error">Thanh toán khi nhận hàng hiện chưa khả dụng.</p><p class="item-error" th:errors="*{paymentMethodCode}"></p>
+                    <label class="payment-option"><input type="radio" th:field="*{paymentMethodCode}" value="VNPAY" th:disabled="${!checkout.vnpayAvailable}">
+                        <span><strong>Thanh toán trực tuyến qua VNPAY</strong><span class="muted">Bạn sẽ được chuyển đến cổng VNPAY Sandbox. Sản phẩm được giữ trong 15 phút.</span></span></label>
+                    <p th:unless="${checkout.vnpayAvailable}" class="item-error">Thanh toán VNPAY hiện chưa được cấu hình hoặc chưa khả dụng.</p>
                 </section>
                 <section class="panel"><h2><span class="section-number">3</span>Sản phẩm trong đơn</h2>
                     <p th:if="${#lists.isEmpty(cart.items)}" class="item-error">Giỏ hàng đang trống. <a th:href="@{/home}">Chọn sản phẩm</a> để tiếp tục.</p>

@@ -91,10 +91,10 @@ public class CheckoutShippingQuoteService {
                 total = total.add(fee);
             }
             return new CheckoutPreview(preview.cart(), preview.addresses(), selectedAddressId, quotes, money(total),
-                    money(preview.cart().getTotalAmount().add(total)), preview.codAvailable(), preview.fingerprint(), null, false);
+                    money(preview.cart().getTotalAmount().add(total)), preview.codAvailable(), preview.vnpayAvailable(), preview.fingerprint(), null, false);
         } catch (CheckoutException exception) {
             return new CheckoutPreview(preview.cart(), preview.addresses(), selectedAddressId, Map.of(), null, null,
-                    preview.codAvailable(), preview.fingerprint(), exception.getMessage(), exception instanceof DeliveryRangeException);
+                    preview.codAvailable(), preview.vnpayAvailable(), preview.fingerprint(), exception.getMessage(), exception instanceof DeliveryRangeException);
         }
     }
 

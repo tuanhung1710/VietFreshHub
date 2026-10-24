@@ -47,7 +47,7 @@ public class SecurityConfig {
 
         http.authorizeHttpRequests(authorize -> {
             authorize.requestMatchers(
-                    "/", "/login", "/register", "/verify-email",
+                    "/", "/login", "/register", "/verify-email", "/payment/vnpay/return",
                             "/seller-onboarding/register",
                             "/seller-onboarding/verify-email",
                             "/seller-onboarding/verify-email/resend",

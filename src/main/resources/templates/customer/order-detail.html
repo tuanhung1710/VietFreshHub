@@ -46,6 +46,10 @@
                 </article>
             </section>
             <a th:if="${confirmation}" class="button full" th:href="@{/customer/orders/{id}(id=${order.orderId})}">Xem chi tiết đơn</a>
+            <form th:if="${canRetryVnpayPayment}" th:action="@{/customer/orders/{id}/retry-payment(id=${order.orderId})}" method="post" class="order-action-form">
+                <p class="muted">Mỗi lượt thanh toán có hiệu lực 15 phút. Hàng sẽ được giữ lại khi bạn bắt đầu lượt mới.</p>
+                <button type="submit" class="button full">Thanh toán lại qua VNPAY</button>
+            </form>
             <a class="button secondary full" th:href="@{/home}">Tiếp tục mua sắm</a>
             <a class="button secondary full" th:href="@{/customer/orders/{id}/tracking(id=${order.orderId})}">Theo dõi đơn hàng</a>
             <form th:action="@{/customer/orders/{id}/reorder(id=${order.orderId})}" method="post" class="order-action-form"><button type="submit" class="button secondary full">Mua lại</button></form>
