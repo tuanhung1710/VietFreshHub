@@ -14,6 +14,8 @@ public interface PaymentRepository extends JpaRepository<Payment,Long> {
 
     Optional<Payment> findTopByOrderOrderIdAndPaymentMethodMethodCodeOrderByPaymentIdDesc(Long orderId, String methodCode);
 
+    Optional<Payment> findTopByOrderOrderIdAndProviderOrderByPaymentIdDesc(Long orderId, String provider);
+
     @Query("select p from Payment p join fetch p.order where p.transactionReference=:reference")
     Optional<Payment> findByTransactionReferenceWithOrder(@Param("reference") String reference);
 
@@ -21,16 +23,21 @@ public interface PaymentRepository extends JpaRepository<Payment,Long> {
     @Query("select p from Payment p where p.paymentId=:paymentId")
     Optional<Payment> findByIdForUpdate(@Param("paymentId") Long paymentId);
 
-    @Query("select p.paymentId from Payment p where p.paymentMethod.methodCode='VNPAY' and p.status=:status "
+    @Query("select p from Payment p join fetch p.paymentMethod where p.paymentId=:paymentId")
+    Optional<Payment> findByIdWithPaymentMethod(@Param("paymentId") Long paymentId);
+
+    @Query("select p.paymentId from Payment p where (p.provider='VNPAY' or p.paymentMethod.methodCode='VNPAY') and p.status=:status "
             + "and p.createdAt<=:cutoff order by p.paymentId")
     List<Long> findExpiredVnpayPaymentIds(@Param("cutoff") LocalDateTime cutoff, @Param("status") Payment.Status status);
 
-    @Query("select case when count(p)>0 then true else false end from Payment p where p.order.orderId=:orderId and p.paymentMethod.methodCode='VNPAY' "
+    @Query("select case when count(p)>0 then true else false end from Payment p where p.order.orderId=:orderId "
+            + "and (p.provider='VNPAY' or p.paymentMethod.methodCode='VNPAY') "
             + "and p.paymentId<>:paymentId and p.status in :statuses")
     boolean existsOtherVnpayPaymentWithStatus(@Param("orderId") Long orderId, @Param("paymentId") Long paymentId,
                                                @Param("statuses") List<Payment.Status> statuses);
 
-    @Query("select p from Payment p where p.order.orderId=:orderId and p.paymentMethod.methodCode='VNPAY' "
+    @Query("select p from Payment p where p.order.orderId=:orderId "
+            + "and (p.provider='VNPAY' or p.paymentMethod.methodCode='VNPAY') "
             + "and p.paymentId<>:paymentId and p.status=:status order by p.paymentId")
     List<Payment> findOtherPendingVnpayPayments(@Param("orderId") Long orderId, @Param("paymentId") Long paymentId,
                                                 @Param("status") Payment.Status status);

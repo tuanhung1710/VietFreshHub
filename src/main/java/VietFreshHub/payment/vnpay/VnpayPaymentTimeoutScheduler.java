@@ -15,9 +15,11 @@ public class VnpayPaymentTimeoutScheduler {
     public void expirePendingPayments() {
         for (Long paymentId : payments.expiredPaymentIds()) {
             try {
-                payments.expirePayment(paymentId);
+                VnpayQueryClient.Result result = payments.queryExpiredPayment(paymentId);
+                payments.reconcileExpiredPayment(paymentId, result);
             } catch (RuntimeException exception) {
-                log.warn("Could not expire VNPAY paymentId={}, errorType={}", paymentId, exception.getClass().getSimpleName());
+                log.warn("Could not reconcile expired VNPAY paymentId={}, errorType={}",
+                        paymentId, exception.getClass().getSimpleName());
             }
         }
     }

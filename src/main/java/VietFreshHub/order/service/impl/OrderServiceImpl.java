@@ -10,7 +10,6 @@ import VietFreshHub.order.dto.OrderFilterRequest;
 import VietFreshHub.order.dto.OrderItemResponse;
 import VietFreshHub.order.dto.ProcessedOrderResponse;
 import VietFreshHub.order.entity.Order;
-import VietFreshHub.payment.entity.Payment;
 import VietFreshHub.order.entity.OrderAddress;
 import VietFreshHub.order.entity.OrderDeliveryView;
 import VietFreshHub.order.entity.OrderItem;
@@ -471,15 +470,6 @@ public class OrderServiceImpl implements OrderService {
             if (!statuses.isEmpty()) {
                 predicates.add(root.get("status").in(statuses));
             }
-            if ("incoming".equals(view)) {
-                Subquery<Long> vnpayPayment = query.subquery(Long.class);
-                Root<Payment> payment = vnpayPayment.from(Payment.class);
-                vnpayPayment.select(payment.get("paymentId")).where(
-                        builder.equal(payment.get("order").get("orderId"), order.get("orderId")),
-                        builder.equal(payment.get("paymentMethod").get("methodCode"), "VNPAY"));
-                predicates.add(builder.or(builder.not(builder.exists(vnpayPayment)),
-                        builder.equal(order.get("paymentStatus"), "PAID")));
-            }
             if (filterStatus && filter.getStatus() != null && !filter.getStatus().isBlank()) {
                 String status = filter.getStatus().trim();
                 if ("DELIVERY_FAILED".equals(status) || "OUT_FOR_DELIVERY".equals(status)) {
@@ -599,7 +589,7 @@ public class OrderServiceImpl implements OrderService {
 
     private void ensureVnpayPaid(Order order) {
         Long attempts = entityManager.createQuery("select count(p) from Payment p where p.order.orderId=:orderId "
-                        + "and p.paymentMethod.methodCode='VNPAY'", Long.class)
+                        + "and (p.provider='VNPAY' or p.paymentMethod.methodCode='VNPAY')", Long.class)
                 .setParameter("orderId", order.getOrderId()).getSingleResult();
         if (attempts > 0 && !"PAID".equals(order.getPaymentStatus())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,

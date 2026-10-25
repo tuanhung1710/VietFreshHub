@@ -78,7 +78,7 @@ public class CheckoutServiceImpl implements CheckoutService {
                         customerAddresses.isDeliveryLocationComplete(a))).toList();
         return new CheckoutPreview(cart,options,null,Map.of(),null,null,
                 paymentMethods.findByMethodCodeAndStatus("COD","ACTIVE").isPresent(),
-                vnpayProperties.isReady() && paymentMethods.findByMethodCodeAndStatus("VNPAY","ACTIVE").isPresent(),
+                vnpayProperties.isReady() && paymentMethods.findByMethodCodeAndStatus("BANK_TRANSFER","ACTIVE").isPresent(),
                 fingerprint(cart),null,false);
     }
 
@@ -116,9 +116,9 @@ public class CheckoutServiceImpl implements CheckoutService {
         Optional<Order> duplicate=orders.findByOrderCodeAndCustomerUserId(orderCode,customerId);
         if(duplicate.isPresent()) return result(duplicate.get());
         String methodCode=request.getPaymentMethodCode();
-        if(methodCode==null || !Set.of("COD","VNPAY").contains(methodCode)) throw new CheckoutException("Vui lòng chọn phương thức thanh toán hợp lệ.");
-        if("VNPAY".equals(methodCode) && !vnpayProperties.isReady())
-            throw new CheckoutException("Thanh toán VNPAY chưa được cấu hình. Vui lòng chọn COD hoặc thử lại sau.");
+        if(methodCode==null || !Set.of("COD","BANK_TRANSFER").contains(methodCode)) throw new CheckoutException("Vui lòng chọn phương thức thanh toán hợp lệ.");
+        if("BANK_TRANSFER".equals(methodCode) && !vnpayProperties.isReady())
+            throw new CheckoutException("Chuyển khoản qua VNPAY chưa được cấu hình. Vui lòng chọn COD hoặc thử lại sau.");
         var method=paymentMethods.findByMethodCodeAndStatus(methodCode,"ACTIVE")
                 .orElseThrow(() -> new CheckoutException("Phương thức thanh toán hiện chưa khả dụng."));
         em.refresh(method,LockModeType.PESSIMISTIC_READ);
@@ -159,7 +159,7 @@ public class CheckoutServiceImpl implements CheckoutService {
         BigDecimal subtotal=selected.stream().map(this::lineTotal).reduce(BigDecimal.ZERO,BigDecimal::add);
         BigDecimal shippingTotal=shippingQuotes.validateForConfirmation(draft,address,groups.keySet());
         Order order=new Order(); order.setCustomer(buyer); order.setOrderCode(orderCode);
-        if("VNPAY".equals(methodCode)) order.setPaymentStatus("PENDING");
+        if("BANK_TRANSFER".equals(methodCode)) order.setPaymentStatus("PENDING");
         order.setSubtotal(money(subtotal)); order.setShippingFee(shippingTotal);
         order.setGrandTotal(money(subtotal.add(shippingTotal))); orders.save(order);
         em.persist(snapshotAddress(order,address));
@@ -187,9 +187,9 @@ public class CheckoutServiceImpl implements CheckoutService {
         }
         inventory.reserve(reservations,customerId);
         Payment payment=new Payment(); payment.setOrder(order); payment.setPaymentMethod(method); payment.setAmount(order.getGrandTotal());
-        if("VNPAY".equals(methodCode)) payment.setProvider("VNPAY");
+        if("BANK_TRANSFER".equals(methodCode)) payment.setProvider("VNPAY");
         em.persist(payment); em.flush();
-        if("VNPAY".equals(methodCode)) payment.setTransactionReference("VF"+payment.getPaymentId());
+        if("BANK_TRANSFER".equals(methodCode)) payment.setTransactionReference("VF"+payment.getPaymentId());
         if(selected.size()==cart.getItems().size()) cart.setStatus("CHECKED_OUT");
         else cart.getItems().removeAll(selected);
         em.flush();
@@ -233,7 +233,8 @@ public class CheckoutServiceImpl implements CheckoutService {
         return normalized;
     }
     private CheckoutResult result(Order order) {
-        Payment payment=payments.findTopByOrderOrderIdAndPaymentMethodMethodCodeOrderByPaymentIdDesc(order.getOrderId(),"VNPAY")
+        Payment payment=payments.findTopByOrderOrderIdAndProviderOrderByPaymentIdDesc(order.getOrderId(),"VNPAY")
+                .or(() -> payments.findTopByOrderOrderIdAndPaymentMethodMethodCodeOrderByPaymentIdDesc(order.getOrderId(),"VNPAY"))
                 .orElseGet(() -> payments.findByOrderOrderIdOrderByPaymentIdAsc(order.getOrderId()).stream().findFirst()
                         .orElseThrow(() -> new CheckoutException("Không tìm thấy bản ghi thanh toán của đơn hàng.")));
         return result(order,payment);

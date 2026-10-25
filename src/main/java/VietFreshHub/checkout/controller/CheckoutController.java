@@ -104,7 +104,7 @@ public class CheckoutController {
         if(!errors.hasErrors()) {
             try {
                 var order=checkout.confirm(customerId,draft,form);
-                if("VNPAY".equals(order.paymentMethodCode())) {
+                if("BANK_TRANSFER".equals(order.paymentMethodCode()) || "VNPAY".equals(order.paymentMethodCode())) {
                     var start=vnpayPayments.startInitialPayment(order.paymentId(),customerId,request.getRemoteAddr());
                     if(start.started()) return "redirect:"+start.paymentUrl();
                     flash.addFlashAttribute("errorMessage",start.message());
@@ -240,7 +240,7 @@ public class CheckoutController {
     private void populate(Long customerId,CheckoutRequest form,VietFreshHub.checkout.dto.CheckoutPreview preview,
                           HttpSession session,Model model) {
         var draft=drafts.issue(session,customerId,preview); form.setCheckoutToken(draft.token());
-        if(!preview.codAvailable() && preview.vnpayAvailable()) form.setPaymentMethodCode("VNPAY");
+        if(!preview.codAvailable() && preview.vnpayAvailable()) form.setPaymentMethodCode("BANK_TRANSFER");
         form.setAddressId(preview.addressId());
         model.addAttribute("form",form); model.addAttribute("checkout",preview); model.addAttribute("cart",preview.cart());
         model.addAttribute("cartBadgeTotal",carts.getActiveCart(customerId).getTotalItems());

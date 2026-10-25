@@ -41,6 +41,7 @@ public class VnpayPaymentService {
     private final PaymentTransactionRepository transactions;
     private final InventoryReservationService reservations;
     private final OrderInventoryReleaseService releases;
+    private final VnpayQueryClient queryClient;
     private final EntityManager em;
 
     public record StartResult(String paymentUrl, String message) {
@@ -65,22 +66,21 @@ public class VnpayPaymentService {
             return new StartResult(null, "Lượt thanh toán này đã kết thúc. Bạn có thể tạo lượt thanh toán mới trong chi tiết đơn hàng.");
         }
         if (isExpired(payment, nowUtc())) {
-            expireLocked(order, payment, "TIMEOUT");
-            return new StartResult(null, "Lượt thanh toán đã hết 15 phút. Hàng đã được trả lại kho; bạn có thể thanh toán lại trong chi tiết đơn.");
+            return new StartResult(null, "Lượt thanh toán đã hết 15 phút. Hệ thống đang xác minh trạng thái với VNPAY; vui lòng thử lại sau.");
         }
         return new StartResult(gateway.createPaymentUrl(payment, remoteAddress), null);
     }
 
     @Transactional(readOnly = true)
     public boolean canRetry(Long orderId, Long customerId) {
-        if (!properties.isReady() || paymentMethods.findByMethodCodeAndStatus("VNPAY", "ACTIVE").isEmpty()) return false;
+        if (!properties.isReady() || paymentMethods.findByMethodCodeAndStatus("BANK_TRANSFER", "ACTIVE").isEmpty()) return false;
         Order order = orders.findByOrderIdAndCustomerUserId(orderId, customerId).orElse(null);
         if (order == null || order.getStatus() != Order.Status.PENDING || "PAID".equals(order.getPaymentStatus())) return false;
-        Payment latest = payments.findTopByOrderOrderIdAndPaymentMethodMethodCodeOrderByPaymentIdDesc(orderId, "VNPAY").orElse(null);
+        Payment latest = latestVnpayPayment(orderId);
         if (latest == null || latest.getStatus() == Payment.Status.PROCESSING || latest.getStatus() == Payment.Status.PAID
                 || latest.getStatus() == Payment.Status.CANCELLED) return false;
         if (payments.existsOtherVnpayPaymentWithStatus(orderId, latest.getPaymentId(), OPEN_STATUSES)) return false;
-        return latest.getStatus() == Payment.Status.FAILED || isExpired(latest, nowUtc());
+        return latest.getStatus() == Payment.Status.FAILED;
     }
 
     @Transactional
@@ -92,7 +92,7 @@ public class VnpayPaymentService {
         if (order.getStatus() != Order.Status.PENDING || "PAID".equals(order.getPaymentStatus())) {
             return new StartResult(null, "Đơn hàng không còn ở trạng thái có thể thanh toán lại.");
         }
-        Payment latest = payments.findTopByOrderOrderIdAndPaymentMethodMethodCodeOrderByPaymentIdDesc(orderId, "VNPAY")
+        Payment latest = Optional.ofNullable(latestVnpayPayment(orderId))
                 .map(payment -> lockPayment(payment.getPaymentId())).orElse(null);
         if (latest == null) return new StartResult(null, "Không tìm thấy lượt thanh toán VNPAY của đơn hàng.");
         requireVnpay(latest);
@@ -100,14 +100,14 @@ public class VnpayPaymentService {
             if (!isExpired(latest, nowUtc())) {
                 return new StartResult(null, "Lượt thanh toán hiện tại vẫn còn hiệu lực. Vui lòng hoàn tất hoặc chờ đủ 15 phút.");
             }
-            expireLocked(order, latest, "TIMEOUT");
+            return new StartResult(null, "Lượt thanh toán đã hết hạn và đang được VNPAY xác minh. Vui lòng tải lại đơn hàng sau.");
         } else if (latest.getStatus() != Payment.Status.FAILED) {
             return new StartResult(null, "Lượt thanh toán đang được xử lý hoặc đã hoàn tất.");
         }
         if (payments.existsOtherVnpayPaymentWithStatus(orderId, latest.getPaymentId(), OPEN_STATUSES)) {
             return new StartResult(null, "Đơn hàng đang có một lượt thanh toán cần được xác nhận trước.");
         }
-        PaymentMethod method = paymentMethods.findByMethodCodeAndStatus("VNPAY", "ACTIVE").orElse(null);
+        PaymentMethod method = paymentMethods.findByMethodCodeAndStatus("BANK_TRANSFER", "ACTIVE").orElse(null);
         if (method == null) return new StartResult(null, "Thanh toán VNPAY hiện chưa khả dụng.");
 
         List<OrderItem> items = orderItems(orderId);
@@ -164,7 +164,7 @@ public class VnpayPaymentService {
         boolean paid = "00".equals(fields.get("vnp_ResponseCode")) && "00".equals(fields.get("vnp_TransactionStatus"));
         if (!paid) {
             if (payment.getStatus() == Payment.Status.FAILED || payment.getStatus() == Payment.Status.CANCELLED
-                    || payment.getStatus() == Payment.Status.PAID || payment.getStatus() == Payment.Status.PROCESSING) {
+                    || payment.getStatus() == Payment.Status.PAID) {
                 return returnResult(orderId, false, "Lượt thanh toán này đã được xử lý. Hãy kiểm tra trạng thái đơn hàng.");
             }
             failLocked(order, payment, "PAYMENT_FAILED", fields);
@@ -173,19 +173,25 @@ public class VnpayPaymentService {
         if (payment.getStatus() == Payment.Status.PAID) {
             return returnResult(orderId, true, "Thanh toán VNPAY đã được xác nhận.");
         }
-        if ("PAID".equals(order.getPaymentStatus())) {
-            payment.setStatus(Payment.Status.PROCESSING);
-            record(payment, "DUPLICATE_SUCCESS_REVIEW", fields.get("vnp_TransactionNo"), "PROCESSING", fields);
-            return returnResult(orderId, false, "Đơn hàng đã được thanh toán; lượt giao dịch này đang cần kiểm tra thêm.");
-        }
-        if (payment.getStatus() == Payment.Status.PROCESSING) {
-            return returnResult(orderId, false, "VNPAY đã trả kết quả. Giao dịch đang được kiểm tra thêm.");
-        }
         LocalDateTime paidAt;
         try {
             paidAt = parsePaidAt(fields.get("vnp_PayDate"));
         } catch (RuntimeException exception) {
             return returnResult(orderId, false, "Không xác minh được thời điểm thanh toán. Đơn hàng vẫn đang chờ xử lý.");
+        }
+        return applySuccessfulPayment(order, payment, paidAt, fields);
+    }
+
+    private ReturnResult applySuccessfulPayment(Order order, Payment payment, LocalDateTime paidAt,
+                                                Map<String, String> fields) {
+        Long orderId = order.getOrderId();
+        if (payment.getStatus() == Payment.Status.PAID) {
+            return returnResult(orderId, true, "Thanh toán VNPAY đã được xác nhận.");
+        }
+        if ("PAID".equals(order.getPaymentStatus())) {
+            payment.setStatus(Payment.Status.PROCESSING);
+            record(payment, "DUPLICATE_SUCCESS_REVIEW", fields.get("vnp_TransactionNo"), "PROCESSING", fields);
+            return returnResult(orderId, false, "Đơn hàng đã được thanh toán; lượt giao dịch này đang cần kiểm tra thêm.");
         }
         if (order.getStatus() != Order.Status.PENDING || order.getStatus() == Order.Status.CANCELLED) {
             payment.setStatus(Payment.Status.PROCESSING);
@@ -220,32 +226,58 @@ public class VnpayPaymentService {
         return returnResult(orderId, true, "Thanh toán VNPAY thành công.");
     }
 
+    public VnpayQueryClient.Result queryExpiredPayment(Long paymentId) {
+        Payment payment = payments.findByIdWithPaymentMethod(paymentId).orElse(null);
+        if (payment == null || !isVnpay(payment) || payment.getStatus() != Payment.Status.PENDING
+                || !isExpired(payment, nowUtc())) {
+            return new VnpayQueryClient.Result(VnpayQueryClient.Outcome.SKIP, Map.of(), null);
+        }
+        return queryClient.query(payment);
+    }
+
     @Transactional
-    public boolean expirePayment(Long paymentId) {
+    public boolean reconcileExpiredPayment(Long paymentId, VnpayQueryClient.Result queryResult) {
+        if (queryResult == null || queryResult.outcome() == VnpayQueryClient.Outcome.SKIP) return false;
         Payment snapshot = payments.findById(paymentId).orElse(null);
         if (snapshot == null) return false;
         Order order = lockOrder(snapshot.getOrder().getOrderId());
         Payment payment = lockPayment(paymentId);
         if (!isVnpay(payment) || payment.getStatus() != Payment.Status.PENDING || !isExpired(payment, nowUtc())) return false;
-        expireLocked(order, payment, "TIMEOUT");
-        return true;
+
+        Map<String, String> fields = new LinkedHashMap<>(queryResult.fields());
+        if (queryResult.outcome() == VnpayQueryClient.Outcome.PAID) {
+            if (!Objects.equals(payment.getTransactionReference(), fields.get("vnp_TxnRef"))
+                    || !amountMatches(payment.getAmount(), fields.get("vnp_Amount"))) {
+                fields.put("queryReason", "QUERYDR_RESULT_MISMATCH");
+                payment.setStatus(Payment.Status.PROCESSING);
+                record(payment, "QUERYDR_UNCERTAIN", fields.get("vnp_TransactionNo"), "PROCESSING", fields);
+                return false;
+            }
+            LocalDateTime paidAt;
+            try {
+                paidAt = parsePaidAt(fields.get("vnp_PayDate"));
+            } catch (RuntimeException exception) {
+                fields.put("queryReason", "QUERYDR_PAY_DATE_INVALID");
+                payment.setStatus(Payment.Status.PROCESSING);
+                record(payment, "QUERYDR_UNCERTAIN", fields.get("vnp_TransactionNo"), "PROCESSING", fields);
+                return false;
+            }
+            return applySuccessfulPayment(order, payment, paidAt, fields).successful();
+        }
+        if (queryResult.outcome() == VnpayQueryClient.Outcome.FAILED) {
+            failLocked(order, payment, "QUERYDR_FAILED", fields);
+            return true;
+        }
+
+        payment.setStatus(Payment.Status.PROCESSING);
+        fields.put("queryReason", queryResult.reason() == null ? "QUERYDR_UNCONFIRMED" : queryResult.reason());
+        record(payment, "QUERYDR_UNCERTAIN", fields.get("vnp_TransactionNo"), "PROCESSING", fields);
+        return false;
     }
 
     @Transactional(readOnly = true)
     public List<Long> expiredPaymentIds() {
         return payments.findExpiredVnpayPaymentIds(nowUtc().minusMinutes(properties.getExpiryMinutes()), Payment.Status.PENDING);
-    }
-
-    private void expireLocked(Order order, Payment payment, String event) {
-        if (payment.getStatus() != Payment.Status.PENDING) return;
-        payment.setStatus(Payment.Status.FAILED);
-        boolean anotherOpenAttempt = payments.existsOtherVnpayPaymentWithStatus(order.getOrderId(), payment.getPaymentId(), OPEN_STATUSES);
-        if (!anotherOpenAttempt && !"PAID".equals(order.getPaymentStatus()) && order.getStatus() == Order.Status.PENDING) {
-            order.setPaymentStatus("FAILED");
-            List<OrderItem> items = orderItems(order.getOrderId());
-            releases.release(releaseLines(items), order.getCustomer().getUserId());
-        }
-        record(payment, event, null, "FAILED", Map.of("source", "timeout", "expiredMinutes", String.valueOf(properties.getExpiryMinutes())));
     }
 
     private void failLocked(Order order, Payment payment, String event, Map<String, String> fields) {
@@ -260,10 +292,13 @@ public class VnpayPaymentService {
     }
 
     private void record(Payment payment, String event, String providerTransactionId, String status, Map<String, String> fields) {
+        String transactionId = trimTo(providerTransactionId, 255);
+        if (transactions.existsByPaymentPaymentIdAndEventTypeAndProviderTransactionId(
+                payment.getPaymentId(), event, transactionId)) return;
         PaymentTransaction transaction = new PaymentTransaction();
         transaction.setPayment(payment);
         transaction.setEventType(event);
-        transaction.setProviderTransactionId(trimTo(providerTransactionId, 255));
+        transaction.setProviderTransactionId(transactionId);
         transaction.setAmount(payment.getAmount());
         transaction.setStatus(status);
         transaction.setProviderPayload(safePayload(fields));
@@ -274,7 +309,7 @@ public class VnpayPaymentService {
         if (fields == null) return "{}";
         Map<String, String> safe = new TreeMap<>();
         for (String key : List.of("vnp_TxnRef", "vnp_ResponseCode", "vnp_TransactionStatus", "vnp_TransactionNo",
-                "vnp_Amount", "vnp_CurrCode", "vnp_BankCode", "vnp_PayDate")) {
+                "vnp_Amount", "vnp_CurrCode", "vnp_BankCode", "vnp_PayDate", "queryReason")) {
             String value = fields.get(key);
             if (value != null) safe.put(key, trimTo(value, 255));
         }
@@ -315,7 +350,14 @@ public class VnpayPaymentService {
     }
 
     private boolean isVnpay(Payment payment) {
-        return payment.getPaymentMethod() != null && "VNPAY".equals(payment.getPaymentMethod().getMethodCode());
+        return "VNPAY".equals(payment.getProvider())
+                || (payment.getPaymentMethod() != null && "VNPAY".equals(payment.getPaymentMethod().getMethodCode()));
+    }
+
+    private Payment latestVnpayPayment(Long orderId) {
+        return payments.findTopByOrderOrderIdAndProviderOrderByPaymentIdDesc(orderId, "VNPAY")
+                .or(() -> payments.findTopByOrderOrderIdAndPaymentMethodMethodCodeOrderByPaymentIdDesc(orderId, "VNPAY"))
+                .orElse(null);
     }
 
     private boolean isExpired(Payment payment, LocalDateTime now) {
