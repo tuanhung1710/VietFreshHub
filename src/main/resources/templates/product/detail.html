@@ -321,7 +321,7 @@
           <small
             class="text-body-secondary"
             th:if="${v.variant.compareAtPrice!=null}"
-            th:text="${'Giá gốc: '+#numbers.formatDecimal(v.variant.compareAtPrice,0,'POINT',0,'COMMA')+' ₫'}"
+            th:text="${'Giá trước giảm: '+#numbers.formatDecimal(v.variant.compareAtPrice,0,'POINT',0,'COMMA')+' ₫'}"
           >
           </small>
           <span

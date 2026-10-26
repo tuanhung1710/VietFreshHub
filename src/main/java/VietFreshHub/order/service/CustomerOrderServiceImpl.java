@@ -92,7 +92,8 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         var delivery=deliveries.findByShopOrderOrderOrderIdOrderByDeliveryIdAsc(orderId); delivery.forEach(d -> em.refresh(d,LockModeType.PESSIMISTIC_READ));
         String hint=cancellationHint(order,children,pay,delivery); if(hint!=null) throw new CustomerOrderException(hint);
         var lines=children.stream().flatMap(child -> child.getItems().stream())
-                .map(item -> new OrderInventoryReleaseService.Line(item.getOrderItemId(),item.getVariant().getVariantId(),item.getQuantity())).toList();
+                .map(item -> new OrderInventoryReleaseService.Line(item.getOrderItemId(),item.getVariant().getVariantId(),
+                        item.getQuantity(),"CONFIRMED".equals(item.getShopOrder().getStatus()))).toList();
         inventory.release(lines,customerId);
         LocalDateTime now=LocalDateTime.now(ZoneOffset.UTC).withNano(0);
         String note="Khách hàng hủy đơn."+(reason==null || reason.isBlank() ? "" : " Lý do: "+reason.trim());

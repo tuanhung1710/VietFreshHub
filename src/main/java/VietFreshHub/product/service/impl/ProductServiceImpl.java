@@ -846,7 +846,7 @@ public class ProductServiceImpl implements ProductService {
         require(
                 form.getCompareAtPrice() == null
                         || form.getCompareAtPrice().compareTo(form.getPrice()) >= 0,
-                "Giá gốc phải lớn hơn hoặc bằng giá bán.");
+                "Giá trước giảm phải lớn hơn hoặc bằng giá bán.");
         require(
                 form.getWeight() == null
                         || (form.getWeight().compareTo(new BigDecimal("0.001")) >= 0
@@ -991,15 +991,9 @@ public class ProductServiceImpl implements ProductService {
                         && !form.getVariants().isEmpty()
                         && form.getVariants().size() <= 20,
                 "Mỗi sản phẩm cần từ 1 đến 20 phân loại.");
-        Set<String> usedCodes = new HashSet<>();
         for (VariantRequest variant : form.getVariants()) {
-            if (variant.getSku() != null && !variant.getSku().isBlank()) {
-                require(
-                        usedCodes.add(variant.getSku().toLowerCase(Locale.ROOT)),
-                        "Các phân loại của sản phẩm không được trùng SKU.");
-            }
-        }
-        for (VariantRequest variant : form.getVariants()) {
+            // New SKUs are assigned by the server after IDENTITY is available.
+            variant.setSku(null);
             validateVariantFields(variant, null);
             initialQuantity(variant);
         }
@@ -1015,6 +1009,8 @@ public class ProductServiceImpl implements ProductService {
         require(
                 form.getInitialQuantity() != null && form.getInitialQuantity() > 0,
                 "Nhập số lượng lớn hơn 0 hoặc chọn Chưa nhập hàng.");
+        form.setExpiryDate(InventoryRules.resolveExpiryDate(
+                form.getReceivedDate(), form.getShelfLifeDays(), form.getExpiryDate()));
         InventoryRules.dates(form.getReceivedDate(), form.getExpiryDate(), today());
         require(
                 form.getCostPrice() == null || form.getCostPrice().signum() >= 0,
@@ -1026,27 +1022,19 @@ public class ProductServiceImpl implements ProductService {
         int quantity = initialQuantity(form);
         ProductVariant variant = new ProductVariant();
         variant.setProductId(product.getProductId());
-        boolean automaticSku = form.getSku() == null || form.getSku().isBlank();
         applyVariantFields(variant, form);
-        if (automaticSku) {
-            // NOT NULL requires a provisional unique value before IDENTITY is available.
-            // Both writes are in the caller's transaction; TMP never reaches a committed row.
-            variant.setSku("TMP-" + UUID.randomUUID());
-        }
+        // Both writes are in this transaction; the temporary SKU is never committed.
+        variant.setSku("TMP-" + UUID.randomUUID());
         variant.setStatus(VariantStatus.OUT_OF_STOCK);
         if (quantity > 0) {
             variant.setStatus(VariantStatus.ACTIVE);
         }
         variant.setCreatedAt(now());
         productVariantRepository.saveAndFlush(variant);
-        if (automaticSku) {
-            String sku = BusinessCodes.format("SKU", variant.getVariantId());
-            // The unique constraint is the authoritative collision check. A second read here
-            // can scan other uncommitted inserts and deadlock concurrent SQL Server requests.
-            variant.setSku(sku);
-            productVariantRepository.saveAndFlush(variant);
-            form.setSku(sku);
-        }
+        String sku = BusinessCodes.format("SKU", variant.getVariantId());
+        variant.setSku(sku);
+        productVariantRepository.saveAndFlush(variant);
+        form.setSku(sku);
         savePrimaryImage(product.getProductId(), variant.getVariantId(), form.getThumbnailUrl());
         recordPriceChange(variant, actorId);
         if (quantity > 0) {
@@ -1244,6 +1232,7 @@ public class ProductServiceImpl implements ProductService {
     public void addVariant(Authentication authentication, Long productId, VariantRequest form) {
         Product product = getOwnedProduct(authentication, productId, true);
         requireWritableProduct(product);
+        form.setSku(null);
         validateVariantFields(form, null);
         initialQuantity(form);
         String changeReason = reason(form.getReason());
@@ -1295,7 +1284,7 @@ public class ProductServiceImpl implements ProductService {
                         + " → " + auditPrice(variant.getPrice());
             }
             if (compareAtPriceChanged) {
-                auditReason += "; giá gốc " + auditPrice(previousCompareAtPrice)
+                auditReason += "; giá trước giảm " + auditPrice(previousCompareAtPrice)
                         + " → " + auditPrice(variant.getCompareAtPrice());
             }
             if (structureChanged) {

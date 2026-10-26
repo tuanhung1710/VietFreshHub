@@ -20,9 +20,6 @@
             <h1>
                 Biến động kho
             </h1>
-            <p class="text-body-secondary mb-4">
-                Theo dõi nhập kho, giữ hàng cho đơn, giải phóng hàng giữ, xuất bán, nhận hàng hoàn, điều chỉnh và hủy hàng. Thời gian hiển thị theo giờ Việt Nam.
-            </p>
 
             <div class="d-flex flex-wrap align-items-center gap-3 mb-3" th:if="${batch!=null}">
                 <strong th:text="${'Lịch sử tồn kho lô '+batchCode}"></strong>
@@ -50,11 +47,11 @@
                     </div>
                     <div class="col-md-6 col-xl-2">
                         <label class="form-label" for="journal-type">
-                            Loại biến động
+                            Hoạt động
                         </label>
                         <select class="form-select" id="journal-type" name="type">
                             <option value="">
-                                Tất cả biến động
+                                Tất cả hoạt động
                             </option>
                             <option
                                 th:each="t : ${T(VietFreshHub.inventory.enums.StockTransactionType).values()}"
@@ -101,7 +98,8 @@
                             <col class="vf-history-col-time">
                             <col class="vf-journal-col-product">
                             <col class="vf-journal-col-type">
-                            <col class="vf-journal-col-quantity">
+                            <col class="vf-journal-col-stock">
+                            <col class="vf-journal-col-reserved">
                             <col class="vf-journal-col-note">
                         </colgroup>
                         <thead class="table-light">
@@ -111,13 +109,18 @@
                                     SKU / Lô hàng
                                 </th>
                                 <th scope="col">
-                                    Loại biến động
+                                   Hoạt động
                                 </th>
-                                <th scope="col" title="Với Giữ hàng/Giải phóng hàng giữ, số lượng thể hiện thay đổi phần khả dụng. Tổng tồn kho không thay đổi.">
-                                    Số lượng thay đổi
+                                <th scope="col" class="vf-journal-balance" title="Số lượng thực tế trong lô sau giao dịch, bao gồm phần đã giữ cho đơn.">
+                                    Tồn kho
+                                    <small class="d-block vf-journal-balance-caption">Sau giao dịch</small>
+                                </th>
+                                <th scope="col" class="vf-journal-balance" title="Số lượng còn đang được giữ cho các đơn trong lô sau giao dịch.">
+                                    Số lượng đã giữ
+                                    <small class="d-block vf-journal-balance-caption">Sau giao dịch</small>
                                 </th>
                                 <th scope="col">
-                                    Lý do / Thông tin liên quan
+                                    Ghi chú
                                 </th>
                             </tr>
                         </thead>
@@ -143,18 +146,23 @@
                                     >
                                     </span>
                                 </td>
-                                <td
-                                    th:title="${e.event.transactionType.name()=='RESERVE'||e.event.transactionType.name()=='RELEASE'?'Thay đổi số lượng khả dụng do giữ hoặc giải phóng hàng cho đơn. Tổng tồn kho không thay đổi.':'Số lượng tồn kho thay đổi trong giao dịch này.'}"
-                                    class="vf-table-number fw-semibold"
-                                    th:classappend="${e.event.quantity>0?'text-success':'text-danger'}"
-                                    th:text="${(e.event.quantity>0?'+':'')+e.event.quantity}"
-                                    data-label="Số lượng thay đổi"
-                                >
+                                <td class="vf-table-number vf-journal-balance" data-label="Tồn kho"
+                                    th:title="${e.stockBalanceKnown?'Tồn thực tế trong lô sau giao dịch, bao gồm phần đã giữ.':'Chưa đủ dữ liệu để xác định tồn kho của lô tại thời điểm này.'}">
+                                    <span class="vf-journal-balance-value"
+                                          th:classappend="${!e.stockBalanceKnown || e.quantityOnHandAfter==0?'text-body-secondary':''}"
+                                          th:text="${e.stockBalanceKnown?#numbers.formatInteger(e.quantityOnHandAfter,1,'POINT'):'—'}"></span>
                                 </td>
-                                
-                                <td data-label="Lý do / Thông tin liên quan">
-                                    <span th:text="${e.event.note}">
-                                    </span>
+                                <td class="vf-table-number vf-journal-balance" data-label="Số lượng đã giữ"
+                                    th:title="${e.stockBalanceKnown?'Số lượng đang giữ cho các đơn trong lô sau giao dịch.':'Chưa đủ dữ liệu để xác định số lượng đã giữ tại thời điểm này.'}">
+                                    <span class="vf-journal-balance-value"
+                                          th:classappend="${!e.stockBalanceKnown || e.reservedQuantityAfter==0?'text-body-secondary':''}"
+                                          th:text="${e.stockBalanceKnown?#numbers.formatInteger(e.reservedQuantityAfter,1,'POINT'):'—'}"></span>
+                                </td>
+
+                                <td data-label="Ghi chú">
+                                    <span class="d-block" th:text="${e.quantityDescription}"></span>
+                                    <small class="d-block text-body-secondary" th:if="${e.event.note!=null && !#strings.isEmpty(e.event.note)}"
+                                           th:text="${e.event.note}"></small>
                                     <small
                                         class="d-block text-body-secondary"
                                         th:text="${e.referenceLabel}"
@@ -163,7 +171,7 @@
                                 </td>
                             </tr>
                             <tr th:if="${events.empty}">
-                                <td colspan="5" class="text-center text-body-secondary py-5">
+                                <td colspan="6" class="text-center text-body-secondary py-5">
                                     Không tìm thấy biến động kho phù hợp.
                                 </td>
                             </tr>
@@ -172,6 +180,10 @@
 
                 </div>
             </div>
+
+            <p class="small text-body-secondary mb-4">
+                “Tồn kho” là số thực tế trong lô, bao gồm phần đã giữ cho đơn. Dấu “—” nghĩa là chưa đủ dữ liệu để xác định số lượng tại thời điểm giao dịch.
+            </p>
 
             <div class="vf-pagination-panel">
                 <nav th:replace="~{fragments/product-inventory :: pagination(${events}, @{/seller/inventory/journal(page=${events.number},size=${events.size},q=${q},variant=${variant},batch=${batch},type=${type},from=${from},to=${to})}, @{/seller/inventory/journal(page=${events.number+2},size=${events.size},q=${q},variant=${variant},batch=${batch},type=${type},from=${from},to=${to})}, 'Phân trang biến động kho', 'bản ghi')}"></nav>

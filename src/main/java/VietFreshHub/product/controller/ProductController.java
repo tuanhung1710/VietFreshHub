@@ -9,6 +9,7 @@ import VietFreshHub.product.dto.VariantActionRequest;
 import VietFreshHub.product.dto.VariantRequest;
 import VietFreshHub.product.exception.CatalogException;
 import VietFreshHub.product.service.ProductService;
+import VietFreshHub.product.service.ProductDraftService;
 import VietFreshHub.shop.service.ShopService;
 
 import jakarta.validation.Valid;
@@ -34,6 +35,28 @@ public class ProductController {
 
     private final ProductService productService;
     private final ShopService shopService;
+    private final ProductDraftService productDraftService;
+
+    @PostMapping("/draft")
+    public String draft(Authentication authentication, @ModelAttribute("form") ProductRequest form,
+            BindingResult errors, @RequestParam(required = false) String addVariant,
+            @RequestParam(required = false) Integer removeVariant,
+            @RequestParam(required = false) Integer useProductImage, Model model) {
+        shopService.getManagedShopId(authentication);
+        // Drafts may be incomplete. Show conversion errors before changing row indexes.
+        if (!errors.hasErrors()) {
+            try {
+                InventoryRules.require((addVariant != null ? 1 : 0) + (removeVariant != null ? 1 : 0)
+                        + (useProductImage != null ? 1 : 0) == 1, "Chọn một thao tác với phân loại.");
+                if (addVariant != null) productDraftService.addVariant(form);
+                else if (removeVariant != null) productDraftService.removeVariant(form, removeVariant);
+                else productDraftService.useProductImage(form, useProductImage);
+            } catch (CatalogException exception) {
+                errors.reject("business", exception.getMessage());
+            }
+        }
+        return showProductForm(model, null);
+    }
 
     @GetMapping
     public String list(

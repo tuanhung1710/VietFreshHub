@@ -69,8 +69,8 @@ public class StockAllocationServiceImpl implements StockAllocationService {
         InventoryOrderLine line = getOwnedOrderLineForUpdate(authentication, orderItemId);
         ShopOrder order = shopOrderRepository.findById(line.getShopOrderId()).orElseThrow();
         require(
-                List.of("PENDING", "CONFIRMED", "PREPARING").contains(order.getStatus()),
-                "Không thể giữ thêm hàng cho đơn đã giao hoặc đã hủy.");
+                List.of("CONFIRMED", "PREPARING").contains(order.getStatus()),
+                "Chỉ được giữ hàng sau khi người bán xác nhận đơn hàng.");
 
         List<StockAllocation> existing =
                 stockAllocationRepository.findByOrderItemIdOrderByAllocationId(orderItemId);
@@ -135,7 +135,8 @@ public class StockAllocationServiceImpl implements StockAllocationService {
         List<InventoryBatch> candidates = new ArrayList<>();
         List<InventoryBatch> snapshots =
                 inventoryBatchRepository.findByVariantIdOrderByExpiryDateAscBatchIdAsc(variantId);
-        for (InventoryBatch snapshot : snapshots) {
+        for (InventoryBatch snapshot : snapshots.stream()
+                .sorted(Comparator.comparing(InventoryBatch::getBatchId)).toList()) {
             InventoryBatch batch = getBatchForUpdate(snapshot.getBatchId());
             if (available(batch, date) <= 0) {
                 continue;

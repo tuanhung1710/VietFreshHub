@@ -3,6 +3,7 @@ package VietFreshHub.order.service.impl;
 import VietFreshHub.auth.entity.User;
 import VietFreshHub.auth.service.AuthService;
 import VietFreshHub.delivery.service.DeliveryCreationService;
+import VietFreshHub.inventory.service.StockAllocationService;
 import VietFreshHub.order.dto.IncomingOrderResponse;
 import VietFreshHub.order.dto.OrderCountsResponse;
 import VietFreshHub.order.dto.OrderDetailResponse;
@@ -20,6 +21,7 @@ import VietFreshHub.order.repository.OrderDeliveryReadRepository;
 import VietFreshHub.order.repository.OrderItemRepository;
 import VietFreshHub.order.repository.ShopOrderRepository;
 import VietFreshHub.order.service.OrderService;
+import VietFreshHub.product.exception.CatalogException;
 import VietFreshHub.shop.service.ShopService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
@@ -47,6 +49,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -64,6 +67,7 @@ public class OrderServiceImpl implements OrderService {
     private final DeliveryCreationService deliveryCreationService;
     private final AuthService authService;
     private final EntityManager entityManager;
+    private final StockAllocationService stockAllocationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -264,6 +268,7 @@ public class OrderServiceImpl implements OrderService {
         }
         shopOrder.confirm();
         recordOrderStatus(shopOrder, authService.getCurrentUserId(authentication));
+        reserveStock(List.of(shopOrder), authentication);
     }
 
     @Override
@@ -287,6 +292,7 @@ public class OrderServiceImpl implements OrderService {
                     "Chỉ có thể đánh dấu sẵn sàng giao hàng cho đơn hàng đang chuẩn bị.");
         }
         shopOrder.markReady();
+        sellStock(List.of(shopOrder), authentication);
         recordOrderStatus(shopOrder, authService.getCurrentUserId(authentication));
         deliveryCreationService.ensureDeliveryForReadyShopOrder(shopOrder);
     }
@@ -305,6 +311,7 @@ public class OrderServiceImpl implements OrderService {
             shopOrder.confirm();
             recordOrderStatus(shopOrder, authService.getCurrentUserId(authentication));
         }
+        reserveStock(shopOrders, authentication);
     }
 
     @Override
@@ -338,6 +345,39 @@ public class OrderServiceImpl implements OrderService {
             recordOrderStatus(shopOrder, authService.getCurrentUserId(authentication));
             deliveryCreationService.ensureDeliveryForReadyShopOrder(shopOrder);
         }
+        sellStock(shopOrders, authentication);
+    }
+
+    private void reserveStock(List<ShopOrder> shopOrders, Authentication authentication) {
+        try {
+            for (OrderItem item : stockLines(shopOrders)) {
+                stockAllocationService.reserve(authentication, item.getOrderItemId());
+            }
+        } catch (CatalogException exception) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, exception.getMessage(), exception);
+        }
+    }
+
+    private void sellStock(List<ShopOrder> shopOrders, Authentication authentication) {
+        try {
+            for (OrderItem item : stockLines(shopOrders)) {
+                stockAllocationService.sell(authentication, item.getOrderItemId());
+            }
+        } catch (CatalogException exception) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, exception.getMessage(), exception);
+        }
+    }
+
+    private List<OrderItem> stockLines(List<ShopOrder> shopOrders) {
+        List<OrderItem> items = shopOrders.stream()
+                .flatMap(order -> order.getItems().stream())
+                .sorted(Comparator.comparing((OrderItem item) -> item.getVariant().getVariantId())
+                        .thenComparing(OrderItem::getOrderItemId))
+                .toList();
+        if (shopOrders.stream().anyMatch(order -> order.getItems().isEmpty())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Đơn hàng không có sản phẩm để xử lý kho.");
+        }
+        return items;
     }
 
     private void recordOrderStatus(ShopOrder shopOrder, Long changedBy) {

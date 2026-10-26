@@ -13,8 +13,6 @@ import VietFreshHub.cart.service.CartService;
 import VietFreshHub.checkout.dto.*;
 import VietFreshHub.customer.service.CustomerAddressService;
 import VietFreshHub.exception.CheckoutException;
-import VietFreshHub.checkout.service.InventoryReservationService;
-import VietFreshHub.checkout.service.ShippingQuoteService;
 import VietFreshHub.checkout.repository.CheckoutAddressRepository;
 import VietFreshHub.checkout.service.CheckoutService;
 import VietFreshHub.order.entity.Order;
@@ -55,7 +53,6 @@ public class CheckoutServiceImpl implements CheckoutService {
     private final PaymentMethodRepository paymentMethods;
     private final OrderRepository orders;
     private final CatalogService catalog;
-    private final InventoryReservationService inventory;
     private final CheckoutShippingQuoteService shippingQuotes;
     private final EntityManager em;
     private final ApplicationEventPublisher events;
@@ -142,6 +139,9 @@ public class CheckoutServiceImpl implements CheckoutService {
             }
         }
         CartDto current=selectCart(cartService.getActiveCart(customerId),draft.selectedItemIds());
+        if(current.isHasUnavailableItems()) {
+            throw new CheckoutException("Một sản phẩm không còn đủ hàng. Vui lòng kiểm tra lại giỏ.");
+        }
         if(!fingerprint(current).equals(draft.fingerprint())) {
             throw new CheckoutException("Giá hoặc số lượng trong giỏ vừa thay đổi. Vui lòng xem lại đơn và xác nhận lần nữa.");
         }
@@ -153,7 +153,6 @@ public class CheckoutServiceImpl implements CheckoutService {
         order.setSubtotal(money(subtotal)); order.setShippingFee(shippingTotal);
         order.setGrandTotal(money(subtotal.add(shippingTotal))); orders.save(order);
         em.persist(snapshotAddress(order,address));
-        List<InventoryReservationService.Reservation> reservations=new ArrayList<>();
         List<Long> shopOrderIds=new ArrayList<>();
         for(List<CartItem> lines:groups.values()) {
             ShopOrder shopOrder=new ShopOrder(); shopOrder.setOrder(order);
@@ -170,12 +169,12 @@ public class CheckoutServiceImpl implements CheckoutService {
                 item.setVariant(variant); item.setProductNameSnapshot(variant.getProduct().getName());
                 item.setVariantNameSnapshot(variant.getVariantName()); item.setSkuSnapshot(variant.getSku());
                 item.setUnitPrice(variant.getPrice()); item.setQuantity(line.getQuantity()); item.setTotalAmount(money(lineTotal(line)));
-                em.persist(item); reservations.add(new InventoryReservationService.Reservation(item.getOrderItemId(),variant.getVariantId(),line.getQuantity()));
+                em.persist(item);
             }
             OrderStatusHistory history=new OrderStatusHistory(); history.setShopOrder(shopOrder); history.setStatus("PENDING");
             history.setChangedBy(buyer); history.setNote("Khách hàng đặt đơn COD."); em.persist(history);
         }
-        inventory.reserve(reservations,customerId);
+        // Pending orders do not hold stock. The seller reserves it when confirming the order.
         Payment payment=new Payment(); payment.setOrder(order); payment.setPaymentMethod(method); payment.setAmount(order.getGrandTotal());
         em.persist(payment);
         if(selected.size()==cart.getItems().size()) cart.setStatus("CHECKED_OUT");

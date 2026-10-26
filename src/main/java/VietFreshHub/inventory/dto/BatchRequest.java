@@ -26,9 +26,11 @@ public class BatchRequest {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate receivedDate;
 
-    @NotNull(message = "Vui lòng chọn hạn sử dụng.")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate expiryDate;
+
+    @Min(value = 0, message = "Số ngày bảo quản phải lớn hơn hoặc bằng 0.")
+    private Integer shelfLifeDays;
 
     @DecimalMin(value = "0", message = "Giá vốn không được âm.")
     @Digits(integer = 16, fraction = 2, message = "Giá vốn không được vượt quá 16 chữ số phần nguyên và 2 chữ số thập phân.")

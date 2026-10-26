@@ -234,6 +234,26 @@
                                             </svg>
                                             Xem phân loại
                                         </button>
+                                        <div class="dropdown d-inline-block ms-1" th:if="${r.expiredDisposableBatchCount > 0}">
+                                            <button class="btn btn-sm btn-light vf-batch-more" type="button"
+                                                    data-bs-toggle="dropdown" aria-expanded="false"
+                                                    data-bs-config='{"popperConfig":{"strategy":"fixed","modifiers":[{"name":"preventOverflow","options":{"boundary":"viewport","padding":12}},{"name":"offset","options":{"offset":[0,4]}}]},"boundary":"viewport"}'
+                                                    th:attr="aria-label=${'Thao tác sản phẩm '+r.product.name}" title="Thao tác sản phẩm">
+                                                <svg class="vf-icon" aria-hidden="true"><use href="#vf-more"/></svg>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                <li>
+                                                    <form class="m-0" method="post"
+                                                          th:action="@{/seller/inventory/products/{id}/dispose-expired(id=${r.product.productId})}">
+                                                        <button type="submit" class="dropdown-item text-danger"
+                                                                title="Hủy phần hết hạn chưa giữ cho đơn trên tất cả phân loại của sản phẩm, kể cả lô không hiển thị theo bộ lọc.">
+                                                            <svg class="vf-icon" aria-hidden="true"><use href="#vf-trash"/></svg>
+                                                            <span th:text="${'Hủy toàn bộ hàng hết hạn ('+r.expiredDisposableBatchCount+' lô)'}"></span>
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </td>
                                 </tr>
                                 <tr class="vf-collapse-row">

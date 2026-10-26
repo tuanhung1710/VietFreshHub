@@ -78,14 +78,13 @@ document.querySelector("#productActionModal")?.addEventListener("shown.bs.modal"
   document.querySelector("#productActionReason").focus();
 });
 
-// Standalone histories use GET pagination; live lists handle their own updates.
+// Submit normal GET forms; the server filters, sorts and paginates the results.
 document.querySelectorAll(".vf-page-size").forEach(form => {
-    if (form.closest("[data-vf-live-list]")) return;
-    form.querySelector("[data-vf-filter-submit]")?.setAttribute("hidden", "");
     form.querySelector('select[name="size"]')?.addEventListener("change", () => form.requestSubmit());
 });
+document.querySelector("[data-vf-sort]")?.addEventListener("change", event => event.target.form.requestSubmit());
 
-// Collapse filters on small viewports; list-layout.js keeps the sticky rows aligned.
+// Collapse filters on small viewports.
 const listPage = document.querySelector(".vf-list-page");
 if (listPage) {
     const controls = listPage.querySelector(".vf-list-controls");
