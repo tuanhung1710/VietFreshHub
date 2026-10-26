@@ -5,7 +5,6 @@ import VietFreshHub.product.entity.Product;
 import VietFreshHub.product.enums.ApprovalStatus;
 import VietFreshHub.product.enums.ProductStatus;
 import jakarta.persistence.LockModeType;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,13 +12,15 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
-public interface AdminProductModerationRepository extends JpaRepository<Product, Long> {
+public interface AdminProductModerationBulkRepository extends JpaRepository<Product, Long>, BulkApproveOperation {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from Product p where p.productId = :productId")
     Optional<Product> lockByProductId(@Param("productId") Long productId);
+
 
     @Query(value = """
             select p.product_id as productId,
@@ -82,41 +83,9 @@ public interface AdminProductModerationRepository extends JpaRepository<Product,
     Page<AdminProductModerationRow> search(
             @Param("tab") String tab,
             @Param("keyword") String keyword,
-            @Param("fromDate") java.time.LocalDateTime fromDate,
-            @Param("untilDate") java.time.LocalDateTime untilDate,
+            @Param("fromDate") LocalDateTime fromDate,
+            @Param("untilDate") LocalDateTime untilDate,
             Pageable pageable);
-
-    @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query(value = """
-            update p
-            set approval_status = 'APPROVED',
-                approved_by = :adminId,
-                approved_at = :reviewedAt,
-                updated_at = :reviewedAt
-            output inserted.approved_by, 'PRODUCT_APPROVED', 'PRODUCT', inserted.product_id,
-                   N'Admin đã hậu kiểm và duyệt sản phẩm theo lô.', inserted.approved_at
-            into dbo.audit_events (actor_id, action, entity_type, entity_id, reason, created_at)
-            from dbo.products p
-            join dbo.shops s on s.shop_id = p.shop_id
-            where p.status <> 'DELETED'
-              and p.approval_status = 'PENDING'
-              and p.moderation_blocked = 0
-              and (:fromDate is null or p.created_at >= :fromDate)
-              and (:untilDate is null or p.created_at < :untilDate)
-              and (:keyword = ''
-                or lower(p.name) like '%' + lower(:keyword) + '%'
-                or lower(p.slug) like '%' + lower(:keyword) + '%'
-                or lower(s.shop_name) like '%' + lower(:keyword) + '%'
-                or exists (select 1 from dbo.product_variants v where v.product_id = p.product_id
-                    and (lower(v.sku) like '%' + lower(:keyword) + '%'
-                      or lower(v.variant_name) like '%' + lower(:keyword) + '%')))
-            """, nativeQuery = true)
-    int bulkApprovePending(
-            @Param("keyword") String keyword,
-            @Param("fromDate") java.time.LocalDateTime fromDate,
-            @Param("untilDate") java.time.LocalDateTime untilDate,
-            @Param("adminId") Long adminId,
-            @Param("reviewedAt") java.time.LocalDateTime reviewedAt);
 
     long countByStatusNotAndApprovalStatusAndModerationBlockedFalse(
             ProductStatus excludedStatus, ApprovalStatus approvalStatus);
