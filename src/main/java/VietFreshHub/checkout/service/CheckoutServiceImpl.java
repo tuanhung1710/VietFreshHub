@@ -25,7 +25,9 @@ import VietFreshHub.order.entity.ShopOrder;
 import VietFreshHub.order.service.OrderPlacedEvent;
 import VietFreshHub.order.repository.OrderRepository;
 import VietFreshHub.payment.entity.Payment;
+import VietFreshHub.payment.repository.PaymentRepository;
 import VietFreshHub.payment.repository.PaymentMethodRepository;
+import VietFreshHub.payment.vnpay.VnpayProperties;
 import VietFreshHub.catalog.entity.CatalogProduct;
 import VietFreshHub.catalog.entity.CatalogVariant;
 import VietFreshHub.catalog.service.CatalogService;
@@ -53,6 +55,8 @@ public class CheckoutServiceImpl implements CheckoutService {
     private final CheckoutAddressRepository addresses;
     private final CustomerAddressService customerAddresses;
     private final PaymentMethodRepository paymentMethods;
+    private final PaymentRepository payments;
+    private final VnpayProperties vnpayProperties;
     private final OrderRepository orders;
     private final CatalogService catalog;
     private final InventoryReservationService inventory;
@@ -73,7 +77,9 @@ public class CheckoutServiceImpl implements CheckoutService {
                         addressText(a),a.getIsDefault(),
                         customerAddresses.isDeliveryLocationComplete(a))).toList();
         return new CheckoutPreview(cart,options,null,Map.of(),null,null,
-                paymentMethods.findByMethodCodeAndStatus("COD","ACTIVE").isPresent(),fingerprint(cart),null,false);
+                paymentMethods.findByMethodCodeAndStatus("COD","ACTIVE").isPresent(),
+                vnpayProperties.isReady() && paymentMethods.findByMethodCodeAndStatus("BANK_TRANSFER","ACTIVE").isPresent(),
+                fingerprint(cart),null,false);
     }
 
     private String addressText(Address address) {
@@ -109,11 +115,14 @@ public class CheckoutServiceImpl implements CheckoutService {
         String orderCode="VF-"+draft.token();
         Optional<Order> duplicate=orders.findByOrderCodeAndCustomerUserId(orderCode,customerId);
         if(duplicate.isPresent()) return result(duplicate.get());
-        if(!"COD".equals(request.getPaymentMethodCode())) throw new CheckoutException("Hiện chỉ hỗ trợ thanh toán khi nhận hàng.");
-        var method=paymentMethods.findByMethodCodeAndStatus("COD","ACTIVE")
-                .orElseThrow(() -> new CheckoutException("Thanh toán khi nhận hàng hiện chưa khả dụng."));
+        String methodCode=request.getPaymentMethodCode();
+        if(methodCode==null || !Set.of("COD","BANK_TRANSFER").contains(methodCode)) throw new CheckoutException("Vui lòng chọn phương thức thanh toán hợp lệ.");
+        if("BANK_TRANSFER".equals(methodCode) && !vnpayProperties.isReady())
+            throw new CheckoutException("Chuyển khoản qua VNPAY chưa được cấu hình. Vui lòng chọn COD hoặc thử lại sau.");
+        var method=paymentMethods.findByMethodCodeAndStatus(methodCode,"ACTIVE")
+                .orElseThrow(() -> new CheckoutException("Phương thức thanh toán hiện chưa khả dụng."));
         em.refresh(method,LockModeType.PESSIMISTIC_READ);
-        if(!"ACTIVE".equals(method.getStatus())) throw new CheckoutException("Thanh toán khi nhận hàng hiện chưa khả dụng.");
+        if(!"ACTIVE".equals(method.getStatus())) throw new CheckoutException("Phương thức thanh toán hiện chưa khả dụng.");
         Address address;
         try {
             address=customerAddresses.getDeliveryAddress(customerId,request.getAddressId());
@@ -150,6 +159,7 @@ public class CheckoutServiceImpl implements CheckoutService {
         BigDecimal subtotal=selected.stream().map(this::lineTotal).reduce(BigDecimal.ZERO,BigDecimal::add);
         BigDecimal shippingTotal=shippingQuotes.validateForConfirmation(draft,address,groups.keySet());
         Order order=new Order(); order.setCustomer(buyer); order.setOrderCode(orderCode);
+        if("BANK_TRANSFER".equals(methodCode)) order.setPaymentStatus("PENDING");
         order.setSubtotal(money(subtotal)); order.setShippingFee(shippingTotal);
         order.setGrandTotal(money(subtotal.add(shippingTotal))); orders.save(order);
         em.persist(snapshotAddress(order,address));
@@ -173,16 +183,18 @@ public class CheckoutServiceImpl implements CheckoutService {
                 em.persist(item); reservations.add(new InventoryReservationService.Reservation(item.getOrderItemId(),variant.getVariantId(),line.getQuantity()));
             }
             OrderStatusHistory history=new OrderStatusHistory(); history.setShopOrder(shopOrder); history.setStatus("PENDING");
-            history.setChangedBy(buyer); history.setNote("Khách hàng đặt đơn COD."); em.persist(history);
+            history.setChangedBy(buyer); history.setNote("Khách hàng đặt đơn."); em.persist(history);
         }
         inventory.reserve(reservations,customerId);
         Payment payment=new Payment(); payment.setOrder(order); payment.setPaymentMethod(method); payment.setAmount(order.getGrandTotal());
-        em.persist(payment);
+        if("BANK_TRANSFER".equals(methodCode)) payment.setProvider("VNPAY");
+        em.persist(payment); em.flush();
+        if("BANK_TRANSFER".equals(methodCode)) payment.setTransactionReference("VF"+payment.getPaymentId());
         if(selected.size()==cart.getItems().size()) cart.setStatus("CHECKED_OUT");
         else cart.getItems().removeAll(selected);
         em.flush();
         events.publishEvent(new OrderPlacedEvent(order.getOrderId(),customerId,List.copyOf(shopOrderIds)));
-        return result(order);
+        return result(order,payment);
     }
 
     private void lockCatalog(List<CartItem> selected) {
@@ -220,7 +232,17 @@ public class CheckoutServiceImpl implements CheckoutService {
         if(normalized.signum()<0 || normalized.precision()>18) throw new CheckoutException("Giá trị đơn vượt giới hạn cho phép.");
         return normalized;
     }
-    private CheckoutResult result(Order order) { return new CheckoutResult(order.getOrderId(),order.getOrderCode(),order.getGrandTotal()); }
+    private CheckoutResult result(Order order) {
+        Payment payment=payments.findTopByOrderOrderIdAndProviderOrderByPaymentIdDesc(order.getOrderId(),"VNPAY")
+                .or(() -> payments.findTopByOrderOrderIdAndPaymentMethodMethodCodeOrderByPaymentIdDesc(order.getOrderId(),"VNPAY"))
+                .orElseGet(() -> payments.findByOrderOrderIdOrderByPaymentIdAsc(order.getOrderId()).stream().findFirst()
+                        .orElseThrow(() -> new CheckoutException("Không tìm thấy bản ghi thanh toán của đơn hàng.")));
+        return result(order,payment);
+    }
+    private CheckoutResult result(Order order,Payment payment) {
+        return new CheckoutResult(order.getOrderId(),order.getOrderCode(),order.getGrandTotal(),payment.getPaymentId(),
+                payment.getPaymentMethod().getMethodCode());
+    }
     private OrderAddress snapshotAddress(Order order,Address address) {
         OrderAddress snapshot=new OrderAddress(); snapshot.setOrder(order); snapshot.setRecipientName(address.getRecipientName());
         snapshot.setPhone(address.getPhone()); snapshot.setProvince(address.getProvince()); snapshot.setDistrict(address.getDistrict());

@@ -15,6 +15,8 @@ import VietFreshHub.customer.dto.CustomerAddressRequest;
 import VietFreshHub.customer.service.CustomerAddressService;
 import VietFreshHub.vietmap.service.VietMapService;
 import VietFreshHub.vietmap.dto.VietMapPlaceResponse;
+import VietFreshHub.payment.vnpay.VnpayPaymentService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -47,6 +49,7 @@ public class CheckoutController {
     private final CustomerAddressService customerAddresses;
     private final VietMapService vietMapService;
     private final VietFreshHub.cart.service.CartService carts;
+    private final VnpayPaymentService vnpayPayments;
     @InitBinder("addressForm")
     public void bindAddressForm(WebDataBinder binder) {
         binder.setAllowedFields("recipientName","phone","refId","searchText","checkoutToken");
@@ -93,13 +96,20 @@ public class CheckoutController {
     }
     @PostMapping
     public String confirm(@Valid @ModelAttribute("form") CheckoutRequest form,BindingResult errors,
-                          Authentication authentication,HttpSession session,Model model,HttpServletResponse response) {
+                          Authentication authentication,HttpSession session,Model model,HttpServletResponse response,
+                          HttpServletRequest request,RedirectAttributes flash) {
         Long customerId=currentCustomer.requireCustomerId(authentication);
         var draft=drafts.find(session,form.getCheckoutToken(),customerId);
         if(draft==null) throw new CheckoutException("Phiên đặt hàng không hợp lệ. Vui lòng chọn lại sản phẩm trước khi xác nhận.");
         if(!errors.hasErrors()) {
             try {
                 var order=checkout.confirm(customerId,draft,form);
+                if("BANK_TRANSFER".equals(order.paymentMethodCode()) || "VNPAY".equals(order.paymentMethodCode())) {
+                    var start=vnpayPayments.startInitialPayment(order.paymentId(),customerId,request.getRemoteAddr());
+                    if(start.started()) return "redirect:"+start.paymentUrl();
+                    flash.addFlashAttribute("errorMessage",start.message());
+                    return "redirect:/customer/orders/"+order.orderId();
+                }
                 return "redirect:/customer/orders/"+order.orderId()+"/confirmation";
             } catch(CheckoutException ex) {
                 errors.reject("checkout",ex.getMessage());
@@ -230,6 +240,7 @@ public class CheckoutController {
     private void populate(Long customerId,CheckoutRequest form,VietFreshHub.checkout.dto.CheckoutPreview preview,
                           HttpSession session,Model model) {
         var draft=drafts.issue(session,customerId,preview); form.setCheckoutToken(draft.token());
+        if(!preview.codAvailable() && preview.vnpayAvailable()) form.setPaymentMethodCode("BANK_TRANSFER");
         form.setAddressId(preview.addressId());
         model.addAttribute("form",form); model.addAttribute("checkout",preview); model.addAttribute("cart",preview.cart());
         model.addAttribute("cartBadgeTotal",carts.getActiveCart(customerId).getTotalItems());

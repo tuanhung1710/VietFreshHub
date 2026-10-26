@@ -130,7 +130,7 @@ public class OrderServiceImpl implements OrderService {
         Long shopId = shopService.getManagedShopId(authentication);
         return new OrderCountsResponse(
                 shopOrderRepository.countByShopId(shopId),
-                shopOrderRepository.countByShopIdAndStatus(shopId, "PENDING"),
+                shopOrderRepository.count(buildOrderSpecification(authentication, new OrderFilterRequest(), "incoming")),
                 shopOrderRepository.countByShopIdAndStatus(shopId, "CONFIRMED"),
                 shopOrderRepository.countByShopIdAndStatus(shopId, "PREPARING"),
                 shopOrderRepository.countByShopIdAndStatus(shopId, "READY_FOR_DELIVERY"),
@@ -248,6 +248,7 @@ public class OrderServiceImpl implements OrderService {
                 shopOrder.getStatus(),
                 getOrderStatusLabel(shopOrder.getStatus(), deliveryFailed),
                 getPaymentStatusLabel(order.getPaymentStatus()),
+                order.getPaymentStatus(),
                 shopOrder.getShippingFee(),
                 shopOrder.getTotalAmount(),
                 items
@@ -262,6 +263,7 @@ public class OrderServiceImpl implements OrderService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Chỉ có thể xác nhận đơn hàng đang chờ xác nhận.");
         }
+        ensureVnpayPaid(shopOrder.getOrder());
         shopOrder.confirm();
         recordOrderStatus(shopOrder, authService.getCurrentUserId(authentication));
     }
@@ -300,6 +302,7 @@ public class OrderServiceImpl implements OrderService {
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
                         "Chỉ có thể xác nhận đơn hàng đang chờ xác nhận.");
             }
+            ensureVnpayPaid(shopOrder.getOrder());
         }
         for (ShopOrder shopOrder : shopOrders) {
             shopOrder.confirm();
@@ -408,6 +411,7 @@ public class OrderServiceImpl implements OrderService {
             if (order.getStatus() == Order.Status.CANCELLED) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Không thể xử lý đơn hàng đã hủy.");
             }
+            ensureVnpayPaid(order);
         }
         List<ShopOrder> shopOrders = new ArrayList<>();
         for (Long shopOrderId : selectedIds) {
@@ -581,6 +585,16 @@ public class OrderServiceImpl implements OrderService {
 
     private ShopOrder getShopOrderForUpdate(Long shopOrderId, Authentication authentication) {
         return getShopOrdersForUpdate(List.of(shopOrderId), authentication).getFirst();
+    }
+
+    private void ensureVnpayPaid(Order order) {
+        Long attempts = entityManager.createQuery("select count(p) from Payment p where p.order.orderId=:orderId "
+                        + "and (p.provider='VNPAY' or p.paymentMethod.methodCode='VNPAY')", Long.class)
+                .setParameter("orderId", order.getOrderId()).getSingleResult();
+        if (attempts > 0 && !"PAID".equals(order.getPaymentStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Cửa hàng chỉ có thể xác nhận đơn VNPAY sau khi thanh toán được xác nhận.");
+        }
     }
 
     private String formatDeliveryAddress(OrderAddress address) {

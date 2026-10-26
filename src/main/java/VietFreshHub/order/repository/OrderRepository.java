@@ -1,6 +1,10 @@
 package VietFreshHub.order.repository;
 import VietFreshHub.order.entity.Order;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
 import java.util.Optional;
 public interface OrderRepository extends JpaRepository<Order,Long> {
     @org.springframework.data.jpa.repository.Query("select new VietFreshHub.order.dto.OrderListRow(o.orderId,o.orderCode,o.status,o.paymentStatus,o.grandTotal,o.placedAt) "
@@ -16,4 +20,8 @@ public interface OrderRepository extends JpaRepository<Order,Long> {
             org.springframework.data.domain.Pageable pageable);
     Optional<Order> findByOrderCodeAndCustomerUserId(String code, Long customerId);
     Optional<Order> findByOrderIdAndCustomerUserId(Long orderId, Long customerId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select o from Order o where o.orderId=:orderId")
+    Optional<Order> findByOrderIdForUpdate(@Param("orderId") Long orderId);
 }
