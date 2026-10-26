@@ -1,42 +1,63 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/storefront :: head(${product.name})}"></head><body>
+<head th:replace="~{fragments/storefront :: head(${product.name})}"></head>
+<body>
 <header th:replace="~{fragments/storefront :: header}"></header>
 <main class="container page">
     <p><a th:href="@{/home}">← Tiếp tục mua sắm</a></p>
     <div th:replace="~{fragments/storefront :: messages}"></div>
-    <article class="detail-grid"><img class="detail-image" th:src="${product.imageUrl}" th:alt="${product.name}">
-        <section class="panel"><p class="eyebrow" th:text="${product.shopName}"></p><h1 th:text="${product.name}"></h1>
+    <article class="detail-grid" data-product-stock
+             th:data-product-id="${product.productId}" th:data-selected-id="${variantId}"
+             th:data-stock-url="@{/api/catalog/products/{id}/availability(id=${product.productId})}"
+             th:data-detail-base="@{/product-detail/}">
+        <img class="detail-image" data-product-image th:src="${product.imageUrl}" th:alt="${product.name}">
+        <section class="panel">
+            <p class="eyebrow" th:text="${product.shopName}"></p><h1 th:text="${product.name}"></h1>
             <p class="description muted" th:text="${product.description}"></p>
             <h2>Chọn phân loại</h2>
-            <div class="variant-list" aria-label="Phân loại sản phẩm">
+            <div class="variant-list" data-variant-list aria-label="Phân loại sản phẩm">
                 <a th:each="v : ${variants}" class="variant-option" th:classappend="${v.variantId == variantId} ? 'selected'"
                    th:aria-current="${v.variantId == variantId} ? 'true' : 'false'"
-                   th:href="@{/product-detail/{id}(id=${v.variantId})}">
-                    <span th:text="${v.variantName}"></span><span th:unless="${v.purchasable}"> · Chưa khả dụng</span>
+                   th:href="@{/product-detail/{id}(id=${v.variantId})}"
+                   th:data-variant-id="${v.variantId}" th:data-name="${v.variantName}"
+                   th:data-price="${v.price}" th:data-stock="${v.availableStock}"
+                   th:data-purchasable="${v.purchasable}" th:data-image="${v.imageUrl}"
+                   th:data-message="${v.availabilityMessage}">
+                    <span data-variant-name th:text="${v.variantName}"></span>
+                    <span data-variant-label th:text="${v.purchasable ? '' : ' · Chưa khả dụng'}"></span>
                 </a>
             </div>
             <div th:if="${selectedVariant != null}">
-                <p class="price detail-price" th:text="${#numbers.formatInteger(selectedVariant.price,0,'POINT')} + ' ₫'"></p>
-                <p th:if="${purchasable}" class="muted" th:text="'Còn ' + ${availableStock} + ' sản phẩm có thể mua.'"></p>
-                <p th:unless="${purchasable}" class="item-error">Phân loại này hiện chưa thể đặt mua. Bạn có thể chọn phân loại khác hoặc quay lại sau.</p>
-                <form th:if="${purchasable and #authorization.expression('hasRole(''CUSTOMER'')')}" th:action="@{/cart/add}" method="post" class="detail-form">
-                    <input type="hidden" name="variantId" th:value="${variantId}"><input type="hidden" name="redirect" value="detail">
+                <p class="price detail-price" data-variant-price th:text="${#numbers.formatInteger(selectedVariant.price,0,'POINT')} + ' ₫'"></p>
+                <p data-stock-status th:class="${purchasable ? 'muted' : 'item-error'}" th:text="${selectedVariant.availabilityMessage}"></p>
+                <p data-stock-warning class="item-error" role="status" aria-live="polite" hidden></p>
+                <p data-stock-network class="muted" role="status" hidden></p>
+                <p data-cart-feedback role="status" aria-live="polite" hidden></p>
+                <a th:href="@{/cart}" class="muted">Xem và điều chỉnh giỏ hàng</a>
+                <form th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" th:action="@{/cart/add}"
+                      method="post" class="detail-form" data-detail-cart-form th:data-api-url="@{/api/cart/items}">
+                    <input type="hidden" name="variantId" th:value="${variantId}">
+                    <input type="hidden" name="redirect" value="detail">
                     <label for="quantity">Số lượng</label>
-                    <div class="quantity" data-quantity-picker>
-                        <button type="button" data-step="-1" aria-label="Giảm số lượng">−</button>
-                        <input id="quantity" type="number" inputmode="numeric" step="1" name="quantity" min="1" th:max="${availableStock}"
-                               th:value="${requestedQuantity != null ? requestedQuantity : 1}" required>
-                        <button type="button" data-step="1" aria-label="Tăng số lượng">+</button>
+                    <div class="quantity">
+                        <button type="button" data-stock-step="-1" aria-label="Giảm số lượng" th:disabled="${!purchasable}">−</button>
+                        <input id="quantity" type="number" inputmode="numeric" step="1" name="quantity" min="1"
+                               th:max="${availableStock}" th:value="${requestedQuantity != null ? requestedQuantity : 1}" required>
+                        <button type="button" data-stock-step="1" aria-label="Tăng số lượng" th:disabled="${!purchasable}">+</button>
                     </div>
-                    <button class="button full" type="submit">Thêm vào giỏ hàng</button>
+                    <button class="button full" type="submit" data-add-button th:disabled="${!purchasable}">Thêm vào giỏ hàng</button>
                 </form>
                 <a th:if="${purchasable and #authorization.expression('!isAuthenticated()')}" class="button full" th:href="@{/login(continue=${'/product-detail/' + variantId})}">Đăng nhập để thêm vào giỏ</a>
                 <p th:if="${purchasable and #authorization.expression('isAuthenticated() and !hasRole(''CUSTOMER'')')}" class="muted">Mua hàng bằng tài khoản khách hàng.</p>
-                <p class="muted">Giỏ hàng không giữ hàng. Tồn kho được kiểm tra lại khi bạn đặt hàng.</p>
+                <p class="muted">Giỏ hàng không giữ hàng. Tồn kho được kiểm tra lại khi bạn thêm giỏ và đặt hàng.</p>
+                <noscript><p class="muted">Bật JavaScript để cập nhật tồn kho tự động. Khi không bật, chuyển phân loại sẽ tải lại trang; server vẫn kiểm tra tồn kho khi thêm giỏ.</p></noscript>
             </div>
             <p th:if="${selectedVariant == null}" class="muted">Cửa hàng chưa có phân loại để bán.</p>
         </section>
     </article>
     <div th:replace="~{customer/fragments/recommendations :: section}"></div>
-</main><footer th:replace="~{fragments/storefront :: footer}"></footer></body></html>
+</main>
+<footer th:replace="~{fragments/storefront :: footer}"></footer>
+<script defer th:src="@{/js/product-stock.js}"></script>
+</body>
+</html>

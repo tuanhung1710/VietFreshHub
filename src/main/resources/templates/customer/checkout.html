@@ -40,6 +40,7 @@
                         <article th:each="item : ${group.value}" class="checkout-line"><img th:src="${item.imageUrl}" th:alt="${item.productName}" width="64" height="64">
                             <div><strong th:text="${item.productName}"></strong><p class="muted" th:text="${item.variantName} + ' · Số lượng ' + ${item.quantity}"></p>
                                 <p th:if="${item.availabilityMessage != null}" class="item-error" th:text="${item.availabilityMessage}"></p>
+                                <p th:unless="${item.purchasable}" class="item-error">Bạn chọn <strong th:text="${item.quantity}"></strong>, tồn khả dụng hiện tại <strong th:text="${item.availableStock}"></strong>. <a th:href="@{/cart}">Điều chỉnh hoặc xóa trong giỏ</a>.</p>
                                 <p th:if="${item.priceChanged}" class="item-warning">Giá hiện tại đã được cập nhật. Xác nhận bên dưới để đặt theo giá đang hiển thị.</p></div>
                             <span class="price" th:text="${#numbers.formatInteger(item.itemSubtotal,0,'POINT')} + ' ₫'"></span>
                         </article>

@@ -5,6 +5,8 @@ import VietFreshHub.auth.repository.UserRoleRepository;
 import VietFreshHub.auth.service.CurrentCustomerService;
 import VietFreshHub.auth.service.Oidc_UserService;
 import VietFreshHub.cart.controller.CustomerCartViewController;
+import VietFreshHub.cart.controller.CartApiController;
+import VietFreshHub.catalog.controller.ProductAvailabilityController;
 import VietFreshHub.cart.service.CartService;
 import VietFreshHub.catalog.service.CatalogService;
 import VietFreshHub.checkout.controller.CheckoutController;
@@ -50,7 +52,8 @@ public final class CustomerHttpHarness implements AutoCloseable {
         context = new AnnotationConfigWebApplicationContext();
         context.setServletContext(new MockServletContext());
         context.register(WebConfiguration.class, CustomerCartViewController.class, CheckoutController.class,
-                CustomerOrderController.class, CustomerOrderDetailsController.class, CustomerPaymentHistoryController.class);
+                CustomerOrderController.class, CustomerOrderDetailsController.class, CustomerPaymentHistoryController.class,
+                CartApiController.class, ProductAvailabilityController.class);
         context.addBeanFactoryPostProcessor(beans -> {
             beans.registerSingleton("userRepository", users);
             beans.registerSingleton("userRoleRepository", roles);

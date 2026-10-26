@@ -1,13 +1,9 @@
 package VietFreshHub.checkout.service.impl;
-import VietFreshHub.checkout.service.CheckoutService;
-import VietFreshHub.checkout.service.InventoryReservationService;
-import VietFreshHub.checkout.service.CheckoutShippingQuoteService;
 
 import VietFreshHub.auth.entity.Address;
 import VietFreshHub.auth.entity.User;
 import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.cart.dto.CartDto;
-import VietFreshHub.cart.dto.CartItemDto;
 import VietFreshHub.cart.entity.Cart;
 import VietFreshHub.cart.entity.CartItem;
 import VietFreshHub.cart.repository.CartRepository;
@@ -19,39 +15,26 @@ import VietFreshHub.checkout.dto.CheckoutDraft;
 import VietFreshHub.checkout.dto.CheckoutPreview;
 import VietFreshHub.checkout.dto.CheckoutRequest;
 import VietFreshHub.checkout.dto.CheckoutResult;
-import VietFreshHub.checkout.dto.ShopShippingQuote;
 import VietFreshHub.checkout.repository.CheckoutAddressRepository;
+import VietFreshHub.checkout.service.CheckoutOrderService;
+import VietFreshHub.checkout.service.CheckoutService;
+import VietFreshHub.checkout.service.CheckoutShippingQuoteService;
+import VietFreshHub.checkout.service.InventoryReservationService;
 import VietFreshHub.customer.service.CustomerAddressService;
 import VietFreshHub.exception.CheckoutException;
 import VietFreshHub.order.entity.Order;
-import VietFreshHub.order.entity.OrderAddress;
-import VietFreshHub.order.entity.OrderItem;
-import VietFreshHub.order.entity.OrderStatusHistory;
-import VietFreshHub.order.entity.ShopOrder;
 import VietFreshHub.order.repository.OrderRepository;
 import VietFreshHub.order.service.OrderPlacedEvent;
-import VietFreshHub.payment.entity.Payment;
 import VietFreshHub.payment.entity.PaymentMethod;
 import VietFreshHub.payment.repository.PaymentMethodRepository;
 import VietFreshHub.sellerapplication.entity.SellerApplication;
 import VietFreshHub.shop.entity.Shop;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashSet;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -59,6 +42,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import static VietFreshHub.checkout.service.CheckoutCartSupport.calculateSubtotal;
+import static VietFreshHub.checkout.service.CheckoutCartSupport.createCartFingerprint;
+import static VietFreshHub.checkout.service.CheckoutCartSupport.groupItemsByShop;
+import static VietFreshHub.checkout.service.CheckoutCartSupport.selectCartItems;
 
 /**
  * Điều phối checkout COD: kiểm tra dữ liệu, tạo đơn, giữ kho và ghi nhận payment chờ thu.
@@ -77,6 +69,7 @@ public class CheckoutServiceImpl implements CheckoutService {
     private final CatalogService catalogService;
     private final InventoryReservationService inventoryReservationService;
     private final CheckoutShippingQuoteService shippingQuoteService;
+    private final CheckoutOrderService checkoutOrderService;
     private final EntityManager entityManager;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -128,10 +121,10 @@ public class CheckoutServiceImpl implements CheckoutService {
                 draft, deliveryAddress, itemsByShopId.keySet());
 
         // 3. Tạo đơn tổng, đơn từng shop, giữ kho và ghi nhận COD chưa thu tiền.
-        Order order = createOrder(buyer, orderCode, subtotal, shippingFee, deliveryAddress);
-        CreatedShopOrders createdShopOrders = createShopOrders(order, buyer, itemsByShopId, draft.shopQuotes());
+        Order order = checkoutOrderService.createOrder(buyer, orderCode, subtotal, shippingFee, deliveryAddress);
+        CheckoutOrderService.CreatedShopOrders createdShopOrders = checkoutOrderService.createShopOrders(order, buyer, itemsByShopId, draft.shopQuotes());
         inventoryReservationService.reserve(createdShopOrders.reservations(), customerId);
-        createPendingPayment(order, paymentMethod);
+        checkoutOrderService.createPendingPayment(order, paymentMethod);
 
         // 4. Giữ lại món chưa chọn; nếu đặt hết giỏ thì đóng giỏ hiện tại.
         if (selectedItems.size() == cart.getItems().size()) {
@@ -214,7 +207,12 @@ public class CheckoutServiceImpl implements CheckoutService {
         if (selection.isEmpty() || selection.size() != selectedItemIds.size()) {
             throw new CheckoutException("Vui lòng chọn ít nhất một sản phẩm hợp lệ để đặt hàng.");
         }
-        List<CartItem> selected = cart.getItems().stream().filter(item -> selection.contains(item.getCartItemId())).toList();
+        List<CartItem> selected = new ArrayList<>();
+        for (CartItem item : cart.getItems()) {
+            if (selection.contains(item.getCartItemId())) {
+                selected.add(item);
+            }
+        }
         if (selected.size() != selection.size()) {
             throw new CheckoutException("Sản phẩm đã chọn không còn trong giỏ. Vui lòng chọn lại.");
         }
@@ -225,7 +223,9 @@ public class CheckoutServiceImpl implements CheckoutService {
         lockCatalog(selectedItems);
         for (CartItem item : selectedItems) {
             if (item.getQuantity() == null || item.getQuantity() < 1 || !catalogService.isPurchasable(item.getVariant())) {
-                throw new CheckoutException("Một sản phẩm hoặc cửa hàng không còn nhận đơn. Vui lòng kiểm tra lại giỏ.");
+                throw new CheckoutException(item.getVariant().getProduct().getName() + " — "
+                        + item.getVariant().getVariantName()
+                        + ": sản phẩm hoặc cửa hàng không còn nhận đơn. Vui lòng kiểm tra lại giỏ.");
             }
         }
         CartDto currentSelection = selectCartItems(cartService.getActiveCart(customerId), draft.selectedItemIds());
@@ -285,159 +285,8 @@ public class CheckoutServiceImpl implements CheckoutService {
         }
     }
 
-    // Tạo entity và snapshot trong transaction của confirm().
-
-    private Order createOrder(User buyer, String orderCode, BigDecimal subtotal, BigDecimal shippingFee, Address address) {
-        Order order = new Order();
-        order.setCustomer(buyer);
-        order.setOrderCode(orderCode);
-        order.setSubtotal(normalizeMoney(subtotal));
-        order.setShippingFee(shippingFee);
-        order.setGrandTotal(normalizeMoney(subtotal.add(shippingFee)));
-        orderRepository.save(order);
-        entityManager.persist(snapshotAddress(order, address));
-        return order;
-    }
-
-    private CreatedShopOrders createShopOrders(Order order, User buyer, Map<Long, List<CartItem>> itemsByShopId,
-                                               Map<Long, ShopShippingQuote> quotesByShopId) {
-        List<InventoryReservationService.Reservation> reservations = new ArrayList<>();
-        List<Long> shopOrderIds = new ArrayList<>();
-        for (List<CartItem> shopItems : itemsByShopId.values()) {
-            Long shopId = shopItems.getFirst().getVariant().getProduct().getShop().getShopId();
-            ShopOrder shopOrder = createShopOrder(order, shopItems, quotesByShopId.get(shopId));
-            shopOrderIds.add(shopOrder.getShopOrderId());
-            for (CartItem cartItem : shopItems) {
-                OrderItem orderItem = createOrderItem(shopOrder, cartItem);
-                reservations.add(new InventoryReservationService.Reservation(
-                        orderItem.getOrderItemId(), cartItem.getVariant().getVariantId(), cartItem.getQuantity()));
-            }
-            recordPlacedHistory(shopOrder, buyer);
-        }
-        return new CreatedShopOrders(shopOrderIds, reservations);
-    }
-
-    private ShopOrder createShopOrder(Order order, List<CartItem> shopItems, ShopShippingQuote shippingQuote) {
-        ShopOrder shopOrder = new ShopOrder();
-        shopOrder.setOrder(order);
-        shopOrder.setShop(shopItems.getFirst().getVariant().getProduct().getShop());
-        BigDecimal shippingFee = shippingQuote.shippingFee();
-        shopOrder.setShippingDistanceMeters(shippingQuoteService.distanceSnapshot(shippingQuote.distanceMeters()));
-        BigDecimal subtotal = calculateSubtotal(shopItems);
-        shopOrder.setSubtotal(normalizeMoney(subtotal));
-        shopOrder.setShippingFee(shippingFee);
-        shopOrder.setTotalAmount(normalizeMoney(subtotal.add(shippingFee)));
-        entityManager.persist(shopOrder);
-        return shopOrder;
-    }
-
-    private OrderItem createOrderItem(ShopOrder shopOrder, CartItem cartItem) {
-        CatalogVariant variant = cartItem.getVariant();
-        OrderItem orderItem = new OrderItem();
-        orderItem.setShopOrder(shopOrder);
-        orderItem.setVariant(variant);
-        orderItem.setProductNameSnapshot(variant.getProduct().getName());
-        orderItem.setVariantNameSnapshot(variant.getVariantName());
-        orderItem.setSkuSnapshot(variant.getSku());
-        orderItem.setUnitPrice(variant.getPrice());
-        orderItem.setQuantity(cartItem.getQuantity());
-        orderItem.setTotalAmount(normalizeMoney(calculateLineTotal(cartItem)));
-        entityManager.persist(orderItem);
-        return orderItem;
-    }
-
-    private void recordPlacedHistory(ShopOrder shopOrder, User buyer) {
-        OrderStatusHistory history = new OrderStatusHistory();
-        history.setShopOrder(shopOrder);
-        history.setStatus("PENDING");
-        history.setChangedBy(buyer);
-        history.setNote("Khách hàng đặt đơn COD.");
-        entityManager.persist(history);
-    }
-
-    private void createPendingPayment(Order order, PaymentMethod paymentMethod) {
-        Payment payment = new Payment();
-        payment.setOrder(order);
-        payment.setPaymentMethod(paymentMethod);
-        payment.setAmount(order.getGrandTotal());
-        entityManager.persist(payment);
-    }
-
-    // Tính toán và chuyển đổi dữ liệu, không ghi DB.
-
-    private Map<Long, List<CartItem>> groupItemsByShop(List<CartItem> selectedItems) {
-        Map<Long, List<CartItem>> itemsByShopId = new TreeMap<>();
-        for (CartItem item : selectedItems) {
-            Long shopId = item.getVariant().getProduct().getShop().getShopId();
-            // Các món cùng shop sẽ được tạo chung một ShopOrder.
-            itemsByShopId.computeIfAbsent(shopId, ignored -> new ArrayList<>()).add(item);
-        }
-        return itemsByShopId;
-    }
-
-    private BigDecimal calculateSubtotal(List<CartItem> items) {
-        BigDecimal subtotal = BigDecimal.ZERO;
-        for (CartItem item : items) {
-            subtotal = subtotal.add(calculateLineTotal(item));
-        }
-        return subtotal;
-    }
-
-    private BigDecimal calculateLineTotal(CartItem item) {
-        return item.getVariant().getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
-    }
-
-    private CartDto selectCartItems(CartDto cart, List<Long> itemIds) {
-        if (itemIds == null) {
-            return cart;
-        }
-        if (itemIds.isEmpty() || itemIds.stream().anyMatch(id -> id == null || id <= 0)) {
-            throw new CheckoutException("Vui lòng chọn ít nhất một sản phẩm hợp lệ.");
-        }
-        Set<Long> selectedIds = new HashSet<>(itemIds);
-        List<CartItemDto> selected = cart.getItems().stream().filter(item -> selectedIds.contains(item.getCartItemId())).toList();
-        if (selected.size() != selectedIds.size()) {
-            throw new CheckoutException("Sản phẩm đã chọn không thuộc giỏ hàng hiện tại của bạn.");
-        }
-        return CartDto.builder()
-                .cartId(cart.getCartId())
-                .userId(cart.getUserId())
-                .status(cart.getStatus())
-                .items(selected)
-                .totalItems(selected.stream().mapToLong(CartItemDto::getQuantity).sum())
-                .totalAmount(selected.stream().map(CartItemDto::getItemSubtotal).reduce(BigDecimal.ZERO, BigDecimal::add))
-                .hasUnavailableItems(selected.stream().anyMatch(item -> !item.isPurchasable()))
-                .build();
-    }
-
-    private BigDecimal normalizeMoney(BigDecimal amount) {
-        BigDecimal normalizedAmount = amount.setScale(2, RoundingMode.UNNECESSARY);
-        if (normalizedAmount.signum() < 0 || normalizedAmount.precision() > 18) {
-            throw new CheckoutException("Giá trị đơn vượt giới hạn cho phép.");
-        }
-        return normalizedAmount;
-    }
-
     private CheckoutResult toCheckoutResult(Order order) {
         return new CheckoutResult(order.getOrderId(), order.getOrderCode(), order.getGrandTotal());
-    }
-
-    private OrderAddress snapshotAddress(Order order, Address address) {
-        OrderAddress snapshot = new OrderAddress();
-        snapshot.setOrder(order);
-        snapshot.setRecipientName(address.getRecipientName());
-        snapshot.setPhone(address.getPhone());
-        snapshot.setProvince(address.getProvince());
-        snapshot.setDistrict(address.getDistrict());
-        snapshot.setWard(address.getWard());
-        snapshot.setAddressLine(address.getAddressLine());
-        snapshot.setProvinceId(address.getProvinceId());
-        snapshot.setDistrictId(address.getDistrictId());
-        snapshot.setWardId(address.getWardId());
-        snapshot.setFormattedAddress(address.getFormattedAddress());
-        snapshot.setLatitude(address.getLatitude());
-        snapshot.setLongitude(address.getLongitude());
-        return snapshot;
     }
 
     private String formatAddress(Address address) {
@@ -446,46 +295,30 @@ public class CheckoutServiceImpl implements CheckoutService {
         }
         List<String> parts = new ArrayList<>();
         if (address.getAddressLine() != null) {
-            Arrays.stream(address.getAddressLine().split(",")).map(String::strip)
-                    .filter(part -> !part.isBlank()).forEach(parts::add);
+            for (String part : address.getAddressLine().split(",")) {
+                String component = part.strip();
+                if (!component.isBlank()) {
+                    parts.add(component);
+                }
+            }
         }
         for (String part : Arrays.asList(address.getWard(), address.getDistrict(), address.getProvince())) {
             if (part == null || part.isBlank()) {
                 continue;
             }
             String component = part.strip();
-            if (parts.stream().noneMatch(existing -> existing.equalsIgnoreCase(component))) {
+            boolean alreadyIncluded = false;
+            for (String existing : parts) {
+                if (existing.equalsIgnoreCase(component)) {
+                    alreadyIncluded = true;
+                    break;
+                }
+            }
+            if (!alreadyIncluded) {
                 parts.add(component);
             }
         }
         return String.join(", ", parts);
     }
-
-    private String createCartFingerprint(CartDto cart) {
-        // Sắp xếp cố định để fingerprint không đổi khi thứ tự hiển thị trong giỏ thay đổi.
-        List<CartItemDto> sortedItems = new ArrayList<>(cart.getItems());
-        sortedItems.sort(Comparator.comparing(CartItemDto::getCartItemId));
-        StringBuilder cartSignature = new StringBuilder(String.valueOf(cart.getCartId()));
-        for (CartItemDto item : sortedItems) {
-            cartSignature.append('|')
-                    .append(item.getCartItemId()).append(':')
-                    .append(item.getVariantId()).append(':')
-                    .append(item.getQuantity()).append(':')
-                    .append(item.getUnitPriceSnapshot().stripTrailingZeros().toPlainString()).append(':')
-                    .append(item.getShopId());
-        }
-        try {
-            byte[] signatureBytes = cartSignature.toString().getBytes(StandardCharsets.UTF_8);
-            byte[] hash = MessageDigest.getInstance("SHA-256").digest(signatureBytes);
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException("SHA-256 is required by the Java runtime", exception);
-        }
-    }
-
-    private record CreatedShopOrders(
-            List<Long> shopOrderIds,
-            List<InventoryReservationService.Reservation> reservations
-    ) {}
 
 }

@@ -12,12 +12,6 @@ import VietFreshHub.shop.entity.ShopLocation;
 import VietFreshHub.shop.service.ShopService;
 import VietFreshHub.vietmap.dto.VietMapPlaceResponse;
 import VietFreshHub.vietmap.service.VietMapService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Map;
@@ -25,6 +19,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -52,43 +51,19 @@ public class CheckoutShippingQuoteService {
             if (selectedAddressId == null) {
                 throw new CheckoutException("Vui lòng thêm hoặc chọn địa chỉ nhận hàng để tính phí giao hàng.");
             }
-            Address address;
-            try {
-                address = customerAddresses.getDeliveryAddress(customerId, selectedAddressId);
-            } catch (IllegalArgumentException exception) {
-                throw new CheckoutException(exception.getMessage());
-            }
-            BigDecimal destinationLatitude = address.getLatitude();
-            BigDecimal destinationLongitude = address.getLongitude();
+            Address address = requireDeliveryAddress(customerId, selectedAddressId);
             Map<Long, String> shopNames = new TreeMap<>();
             for (CartItemDto item : preview.cart().getItems()) {
                 shopNames.put(item.getShopId(), item.getShopName());
             }
-            Map<Long, ShopLocation> locations = new TreeMap<>();
-            for (Long shopId : shopNames.keySet()) {
-                ShopLocation location = shops.findLocationByShopId(shopId)
-                        .orElseThrow(() -> new CheckoutException("Cửa hàng " + shopNames.get(shopId)
-                                + " chưa có địa chỉ lấy hàng hợp lệ. Vui lòng chọn lại sản phẩm hoặc thử lại sau."));
-                validatePickupLocation(shopId, location, shopNames.get(shopId));
-                locations.put(shopId, location);
-            }
+            Map<Long, ShopLocation> locations = requirePickupLocations(shopNames);
             Map<Long, ShopShippingQuote> quotes = new TreeMap<>();
             BigDecimal total = BigDecimal.ZERO;
             for (Long shopId : locations.keySet()) {
                 ShopLocation location = locations.get(shopId);
-                BigDecimal distanceMeters;
-                try {
-                    distanceMeters = vietMap.motorcycleRoadDistanceMeters(location.getLatitude(), location.getLongitude(),
-                            destinationLatitude, destinationLongitude);
-                } catch (ResponseStatusException exception) {
-                    throw new CheckoutException("Chưa thể tính phí vận chuyển cho cửa hàng " + shopNames.get(shopId)
-                            + ". Vui lòng thử lại sau.");
-                }
-                validateDeliveryDistance(distanceMeters, shopNames.get(shopId));
-                BigDecimal fee = shippingFees.calculateShippingFee(distanceMeters);
-                quotes.put(shopId, new ShopShippingQuote(shopId, location.getLatitude(), location.getLongitude(),
-                        destinationLatitude, destinationLongitude, distanceMeters, fee));
-                total = total.add(fee);
+                ShopShippingQuote quote = quoteShop(shopId, shopNames.get(shopId), location, address);
+                quotes.put(shopId, quote);
+                total = total.add(quote.shippingFee());
             }
             return new CheckoutPreview(preview.cart(), preview.addresses(), selectedAddressId, quotes, money(total),
                     money(preview.cart().getTotalAmount().add(total)), preview.codAvailable(), preview.fingerprint(), null, false);
@@ -96,6 +71,42 @@ public class CheckoutShippingQuoteService {
             return new CheckoutPreview(preview.cart(), preview.addresses(), selectedAddressId, Map.of(), null, null,
                     preview.codAvailable(), preview.fingerprint(), exception.getMessage(), exception instanceof DeliveryRangeException);
         }
+    }
+
+    private Address requireDeliveryAddress(Long customerId, Long addressId) {
+        try {
+            return customerAddresses.getDeliveryAddress(customerId, addressId);
+        } catch (IllegalArgumentException exception) {
+            throw new CheckoutException(exception.getMessage());
+        }
+    }
+
+    private Map<Long, ShopLocation> requirePickupLocations(Map<Long, String> shopNames) {
+        Map<Long, ShopLocation> locations = new TreeMap<>();
+        for (Long shopId : shopNames.keySet()) {
+            String shopName = shopNames.get(shopId);
+            ShopLocation location = shops.findLocationByShopId(shopId)
+                    .orElseThrow(() -> new CheckoutException("Cửa hàng " + shopName
+                            + " chưa có địa chỉ lấy hàng hợp lệ. Vui lòng chọn lại sản phẩm hoặc thử lại sau."));
+            validatePickupLocation(shopId, location, shopName);
+            locations.put(shopId, location);
+        }
+        return locations;
+    }
+
+    private ShopShippingQuote quoteShop(Long shopId, String shopName, ShopLocation location, Address address) {
+        BigDecimal distanceMeters;
+        try {
+            distanceMeters = vietMap.motorcycleRoadDistanceMeters(
+                    location.getLatitude(), location.getLongitude(), address.getLatitude(), address.getLongitude());
+        } catch (ResponseStatusException exception) {
+            throw new CheckoutException("Chưa thể tính phí vận chuyển cho cửa hàng " + shopName
+                    + ". Vui lòng thử lại sau.");
+        }
+        validateDeliveryDistance(distanceMeters, shopName);
+        BigDecimal shippingFee = shippingFees.calculateShippingFee(distanceMeters);
+        return new ShopShippingQuote(shopId, location.getLatitude(), location.getLongitude(),
+                address.getLatitude(), address.getLongitude(), distanceMeters, shippingFee);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)

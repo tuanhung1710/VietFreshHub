@@ -1,7 +1,17 @@
 package VietFreshHub.cart.entity;
 
 import VietFreshHub.catalog.entity.CatalogVariant;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Id;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Column;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,6 +19,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Getter
 @Setter
@@ -45,13 +56,17 @@ public class CartItem {
 
     @PrePersist
     void initializeUtcTimestamps() {
-        var now = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
-        if (addedAt == null) addedAt = now;
-        if (updatedAt == null) updatedAt = now;
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
+        if (addedAt == null) {
+            addedAt = now;
+        }
+        if (updatedAt == null) {
+            updatedAt = now;
+        }
     }
 
     @PreUpdate
     void updateUtcTimestamps() {
-        updatedAt = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+        updatedAt = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
     }
 }

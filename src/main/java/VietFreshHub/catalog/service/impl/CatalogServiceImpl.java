@@ -100,20 +100,22 @@ public class CatalogServiceImpl implements CatalogService {
         } else if (productId != null) p = products.findById(productId).orElseThrow(this::notFound);
         else if (slug != null && !slug.isBlank()) {
             // Schema guarantees slug uniqueness within a shop only.
-            List<CatalogProduct> matches = products.findAllBySlug(slug).stream().filter(this::isVisible).toList();
+            List<CatalogProduct> matches = products.findAllBySlug(slug).stream().filter(this::isCatalogEligible).toList();
             if (matches.size() != 1) throw notFound();
             p = matches.getFirst();
         } else throw notFound();
-        if (!isVisible(p)) throw notFound();
+        // Trang chi tiết vẫn tồn tại khi hết hàng; danh sách mua sắm vẫn dùng isVisible().
+        if (!isCatalogEligible(p)) throw notFound();
         var stocks = inventory.getAvailableStocks(p.getVariants().stream().map(CatalogVariant::getVariantId).toList());
         return toResponse(p, variantId, stocks);
     }
     private CatalogProductResponse toResponse(CatalogProduct p, Long selectedId, java.util.Map<Long, Integer> stocks) {
         var options = p.getVariants().stream().filter(v -> "ACTIVE".equals(v.getStatus())
-                && stocks.getOrDefault(v.getVariantId(), 0) > 0).map(v -> {
-            int available = stocks.getOrDefault(v.getVariantId(), 0);
+                || "OUT_OF_STOCK".equals(v.getStatus())).map(v -> {
+            int available = Math.max(0, stocks.getOrDefault(v.getVariantId(), 0));
             return CatalogProductResponse.VariantResponse.builder().variantId(v.getVariantId()).variantName(v.getVariantName())
                     .sku(v.getSku()).price(v.getPrice()).status(v.getStatus()).availableStock(available)
+                    .imageUrl(v.getDisplayImageUrl()).availabilityMessage(availabilityMessage(p, v, available))
                     .purchasable("ACTIVE".equals(v.getStatus()) && available > 0 && "OPEN".equals(p.getShop().getAvailabilityStatus())).build();
         }).sorted(Comparator.comparing(CatalogProductResponse.VariantResponse::getPrice)).toList();
         var selected = selectedId == null ? options.stream().filter(CatalogProductResponse.VariantResponse::isPurchasable)
@@ -123,6 +125,15 @@ public class CatalogServiceImpl implements CatalogService {
                 .description(p.getDescription()).imageUrl(selected == null ? p.getImageUrl() : p.getVariants().stream()
                         .filter(v -> v.getVariantId().equals(selected.getVariantId())).findFirst().map(CatalogVariant::getDisplayImageUrl).orElse(p.getImageUrl())).shopName(p.getShop().getShopName())
                 .variants(options).selectedVariant(selected).build();
+    }
+    private String availabilityMessage(CatalogProduct product, CatalogVariant variant, int availableStock) {
+        if (!"OPEN".equals(product.getShop().getAvailabilityStatus())) {
+            return "Cửa hàng hiện không nhận đơn.";
+        }
+        if ("OUT_OF_STOCK".equals(variant.getStatus()) || availableStock == 0) {
+            return "Tạm hết hàng. Bạn có thể chọn phân loại khác hoặc quay lại sau.";
+        }
+        return "Còn " + availableStock + " sản phẩm có thể mua.";
     }
     private ResourceNotFoundException notFound() { return new ResourceNotFoundException("Sản phẩm không còn được bán hoặc đường dẫn không hợp lệ."); }
 }

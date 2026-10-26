@@ -31,9 +31,12 @@ class CatalogAvailabilityTest {
         when(products.findById(1L)).thenReturn(Optional.of(product));
         when(stock.getAvailableStocks(anyList())).thenReturn(Map.of(11L, 0));
     }
-    @Test void fullyReservedOrEmptyProductIsHiddenAndDirectLinkIsRejected() {
+    @Test void fullyReservedOrEmptyProductIsHiddenFromListingButDetailStaysReadable() {
         assertFalse(service.isVisible(product));
-        assertThrows(ResourceNotFoundException.class, () -> service.getProduct(null, 1L, null));
+        var response = service.getProduct(null, 1L, null);
+        assertEquals(11L, response.getSelectedVariant().getVariantId());
+        assertFalse(response.getSelectedVariant().isPurchasable());
+        assertEquals(0, response.getSelectedVariant().getAvailableStock());
     }
     @Test void releasedStockMakesActiveProductVisibleAgain() {
         assertFalse(service.isVisible(product));
@@ -45,15 +48,39 @@ class CatalogAvailabilityTest {
         variant.setStatus("INACTIVE"); when(stock.getAvailableStocks(anyList())).thenReturn(Map.of(11L, 5));
         assertFalse(service.isVisible(product));
     }
-    @Test void unavailableOptionsAreExcludedWhileAnotherVariantIsSellable() {
+    @Test void emptyVariantRemainsSelectableWhileAnotherVariantIsSellable() {
         CatalogVariant empty = new CatalogVariant(); empty.setVariantId(12L); empty.setProduct(product);
         empty.setStatus("ACTIVE"); empty.setPrice(BigDecimal.ONE);
         product.setVariants(List.of(variant, empty));
         when(stock.getAvailableStocks(anyList())).thenReturn(Map.of(11L, 2, 12L, 0));
         var response = service.getProduct(null, 1L, null);
-        assertEquals(List.of(11L), response.getVariants().stream().map(v -> v.getVariantId()).toList());
-        assertThrows(ResourceNotFoundException.class, () -> {
-            when(variants.findById(12L)).thenReturn(Optional.of(empty)); service.getProduct(12L, null, null);
-        });
+        assertEquals(List.of(12L, 11L), response.getVariants().stream().map(v -> v.getVariantId()).toList());
+        assertEquals(11L, response.getSelectedVariant().getVariantId());
+        when(variants.findById(12L)).thenReturn(Optional.of(empty));
+        var selected = service.getProduct(12L, null, null).getSelectedVariant();
+        assertEquals(12L, selected.getVariantId());
+        assertFalse(selected.isPurchasable());
+    }
+
+    @Test void hiddenProductCannotBeReadEvenIfStockRemains() {
+        product.setApprovalStatus("PENDING");
+        assertThrows(ResourceNotFoundException.class, () -> service.getProduct(null, 1L, null));
+    }
+
+    @Test void stockCanDecreaseToZeroAndRecoverWithoutLosingVariant() {
+        when(variants.findById(11L)).thenReturn(Optional.of(variant));
+        when(stock.getAvailableStocks(anyList())).thenReturn(Map.of(11L, 5), Map.of(11L, 1),
+                Map.of(11L, 0), Map.of(11L, 2));
+        for (int expected : List.of(5, 1, 0, 2)) {
+            var selected = service.getProduct(11L, null, null).getSelectedVariant();
+            assertEquals(expected, selected.getAvailableStock());
+            assertEquals(expected > 0, selected.isPurchasable());
+        }
+    }
+
+    @Test void explicitlyOutOfStockVariantIsVisibleButCannotBePurchased() {
+        variant.setStatus("OUT_OF_STOCK");
+        when(stock.getAvailableStocks(anyList())).thenReturn(Map.of(11L, 5));
+        assertFalse(service.getProduct(null, 1L, null).getSelectedVariant().isPurchasable());
     }
 }

@@ -134,7 +134,7 @@ class CheckoutSqlServerIntegrationTest {
     }
     CheckoutService checkout(InventoryReservationService reservation) {
         return transactional(new CheckoutServiceImpl(repo(UserRepository.class),repo(CartRepository.class),cart,repo(CheckoutAddressRepository.class),
-                addresses,repo(PaymentMethodRepository.class),repo(OrderRepository.class),catalog,reservation,shipping,em,events));
+                addresses,repo(PaymentMethodRepository.class),repo(OrderRepository.class),catalog,reservation,shipping,new CheckoutOrderService(repo(OrderRepository.class),em,shipping),em,events));
     }
     long insert(String sql,Object... parameters) {
         var key=new GeneratedKeyHolder();
@@ -274,6 +274,42 @@ class CheckoutSqlServerIntegrationTest {
         assertEquals(1,jdbc.queryForObject("select reserved_quantity from dbo.inventory_batches where batch_id=?",Integer.class,batch));
         assertEquals(1,jdbc.queryForObject("select quantity_on_hand from dbo.inventory_batches where batch_id=?",Integer.class,batch));
         assertEquals(1,count("stock_allocations","batch_id=? and status='RESERVED'",batch));
+    }
+
+    @Test void competingQuantitiesCannotReserveMoreThanFiveAndDetailReflectsCommittedStock() throws Exception {
+        long variant = freshVariant(0);
+        long batchId = batch(variant, 5, "ACTIVE", null);
+        var first = buyer();
+        var second = buyer();
+        cart.addToCart(first.user(), new AddToCartRequest(variant, 4));
+        cart.addToCart(second.user(), new AddToCartRequest(variant, 3));
+        var firstDraft = draft(first);
+        var secondDraft = draft(second);
+        var service = checkout(inventory);
+        var results = concurrent(() -> service.confirm(first.user(), firstDraft, request(first, firstDraft)),
+                () -> service.confirm(second.user(), secondDraft, request(second, secondDraft)));
+        assertEquals(1, results.stream().filter(CheckoutResult.class::isInstance).count(), results::toString);
+        assertEquals(1, results.stream().filter(CheckoutException.class::isInstance).count(), results::toString);
+        int reserved = jdbc.queryForObject("select reserved_quantity from dbo.inventory_batches where batch_id=?", Integer.class, batchId);
+        assertTrue(reserved == 3 || reserved == 4);
+        assertEquals(5, jdbc.queryForObject("select quantity_on_hand from dbo.inventory_batches where batch_id=?", Integer.class, batchId));
+        assertEquals(reserved, jdbc.queryForObject("select sum(quantity) from dbo.stock_allocations where batch_id=? and status='RESERVED'", Integer.class, batchId));
+        assertEquals(1, count("orders", "customer_id in (?,?)", first.user(), second.user()));
+        assertEquals(5 - reserved, catalog.getProduct(variant, null, null).getSelectedVariant().getAvailableStock());
+    }
+
+    @Test void openDetailRemainsReadableAfterLastUnitIsReserved() {
+        long variant = freshVariant(0);
+        batch(variant, 1, "ACTIVE", null);
+        var buyer = buyer();
+        assertEquals(1, catalog.getProduct(variant, null, null).getSelectedVariant().getAvailableStock());
+        cart.addToCart(buyer.user(), new AddToCartRequest(variant, 1));
+        var draft = draft(buyer);
+        checkout(inventory).confirm(buyer.user(), draft, request(buyer, draft));
+        var after = catalog.getProduct(variant, null, null).getSelectedVariant();
+        assertEquals(variant, after.getVariantId());
+        assertEquals(0, after.getAvailableStock());
+        assertFalse(after.isPurchasable());
     }
     @Test void fefoExcludesExpiredAndBlockedBatchesAndDoesNotDeductPhysicalStock() {
         long variant=freshVariant(0); LocalDate today=LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));

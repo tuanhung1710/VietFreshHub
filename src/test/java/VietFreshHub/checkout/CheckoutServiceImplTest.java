@@ -46,7 +46,7 @@ class CheckoutServiceImplTest {
     final EntityManager em=mock(EntityManager.class);
     final ApplicationEventPublisher events=mock(ApplicationEventPublisher.class);
     final CheckoutServiceImpl service=new CheckoutServiceImpl(users,carts,cartService,addresses,customerAddresses,
-            methods,orders,catalog,inventory,shipping,em,events);
+            methods,orders,catalog,inventory,shipping,new CheckoutOrderService(orders,em,shipping),em,events);
     final User buyer=new User();
     final Address address=new Address();
     final Cart cart=new Cart();

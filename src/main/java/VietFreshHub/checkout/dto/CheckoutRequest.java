@@ -1,16 +1,24 @@
 package VietFreshHub.checkout.dto;
-import jakarta.validation.constraints.*;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.Setter;
-@Getter @Setter
+
+@Getter
+@Setter
 public class CheckoutRequest {
-    @NotNull(message="Vui lòng chọn địa chỉ nhận hàng.")
-    @Positive(message="Địa chỉ nhận hàng không hợp lệ.")
+    @NotNull(message = "Vui lòng chọn địa chỉ nhận hàng.")
+    @Positive(message = "Địa chỉ nhận hàng không hợp lệ.")
     private Long addressId;
-    @NotBlank(message="Vui lòng chọn phương thức thanh toán.")
-    @Pattern(regexp="COD",message="Phương thức thanh toán không hợp lệ.")
-    private String paymentMethodCode="COD";
-    @NotBlank(message="Phiên đặt hàng không hợp lệ. Vui lòng tải lại trang.")
-    @Pattern(regexp="[0-9a-f]{32}",message="Phiên đặt hàng không hợp lệ. Vui lòng tải lại trang.")
+
+    @NotBlank(message = "Vui lòng chọn phương thức thanh toán.")
+    @Pattern(regexp = "COD", message = "Phương thức thanh toán không hợp lệ.")
+    private String paymentMethodCode = "COD";
+
+    @NotBlank(message = "Phiên đặt hàng không hợp lệ. Vui lòng tải lại trang.")
+    @Pattern(regexp = "[0-9a-f]{32}", message = "Phiên đặt hàng không hợp lệ. Vui lòng tải lại trang.")
     private String checkoutToken;
 }

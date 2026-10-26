@@ -25,9 +25,13 @@ public class CartItemDto {
     private Long shopId;
     private String shopName;
     private String productName;
+
+    // Có thể mua khi sản phẩm được bán và tồn kho đủ số lượng đã chọn.
     private boolean purchasable;
+    // Vẫn cho sửa số lượng khi tồn kho còn hàng nhưng chưa đủ số lượng đã chọn.
     private boolean quantityEditable;
     private boolean priceChanged;
+    // Giá đã lưu ở lần thêm hoặc cập nhật trước, dùng để so sánh với giá hiện tại.
     private BigDecimal previousPrice;
     private String availabilityMessage;
 }
