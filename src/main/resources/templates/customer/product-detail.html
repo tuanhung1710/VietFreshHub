@@ -32,10 +32,10 @@
                 <p data-stock-status th:class="${purchasable ? 'muted' : 'item-error'}" th:text="${selectedVariant.availabilityMessage}"></p>
                 <p data-stock-warning class="item-error" role="status" aria-live="polite" hidden></p>
                 <p data-stock-network class="muted" role="status" hidden></p>
-                <p data-cart-feedback role="status" aria-live="polite" hidden></p>
+                <p data-price-notice role="status" aria-live="polite" hidden></p>
                 <a th:href="@{/cart}" class="muted">Xem và điều chỉnh giỏ hàng</a>
                 <form th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" th:action="@{/cart/add}"
-                      method="post" class="detail-form" data-detail-cart-form th:data-api-url="@{/api/cart/items}">
+                      method="post" class="detail-form" data-detail-cart-form>
                     <input type="hidden" name="variantId" th:value="${variantId}">
                     <input type="hidden" name="redirect" value="detail">
                     <label for="quantity">Số lượng</label>

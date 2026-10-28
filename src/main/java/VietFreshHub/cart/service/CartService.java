@@ -11,6 +11,8 @@ public interface CartService {
 
     CartDto getActiveCart(Long userId);
 
+    long countActiveUnits(Long userId);
+
     StockCheckResponse getVariantStock(Long variantId);
 
     void updateCartItemQuantity(Long userId, Long variantId, int newQuantity);

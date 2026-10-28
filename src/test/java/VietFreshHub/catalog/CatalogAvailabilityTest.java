@@ -83,4 +83,23 @@ class CatalogAvailabilityTest {
         when(stock.getAvailableStocks(anyList())).thenReturn(Map.of(11L, 5));
         assertFalse(service.getProduct(null, 1L, null).getSelectedVariant().isPurchasable());
     }
+    @Test void batchEligibilityMatchesSinglePolicyAndReadsCategoriesOnce() {
+        CatalogVariant second = new CatalogVariant(); second.setVariantId(12L); second.setProduct(product);
+        product.setVariants(List.of(variant, second));
+        for (String state : List.of("ACTIVE", "OUT_OF_STOCK", "INACTIVE")) {
+            second.setStatus(state);
+            boolean expectedFirst = service.isPurchasable(variant);
+            boolean expectedSecond = service.isPurchasable(second);
+            clearInvocations(products);
+            Map<Long, Boolean> actual = service.purchasableVariants(List.of(variant, second));
+            assertEquals(expectedFirst, actual.get(11L));
+            assertEquals(expectedSecond, actual.get(12L));
+            verify(products, times(1)).findCatalogCategories();
+        }
+        product.getShop().setAvailabilityStatus("CLOSED");
+        assertFalse(service.purchasableVariants(List.of(variant)).get(11L));
+        product.setApprovalStatus("PENDING");
+        assertFalse(service.purchasableVariants(List.of(variant)).get(11L));
+    }
+
 }

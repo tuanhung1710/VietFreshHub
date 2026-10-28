@@ -1,22 +1,28 @@
 package VietFreshHub.order.service.impl;
-import VietFreshHub.order.service.CustomerOrderQueryService;
-import VietFreshHub.order.service.OrderLabels;
 
+import VietFreshHub.order.dto.CustomerOrderStage;
 import VietFreshHub.order.dto.OrderDetailsResponse;
+import VietFreshHub.order.entity.Order;
 import VietFreshHub.order.entity.OrderAddress;
 import VietFreshHub.order.repository.CustomerOrderReadRepository;
+import VietFreshHub.order.repository.CustomerOrderReadRepository.DeliverySummary;
+import VietFreshHub.order.repository.CustomerOrderReadRepository.ItemSnapshot;
+import VietFreshHub.order.repository.CustomerOrderReadRepository.PaymentSummary;
+import VietFreshHub.order.repository.CustomerOrderReadRepository.ShopSummary;
 import VietFreshHub.order.repository.OrderAddressRepository;
 import VietFreshHub.order.repository.OrderRepository;
+import VietFreshHub.order.service.CustomerOrderQueryService;
+import VietFreshHub.order.service.OrderLabels;
 import VietFreshHub.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -36,71 +42,108 @@ public class CustomerOrderQueryServiceImpl implements CustomerOrderQueryService 
         if (customerId == null || orderId == null || orderId < 1) {
             throw notFound();
         }
-        var order = orders.findByOrderIdAndCustomerUserId(orderId, customerId).orElseThrow(this::notFound);
-        var address = addresses.findByOrderOrderId(orderId).orElseThrow(this::notFound);
+        Order order = orders.findByOrderIdAndCustomerUserId(orderId, customerId).orElseThrow(this::notFound);
+        OrderAddress address = addresses.findByOrderOrderId(orderId).orElseThrow(this::notFound);
 
-        // Fixed query count; no lazy catalog traversal or per-shop/per-item database reads.
-        Map<Long, List<OrderDetailsResponse.Item>> items = groupItems(customerId, orderId);
-        var deliveryRows = reads.findDeliveries(customerId,orderId).stream()
-                .collect(Collectors.toMap(CustomerOrderReadRepository.DeliverySummary::getShopOrderId,row -> row));
-        var groups = reads.findShops(customerId, orderId).stream()
-                .map(shop -> new OrderDetailsResponse.ShopGroup(
-                        shop.getShopOrderId(), shop.getShopName(), OrderLabels.shop(shop.getStatus()),
-                        shop.getShippingFee(), shop.getTotalAmount(),
-                        List.copyOf(items.getOrDefault(shop.getShopOrderId(), List.of())),
-                        shop.getSubtotal(), shop.getDiscountTotal(),shop.getStatus(),
-                        deliveryInfo(deliveryRows.get(shop.getShopOrderId()))))
-                .toList();
-        var payments = reads.findPayments(customerId, orderId).stream()
-                .map(payment -> new OrderDetailsResponse.PaymentInfo(
-                        payment.getPaymentId(), payment.getMethodName(), payment.getMethodCode(),
-                        payment.getStatus().name(), OrderLabels.paymentTransaction(payment.getStatus(), payment.getMethodCode()),
-                        payment.getAmount(), OrderLabels.local(payment.getPaidAt()),
-                        OrderLabels.local(payment.getCreatedAt()),payment.getTransactionReference()))
-                .toList();
+        // Giữ số query cố định: lấy theo nhóm, không đọc DB riêng cho từng sản phẩm.
+        Map<Long, List<OrderDetailsResponse.Item>> itemsByShop = groupItems(customerId, orderId);
+        Map<Long, DeliverySummary> deliveriesByShop = reads.findDeliveries(customerId, orderId).stream()
+                .collect(Collectors.toMap(DeliverySummary::getShopOrderId, row -> row));
+        List<OrderDetailsResponse.ShopGroup> shopGroups = readShopGroups(customerId, orderId, itemsByShop, deliveriesByShop);
+        List<OrderDetailsResponse.PaymentInfo> paymentInfos = readPayments(customerId, orderId);
+        String stageCode = orders.findCustomerStage(orderId, customerId).orElseThrow(this::notFound);
+        String stageLabel = CustomerOrderStage.valueOf(stageCode).label();
 
         return new OrderDetailsResponse(
-                orderId, order.getOrderCode(), VietFreshHub.order.dto.CustomerOrderStage.valueOf(
-                        orders.findCustomerStage(orderId, customerId).orElseThrow(this::notFound)).label(),
+                orderId, order.getOrderCode(), stageLabel,
                 OrderLabels.payment(order.getPaymentStatus()), address.getRecipientName(), address.getPhone(),
                 addressText(address), order.getSubtotal(), order.getDiscountTotal(), order.getShippingFee(),
-                order.getGrandTotal(), OrderLabels.local(order.getPlacedAt()), groups, payments);
+                order.getGrandTotal(), OrderLabels.local(order.getPlacedAt()), shopGroups, paymentInfos);
     }
 
-    private OrderDetailsResponse.DeliveryInfo deliveryInfo(CustomerOrderReadRepository.DeliverySummary row) {
-        if (row==null) return null;
-        String label=switch (row.getStatus()) {
+    private List<OrderDetailsResponse.ShopGroup> readShopGroups(Long customerId, Long orderId,
+            Map<Long, List<OrderDetailsResponse.Item>> itemsByShop, Map<Long, DeliverySummary> deliveriesByShop) {
+        List<OrderDetailsResponse.ShopGroup> groups = new ArrayList<>();
+        for (ShopSummary shop : reads.findShops(customerId, orderId)) {
+            List<OrderDetailsResponse.Item> shopItems = List.copyOf(itemsByShop.getOrDefault(shop.getShopOrderId(), List.of()));
+            DeliverySummary delivery = deliveriesByShop.get(shop.getShopOrderId());
+            OrderDetailsResponse.ShopGroup group = new OrderDetailsResponse.ShopGroup(
+                    shop.getShopOrderId(), shop.getShopName(), OrderLabels.shop(shop.getStatus()),
+                    shop.getShippingFee(), shop.getTotalAmount(), shopItems,
+                    shop.getSubtotal(), shop.getDiscountTotal(), shop.getStatus(), deliveryInfo(delivery));
+            groups.add(group);
+        }
+        return List.copyOf(groups);
+    }
+
+    private List<OrderDetailsResponse.PaymentInfo> readPayments(Long customerId, Long orderId) {
+        List<OrderDetailsResponse.PaymentInfo> result = new ArrayList<>();
+        for (PaymentSummary payment : reads.findPayments(customerId, orderId)) {
+            OrderDetailsResponse.PaymentInfo info = new OrderDetailsResponse.PaymentInfo(
+                    payment.getPaymentId(), payment.getMethodName(), payment.getMethodCode(),
+                    payment.getStatus().name(), OrderLabels.paymentTransaction(payment.getStatus(), payment.getMethodCode()),
+                    payment.getAmount(), OrderLabels.local(payment.getPaidAt()),
+                    OrderLabels.local(payment.getCreatedAt()), payment.getTransactionReference());
+            result.add(info);
+        }
+        return List.copyOf(result);
+    }
+
+    private OrderDetailsResponse.DeliveryInfo deliveryInfo(DeliverySummary row) {
+        if (row == null) {
+            return null;
+        }
+        String label = switch (row.getStatus()) {
             case "FAILED" -> "Giao hàng thất bại";
             case "REDELIVERY_SCHEDULED" -> "Chờ giao lại";
             case "DELIVERED" -> "Đã giao hàng";
             default -> OrderLabels.delivery(row.getStatus());
         };
-        String reason="FAILED".equals(row.getStatus()) && row.getFailureReason()!=null && !row.getFailureReason().isBlank()
-                ? row.getFailureReason().strip() : null;
-        return new OrderDetailsResponse.DeliveryInfo(row.getStatus(),label,OrderLabels.local(row.getAssignedAt()),
-                OrderLabels.local(row.getPickedUpAt()),OrderLabels.local(row.getDeliveredAt()),
-                OrderLabels.local(row.getRedeliveryScheduledAt()),reason);
+        String reason = null;
+        if ("FAILED".equals(row.getStatus()) && row.getFailureReason() != null && !row.getFailureReason().isBlank()) {
+            reason = row.getFailureReason().strip();
+        }
+        return new OrderDetailsResponse.DeliveryInfo(row.getStatus(), label, OrderLabels.local(row.getAssignedAt()),
+                OrderLabels.local(row.getPickedUpAt()), OrderLabels.local(row.getDeliveredAt()),
+                OrderLabels.local(row.getRedeliveryScheduledAt()), reason);
     }
 
     private Map<Long, List<OrderDetailsResponse.Item>> groupItems(Long customerId, Long orderId) {
-        Map<Long, List<OrderDetailsResponse.Item>> items = new LinkedHashMap<>();
-        for (var row : reads.findItems(customerId, orderId)) {
-            String image = row.getImageUrl() == null || row.getImageUrl().isBlank() ? null : row.getImageUrl();
-            var item = new OrderDetailsResponse.Item(
+        Map<Long, List<OrderDetailsResponse.Item>> itemsByShop = new LinkedHashMap<>();
+        for (ItemSnapshot row : reads.findItems(customerId, orderId)) {
+            String image = row.getImageUrl();
+            if (image == null || image.isBlank()) {
+                image = null;
+            }
+            OrderDetailsResponse.Item item = new OrderDetailsResponse.Item(
                     row.getProductName(), row.getVariantName(), row.getSku(), image,
                     row.getQuantity(), row.getUnitPrice(), row.getTotalAmount(), row.getDiscountAmount());
-            items.computeIfAbsent(row.getShopOrderId(), key -> new ArrayList<>()).add(item);
+            List<OrderDetailsResponse.Item> shopItems = itemsByShop.get(row.getShopOrderId());
+            if (shopItems == null) {
+                shopItems = new ArrayList<>();
+                itemsByShop.put(row.getShopOrderId(), shopItems);
+            }
+            shopItems.add(item);
         }
-        return items;
+        return itemsByShop;
     }
 
     private String addressText(OrderAddress address) {
         if (address.getFormattedAddress() != null && !address.getFormattedAddress().isBlank()) {
             return address.getFormattedAddress();
         }
-        return Stream.of(address.getAddressLine(), address.getWard(), address.getDistrict(), address.getProvince())
-                .filter(part -> part != null && !part.isBlank())
-                .collect(Collectors.joining(", "));
+        List<String> parts = new ArrayList<>();
+        addAddressPart(parts, address.getAddressLine());
+        addAddressPart(parts, address.getWard());
+        addAddressPart(parts, address.getDistrict());
+        addAddressPart(parts, address.getProvince());
+        return String.join(", ", parts);
+    }
+
+    private void addAddressPart(List<String> parts, String part) {
+        if (part != null && !part.isBlank()) {
+            parts.add(part);
+        }
     }
 
     private ResourceNotFoundException notFound() {

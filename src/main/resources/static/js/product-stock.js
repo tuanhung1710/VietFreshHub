@@ -4,13 +4,16 @@
     if (!root) return;
 
     const variantList = root.querySelector('[data-variant-list]');
+    const variantLinks = new Map();
+    const price = root.querySelector('[data-variant-price]');
+    const image = root.querySelector('[data-product-image]');
     const form = root.querySelector('[data-detail-cart-form]');
     const quantityInput = form ? form.querySelector('[name="quantity"]') : null;
     const addButton = root.querySelector('[data-add-button]');
     const stockStatus = root.querySelector('[data-stock-status]');
     const warning = root.querySelector('[data-stock-warning]');
     const networkStatus = root.querySelector('[data-stock-network]');
-    const feedback = root.querySelector('[data-cart-feedback]');
+    const priceNotice = root.querySelector('[data-price-notice]');
     const quantities = new Map();
     let variants = new Map();
     let selectedId = root.dataset.selectedId;
@@ -25,6 +28,7 @@
 
     // Dùng HTML server trả về làm dữ liệu ban đầu, không cần nhúng JSON vào trang.
     for (const link of variantList.querySelectorAll('[data-variant-id]')) {
+        variantLinks.set(link.dataset.variantId, link);
         variants.set(link.dataset.variantId, {
             variantId: link.dataset.variantId,
             variantName: link.dataset.name,
@@ -39,7 +43,7 @@
 
     function showMessage(element, message) {
         if (!element) return;
-        element.textContent = message;
+        if (element.textContent !== message) element.textContent = message;
         element.hidden = !message;
     }
 
@@ -48,28 +52,31 @@
         const canBuy = !productUnavailable && variant && variant.purchasable;
         const availableStock = variant ? variant.availableStock : 0;
         if (stockStatus) {
-            stockStatus.textContent = productUnavailable || !variant
+            const message = productUnavailable || !variant
                 ? 'Phân loại này hiện không còn được bán. Vui lòng chọn phân loại khác hoặc quay lại sau.'
                 : variant.availabilityMessage;
+            if (stockStatus.textContent !== message) stockStatus.textContent = message;
             stockStatus.className = canBuy ? 'muted' : 'item-error';
         }
         if (variant) {
-            root.querySelector('[data-variant-price]').textContent = money.format(variant.price);
-            if (variant.imageUrl) root.querySelector('[data-product-image]').src = variant.imageUrl;
+            const formattedPrice = money.format(variant.price);
+            if (price.textContent !== formattedPrice) price.textContent = formattedPrice;
+            if (variant.imageUrl && image.getAttribute('src') !== variant.imageUrl) image.src = variant.imageUrl;
         }
-        for (const link of variantList.querySelectorAll('[data-variant-id]')) {
+        for (const link of variantLinks.values()) {
             const selected = link.dataset.variantId === selectedId;
             link.classList.toggle('selected', selected);
             link.setAttribute('aria-current', String(selected));
             link.setAttribute('aria-disabled', String(submitting));
             const option = variants.get(link.dataset.variantId);
             const label = option && option.purchasable && !productUnavailable ? '' : ' · Chưa khả dụng';
-            link.querySelector('[data-variant-label]').textContent = label;
+            const labelElement = link.querySelector('[data-variant-label]');
+            if (labelElement.textContent !== label) labelElement.textContent = label;
         }
         if (!quantityInput) return;
         form.querySelector('[name="variantId"]').value = selectedId;
         quantityInput.max = String(availableStock);
-        quantityInput.disabled = submitting;
+        quantityInput.readOnly = submitting;
         const quantity = Number(quantityInput.value);
         const validQuantity = Number.isSafeInteger(quantity) && quantity >= 1 && quantity <= availableStock;
         addButton.disabled = submitting || !canBuy || !validQuantity;
@@ -87,7 +94,7 @@
 
     function updateOptions() {
         for (const [id, variant] of variants) {
-            let link = [...variantList.querySelectorAll('[data-variant-id]')].find(item => item.dataset.variantId === id);
+            let link = variantLinks.get(id);
             if (!link) {
                 link = document.createElement('a');
                 link.className = 'variant-option';
@@ -99,8 +106,10 @@
                 label.setAttribute('data-variant-label', '');
                 link.append(name, label);
                 variantList.append(link);
+                variantLinks.set(id, link);
             }
-            link.querySelector('[data-variant-name]').textContent = variant.variantName;
+            const name = link.querySelector('[data-variant-name]');
+            if (name.textContent !== variant.variantName) name.textContent = variant.variantName;
         }
     }
 
@@ -156,7 +165,7 @@
             showMessage(networkStatus, '');
             const current = variants.get(selectedId);
             if (previous && current && Number(previous.price) !== Number(current.price)) {
-                showMessage(feedback, 'Giá phân loại vừa thay đổi. Vui lòng kiểm tra giá mới trước khi thêm giỏ.');
+                showMessage(priceNotice, 'Giá phân loại vừa thay đổi. Vui lòng kiểm tra giá mới trước khi thêm giỏ.');
             }
         } catch (error) {
             if (number !== requestNumber) return;
@@ -177,7 +186,7 @@
         if (quantityInput) quantities.set(selectedId, quantityInput.value);
         selectedId = id;
         if (quantityInput) quantityInput.value = quantities.get(id) || '1';
-        showMessage(feedback, '');
+        showMessage(priceNotice, '');
         renderSelection();
         if (updateHistory) history.pushState(null, '', root.dataset.detailBase + id);
         refreshStock();
@@ -213,60 +222,16 @@
                 renderSelection();
             });
         }
-        form.addEventListener('submit', async event => {
-            event.preventDefault();
-            if (submitting || addButton.disabled || !form.reportValidity()) return;
-            const body = new URLSearchParams(new FormData(form));
+        form.addEventListener('submit', event => {
+            // Cho trình duyệt POST form MVC. Không disable input vì nó phải được gửi lên server.
+            if (submitting || addButton.disabled || !form.reportValidity()) {
+                event.preventDefault();
+                return;
+            }
             submitting = true;
             cancelRefresh();
             form.setAttribute('aria-busy', 'true');
             renderSelection();
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 10000);
-            try {
-                const response = await fetch(form.dataset.apiUrl, {
-                    method: 'POST', body, credentials: 'same-origin', signal: controller.signal,
-                    headers: { Accept: 'application/json' }
-                });
-                if (!response.headers.get('content-type')?.includes('application/json')) {
-                    throw new Error('Phiên đăng nhập có thể đã hết hạn. Vui lòng tải lại trang để kiểm tra.');
-                }
-                const result = await response.json();
-                if (!response.ok && response.status !== 409 && response.status !== 400) {
-                    throw new Error('Chưa xác nhận được kết quả thêm giỏ. Hãy kiểm tra giỏ trước khi thử lại.');
-                }
-                showMessage(feedback, result.message);
-                feedback.className = response.ok ? 'notice success' : 'item-error';
-                // Dùng ngay số lượng server vừa xác thực, kể cả lần refresh tiếp theo bị mất mạng.
-                const variant = variants.get(selectedId);
-                if (variant && result.code === 'INSUFFICIENT_STOCK' && Number.isInteger(result.availableStock)) {
-                    variant.availableStock = Math.max(0, result.availableStock);
-                    variant.purchasable = variant.purchasable && variant.availableStock > 0;
-                    variant.availabilityMessage = variant.availableStock > 0
-                        ? 'Còn ' + variant.availableStock + ' sản phẩm có thể mua.' : 'Tạm hết hàng.';
-                }
-                if (variant && result.code === 'ITEM_UNAVAILABLE') {
-                    variant.purchasable = false;
-                    variant.availabilityMessage = result.message;
-                }
-                if (response.ok && result.totalItems != null) {
-                    document.querySelectorAll('[data-cart-badge]').forEach(badge => { badge.textContent = result.totalItems; });
-                }
-            } catch (error) {
-                // Không tự gửi lại POST: request có thể đã được server xử lý.
-                showMessage(feedback, error.name === 'AbortError'
-                    ? 'Chưa xác nhận được kết quả thêm giỏ. Hãy kiểm tra giỏ trước khi thử lại.'
-                    : error.name === 'TypeError'
-                        ? 'Mất kết nối. Hãy kiểm tra giỏ trước khi thử lại để tránh thêm trùng số lượng.'
-                        : error.message || 'Chưa xác nhận được kết quả thêm giỏ. Hãy kiểm tra giỏ trước khi thử lại.');
-                feedback.className = 'item-error';
-            } finally {
-                clearTimeout(timeout);
-                submitting = false;
-                form.removeAttribute('aria-busy');
-                renderSelection();
-                refreshStock();
-            }
         });
     }
     document.addEventListener('visibilitychange', () => {
@@ -275,7 +240,13 @@
     });
     window.addEventListener('pagehide', () => { stopped = true; cancelRefresh(); });
     window.addEventListener('pageshow', event => {
-        if (event.persisted) { stopped = false; refreshStock(); }
+        if (event.persisted) {
+            stopped = false;
+            submitting = false;
+            if (form) form.removeAttribute('aria-busy');
+            renderSelection();
+            refreshStock();
+        }
     });
     renderSelection();
     refreshStock();

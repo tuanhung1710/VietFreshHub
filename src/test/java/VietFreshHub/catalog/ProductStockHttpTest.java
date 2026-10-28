@@ -4,7 +4,6 @@ import VietFreshHub.auth.entity.User;
 import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.auth.repository.UserRoleRepository;
 import VietFreshHub.cart.dto.AddToCartRequest;
-import VietFreshHub.cart.dto.AddToCartResponse;
 import VietFreshHub.cart.dto.CartDto;
 import VietFreshHub.cart.service.CartService;
 import VietFreshHub.catalog.dto.CatalogProductResponse;
@@ -21,6 +20,10 @@ import VietFreshHub.order.service.CustomerOrderService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpSession;
+import org.springframework.test.web.servlet.MvcResult;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -80,40 +83,87 @@ class ProductStockHttpTest {
                 .andExpect(flash().attribute("errorMessage", "Sản phẩm không còn được bán."));
     }
 
-    @Test void stockConflictKeepsRequestedQuantityAndUsesResolvedIdentity() throws Exception {
+    @Test void stockConflictRedirectsToSameVariantAndRetainsRequestedQuantity() throws Exception {
         when(carts.addToCart(eq(7L), any(AddToCartRequest.class)))
                 .thenThrow(new OutOfStockException("Hộp 1 kg: chỉ còn 1 sản phẩm.", 1));
-        http.mvc.perform(post("/api/cart/items").with(user("stock@test.invalid").roles("CUSTOMER")).with(csrf())
-                        .param("variantId", "11").param("quantity", "3").param("customerId", "999"))
-                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("INSUFFICIENT_STOCK"))
-                .andExpect(jsonPath("$.variantId").value(11)).andExpect(jsonPath("$.requestedQuantity").value(3))
-                .andExpect(jsonPath("$.availableStock").value(1));
+        MockHttpSession session = new MockHttpSession();
+        http.mvc.perform(post("/cart/add").session(session).with(user("stock@test.invalid").roles("CUSTOMER")).with(csrf())
+                        .param("variantId", "11").param("quantity", "3").param("redirect", "detail").param("customerId", "999"))
+                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/product-detail/11"))
+                .andExpect(flash().attribute("requestedQuantity", 3))
+                .andExpect(flash().attribute("errorMessage", "Hộp 1 kg: chỉ còn 1 sản phẩm."));
+        prepareDetail(1, 0);
+        MvcResult detail = http.mvc.perform(get("/product-detail/11").session(session)
+                        .with(user("stock@test.invalid").roles("CUSTOMER")))
+                .andExpect(status().isOk()).andExpect(model().attribute("variantId", 11L))
+                .andExpect(model().attribute("availableStock", 1))
+                .andExpect(model().attribute("requestedQuantity", 3)).andReturn();
+        assertEquals(3, detail.getModelAndView().getModel().get("requestedQuantity"));
+        verify(carts).addToCart(eq(7L), any(AddToCartRequest.class));
+    }
+
+    @Test void successfulPostRedirectsAndRefreshOnlyReadsFreshCartBadge() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+        http.mvc.perform(post("/cart/add").session(session).with(user("stock@test.invalid").roles("CUSTOMER")).with(csrf())
+                        .param("variantId", "11").param("quantity", "3").param("redirect", "detail"))
+                .andExpect(status().is3xxRedirection()).andExpect(redirectedUrl("/product-detail/11"))
+                .andExpect(flash().attribute("successMessage", "Đã thêm sản phẩm vào giỏ hàng."));
+        prepareDetail(5, 8);
+        MvcResult detail = http.mvc.perform(get("/product-detail/11").session(session)
+                        .with(user("stock@test.invalid").roles("CUSTOMER")))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("successMessage", "Đã thêm sản phẩm vào giỏ hàng.")).andReturn();
+        CartDto cart = (CartDto) detail.getModelAndView().getModel().get("cart");
+        assertEquals(8, cart.getTotalItems());
+        http.mvc.perform(get("/product-detail/11").session(session).with(user("stock@test.invalid").roles("CUSTOMER")))
+                .andExpect(status().isOk()).andExpect(model().attributeDoesNotExist("successMessage"));
+        verify(carts, times(1)).addToCart(eq(7L), any());
+        verify(carts, times(2)).countActiveUnits(7L);
         verify(carts, never()).getActiveCart(any());
     }
 
-    @Test void successfulAddReturnsActualCartBadgeCount() throws Exception {
-        when(carts.addToCart(eq(7L), any())).thenReturn(AddToCartResponse.builder()
-                .cartItemId(80L).quantity(3).message("Đã thêm sản phẩm vào giỏ hàng.").build());
-        when(carts.getActiveCart(7L)).thenReturn(CartDto.builder().totalItems(8).build());
-        http.mvc.perform(post("/api/cart/items").with(user("stock@test.invalid").roles("CUSTOMER")).with(csrf())
-                        .param("variantId", "11").param("quantity", "3"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.totalItems").value(8));
-    }
-
-    @Test void invalidQuantityDoesNotCallCartService() throws Exception {
-        http.mvc.perform(post("/api/cart/items").with(user("stock@test.invalid").roles("CUSTOMER")).with(csrf())
-                        .param("variantId", "11").param("quantity", "abc"))
-                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_QUANTITY"));
+    @Test void invalidQuantityRedirectsWithValidationMessageWithoutCartMutation() throws Exception {
+        http.mvc.perform(post("/cart/add").with(user("stock@test.invalid").roles("CUSTOMER")).with(csrf())
+                        .param("variantId", "11").param("quantity", "abc").param("redirect", "detail"))
+                .andExpect(redirectedUrl("/product-detail/11"))
+                .andExpect(flash().attribute("errorMessage", "Vui lòng nhập mã sản phẩm và số lượng là số nguyên hợp lệ."));
         verifyNoInteractions(carts);
     }
 
-    @Test void apiRequiresCustomerAndCsrf() throws Exception {
+    @Test void unavailableItemRedirectsWithBusinessMessageWithoutReplacingSelection() throws Exception {
+        when(carts.addToCart(eq(7L), any())).thenThrow(new ResourceNotFoundException("Cửa hàng hiện không nhận đơn."));
+        http.mvc.perform(post("/cart/add").with(user("stock@test.invalid").roles("CUSTOMER")).with(csrf())
+                        .param("variantId", "12").param("quantity", "2").param("redirect", "detail"))
+                .andExpect(redirectedUrl("/product-detail/12"))
+                .andExpect(flash().attribute("requestedQuantity", 2))
+                .andExpect(flash().attribute("errorMessage", "Cửa hàng hiện không nhận đơn."));
+    }
+
+    @Test void mvcAddAndStockReadRequireCustomerAndMutationRequiresCsrf() throws Exception {
         http.mvc.perform(get("/api/catalog/products/1/availability")).andExpect(redirectedUrl("/login"));
-        http.mvc.perform(post("/api/cart/items").with(user("stock@test.invalid").roles("CUSTOMER")))
+        http.mvc.perform(post("/cart/add").with(user("stock@test.invalid").roles("CUSTOMER")))
                 .andExpect(status().isForbidden());
         when(roles.findRoleNamesByUserId(7L)).thenReturn(List.of("ROLE_ADMIN"));
         http.mvc.perform(get("/api/catalog/products/1/availability").with(user("stock@test.invalid").roles("ADMIN")))
                 .andExpect(status().isForbidden());
+        http.mvc.perform(post("/cart/add").with(user("stock@test.invalid").roles("ADMIN")).with(csrf()))
+                .andExpect(status().isForbidden());
         verifyNoInteractions(carts, catalog);
+    }
+
+    @Test void removedCartRestEndpointHasNoHandler() throws Exception {
+        http.mvc.perform(post("/api/cart/items").with(user("stock@test.invalid").roles("CUSTOMER")).with(csrf())
+                        .param("variantId", "11").param("quantity", "1"))
+                .andExpect(status().isNotFound());
+        verifyNoInteractions(carts);
+    }
+
+    private void prepareDetail(int availableStock, long totalItems) {
+        CatalogProductResponse.VariantResponse variant = CatalogProductResponse.VariantResponse.builder()
+                .variantId(11L).variantName("Hộp 1 kg").price(BigDecimal.TEN)
+                .availableStock(availableStock).purchasable(availableStock > 0).build();
+        when(catalog.getProduct(11L, null, null)).thenReturn(CatalogProductResponse.builder()
+                .productId(1L).variants(List.of(variant)).selectedVariant(variant).build());
+        when(carts.countActiveUnits(7L)).thenReturn(totalItems);
     }
 }

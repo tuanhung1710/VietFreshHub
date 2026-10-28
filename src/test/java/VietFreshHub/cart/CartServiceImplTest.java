@@ -233,5 +233,13 @@ class CartServiceImplTest {
         assertEquals(reason.equals("short"),dto.isQuantityEditable()); assertEquals(List.of(valid,invalid),cart.getItems());
         verify(stock).getAvailableStocks(List.of(11L,22L)); verifyNoMoreInteractions(stock);
     }
+    @Test void badgeUsesOnlyAggregateWithoutReadingCartCatalogOrInventory() {
+        when(carts.countActiveUnits(7L)).thenReturn(8L);
+        assertEquals(8L, service.countActiveUnits(7L));
+        verify(carts).countActiveUnits(7L);
+        verifyNoMoreInteractions(carts);
+        verifyNoInteractions(items, variants, products, stock, users);
+    }
+
 }
 

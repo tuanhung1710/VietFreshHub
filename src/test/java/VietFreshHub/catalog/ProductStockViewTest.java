@@ -58,7 +58,7 @@ class ProductStockViewTest {
         var auth = new UsernamePasswordAuthenticationToken("stock@test.invalid", "unused",
                 AuthorityUtils.createAuthorityList("ROLE_CUSTOMER"));
         when(current.requireCustomerId(auth)).thenReturn(7L);
-        when(carts.getActiveCart(7L)).thenReturn(CartDto.builder().totalItems(0).build());
+        when(carts.countActiveUnits(7L)).thenReturn(0L);
         var first = CatalogProductResponse.VariantResponse.builder().variantId(11L).variantName("Hộp 1 kg")
                 .price(new BigDecimal("30000")).imageUrl("/images/fruit-1.jpg").availableStock(5)
                 .purchasable(true).availabilityMessage("Còn 5 sản phẩm có thể mua.").build();
@@ -91,8 +91,46 @@ class ProductStockViewTest {
             assertTrue(html.contains("data-variant-id=\"12\""));
             assertTrue(html.contains("/js/product-stock.js"));
             assertTrue(html.contains("name=\"_csrf\""));
+            assertTrue(html.contains("action=\"/cart/add\""));
+            assertFalse(html.contains("data-api-url"));
+            assertFalse(html.contains("/api/cart/items"));
             Path output = Path.of("target", "stock-ux"); Files.createDirectories(output);
             Files.writeString(output.resolve("product-detail.html"), html);
+            when(carts.countActiveUnits(7L)).thenReturn(8L);
+            String success = mvc.perform(get("/product-detail/11").principal(auth)
+                    .flashAttr("successMessage", "Đã thêm sản phẩm vào giỏ hàng."))
+                    .andReturn().getResponse().getContentAsString();
+            assertTrue(success.contains("Đã thêm sản phẩm vào giỏ hàng."));
+            Files.writeString(output.resolve("product-detail-success.html"), success);
+
+            var availableSecond = CatalogProductResponse.VariantResponse.builder().variantId(12L).variantName("Hộp 2 kg")
+                    .price(new BigDecimal("50000")).imageUrl("/images/fruit-2.jpg").availableStock(4)
+                    .purchasable(true).availabilityMessage("Còn 4 sản phẩm có thể mua.").build();
+            when(catalog.getProduct(12L, null, null)).thenReturn(detailProduct(first, availableSecond, availableSecond));
+            String secondSuccess = mvc.perform(get("/product-detail/12").principal(auth)
+                    .flashAttr("successMessage", "Đã thêm sản phẩm vào giỏ hàng."))
+                    .andReturn().getResponse().getContentAsString();
+            Files.writeString(output.resolve("product-detail-success-12.html"), secondSuccess);
+
+            var lastUnit = CatalogProductResponse.VariantResponse.builder().variantId(11L).variantName("Hộp 1 kg")
+                    .price(new BigDecimal("30000")).imageUrl("/images/fruit-1.jpg").availableStock(1)
+                    .purchasable(true).availabilityMessage("Còn 1 sản phẩm có thể mua.").build();
+            when(catalog.getProduct(11L, null, null)).thenReturn(detailProduct(lastUnit, availableSecond, lastUnit));
+            String shortage = mvc.perform(get("/product-detail/11").principal(auth)
+                    .flashAttr("requestedQuantity", 3).flashAttr("errorMessage", "Hộp 1 kg: chỉ còn 1 sản phẩm."))
+                    .andReturn().getResponse().getContentAsString();
+            assertTrue(shortage.contains("value=\"3\""));
+            assertTrue(shortage.contains("max=\"1\""));
+            assertTrue(shortage.contains("Hộp 1 kg: chỉ còn 1 sản phẩm."));
+            Files.writeString(output.resolve("product-detail-shortage.html"), shortage);
         } finally { SecurityContextHolder.clearContext(); }
     }
+
+    private CatalogProductResponse detailProduct(CatalogProductResponse.VariantResponse first,
+            CatalogProductResponse.VariantResponse second, CatalogProductResponse.VariantResponse selected) {
+        return CatalogProductResponse.builder().productId(1L).name("Xoài tươi")
+                .shopName("Cửa hàng trái cây").imageUrl(selected.getImageUrl()).description("Trái cây tươi mỗi ngày.")
+                .variants(List.of(first, second)).selectedVariant(selected).build();
+    }
+
 }

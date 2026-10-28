@@ -66,6 +66,12 @@ public class CartServiceImpl implements CartService {
 
     @Override
     @Transactional(readOnly = true)
+    public long countActiveUnits(Long userId) {
+        return cartRepository.countActiveUnits(userId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public CartDto getActiveCart(Long userId) {
         Cart cart = cartRepository.findByUserUserIdAndStatus(userId, "ACTIVE").orElse(null);
         if (cart == null) {
@@ -74,11 +80,16 @@ public class CartServiceImpl implements CartService {
 
         List<Long> variantIds = collectVariantIds(cart);
         Map<Long, Integer> stocks = inventoryBatchRepository.getAvailableStocks(variantIds);
+        List<CatalogVariant> cartVariants = new ArrayList<>();
+        for (CartItem item : cart.getItems()) {
+            cartVariants.add(item.getVariant());
+        }
+        Map<Long, Boolean> purchasableVariants = catalogService.purchasableVariants(cartVariants);
         List<CartItemDto> items = new ArrayList<>();
         for (CartItem item : cart.getItems()) {
             CatalogVariant variant = item.getVariant();
             int stock = stocks.getOrDefault(variant.getVariantId(), 0);
-            boolean catalogPurchasable = catalogService.isPurchasable(variant);
+            boolean catalogPurchasable = purchasableVariants.getOrDefault(variant.getVariantId(), false);
             CartItemDto itemDto = CartViewMapper.toCartItem(item, stock, catalogPurchasable);
             items.add(itemDto);
         }

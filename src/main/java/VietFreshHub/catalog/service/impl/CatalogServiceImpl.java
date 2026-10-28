@@ -10,6 +10,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Comparator;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import VietFreshHub.catalog.dto.CatalogCategoryResponse;
+import VietFreshHub.catalog.entity.CatalogCategory;
+import VietFreshHub.catalog.service.CatalogCategoryPolicy;
 @Service @RequiredArgsConstructor @Transactional(readOnly = true)
 public class CatalogServiceImpl implements CatalogService {
     private final CatalogProductRepository products;
@@ -36,16 +44,51 @@ public class CatalogServiceImpl implements CatalogService {
         return v != null && "ACTIVE".equals(v.getStatus()) && isCatalogEligible(v.getProduct())
                 && "OPEN".equals(v.getProduct().getShop().getAvailabilityStatus());
     }
+    /** Chỉ chia sẻ dữ liệu danh mục trong một lần đọc giỏ; không cache tồn kho giữa các request. */
+    @Override
+    public Map<Long, Boolean> purchasableVariants(List<CatalogVariant> cartVariants) {
+        Map<Long, Boolean> result = new java.util.HashMap<>();
+        Set<Long> activeCategoryIds = null;
+        for (CatalogVariant variant : cartVariants) {
+            CatalogProduct product = variant.getProduct();
+            boolean eligible = "ACTIVE".equals(variant.getStatus()) && product != null
+                    && "ACTIVE".equals(product.getStatus()) && "APPROVED".equals(product.getApprovalStatus())
+                    && product.getShop() != null && "ACTIVE".equals(product.getShop().getStatus());
+            if (eligible) {
+                if (activeCategoryIds == null) {
+                    activeCategoryIds = CatalogCategoryPolicy.activeIds(products.findCatalogCategories());
+                }
+                boolean activeCategory = false;
+                for (CatalogCategory category : product.getCategories()) {
+                    if (activeCategoryIds.contains(category.getCategoryId())) {
+                        activeCategory = true;
+                        break;
+                    }
+                }
+                boolean activeVariant = false;
+                if (activeCategory) {
+                    for (CatalogVariant option : product.getVariants()) {
+                        if ("ACTIVE".equals(option.getStatus()) || "OUT_OF_STOCK".equals(option.getStatus())) {
+                            activeVariant = true;
+                            break;
+                        }
+                    }
+                }
+                eligible = activeCategory && activeVariant && "OPEN".equals(product.getShop().getAvailabilityStatus());
+            }
+            result.put(variant.getVariantId(), eligible);
+        }
+        return result;
+    }
+
     public org.springframework.data.domain.Page<CatalogProductResponse> listProducts(int page) {
         return listProducts(page, "");
     }
-    public java.util.List<VietFreshHub.catalog.dto.CatalogCategoryResponse> categories() {
-        var categories = products.findCatalogCategories();
-        var active = VietFreshHub.catalog.service.CatalogCategoryPolicy.activeIds(categories);
-        var parents = categories.stream().filter(c -> active.contains(c.getCategoryId()))
-                .map(VietFreshHub.catalog.entity.CatalogCategory::getParentCategoryId)
-                .filter(java.util.Objects::nonNull).collect(java.util.stream.Collectors.toSet());
-        var options = new java.util.LinkedHashMap<String, VietFreshHub.catalog.dto.CatalogCategoryResponse>();
+    public List<CatalogCategoryResponse> categories() {
+        List<CatalogCategory> categories = products.findCatalogCategories();
+        Set<Long> activeIds = CatalogCategoryPolicy.activeIds(categories);
+        Set<Long> parentIds = activeParentIds(categories, activeIds);
+        Map<String, CatalogCategoryResponse> options = new LinkedHashMap<>();
         String[][] groups = {
                 {"trai-cay-viet-nam", "Trái cây tươi hằng ngày"},
                 {"qua-tang-trai-cay", "Giỏ quà trái cây"},
@@ -58,18 +101,49 @@ public class CatalogServiceImpl implements CatalogService {
                 {"trai-cay-nuoc-ep-sinh-to", "Trái cây ép & sinh tố"},
                 {"qua-bieu-le-tet", "Quà biếu lễ Tết"}
         };
-        for (var group : groups) {
-            var existing = categories.stream().filter(c -> group[0].equals(c.getSlug())).findFirst();
-            // Missing groups remain available for future data; disabled categories stay hidden.
-            if (existing.isEmpty() || active.contains(existing.get().getCategoryId())) {
-                options.put(group[0], new VietFreshHub.catalog.dto.CatalogCategoryResponse(group[0], group[1]));
+        for (String[] group : groups) {
+            CatalogCategory existing = findCategoryBySlug(categories, group[0]);
+            // Giữ các nhóm chưa có dữ liệu; không hiện nhóm có danh mục bị vô hiệu hóa.
+            if (existing == null || activeIds.contains(existing.getCategoryId())) {
+                options.put(group[0], new CatalogCategoryResponse(group[0], group[1]));
             }
         }
-        categories.stream().filter(c -> active.contains(c.getCategoryId()) && !parents.contains(c.getCategoryId()))
-                .sorted(Comparator.comparing(VietFreshHub.catalog.entity.CatalogCategory::getCategoryId))
-                .forEach(c -> options.putIfAbsent(c.getSlug(),
-                        new VietFreshHub.catalog.dto.CatalogCategoryResponse(c.getSlug(), c.getName())));
-        return java.util.List.copyOf(options.values());
+        List<CatalogCategory> leafCategories = activeLeafCategories(categories, activeIds, parentIds);
+        leafCategories.sort(Comparator.comparing(CatalogCategory::getCategoryId));
+        for (CatalogCategory category : leafCategories) {
+            options.putIfAbsent(category.getSlug(), new CatalogCategoryResponse(category.getSlug(), category.getName()));
+        }
+        return List.copyOf(options.values());
+    }
+
+    private Set<Long> activeParentIds(List<CatalogCategory> categories, Set<Long> activeIds) {
+        Set<Long> parentIds = new HashSet<>();
+        for (CatalogCategory category : categories) {
+            if (activeIds.contains(category.getCategoryId()) && category.getParentCategoryId() != null) {
+                parentIds.add(category.getParentCategoryId());
+            }
+        }
+        return parentIds;
+    }
+
+    private CatalogCategory findCategoryBySlug(List<CatalogCategory> categories, String slug) {
+        for (CatalogCategory category : categories) {
+            if (slug.equals(category.getSlug())) {
+                return category;
+            }
+        }
+        return null;
+    }
+
+    private List<CatalogCategory> activeLeafCategories(List<CatalogCategory> categories,
+                                                       Set<Long> activeIds, Set<Long> parentIds) {
+        List<CatalogCategory> leafCategories = new ArrayList<>();
+        for (CatalogCategory category : categories) {
+            if (activeIds.contains(category.getCategoryId()) && !parentIds.contains(category.getCategoryId())) {
+                leafCategories.add(category);
+            }
+        }
+        return leafCategories;
     }
 
     public org.springframework.data.domain.Page<CatalogProductResponse> listProducts(int page, String keyword) {

@@ -55,7 +55,7 @@ public class CustomerCartViewController {
             model.addAttribute("errorMessage", "Từ khóa tìm kiếm tối đa 100 ký tự.");
             keyword = "";
         }
-        model.addAttribute("cart", populateActiveCart(authentication));
+        model.addAttribute("cart", populateCartBadge(authentication));
 
         String searchKeyword = keyword.trim();
         Page<CatalogProductResponse> products;
@@ -77,7 +77,7 @@ public class CustomerCartViewController {
                                      @RequestParam(required = false) Long productId,
                                      @RequestParam(required = false) String slug,
                                      Authentication authentication, Model model) {
-        model.addAttribute("cart", populateActiveCart(authentication));
+        model.addAttribute("cart", populateCartBadge(authentication));
         CatalogProductResponse product = catalogService.getProduct(variantId, productId, slug);
         VariantResponse selectedVariant = product.getSelectedVariant();
 
@@ -174,6 +174,15 @@ public class CustomerCartViewController {
         cartService.clearCart(customerId);
         flash.addFlashAttribute("successMessage", "Đã xóa toàn bộ sản phẩm khỏi giỏ hàng.");
         return "redirect:/cart";
+    }
+
+    private CartDto populateCartBadge(Authentication authentication) {
+        long totalItems = 0;
+        if (isCustomer(authentication)) {
+            Long customerId = currentCustomer.requireCustomerId(authentication);
+            totalItems = cartService.countActiveUnits(customerId);
+        }
+        return CartDto.builder().totalItems(totalItems).totalAmount(BigDecimal.ZERO).build();
     }
 
     private CartDto populateActiveCart(Authentication authentication) {

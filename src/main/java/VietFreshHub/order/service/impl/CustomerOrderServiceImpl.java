@@ -8,31 +8,61 @@ import VietFreshHub.auth.entity.User;
 import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.cart.entity.Cart;
 import VietFreshHub.cart.entity.CartItem;
-import VietFreshHub.cart.repository.*;
+import VietFreshHub.cart.repository.CartRepository;
+import VietFreshHub.cart.repository.CartItemRepository;
 import VietFreshHub.delivery.dto.DeliveryTrackingStaff;
 import VietFreshHub.delivery.service.DeliveryAssignmentService;
 import VietFreshHub.checkout.repository.CheckoutInventoryBatchRepository;
-import VietFreshHub.order.dto.*;
-import VietFreshHub.order.entity.*;
+import VietFreshHub.order.dto.CustomerOrderFilterRequest;
+import VietFreshHub.order.dto.CustomerOrderStage;
+import VietFreshHub.order.dto.OrderListRow;
+import VietFreshHub.order.dto.OrderHistorySummary;
+import VietFreshHub.order.dto.OrderActionsResponse;
+import VietFreshHub.order.dto.OrderDetailsResponse;
+import VietFreshHub.order.dto.OrderTrackingResponse;
+import VietFreshHub.order.dto.ReorderResult;
+import VietFreshHub.order.entity.ShopOrder;
+import VietFreshHub.order.entity.OrderItem;
+import VietFreshHub.order.entity.OrderStatusHistory;
+import VietFreshHub.order.entity.OrderDeliveryView;
+import VietFreshHub.order.entity.OrderDeliveryHistoryView;
 import VietFreshHub.order.entity.Order;
 import VietFreshHub.exception.CustomerOrderException;
-import VietFreshHub.order.repository.*;
+import VietFreshHub.order.repository.OrderRepository;
+import VietFreshHub.order.repository.ShopOrderRepository;
+import VietFreshHub.order.repository.OrderDeliveryReadRepository;
+import VietFreshHub.order.repository.OrderDeliveryHistoryReadRepository;
+import VietFreshHub.order.repository.OrderStatusHistoryRepository;
 import VietFreshHub.payment.entity.Payment;
 import VietFreshHub.payment.repository.PaymentRepository;
 import VietFreshHub.catalog.repository.CatalogVariantRepository;
 import VietFreshHub.catalog.service.CatalogService;
 import VietFreshHub.exception.ResourceNotFoundException;
+import VietFreshHub.catalog.entity.CatalogVariant;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.time.*;
-import java.util.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
-@Service @RequiredArgsConstructor
+@Service
+@RequiredArgsConstructor
 public class CustomerOrderServiceImpl implements CustomerOrderService {
     private final OrderRepository orders;
     private final ShopOrderRepository shopOrders;
@@ -51,77 +81,197 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
     private final EntityManager em;
     private final ApplicationEventPublisher events;
 
-    @Override @Transactional(readOnly=true)
-    public Page<OrderListRow> history(Long customerId,CustomerOrderFilterRequest filter) {
-        if(filter==null || filter.getPage()<1 || filter.getPage()>10000 || filter.getKeyword()==null
-                || filter.getKeyword().length()>100 || !filter.isDateRangeValid() || !filter.isDatabaseDateRangeValid())
-            throw new CustomerOrderException("Bộ lọc đơn hàng không hợp lệ.");
-        String statusText=filter.getStatus()==null ? "" : filter.getStatus().trim();
-        String status;
-        try { status=statusText.isEmpty() ? "" : CustomerOrderStage.valueOf(statusText).name(); }
-        catch(IllegalArgumentException ex) { throw new CustomerOrderException("Trạng thái lọc không hợp lệ."); }
-        filter.setKeyword(filter.getKeyword().trim()); filter.setStatus(statusText);
-        ZoneId zone=ZoneId.of("Asia/Ho_Chi_Minh");
-        LocalDateTime from=filter.getFromDate()==null ? null : LocalDateTime.ofInstant(filter.getFromDate().atStartOfDay(zone).toInstant(),ZoneOffset.UTC);
-        // DATETIME2 cannot bind year zero, which can occur at VN midnight on 0001-01-01.
-        if(from!=null && from.getYear()<1) from=LocalDateTime.of(1,1,1,0,0);
-        // SQL Server cannot bind year 10000; its maximum date already includes every stored row.
-        LocalDateTime until=filter.getToDate()==null || filter.getToDate().equals(LocalDate.of(9999,12,31))
-                ? null : LocalDateTime.ofInstant(filter.getToDate().plusDays(1).atStartOfDay(zone).toInstant(),ZoneOffset.UTC);
-        var sort=Sort.by(Sort.Order.desc("placedAt"),Sort.Order.desc("orderId"));
-        var page=orders.findHistory(customerId,status,filter.getKeyword(),from,until,PageRequest.of(filter.getPage()-1,10,sort));
-        if(page.getTotalElements()==0) return Page.empty(PageRequest.of(0,10,sort));
-        if(page.getNumber()>=page.getTotalPages())
-            return orders.findHistory(customerId,status,filter.getKeyword(),from,until,PageRequest.of(page.getTotalPages()-1,10,sort));
-        return page;
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<OrderListRow> history(Long customerId, CustomerOrderFilterRequest filter) {
+        validateHistoryFilter(filter);
+        String statusText = "";
+        if (filter.getStatus() != null) {
+            statusText = filter.getStatus().trim();
+        }
+        String status = historyStatus(statusText);
+        filter.setKeyword(filter.getKeyword().trim());
+        filter.setStatus(statusText);
+
+        ZoneId customerZone = ZoneId.of("Asia/Ho_Chi_Minh");
+        LocalDateTime from = historyStartDate(filter.getFromDate(), customerZone);
+        LocalDateTime until = historyEndDateExclusive(filter.getToDate(), customerZone);
+        Sort sort = Sort.by(Sort.Order.desc("placedAt"), Sort.Order.desc("orderId"));
+        PageRequest requestedPage = PageRequest.of(filter.getPage() - 1, 10, sort);
+        Page<OrderListRow> result = orders.findHistory(customerId, status, filter.getKeyword(), from, until, requestedPage);
+        if (result.getTotalElements() == 0) {
+            return Page.empty(PageRequest.of(0, 10, sort));
+        }
+        if (result.getNumber() >= result.getTotalPages()) {
+            PageRequest lastPage = PageRequest.of(result.getTotalPages() - 1, 10, sort);
+            return orders.findHistory(customerId, status, filter.getKeyword(), from, until, lastPage);
+        }
+        return result;
     }
 
-    /** Four batch reads for at most one history page; reuse cancellation policy without per-card queries. */
-    @Override @Transactional(readOnly=true)
-    public Map<Long,OrderHistorySummary> historySummaries(Long customerId,List<Long> orderIds) {
-        if (customerId == null || customerId < 1 || orderIds == null || orderIds.size() > 10
-                || orderIds.stream().anyMatch(id -> id == null || id < 1))
-            throw new CustomerOrderException("Danh sách đơn hàng không hợp lệ.");
-        if (orderIds.isEmpty()) return Map.of();
-        var parents = orders.findCustomerHistoryOrders(customerId,orderIds);
-        if (parents.isEmpty()) return Map.of();
-        var ownedIds = parents.stream().map(Order::getOrderId).toList();
-        var children = shopOrders.findCustomerHistoryShops(customerId,ownedIds).stream()
-                .collect(java.util.stream.Collectors.groupingBy(s -> s.getOrder().getOrderId()));
-        var paymentRows = payments.findCustomerHistoryPayments(customerId,ownedIds).stream()
-                .collect(java.util.stream.Collectors.groupingBy(p -> p.getOrder().getOrderId()));
-        var deliveryRows = deliveries.findCustomerHistoryDeliveries(customerId,ownedIds).stream()
-                .collect(java.util.stream.Collectors.groupingBy(d -> d.getShopOrder().getOrder().getOrderId()));
-        Map<Long,OrderHistorySummary> result = new LinkedHashMap<>();
-        for (var parent : parents) {
-            Long id = parent.getOrderId();
-            var shops = children.getOrDefault(id,List.of());
-            var pay = paymentRows.getOrDefault(id,List.of());
-            var delivery = deliveryRows.getOrDefault(id,List.of());
-            var lines = shops.stream().flatMap(s -> s.getItems().stream())
-                    .sorted(Comparator.comparing(OrderItem::getOrderItemId)).toList();
-            var products = lines.stream().limit(3).map(i -> {
-                String image = i.getVariant() == null ? null : i.getVariant().getThumbnailUrl();
-                return new OrderHistorySummary.Product(i.getProductNameSnapshot(),i.getVariantNameSnapshot(),
-                        i.getQuantity(),image == null || image.isBlank() ? null : image);
-            }).toList();
-            var shopLabels = shops.stream().map(s -> {
-                var d = delivery.stream().filter(row -> row.getShopOrder().getShopOrderId().equals(s.getShopOrderId()))
-                        .findFirst().orElse(null);
-                return new OrderHistorySummary.Shop(s.getShop().getShopName(),
-                        d != null && "OUT_FOR_DELIVERY".equals(s.getStatus()) ? "Vận chuyển" : OrderLabels.shop(s.getStatus()),
-                        d == null ? null : d.getStatus(),d == null ? null : historyDeliveryLabel(d.getStatus()));
-            }).toList();
-            var payLabels = pay.stream().sorted(Comparator.comparing(Payment::getPaymentId).reversed()).limit(3)
-                    .map(p -> new OrderDetailsResponse.PaymentInfo(p.getPaymentId(),p.getPaymentMethod().getName(),
-                            p.getPaymentMethod().getMethodCode(),p.getStatus().name(),
-                            OrderLabels.paymentTransaction(p.getStatus(),p.getPaymentMethod().getMethodCode()),
-                            p.getAmount(),OrderLabels.local(p.getPaidAt()))).toList();
-            result.put(id,new OrderHistorySummary(products,lines.size(),lines.stream().mapToLong(OrderItem::getQuantity).sum(),
-                    shopLabels,payLabels,pay.size(),cancellationHint(parent,shops,delivery)==null,
-                    !lines.isEmpty(),!shops.isEmpty()));
+    private void validateHistoryFilter(CustomerOrderFilterRequest filter) {
+        if (filter == null || filter.getPage() < 1 || filter.getPage() > 10000 || filter.getKeyword() == null
+                || filter.getKeyword().length() > 100 || !filter.isDateRangeValid() || !filter.isDatabaseDateRangeValid()) {
+            throw new CustomerOrderException("Bộ lọc đơn hàng không hợp lệ.");
+        }
+    }
+
+    private String historyStatus(String statusText) {
+        try {
+            if (statusText.isEmpty()) {
+                return "";
+            }
+            return CustomerOrderStage.valueOf(statusText).name();
+        } catch (IllegalArgumentException exception) {
+            throw new CustomerOrderException("Trạng thái lọc không hợp lệ.");
+        }
+    }
+
+    private LocalDateTime historyStartDate(LocalDate date, ZoneId customerZone) {
+        if (date == null) {
+            return null;
+        }
+        LocalDateTime from = LocalDateTime.ofInstant(date.atStartOfDay(customerZone).toInstant(), ZoneOffset.UTC);
+        // Giữ giới hạn DATETIME2 cũ khi đổi múi giờ tạo ra năm 0.
+        if (from.getYear() < 1) {
+            return LocalDateTime.of(1, 1, 1, 0, 0);
+        }
+        return from;
+    }
+
+    private LocalDateTime historyEndDateExclusive(LocalDate date, ZoneId customerZone) {
+        if (date == null || date.equals(LocalDate.of(9999, 12, 31))) {
+            return null;
+        }
+        return LocalDateTime.ofInstant(date.plusDays(1).atStartOfDay(customerZone).toInstant(), ZoneOffset.UTC);
+    }
+
+
+    /** Giữ bốn lần đọc theo nhóm cho một trang lịch sử, không query riêng cho từng đơn. */
+    @Override
+    @Transactional(readOnly = true)
+    public Map<Long, OrderHistorySummary> historySummaries(Long customerId, List<Long> orderIds) {
+        validateHistoryOrderIds(customerId, orderIds);
+        if (orderIds.isEmpty()) {
+            return Map.of();
+        }
+        List<Order> parents = orders.findCustomerHistoryOrders(customerId, orderIds);
+        if (parents.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> ownedIds = new ArrayList<>();
+        for (Order parent : parents) {
+            ownedIds.add(parent.getOrderId());
+        }
+        Map<Long, List<ShopOrder>> shopsByOrder = new HashMap<>();
+        for (ShopOrder shop : shopOrders.findCustomerHistoryShops(customerId, ownedIds)) {
+            shopsByOrder.computeIfAbsent(shop.getOrder().getOrderId(), key -> new ArrayList<>()).add(shop);
+        }
+        Map<Long, List<Payment>> paymentsByOrder = new HashMap<>();
+        for (Payment payment : payments.findCustomerHistoryPayments(customerId, ownedIds)) {
+            paymentsByOrder.computeIfAbsent(payment.getOrder().getOrderId(), key -> new ArrayList<>()).add(payment);
+        }
+        Map<Long, List<OrderDeliveryView>> deliveriesByOrder = new HashMap<>();
+        for (OrderDeliveryView delivery : deliveries.findCustomerHistoryDeliveries(customerId, ownedIds)) {
+            Long orderId = delivery.getShopOrder().getOrder().getOrderId();
+            deliveriesByOrder.computeIfAbsent(orderId, key -> new ArrayList<>()).add(delivery);
+        }
+
+        Map<Long, OrderHistorySummary> result = new LinkedHashMap<>();
+        for (Order parent : parents) {
+            Long orderId = parent.getOrderId();
+            List<ShopOrder> shops = shopsByOrder.getOrDefault(orderId, List.of());
+            List<Payment> paymentRows = paymentsByOrder.getOrDefault(orderId, List.of());
+            List<OrderDeliveryView> deliveryRows = deliveriesByOrder.getOrDefault(orderId, List.of());
+            List<OrderItem> lines = sortedHistoryItems(shops);
+            long unitCount = 0;
+            for (OrderItem line : lines) {
+                unitCount += line.getQuantity();
+            }
+            OrderHistorySummary summary = new OrderHistorySummary(
+                    historyProducts(lines), lines.size(), unitCount,
+                    historyShops(shops, deliveryRows), historyPayments(paymentRows), paymentRows.size(),
+                    cancellationHint(parent, shops, deliveryRows) == null, !lines.isEmpty(), !shops.isEmpty());
+            result.put(orderId, summary);
         }
         return Map.copyOf(result);
+    }
+
+    private void validateHistoryOrderIds(Long customerId, List<Long> orderIds) {
+        if (customerId == null || customerId < 1 || orderIds == null || orderIds.size() > 10) {
+            throw new CustomerOrderException("Danh sách đơn hàng không hợp lệ.");
+        }
+        for (Long orderId : orderIds) {
+            if (orderId == null || orderId < 1) {
+                throw new CustomerOrderException("Danh sách đơn hàng không hợp lệ.");
+            }
+        }
+    }
+
+    private List<OrderItem> sortedHistoryItems(List<ShopOrder> shops) {
+        List<OrderItem> lines = new ArrayList<>();
+        for (ShopOrder shop : shops) {
+            lines.addAll(shop.getItems());
+        }
+        lines.sort(Comparator.comparing(OrderItem::getOrderItemId));
+        return lines;
+    }
+
+    private List<OrderHistorySummary.Product> historyProducts(List<OrderItem> lines) {
+        List<OrderHistorySummary.Product> products = new ArrayList<>();
+        int previewCount = Math.min(3, lines.size());
+        for (int index = 0; index < previewCount; index++) {
+            OrderItem item = lines.get(index);
+            String image = null;
+            if (item.getVariant() != null) {
+                image = item.getVariant().getThumbnailUrl();
+            }
+            if (image == null || image.isBlank()) {
+                image = null;
+            }
+            products.add(new OrderHistorySummary.Product(item.getProductNameSnapshot(), item.getVariantNameSnapshot(),
+                    item.getQuantity(), image));
+        }
+        return products;
+    }
+
+    private List<OrderHistorySummary.Shop> historyShops(List<ShopOrder> shops, List<OrderDeliveryView> deliveries) {
+        List<OrderHistorySummary.Shop> result = new ArrayList<>();
+        Map<Long, OrderDeliveryView> firstDeliveryByShop = new HashMap<>();
+        for (OrderDeliveryView delivery : deliveries) {
+            firstDeliveryByShop.putIfAbsent(delivery.getShopOrder().getShopOrderId(), delivery);
+        }
+        for (ShopOrder shop : shops) {
+            OrderDeliveryView matchedDelivery = firstDeliveryByShop.get(shop.getShopOrderId());
+            String fulfillmentLabel = OrderLabels.shop(shop.getStatus());
+            String deliveryStatus = null;
+            String deliveryLabel = null;
+            if (matchedDelivery != null) {
+                if ("OUT_FOR_DELIVERY".equals(shop.getStatus())) {
+                    fulfillmentLabel = "Vận chuyển";
+                }
+                deliveryStatus = matchedDelivery.getStatus();
+                deliveryLabel = historyDeliveryLabel(deliveryStatus);
+            }
+            result.add(new OrderHistorySummary.Shop(shop.getShop().getShopName(), fulfillmentLabel, deliveryStatus, deliveryLabel));
+        }
+        return result;
+    }
+
+    private List<OrderDetailsResponse.PaymentInfo> historyPayments(List<Payment> payments) {
+        List<Payment> sortedPayments = new ArrayList<>(payments);
+        sortedPayments.sort(Comparator.comparing(Payment::getPaymentId).reversed());
+        List<OrderDetailsResponse.PaymentInfo> result = new ArrayList<>();
+        int previewCount = Math.min(3, sortedPayments.size());
+        for (int index = 0; index < previewCount; index++) {
+            Payment payment = sortedPayments.get(index);
+            result.add(new OrderDetailsResponse.PaymentInfo(payment.getPaymentId(), payment.getPaymentMethod().getName(),
+                    payment.getPaymentMethod().getMethodCode(), payment.getStatus().name(),
+                    OrderLabels.paymentTransaction(payment.getStatus(), payment.getPaymentMethod().getMethodCode()),
+                    payment.getAmount(), OrderLabels.local(payment.getPaidAt())));
+        }
+        return result;
     }
 
     private String historyDeliveryLabel(String status) {
@@ -134,40 +284,97 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         };
     }
 
-    @Override @Transactional(readOnly=true)
-    public OrderActionsResponse actions(Long customerId,Long orderId) {
-        Order order=owned(customerId,orderId); var children=shopOrders.findByOrderOrderIdOrderByShopOrderIdAsc(orderId);
-        var pay=payments.findByOrderOrderIdOrderByPaymentIdAsc(orderId); var delivery=deliveries.findByShopOrderOrderOrderIdOrderByDeliveryIdAsc(orderId);
-        String hint=cancellationHint(order,children,delivery);
-        return new OrderActionsResponse(hint==null,hint,pay.isEmpty() ? "Chưa có phương thức thanh toán" : pay.getFirst().getPaymentMethod().getName());
-    }
-    @Override @Transactional
-    public void cancel(Long customerId,Long orderId,String reason) {
-        if(reason!=null && reason.length()>500) throw new CustomerOrderException("Lý do hủy tối đa 500 ký tự.");
-        User actor=lockCustomer(customerId); Order order=owned(customerId,orderId); em.refresh(order,LockModeType.PESSIMISTIC_WRITE);
-        if(order.getStatus()==Order.Status.CANCELLED) return;
-        var children=shopOrders.findByOrderOrderIdOrderByShopOrderIdAsc(orderId);
-        children.forEach(child -> em.refresh(child,LockModeType.PESSIMISTIC_WRITE));
-        var pay=payments.findByOrderOrderIdOrderByPaymentIdAsc(orderId); pay.forEach(p -> em.refresh(p,LockModeType.PESSIMISTIC_WRITE));
-        var delivery=deliveries.findByShopOrderOrderOrderIdOrderByDeliveryIdAsc(orderId); delivery.forEach(d -> em.refresh(d,LockModeType.PESSIMISTIC_READ));
-        String hint=cancellationHint(order,children,delivery); if(hint!=null) throw new CustomerOrderException(hint);
-        var lines=children.stream().flatMap(child -> child.getItems().stream())
-                .map(item -> new OrderInventoryReleaseService.Line(item.getOrderItemId(),item.getVariant().getVariantId(),item.getQuantity())).toList();
-        inventory.release(lines,customerId);
-        LocalDateTime now=LocalDateTime.now(ZoneOffset.UTC).withNano(0);
-        String note="Khách hàng hủy đơn."+(reason==null || reason.isBlank() ? "" : " Lý do: "+reason.trim());
-        for(var child:children) if(!"CANCELLED".equals(child.getStatus())) {
-            child.setStatus("CANCELLED"); child.setCancelledAt(now);
-            OrderStatusHistory history=new OrderStatusHistory(); history.setShopOrder(child); history.setStatus("CANCELLED"); history.setChangedBy(actor); history.setNote(note); em.persist(history);
+
+    @Override
+    @Transactional(readOnly = true)
+    public OrderActionsResponse actions(Long customerId, Long orderId) {
+        Order order = owned(customerId, orderId);
+        List<ShopOrder> children = shopOrders.findByOrderOrderIdOrderByShopOrderIdAsc(orderId);
+        List<Payment> paymentRows = payments.findByOrderOrderIdOrderByPaymentIdAsc(orderId);
+        List<OrderDeliveryView> deliveryRows = deliveries.findByShopOrderOrderOrderIdOrderByDeliveryIdAsc(orderId);
+        String hint = cancellationHint(order, children, deliveryRows);
+        String paymentMethod = "Chưa có phương thức thanh toán";
+        if (!paymentRows.isEmpty()) {
+            paymentMethod = paymentRows.getFirst().getPaymentMethod().getName();
         }
-        // Cancel only uncollected, inactive attempts. Processing/collected/refunded records
-        // remain financial evidence; canceling fulfillment does not perform a gateway refund.
-        pay.stream().filter(p -> p.getPaidAt()==null
-                && (p.getStatus()==Payment.Status.PENDING || p.getStatus()==Payment.Status.FAILED))
-                .forEach(p -> p.setStatus(Payment.Status.CANCELLED));
-        order.setStatus(Order.Status.CANCELLED); order.setCancelledAt(now);
-        em.flush(); events.publishEvent(new OrderCancelledEvent(orderId,customerId));
+        return new OrderActionsResponse(hint == null, hint, paymentMethod);
     }
+
+    @Override
+    @Transactional
+    public void cancel(Long customerId, Long orderId, String reason) {
+        if (reason != null && reason.length() > 500) {
+            throw new CustomerOrderException("Lý do hủy tối đa 500 ký tự.");
+        }
+        User actor = lockCustomer(customerId);
+        Order order = owned(customerId, orderId);
+        em.refresh(order, LockModeType.PESSIMISTIC_WRITE);
+        if (order.getStatus() == Order.Status.CANCELLED) {
+            return;
+        }
+        List<ShopOrder> children = shopOrders.findByOrderOrderIdOrderByShopOrderIdAsc(orderId);
+        for (ShopOrder child : children) {
+            em.refresh(child, LockModeType.PESSIMISTIC_WRITE);
+        }
+        List<Payment> paymentRows = payments.findByOrderOrderIdOrderByPaymentIdAsc(orderId);
+        for (Payment payment : paymentRows) {
+            em.refresh(payment, LockModeType.PESSIMISTIC_WRITE);
+        }
+        List<OrderDeliveryView> deliveryRows = deliveries.findByShopOrderOrderOrderIdOrderByDeliveryIdAsc(orderId);
+        for (OrderDeliveryView delivery : deliveryRows) {
+            em.refresh(delivery, LockModeType.PESSIMISTIC_READ);
+        }
+        String hint = cancellationHint(order, children, deliveryRows);
+        if (hint != null) {
+            throw new CustomerOrderException(hint);
+        }
+        List<OrderInventoryReleaseService.Line> lines = cancellationLines(children);
+        inventory.release(lines, customerId);
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
+        String note = "Khách hàng hủy đơn.";
+        if (reason != null && !reason.isBlank()) {
+            note += " Lý do: " + reason.trim();
+        }
+        recordCancelledShops(children, actor, now, note);
+        // Chỉ hủy các lần thanh toán chưa thu; không thực hiện hoàn tiền gateway.
+        for (Payment payment : paymentRows) {
+            if (payment.getPaidAt() == null
+                    && (payment.getStatus() == Payment.Status.PENDING || payment.getStatus() == Payment.Status.FAILED)) {
+                payment.setStatus(Payment.Status.CANCELLED);
+            }
+        }
+        order.setStatus(Order.Status.CANCELLED);
+        order.setCancelledAt(now);
+        em.flush();
+        events.publishEvent(new OrderCancelledEvent(orderId, customerId));
+    }
+
+    private List<OrderInventoryReleaseService.Line> cancellationLines(List<ShopOrder> children) {
+        List<OrderInventoryReleaseService.Line> lines = new ArrayList<>();
+        for (ShopOrder child : children) {
+            for (OrderItem item : child.getItems()) {
+                lines.add(new OrderInventoryReleaseService.Line(
+                        item.getOrderItemId(), item.getVariant().getVariantId(), item.getQuantity()));
+            }
+        }
+        return List.copyOf(lines);
+    }
+
+    private void recordCancelledShops(List<ShopOrder> children, User actor, LocalDateTime now, String note) {
+        for (ShopOrder child : children) {
+            if (!"CANCELLED".equals(child.getStatus())) {
+                child.setStatus("CANCELLED");
+                child.setCancelledAt(now);
+                OrderStatusHistory history = new OrderStatusHistory();
+                history.setShopOrder(child);
+                history.setStatus("CANCELLED");
+                history.setChangedBy(actor);
+                history.setNote(note);
+                em.persist(history);
+            }
+        }
+    }
+
     private String cancellationHint(Order order,List<ShopOrder> children,List<OrderDeliveryView> delivery) {
         if(order.getStatus()==Order.Status.CANCELLED) return "Đơn hàng đã được hủy.";
         if(children.isEmpty()) return "Đơn hàng chưa có thông tin cửa hàng, không thể hủy.";
@@ -186,11 +393,12 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         return null;
     }
 
-    @Override @Transactional
-    public ReorderResult reorder(Long customerId,Long orderId) {
+    @Override
+    @Transactional
+    public ReorderResult reorder(Long customerId, Long orderId) {
         User buyer = lockCustomer(customerId);
         owned(customerId, orderId);
-        var children = shopOrders.findByOrderOrderIdOrderByShopOrderIdAsc(orderId);
+        List<ShopOrder> children = shopOrders.findByOrderOrderIdOrderByShopOrderIdAsc(orderId);
         Map<Long, Long> quantities = new TreeMap<>();
         Map<Long, OrderItem> originalItems = new HashMap<>();
         for (ShopOrder child : children) {
@@ -205,14 +413,19 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         List<ReorderResult.SkippedItem> skipped = new ArrayList<>();
         int addedLines = 0;
         long addedUnits = 0;
-        for (var entry : quantities.entrySet()) {
+        for (Map.Entry<Long, Long> entry : quantities.entrySet()) {
             Long variantId = entry.getKey();
             long requestedQuantity = entry.getValue();
             OrderItem original = originalItems.get(variantId);
-            var variant = variants.findById(variantId).orElse(null);
-            CartItem existing = cart == null ? null : cartItems
-                    .findByCartCartIdAndVariantVariantId(cart.getCartId(), variantId).orElse(null);
-            long desiredQuantity = requestedQuantity + (existing == null ? 0L : existing.getQuantity());
+            CatalogVariant variant = variants.findById(variantId).orElse(null);
+            CartItem existing = null;
+            if (cart != null) {
+                existing = cartItems.findByCartCartIdAndVariantVariantId(cart.getCartId(), variantId).orElse(null);
+            }
+            long desiredQuantity = requestedQuantity;
+            if (existing != null) {
+                desiredQuantity += existing.getQuantity();
+            }
 
             String rejection = null;
             if (variant == null || !catalog.isPurchasable(variant)) {
@@ -339,10 +552,18 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
             default -> null;
         };
     }
-    private Order owned(Long customerId,Long orderId) { return orders.findByOrderIdAndCustomerUserId(orderId,customerId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng của bạn.")); }
+    private Order owned(Long customerId, Long orderId) {
+        return orders.findByOrderIdAndCustomerUserId(orderId, customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng của bạn."));
+    }
+
     private User lockCustomer(Long customerId) {
-        User user=users.findByUserIdForUpdate(customerId).orElseThrow(() -> new CustomerOrderException("Tài khoản không hợp lệ."));
-        em.refresh(user,LockModeType.PESSIMISTIC_WRITE); if(!"ACTIVE".equals(user.getStatus())) throw new CustomerOrderException("Tài khoản không còn được phép thao tác đơn hàng."); return user;
+        User user = users.findByUserIdForUpdate(customerId)
+                .orElseThrow(() -> new CustomerOrderException("Tài khoản không hợp lệ."));
+        em.refresh(user, LockModeType.PESSIMISTIC_WRITE);
+        if (!"ACTIVE".equals(user.getStatus())) {
+            throw new CustomerOrderException("Tài khoản không còn được phép thao tác đơn hàng.");
+        }
+        return user;
     }
 }

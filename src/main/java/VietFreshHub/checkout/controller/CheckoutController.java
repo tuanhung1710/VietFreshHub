@@ -288,7 +288,7 @@ public class CheckoutController {
         model.addAttribute("addressFormTitle", "Thêm địa chỉ nhận hàng");
         model.addAttribute("addressSubmitLabel", "Lưu và dùng địa chỉ này");
         model.addAttribute("addressFormAction", "/customer/checkout/address");
-        model.addAttribute("cartBadgeTotal", carts.getActiveCart(customerId).getTotalItems());
+        model.addAttribute("cartBadgeTotal", carts.countActiveUnits(customerId));
     }
 
     private void populateEditAddressPage(Long customerId, String checkoutToken, CustomerAddressRequest address, Model model) {
@@ -307,7 +307,7 @@ public class CheckoutController {
         model.addAttribute("form", form);
         model.addAttribute("checkout", preview);
         model.addAttribute("cart", preview.cart());
-        model.addAttribute("cartBadgeTotal", carts.getActiveCart(customerId).getTotalItems());
+        model.addAttribute("cartBadgeTotal", carts.countActiveUnits(customerId));
         Map<Long, List<CartItemDto>> shopGroups = new LinkedHashMap<>();
         for (CartItemDto item : preview.cart().getItems()) {
             List<CartItemDto> shopItems = shopGroups.get(item.getShopId());

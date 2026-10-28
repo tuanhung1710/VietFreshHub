@@ -65,7 +65,7 @@ public class SecurityConfig {
 
                     .requestMatchers(
                             "/home", "/customer", "/customer/**", "/cart", "/cart/**", "/product-detail", "/product-detail/**",
-                            "/api/catalog/products/*/availability", "/api/cart/items"
+                            "/api/catalog/products/*/availability"
                     ).hasRole("CUSTOMER")
 
                     .anyRequest().authenticated();

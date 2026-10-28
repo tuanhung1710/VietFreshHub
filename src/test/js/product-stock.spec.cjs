@@ -23,7 +23,7 @@ async function open(options = {}) {
     const context = await browser.newContext({ javaScriptEnabled: options.javaScriptEnabled !== false,
         viewport: options.viewport || { width: 1280, height: 900 } });
     const page = await context.newPage();
-    const state = { snapshot: snapshot(), gets: 0, posts: 0, mode: 'ok' };
+    const state = { snapshot: snapshot(), gets: 0, posts: 0, mode: 'ok', ajaxPosts: 0, pageMode: 'initial' };
     if (options.ignoreAbort) {
         await page.addInitScript(() => {
             const nativeFetch = window.fetch;
@@ -46,15 +46,26 @@ async function open(options = {}) {
             if (state.mode === 'removed') return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
             return route.fulfill({ contentType: 'application/json', body: JSON.stringify(state.snapshot) });
         }
-        if (url.pathname === '/api/cart/items' || url.pathname === '/cart/add') {
+        if (url.pathname === '/api/cart/items') {
+            state.ajaxPosts++;
+            return route.fulfill({ status: 404, body: 'Removed endpoint' });
+        }
+        if (url.pathname === '/cart/add') {
             state.posts++;
             state.postBody = request.postData();
+            state.nativePost = request.isNavigationRequest();
+            state.postContentType = request.headers()['content-type'];
             if (options.onPost) return options.onPost(route, state);
-            return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ totalItems: 8, message: 'Đã thêm sản phẩm vào giỏ hàng.' }) });
+            state.pageMode = 'success';
+            const variantId = new URLSearchParams(state.postBody).get('variantId');
+            return route.fulfill({ status: 302, headers: { location: '/product-detail/' + variantId } });
         }
         if (url.pathname.startsWith('/product-detail/')) {
             state.navigations = (state.navigations || 0) + 1;
-            return route.fulfill({ contentType: 'text/html; charset=utf-8', body: fs.readFileSync('target/stock-ux/product-detail.html', 'utf8') });
+            return route.fulfill({ contentType: 'text/html; charset=utf-8', body: fs.readFileSync('target/stock-ux/' + (
+                state.pageMode === 'shortage' ? 'product-detail-shortage.html' :
+                state.pageMode === 'success' ? (url.pathname.endsWith('/12') ? 'product-detail-success-12.html' : 'product-detail-success.html') :
+                'product-detail.html'), 'utf8') });
         }
         const file = path.resolve(staticRoot, '.' + url.pathname);
         if (file.startsWith(staticRoot + path.sep) && fs.existsSync(file) && fs.statSync(file).isFile()) {
@@ -162,43 +173,60 @@ test('hidden tab stops polling and foreground refreshes immediately', async () =
     } finally { await close(); }
 });
 
-test('server rejects stale add with structured 409; quantity and page are retained', async () => {
-    const { page, state, close } = await open({ onPost: route => route.fulfill({ status: 409,
-        contentType: 'application/json', body: JSON.stringify({ code: 'INSUFFICIENT_STOCK', availableStock: 1, message: 'Hộp 1 kg: chỉ còn 1 sản phẩm.' }) }) });
+test('MVC shortage redirects, keeps variant and quantity, renders fresh stock without REST POST', async () => {
+    const { page, state, close } = await open({ onPost: (route, state) => {
+        state.pageMode = 'shortage';
+        return route.fulfill({ status: 302, headers: { location: '/product-detail/11' } });
+    } });
     try {
         await page.locator('#quantity').fill('3');
         state.snapshot = snapshot(1);
         await page.locator('[data-add-button]').click();
-        await page.waitForFunction(() => document.querySelector('[data-cart-feedback]').textContent.includes('chỉ còn 1'));
+        await page.waitForFunction(() => document.querySelector('.notice.error')?.textContent.includes('chỉ còn 1'));
         await stock(page, 1);
         assert.equal(await page.locator('#quantity').inputValue(), '3');
-        assert.equal(state.posts, 1); assert.equal(state.navigations, 1);
-        assert.match(state.postBody, /variantId=11/);
+        assert.equal(await page.locator('[name="variantId"]').inputValue(), '11');
+        assert.equal(await page.locator('[data-add-button]').isDisabled(), true);
+        assert.equal(state.posts, 1); assert.equal(state.navigations, 2);
+        assert.equal(state.nativePost, true); assert.equal(state.ajaxPosts, 0);
+        const body = new URLSearchParams(state.postBody);
+        assert.equal(body.get('quantity'), '3'); assert.equal(body.get('variantId'), '11');
+        assert.equal(body.get('_csrf'), 'stock-test-token');
     } finally { await close(); }
 });
 
-test('double submit sends one POST and successful add updates actual badge', async () => {
+test('native double submit sends one POST including quantity; redirect renders badge and refresh never reposts', async () => {
     let pending;
-    const { page, state, close } = await open({ onPost: route => { pending = route; } });
+    const { page, state, close } = await open({ onPost: (route, state) => { state.pageMode = 'success'; pending = route; } });
     try {
-        await page.evaluate(() => { const form = document.querySelector('[data-detail-cart-form]'); form.requestSubmit(); form.requestSubmit(); });
+        await page.locator('#quantity').fill('3');
+        const inputState = await page.evaluate(() => {
+            const form = document.querySelector('[data-detail-cart-form]');
+            form.requestSubmit();
+            form.requestSubmit();
+            const input = form.querySelector('[name="quantity"]');
+            return { readOnly: input.readOnly, disabled: input.disabled };
+        });
         await page.waitForTimeout(100);
         assert.equal(state.posts, 1);
-        assert.equal(await page.locator('#quantity').isDisabled(), true);
-        await pending.fulfill({ contentType: 'application/json', body: JSON.stringify({ totalItems: 8, message: 'Đã thêm sản phẩm vào giỏ hàng.' }) });
-        await page.waitForFunction(() => document.querySelector('[data-cart-badge]').textContent === '8');
-        assert.equal(await page.locator('#quantity').isEnabled(), true);
+        assert.equal(inputState.readOnly, true);
+        assert.equal(inputState.disabled, false);
+        assert.match(state.postContentType, /application\/x-www-form-urlencoded/);
+        assert.equal(new URLSearchParams(state.postBody).get('quantity'), '3');
+        await pending.fulfill({ status: 302, headers: { location: '/product-detail/11' } });
+        await page.waitForFunction(() => document.querySelector('.notice.success')?.textContent.includes('Đã thêm'));
+        assert.equal(await page.locator('a[title="Giỏ hàng"] span').last().textContent(), '8');
+        assert.equal(state.nativePost, true); assert.equal(state.ajaxPosts, 0);
+        await page.reload(); assert.equal(state.posts, 1);
     } finally { await close(); }
 });
 
-test('failed POST is never automatically replayed and reports an uncertain result', async () => {
+test('native POST navigation failure is not automatically replayed', async () => {
     const { page, state, close } = await open({ onPost: route => route.abort() });
     try {
-        await page.locator('[data-add-button]').click();
-        await page.waitForFunction(() => document.querySelector('[data-cart-feedback]').textContent.includes('kiểm tra giỏ'));
-        await refresh(page); await page.waitForTimeout(100);
-        assert.equal(state.posts, 1);
-        assert.equal(await page.locator('#quantity').isEnabled(), true);
+        await page.locator('[data-add-button]').click().catch(() => {});
+        await page.waitForTimeout(200);
+        assert.equal(state.posts, 1); assert.equal(state.nativePost, true); assert.equal(state.ajaxPosts, 0);
     } finally { await close(); }
 });
 
@@ -218,7 +246,7 @@ test('price changes are announced and API names are rendered as text', async () 
         state.snapshot.variants[0].price = 31000;
         state.snapshot.variants[0].variantName = '<img onerror="alert(1)">';
         await refresh(page);
-        await page.waitForFunction(() => document.querySelector('[data-cart-feedback]').textContent.includes('Giá phân loại vừa thay đổi'));
+        await page.waitForFunction(() => document.querySelector('[data-price-notice]').textContent.includes('Giá phân loại vừa thay đổi'));
         assert.equal(await page.locator('[data-variant-id="11"] img').count(), 0);
         assert.match(await page.locator('[data-variant-price]').textContent(), /31/);
     } finally { await close(); }
@@ -229,7 +257,8 @@ test('no JavaScript retains native add form and variant navigation', async () =>
     try {
         assert.equal(await page.locator('[data-variant-id="12"]').getAttribute('href'), '/product-detail/12');
         await page.locator('[data-add-button]').click();
-        await page.waitForURL('**/cart/add');
+        await page.waitForURL('**/product-detail/11');
+        await page.locator('.notice.success').waitFor({ state: 'visible' });
         assert.equal(state.posts, 1); assert.match(state.postBody, /variantId=11/);
     } finally { await close(); }
 });
@@ -243,16 +272,22 @@ test('mobile stock controls remain inside viewport', async () => {
     } finally { await close(); }
 });
 
-test('409 stock is applied immediately even if the following refresh loses network', async () => {
-    const { page, state, close } = await open({ onPost: route => route.fulfill({ status: 409,
-        contentType: 'application/json', body: JSON.stringify({ code: 'INSUFFICIENT_STOCK', availableStock: 1, message: 'Chỉ còn 1 sản phẩm.' }) }) });
+test('restoring from back-forward cache unlocks the native form and resumes polling', async () => {
+    const { page, state, close } = await open();
     try {
-        await page.locator('#quantity').fill('3');
-        state.mode = 'offline';
-        await page.locator('[data-add-button]').click(); await stock(page, 1);
-        assert.equal(await page.locator('#quantity').inputValue(), '3');
+        // Giữ trang trong test để kiểm tra trạng thái đã khóa trước khi điều hướng.
+        await page.evaluate(() => {
+            const form = document.querySelector('[data-detail-cart-form]');
+            form.addEventListener('submit', event => event.preventDefault());
+            form.requestSubmit();
+        });
         assert.equal(await page.locator('[data-add-button]').isDisabled(), true);
-        assert.equal(state.posts, 1);
+        state.snapshot = snapshot(2);
+        await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })));
+        await stock(page, 2);
+        assert.equal(await page.locator('#quantity').getAttribute('readonly'), null);
+        assert.equal(await page.locator('[data-add-button]').isEnabled(), true);
+        assert.equal(state.posts, 0);
     } finally { await close(); }
 });
 
@@ -269,5 +304,21 @@ test('visible tab polls after five seconds and failures use backoff', async () =
         await page.clock.runFor(1200);
         await page.waitForFunction(() => !document.querySelector('[data-stock-network]').hidden);
         assert.equal(state.gets, afterFailure + 1);
+    } finally { await close(); }
+});
+
+
+test('switching variant before native submit sends the selected ID and returns to its detail URL', async () => {
+    const { page, state, close } = await open();
+    try {
+        await page.locator('[data-variant-id="12"]').click();
+        await page.locator('#quantity').fill('2');
+        await page.locator('[data-add-button]').click();
+        await page.waitForFunction(() => document.querySelector('.notice.success')?.textContent.includes('Đã thêm'));
+        assert.match(page.url(), /\/12$/);
+        assert.equal(new URLSearchParams(state.postBody).get('variantId'), '12');
+        assert.equal(new URLSearchParams(state.postBody).get('quantity'), '2');
+        assert.equal(await page.locator('[name="variantId"]').inputValue(), '12');
+        assert.equal(state.nativePost, true); assert.equal(state.ajaxPosts, 0);
     } finally { await close(); }
 });
