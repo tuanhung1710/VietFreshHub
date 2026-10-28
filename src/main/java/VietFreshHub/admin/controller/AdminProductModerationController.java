@@ -50,18 +50,26 @@ public class AdminProductModerationController {
                 .boxed()
                 .toList());
         model.addAttribute("pendingCount", moderationService.countPending());
+        model.addAttribute("reopenCount", moderationService.countReopen());
         model.addAttribute("lockedCount", moderationService.countLocked());
         model.addAttribute("reviewedCount", moderationService.countReviewed());
         return "admin/product-moderation";
     }
 
     @GetMapping("/{productId}")
-    public String detail(@PathVariable Long productId, Model model, RedirectAttributes redirectAttributes) {
+    public String detail(
+            @PathVariable Long productId,
+            @RequestParam(defaultValue = "PENDING") String tab,
+            Model model,
+            RedirectAttributes redirectAttributes) {
+        String selectedTab = normalizeTab(tab);
         try {
             model.addAttribute("detail", moderationService.getDetail(productId));
+            model.addAttribute("tab", selectedTab);
             return "admin/product-moderation-detail";
         } catch (EntityNotFoundException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+            redirectAttributes.addAttribute("tab", selectedTab);
             return "redirect:/admin/products";
         }
     }
@@ -126,7 +134,7 @@ public class AdminProductModerationController {
     private String normalizeTab(String tab) {
         if (tab == null) return "PENDING";
         String normalized = tab.trim().toUpperCase(java.util.Locale.ROOT);
-        return java.util.Set.of("PENDING", "LOCKED", "REVIEWED").contains(normalized)
+        return java.util.Set.of("PENDING", "REOPEN", "LOCKED", "REVIEWED").contains(normalized)
                 ? normalized : "PENDING";
     }
 

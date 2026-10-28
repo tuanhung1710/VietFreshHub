@@ -41,7 +41,7 @@ public class AdminProductModerationService {
 
     private static final int PAGE_SIZE = 25;
     private static final int MAX_PAGE = 10000;
-    private static final Set<String> TABS = Set.of("PENDING", "LOCKED", "REVIEWED");
+    private static final Set<String> TABS = Set.of("PENDING", "REOPEN", "LOCKED", "REVIEWED");
     private static final Set<String> DATE_RANGES = Set.of("ALL", "TODAY", "LAST_3_DAYS", "LAST_7_DAYS", "LAST_30_DAYS");
     private static final ZoneId BUSINESS_TIME_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
@@ -81,8 +81,14 @@ public class AdminProductModerationService {
                 ProductStatus.DELETED, ApprovalStatus.PENDING);
     }
 
+    public long countReopen() {
+        return moderationRepository.countByStatusNotAndApprovalStatusAndModerationBlockedTrue(
+                ProductStatus.DELETED, ApprovalStatus.PENDING);
+    }
+
     public long countLocked() {
-        return moderationRepository.countByStatusNotAndModerationBlockedTrue(ProductStatus.DELETED);
+        return moderationRepository.countLockedExceptPending(
+                ProductStatus.DELETED, ApprovalStatus.PENDING);
     }
 
     public long countReviewed() {

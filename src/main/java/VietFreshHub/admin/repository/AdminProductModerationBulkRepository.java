@@ -48,7 +48,9 @@ public interface AdminProductModerationBulkRepository extends JpaRepository<Prod
             join dbo.shops s on s.shop_id = p.shop_id
             where p.status <> 'DELETED'
               and ((:tab = 'PENDING' and p.approval_status = 'PENDING' and p.moderation_blocked = 0)
-                or (:tab = 'LOCKED' and p.moderation_blocked = 1)
+                or (:tab = 'REOPEN' and p.approval_status = 'PENDING' and p.moderation_blocked = 1)
+                or (:tab = 'LOCKED' and p.moderation_blocked = 1
+                    and (p.approval_status <> 'PENDING' or p.approval_status is null))
                 or (:tab = 'REVIEWED' and p.approval_status <> 'PENDING' and p.moderation_blocked = 0))
               and (:fromDate is null or p.created_at >= :fromDate)
               and (:untilDate is null or p.created_at < :untilDate)
@@ -68,7 +70,9 @@ public interface AdminProductModerationBulkRepository extends JpaRepository<Prod
             join dbo.shops s on s.shop_id = p.shop_id
             where p.status <> 'DELETED'
               and ((:tab = 'PENDING' and p.approval_status = 'PENDING' and p.moderation_blocked = 0)
-                or (:tab = 'LOCKED' and p.moderation_blocked = 1)
+                or (:tab = 'REOPEN' and p.approval_status = 'PENDING' and p.moderation_blocked = 1)
+                or (:tab = 'LOCKED' and p.moderation_blocked = 1
+                    and (p.approval_status <> 'PENDING' or p.approval_status is null))
                 or (:tab = 'REVIEWED' and p.approval_status <> 'PENDING' and p.moderation_blocked = 0))
               and (:fromDate is null or p.created_at >= :fromDate)
               and (:untilDate is null or p.created_at < :untilDate)
@@ -90,7 +94,18 @@ public interface AdminProductModerationBulkRepository extends JpaRepository<Prod
     long countByStatusNotAndApprovalStatusAndModerationBlockedFalse(
             ProductStatus excludedStatus, ApprovalStatus approvalStatus);
 
-    long countByStatusNotAndModerationBlockedTrue(ProductStatus excludedStatus);
+    long countByStatusNotAndApprovalStatusAndModerationBlockedTrue(
+            ProductStatus excludedStatus, ApprovalStatus approvalStatus);
+
+    @Query("""
+            select count(p) from Product p
+            where p.status <> :excludedStatus
+              and p.moderationBlocked = true
+              and (p.approvalStatus is null or p.approvalStatus <> :pendingStatus)
+            """)
+    long countLockedExceptPending(
+            @Param("excludedStatus") ProductStatus excludedStatus,
+            @Param("pendingStatus") ApprovalStatus pendingStatus);
 
     long countByStatusNotAndApprovalStatusNotAndModerationBlockedFalse(
             ProductStatus excludedStatus, ApprovalStatus approvalStatus);

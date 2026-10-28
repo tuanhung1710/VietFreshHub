@@ -68,6 +68,8 @@
     <nav class="tabs" aria-label="Lọc sản phẩm">
         <a class="tab" th:classappend="${tab == 'PENDING'} ? ' selected'"
            th:href="@{/admin/products(tab='PENDING',keyword=${keyword},dateRange=${dateRange},page=1)}">Chưa hậu kiểm <span th:text="${pendingCount}">0</span></a>
+        <a class="tab" th:classappend="${tab == 'REOPEN'} ? ' selected'"
+           th:href="@{/admin/products(tab='REOPEN',keyword=${keyword},dateRange=${dateRange},page=1)}">Chờ duyệt mở khóa <span th:text="${reopenCount}">0</span></a>
         <a class="tab" th:classappend="${tab == 'LOCKED'} ? ' selected'"
            th:href="@{/admin/products(tab='LOCKED',keyword=${keyword},page=1)}">Đang khóa <span th:text="${lockedCount}">0</span></a>
         <a class="tab" th:classappend="${tab == 'REVIEWED'} ? ' selected'"
@@ -89,7 +91,7 @@
     </form>
 
     <section class="bulk-bar" th:if="${tab == 'PENDING' and productsPage.totalElements > 0}">
-        <p>Duyệt hàng loạt áp dụng cho toàn bộ kết quả đang lọc, kể cả các trang sau. Sản phẩm bị khóa hoặc đã xóa sẽ không được duyệt.</p>
+        <p>Duyệt hàng loạt áp dụng cho toàn bộ sản phẩm đang chờ ở tab này. Sản phẩm cần mở khóa lại phải được admin xem xét riêng.</p>
         <form method="post" th:action="@{/admin/products/bulk-review}"
               onsubmit="return confirm('Bạn xác nhận duyệt tất cả sản phẩm đang khớp với bộ lọc hiện tại?')">
             <input type="hidden" name="tab" value="PENDING">
@@ -109,7 +111,7 @@
                     <div class="product">
                         <img th:if="${product.imageUrl != null and !product.imageUrl.isBlank()}" th:src="${product.imageUrl}" th:alt="${product.name}">
                         <div>
-                            <a class="product-name" th:href="@{/admin/products/{id}(id=${product.productId})}" th:text="${product.name}">Tên sản phẩm</a>
+                            <a class="product-name" th:href="@{/admin/products/{id}(id=${product.productId},tab=${tab})}" th:text="${product.name}">Tên sản phẩm</a>
                             <div class="muted" th:text="${product.variantCount + ' phân loại'}">2 phân loại</div>
                             <div class="description" th:text="${product.description}">Mô tả sản phẩm</div>
                             <div th:if="${product.moderationBlocked}" class="badge locked" th:text="${'Lý do khóa: ' + product.moderationReason}">Lý do khóa</div>
@@ -121,7 +123,8 @@
                     <span class="badge" th:if="${!product.moderationBlocked and product.approvalStatus == 'PENDING'}">Chờ hậu kiểm, vẫn đang hiển thị</span>
                     <span class="badge" th:if="${!product.moderationBlocked and product.approvalStatus == 'APPROVED'}">Đã duyệt</span>
                     <span class="badge" th:if="${!product.moderationBlocked and product.approvalStatus == 'REJECTED'}">Đã từ chối</span>
-                    <span class="badge locked" th:if="${product.moderationBlocked}">Đang bị khóa</span>
+                    <span class="badge locked" th:if="${product.moderationBlocked and product.approvalStatus == 'PENDING'}">Chờ duyệt mở khóa · đang khóa</span>
+                    <span class="badge locked" th:if="${product.moderationBlocked and product.approvalStatus != 'PENDING'}">Đang bị khóa</span>
                 </td>
                 <td th:text="${#temporals.format(product.createdAt, 'dd/MM/yyyy HH:mm')}">19/10/2026</td>
                 <td>
