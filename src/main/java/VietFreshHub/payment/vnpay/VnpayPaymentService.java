@@ -11,6 +11,7 @@ import VietFreshHub.payment.entity.Payment;
 import VietFreshHub.payment.entity.PaymentMethod;
 import VietFreshHub.payment.entity.PaymentTransaction;
 import VietFreshHub.payment.repository.PaymentMethodRepository;
+import VietFreshHub.payout.service.SellerPayoutService;
 import VietFreshHub.payment.repository.PaymentRepository;
 import VietFreshHub.payment.repository.PaymentTransactionRepository;
 import jakarta.persistence.EntityManager;
@@ -38,6 +39,7 @@ public class VnpayPaymentService {
     private final OrderRepository orders;
     private final PaymentRepository payments;
     private final PaymentMethodRepository paymentMethods;
+    private final SellerPayoutService sellerPayoutService;
     private final PaymentTransactionRepository transactions;
     private final InventoryReservationService reservations;
     private final OrderInventoryReleaseService releases;
@@ -218,6 +220,7 @@ public class VnpayPaymentService {
         payment.setStatus(Payment.Status.PAID);
         payment.setPaidAt(paidAt);
         order.setPaymentStatus("PAID");
+        sellerPayoutService.recordOnlinePayment(orderId, paidAt);
         record(payment, "PAYMENT_SUCCESS", fields.get("vnp_TransactionNo"), "PAID", fields);
         for (Payment other : payments.findOtherPendingVnpayPayments(orderId, payment.getPaymentId(), Payment.Status.PENDING)) {
             other.setStatus(Payment.Status.CANCELLED);

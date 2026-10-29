@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Đối soát payout · VietFresh Hub</title>
+    <link rel="stylesheet" th:href="@{/css/admin-payouts.css}">
+</head>
+<body>
+<main class="page-shell">
+    <header class="page-header">
+        <div>
+            <p class="eyebrow">TRUNG TÂM QUẢN TRỊ</p>
+            <h1>Đối soát payout</h1>
+            <p>Hoa hồng sàn <strong th:text="|${commissionRate}%|">10%</strong> trên tiền hàng sau coupon shop tài trợ, không gồm phí ship.</p>
+        </div>
+        <nav aria-label="Điều hướng quản trị">
+            <a th:href="@{/admin/accounts}">Quản lý tài khoản</a>
+            <a th:href="@{/admin/deliveries}">Giám sát giao hàng</a>
+        </nav>
+    </header>
+
+    <div th:if="${successMessage}" class="flash success" role="status" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="flash error" role="alert" th:text="${errorMessage}"></div>
+
+    <section class="panel">
+        <div class="section-heading">
+            <div><h2>Khoản chờ payout</h2><p>Lô tự động chỉ xử lý sau 24 giờ kể từ khi giao thành công; COD cần được xác nhận đã về sàn.</p></div>
+            <span class="schedule-badge">Tạo lô lúc 10:00 và 16:00 · giờ Việt Nam</span>
+        </div>
+        <form id="manualPayoutBatchForm" method="post" th:action="@{/admin/payouts/batches/manual}"></form>
+        <div class="section-heading">
+            <p>Tạm bật kiểm thử: có thể tạo lô thủ công trước mốc 24 giờ cho đơn đã giao thành công, tiền đã về sàn và tài khoản shop đã xác minh.</p>
+            <button class="button primary" type="submit" form="manualPayoutBatchForm">Tạo lô payout ngay</button>
+        </div>
+        <div class="table-scroll">
+            <table>
+                <thead><tr>
+                    <th>Chọn</th><th>Shop / đơn hàng</th><th>Nguồn tiền</th><th>Tiền hàng</th><th>Coupon</th>
+                    <th>Cơ sở sau coupon</th><th>Hoa hồng</th><th>Shop nhận</th><th>Trạng thái</th><th>Thao tác</th>
+                </tr></thead>
+                <tbody>
+                <tr th:each="payout : ${payoutQueue}">
+                    <td>
+                        <input th:if="${payout.canManualBatch}" type="checkbox" form="manualPayoutBatchForm"
+                               name="payoutIds" th:value="${payout.payoutId}"
+                               th:attr="aria-label=|Chọn đơn ${payout.orderCode} để payout ngay|">
+                        <span th:unless="${payout.canManualBatch}" class="muted">—</span>
+                    </td>
+                    <td><strong th:text="${payout.shopName}">Cửa hàng</strong><small th:text="${payout.orderCode}">VF-ORDER</small></td>
+                    <td th:text="${payout.fundsSource == 'COD' ? 'COD' : (payout.fundsSource == 'ONLINE' ? 'Online' : 'Chưa xác nhận')}">COD</td>
+                    <td class="money" th:text="${#numbers.formatDecimal(payout.subtotalAmount, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                    <td class="money" th:text="${#numbers.formatDecimal(payout.discountAmount, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                    <td class="money" th:text="${#numbers.formatDecimal(payout.grossAmount, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                    <td class="money" th:text="${#numbers.formatDecimal(payout.commissionAmount, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                    <td class="money strong" th:text="${#numbers.formatDecimal(payout.netAmount, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+                    <td><span class="status" th:text="${payout.status}">PENDING</span>
+                        <small th:if="${payout.eligibleAt == null}">Chờ shipper xác nhận giao thành công</small>
+                        <small th:if="${payout.eligibleAt != null}" th:text="|Tự động đủ điều kiện từ: ${#temporals.format(payout.eligibleAt, 'dd/MM/yyyy HH:mm')} UTC|"></small>
+                        <small th:if="${payout.fundsConfirmedAt != null}" th:text="|Tiền đã xác nhận: ${#temporals.format(payout.fundsConfirmedAt, 'dd/MM/yyyy HH:mm')} UTC|"></small>
+                        <small th:if="${payout.status == 'PENDING' and !payout.hasVerifiedAccount}">Chưa có tài khoản ngân hàng đã xác minh</small></td>
+                    <td>
+                        <form th:if="${payout.fundsSource == 'COD' and payout.fundsConfirmedAt == null and payout.status != 'PROCESSING'}"
+                              method="post" th:action="@{/admin/payouts/{id}/confirm-cod(id=${payout.payoutId})}">
+                            <button class="button secondary" type="submit">Xác nhận COD về sàn</button>
+                        </form>
+                        <span th:if="${payout.status == 'PROCESSING'}" class="muted">Đã có trong lô</span>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(payoutQueue)}"><td colspan="10" class="empty">Chưa có khoản payout đang chờ.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="section-heading"><div><h2>Tài khoản nhận tiền của shop</h2><p>Shop tự khai báo. Admin xác minh trạng thái; chỉ tài khoản đã xác minh mới được đưa vào file payout.</p></div></div>
+        <div class="account-grid">
+            <article class="account-card" th:each="account : ${accounts}">
+                <div class="account-title"><strong th:text="${account.shopName}">Cửa hàng</strong>
+                    <span class="status" th:text="${account.verified ? 'Đã xác minh' : (account.bankName == null ? 'Chưa khai báo' : 'Shop đã khai báo · Chờ xác minh')}">Chưa khai báo</span></div>
+                <p th:if="${account.bankName != null}" class="muted" th:text="|${account.bankName} · ${account.accountNumber} · ${account.accountHolder}|">Thông tin ngân hàng</p>
+                <p th:if="${account.bankName == null}" class="muted">Shop chưa khai báo tài khoản.</p>
+                <form th:if="${account.bankName != null}" method="post"
+                      th:action="@{/admin/payouts/accounts/{shopId}/verification(shopId=${account.shopId})}">
+                    <input type="hidden" name="verified" th:value="${!account.verified}">
+                    <button class="button" th:classappend="${account.verified ? ' secondary' : ' primary'}" type="submit"
+                            th:text="${account.verified ? 'Thu hồi xác minh' : 'Xác minh tài khoản'}">Xác minh tài khoản</button>
+                </form>
+            </article>
+            <p th:if="${#lists.isEmpty(accounts)}" class="empty">Chưa có shop đang hoạt động.</p>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="section-heading"><div><h2>Các đợt payout</h2><p>Tải lại file cùng lô không tạo giao dịch mới. Lỗi chuyển khoản sẽ được đưa vào lô kế tiếp.</p></div></div>
+        <article class="batch-card" th:each="batch : ${batches}">
+            <header class="batch-heading">
+                <div><strong th:text="|Lô ${batch.scheduledSlot}|">Lô</strong><span class="status" th:text="${batch.status}">READY</span>
+                    <small th:text="|${batch.payoutCount} khoản · ${batch.shopCount} shop · ${#numbers.formatDecimal(batch.totalAmount, 1, 'COMMA', 2, 'POINT')}|">Tổng lô</small></div>
+                <a class="button primary" th:href="@{/admin/payouts/batches/{id}/export.xlsx(id=${batch.batchId})}">Tải file Excel</a>
+            </header>
+            <div class="table-scroll">
+                <table class="compact"><thead><tr><th>Shop</th><th>Đơn trong lô</th><th>Số tiền</th><th>Trạng thái</th><th>Mã giao dịch</th><th>Ghi nhận kết quả</th></tr></thead>
+                    <tbody><tr th:each="transfer : ${batch.shopTransfers}">
+                        <td th:text="${transfer.shopName}">Shop</td><td th:text="${transfer.orderCount}">0</td>
+                        <td class="money" th:text="${#numbers.formatDecimal(transfer.amount, 1, 'COMMA', 2, 'POINT')}">0</td>
+                        <td th:text="${transfer.status}">PENDING</td><td th:text="${transfer.transferReference == null ? '—' : transfer.transferReference}">—</td>
+                        <td>
+                            <form th:if="${transfer.status == 'PENDING'}" method="post"
+                                  th:action="@{/admin/payouts/batches/{batchId}/shops/{shopId}/result(batchId=${batch.batchId},shopId=${transfer.shopId})}" class="result-form">
+                                <select name="result" aria-label="Kết quả chuyển khoản"><option value="PAID">Đã chuyển</option><option value="FAILED">Thất bại</option></select>
+                                <input name="reference" maxlength="255" placeholder="Mã giao dịch nếu thành công">
+                                <input name="failureReason" maxlength="1000" placeholder="Lý do nếu thất bại">
+                                <button class="button secondary" type="submit">Lưu kết quả</button>
+                            </form>
+                            <span th:if="${transfer.status != 'PENDING'}" class="muted">Đã ghi nhận</span>
+                        </td>
+                    </tr></tbody>
+                </table>
+            </div>
+        </article>
+        <p th:if="${#lists.isEmpty(batches)}" class="empty">Chưa có lô payout. Lô tiếp theo được lập vào khung giờ kế tiếp nếu có khoản đủ điều kiện.</p>
+    </section>
+</main>
+</body>
+</html>

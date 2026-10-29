@@ -15,8 +15,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.List;
@@ -29,7 +27,6 @@ public class AutoAssignmentService {
 
     public static final int MAX_ACTIVE_ASSIGNMENTS = 5;
     private static final int OFFER_RETRY_COOLDOWN_SECONDS = 60;
-    private static final ZoneId DELIVERY_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final List<DeliveryAssignmentStatus> ACTIVE_ASSIGNMENT_STATUSES = List.of(
             DeliveryAssignmentStatus.ASSIGNED, DeliveryAssignmentStatus.ACCEPTED);
     private static final List<DeliveryAssignmentStatus> FAILED_OFFER_STATUSES = List.of(
@@ -84,10 +81,7 @@ public class AutoAssignmentService {
     }
 
     public boolean isAssignmentWindowOpen(LocalDateTime utcTime) {
-        LocalTime localTime = utcTime.atOffset(ZoneOffset.UTC)
-                .atZoneSameInstant(DELIVERY_ZONE).toLocalTime();
-        return !localTime.isBefore(LocalTime.of(8, 0)) && localTime.isBefore(LocalTime.of(19, 0));
-//        return true;
+        return true; // Tạm mở phân công cả ngày để kiểm thử.
     }
 
     private Set<Long> findExcludedStaffIds(Delivery delivery, LocalDateTime now) {

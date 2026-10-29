@@ -27,6 +27,7 @@
     <main class="page-content">
         <nav class="breadcrumbs" aria-label="Điều hướng">
             <span>Quản trị</span><span aria-hidden="true">/</span><strong>Quản lý tài khoản</strong>
+            <a th:href="@{/admin/payouts}">Đối soát payout</a>
             <a th:href="@{/admin/deliveries}">Giám sát giao hàng</a>
             <a th:href="@{/admin/products}">Hậu kiểm sản phẩm</a>
         </nav>
@@ -97,7 +98,13 @@
 
             <div class="table-wrap">
                 <table>
-                    <thead><tr><th scope="col">TÀI KHOẢN</th><th scope="col">VAI TRÒ</th><th scope="col">TRẠNG THÁI</th><th scope="col">NGÀY TẠO</th><th scope="col" class="actions-heading">THAO TÁC</th></tr></thead>
+                    <thead>
+                    <tr>
+                        <th scope="col">TÀI KHOẢN</th>
+                        <th scope="col">VAI TRÒ</th>
+                        <th scope="col">TRẠNG THÁI</th>
+                        <th scope="col">NGÀY TẠO</th>
+                        <th scope="col" class="actions-heading">THAO TÁC</th></tr></thead>
                     <tbody>
                     <tr th:each="account, rowIndex : ${accounts}"
                         th:attr="data-account-row='',data-id=${account.userId},data-name=${account.fullName},data-email=${account.email},data-phone=${account.phone},data-status=${account.status},data-created=${#temporals.format(account.createdAt, 'dd/MM/yyyy')},data-verified=${account.emailVerifiedAt != null},data-methods=${account.providersLabel()},data-role-ids=${account.roleIdsCsv()},data-role-names=${account.roleNamesCsv()},data-profile-url=@{/admin/accounts/{id}/profile(id=${account.userId})},data-roles-url=@{/admin/accounts/{id}/roles(id=${account.userId})},data-status-url=@{/admin/accounts/{id}/status(id=${account.userId})}">

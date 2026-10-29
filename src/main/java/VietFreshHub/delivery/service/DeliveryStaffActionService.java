@@ -5,6 +5,7 @@ import VietFreshHub.delivery.entity.DeliveryAssignment;
 import VietFreshHub.delivery.entity.DeliveryStatus;
 import VietFreshHub.order.entity.ShopOrder;
 import VietFreshHub.order.service.OrderService;
+import VietFreshHub.payout.service.SellerPayoutService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,7 @@ public class DeliveryStaffActionService {
     private final DeliveryStatusHistoryWriter deliveryStatusHistoryWriter;
     private final OrderService orderService;
     private final DeliveryNotificationService deliveryNotificationService;
+    private final SellerPayoutService sellerPayoutService;
     private final ApplicationEventPublisher events;
 
     @Transactional
@@ -75,6 +77,7 @@ public class DeliveryStaffActionService {
         deliveryService.markDelivered(delivery.getDeliveryId());
         orderService.completeDeliveredShopOrder(shopOrder.getShopOrderId(), delivery.getDeliveredAt(),
                 assignment.getDeliveryStaff().getUserId());
+        sellerPayoutService.createForDeliveredOrder(shopOrder.getShopOrderId(), delivery.getDeliveredAt());
         deliveryStatusHistoryWriter.record(delivery, assignment.getDeliveryStaff().getUserId(), null);
         assignment.complete();
         deliveryNotificationService.notifyCompleted(delivery);
