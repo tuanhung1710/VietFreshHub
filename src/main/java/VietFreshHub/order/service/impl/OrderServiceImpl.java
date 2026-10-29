@@ -47,6 +47,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,6 +58,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
+    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final String[] VIETNAMESE_DIGITS = {
             "không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"
     };
@@ -116,7 +118,7 @@ public class OrderServiceImpl implements OrderService {
                     shopOrder.getShopOrderId(),
                     order.getOrderCode(),
                     order.getCustomer().getFullName(),
-                    order.getPlacedAt(),
+                    OrderLabels.local(order.getPlacedAt()),
                     shopOrder.getTotalAmount(),
                     getOrderStatusLabel(shopOrder.getStatus()),
                     order.getPaymentStatus()
@@ -234,6 +236,7 @@ public class OrderServiceImpl implements OrderService {
     private OrderDetailResponse toOrderDetailResponse(ShopOrder shopOrder, OrderAddress address,
                                                      String shopAddress, String paymentMethod) {
         Order order = shopOrder.getOrder();
+        LocalDateTime placedAt = OrderLabels.local(order.getPlacedAt());
         List<OrderItemResponse> items = new ArrayList<>();
         boolean deliveryFailed = "OUT_FOR_DELIVERY".equals(shopOrder.getStatus())
                 && getFailedShopOrderIds(List.of(shopOrder.getShopOrderId())).contains(shopOrder.getShopOrderId());
@@ -250,7 +253,7 @@ public class OrderServiceImpl implements OrderService {
 
         return new OrderDetailResponse(
                 order.getOrderCode(),
-                order.getPlacedAt(),
+                placedAt,
                 order.getCustomer().getFullName(),
                 address == null ? null : address.getRecipientName(),
                 address == null ? null : address.getPhone(),
@@ -269,7 +272,7 @@ public class OrderServiceImpl implements OrderService {
                 shopOrder.getDiscountTotal(),
                 paymentMethod,
                 formatInvoiceAmountInWords(shopOrder.getTotalAmount()),
-                OrderLabels.local(order.getPlacedAt())
+                placedAt
         );
     }
 
@@ -387,10 +390,10 @@ public class OrderServiceImpl implements OrderService {
                 }
             }
             if (filter.getFromDate() != null) {
-                predicates.add(builder.greaterThanOrEqualTo(order.get("placedAt"), filter.getFromDate().atStartOfDay()));
+                predicates.add(builder.greaterThanOrEqualTo(order.get("placedAt"), toUtcStartOfDay(filter.getFromDate())));
             }
             if (filter.getToDate() != null) {
-                predicates.add(builder.lessThan(order.get("placedAt"), filter.getToDate().plusDays(1).atStartOfDay()));
+                predicates.add(builder.lessThan(order.get("placedAt"), toUtcStartOfDay(filter.getToDate().plusDays(1))));
             }
             if (filter.getPriceRange() != null && !filter.getPriceRange().isBlank()) {
                 Path<BigDecimal> amount = root.get("totalAmount");
@@ -439,8 +442,13 @@ public class OrderServiceImpl implements OrderService {
         };
     }
 
+    private LocalDateTime toUtcStartOfDay(LocalDate date) {
+        LocalDateTime utc = date.atStartOfDay(VIETNAM_ZONE).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
+        return utc.getYear() < 1 ? LocalDateTime.of(1, 1, 1, 0, 0) : utc;
+    }
+
     private void validateDateRange(OrderFilterRequest filter) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(VIETNAM_ZONE);
         LocalDate fromDate = filter.getFromDate();
         LocalDate toDate = filter.getToDate();
 
@@ -468,7 +476,7 @@ public class OrderServiceImpl implements OrderService {
                 shopOrder.getShopOrderId(),
                 order.getOrderCode(),
                 order.getCustomer().getFullName(),
-                order.getPlacedAt(),
+                OrderLabels.local(order.getPlacedAt()),
                 shopOrder.getTotalAmount(),
                 shopOrder.getStatus(),
                 getOrderStatusLabel(shopOrder.getStatus(), deliveryFailed),
