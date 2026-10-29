@@ -52,6 +52,8 @@
             </form>
             <a class="button secondary full" th:href="@{/home}">Tiếp tục mua sắm</a>
             <a class="button secondary full" th:href="@{/customer/orders/{id}/tracking(id=${order.orderId})}">Theo dõi đơn hàng</a>
+            <a th:if="${refund != null and refund.eligible}" class="button secondary full"
+               th:href="@{/customer/orders/{id}/refund-information(id=${order.orderId})}">Nhập thông tin hoàn tiền</a>
             <form th:action="@{/customer/orders/{id}/reorder(id=${order.orderId})}" method="post" class="order-action-form"><button type="submit" class="button secondary full">Mua lại</button></form>
             <details th:if="${actions != null and actions.cancellable}" class="cancel-order"><summary>Hủy đơn hàng</summary>
                 <form th:action="@{/customer/orders/{id}/cancel(id=${order.orderId})}" method="post">

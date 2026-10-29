@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Yêu cầu hoàn tiền · VietFresh Hub</title>
+    <link rel="stylesheet" th:href="@{/css/admin-accounts.css}">
+</head>
+<body>
+<div class="app-shell">
+    <header class="topbar">
+        <a class="brand" th:href="@{/admin/accounts}">
+            <span class="brand-mark" aria-hidden="true">V</span>
+            <span><strong>VietFresh Hub</strong><small>TRUNG TÂM QUẢN TRỊ</small></span>
+        </a>
+        <span class="admin-label">QUẢN TRỊ VIÊN</span>
+    </header>
+    <main class="page-content">
+        <nav class="breadcrumbs" aria-label="Điều hướng">
+            <a th:href="@{/admin/accounts}">Quản lý tài khoản</a>
+            <a th:href="@{/admin/deliveries}">Giám sát giao hàng</a>
+            <a th:href="@{/admin/products}">Hậu kiểm sản phẩm</a>
+        </nav>
+        <section class="page-heading">
+            <div>
+                <h1>Yêu cầu hoàn tiền</h1>
+                <p>Danh sách bàn giao nội bộ. Việc xuất Excel không xác nhận tiền đã được chuyển.</p>
+            </div>
+        </section>
+        <section class="accounts-panel">
+            <form method="get" th:action="@{/admin/refund-requests}" class="filter-bar">
+                <label for="from">Từ ngày/giờ (giờ Việt Nam)</label>
+                <input type="datetime-local" id="from" name="from" step="1" th:value="${period.start.toString()}"
+                       th:max="${period.latestSelectableTime.toString()}" min="0001-01-02T00:00:00" required>
+                <label for="to">Đến ngày/giờ (giờ Việt Nam)</label>
+                <input type="datetime-local" id="to" name="to" step="1" th:value="${period.end.toString()}"
+                       th:max="${period.latestSelectableTime.toString()}" min="0001-01-02T00:00:00" required>
+                <button type="submit">Xem danh sách</button>
+            </form>
+            <div class="panel-heading">
+                <div>
+                    <p th:text="'Từ ' + ${#temporals.format(period.start,'dd/MM/yyyy HH:mm:ss')} + ' (bao gồm) đến '
+                            + ${#temporals.format(period.end,'dd/MM/yyyy HH:mm:ss')} + ' (không bao gồm), giờ Việt Nam'"></p>
+                    <p th:unless="${period.completed}" role="status">Chưa đến mốc kết thúc đã chọn, danh sách có thể tiếp tục thay đổi. Có thể xuất Excel khi mốc kết thúc đã qua.</p>
+                    <p>Số yêu cầu: <strong th:text="${#lists.size(period.requests)}"></strong></p>
+                    <p>Tổng số tiền:
+                        <strong th:text="${#numbers.formatDecimal(period.totalAmount,1,'POINT',2,'COMMA')} + ' ₫'"></strong>
+                    </p>
+                </div>
+                <a th:if="${period.completed}" th:href="@{/admin/refund-requests/export(from=${period.start.toString()},to=${period.end.toString()})}">Xuất Excel</a>
+            </div>
+            <p th:if="${#lists.isEmpty(period.requests)}" class="empty-state">Không có yêu cầu hoàn tiền trong khoảng thời gian đã chọn.</p>
+            <div th:unless="${#lists.isEmpty(period.requests)}" class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th scope="col">Mã yêu cầu</th>
+                        <th scope="col">Mã đơn hàng</th>
+                        <th scope="col">Ngân hàng</th>
+                        <th scope="col">Số tài khoản</th>
+                        <th scope="col">Số tiền hoàn</th>
+                        <th scope="col">Gửi lúc (giờ Việt Nam)</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="request : ${period.requests}">
+                        <td th:text="${request.refundRequestId}"></td>
+                        <td th:text="${request.orderCode}"></td>
+                        <td th:text="${request.bankName}"></td>
+                        <td th:text="${request.maskedAccountNumber}"></td>
+                        <td th:text="${#numbers.formatDecimal(request.refundAmount,1,'POINT',2,'COMMA')} + ' ₫'"></td>
+                        <td th:text="${#temporals.format(request.submittedAt,'dd/MM/yyyy HH:mm:ss')}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

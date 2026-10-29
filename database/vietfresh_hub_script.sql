@@ -544,6 +544,22 @@ CREATE TABLE dbo.orders (
 );
 GO
 
+CREATE TABLE dbo.refund_requests (
+    refund_request_id    BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+    order_id            BIGINT NOT NULL,
+    bank_name           NVARCHAR(120) NOT NULL,
+    bank_account_number NVARCHAR(50) NOT NULL,
+    account_holder_name NVARCHAR(150) NOT NULL,
+    refund_amount       DECIMAL(18,2) NOT NULL,
+    submitted_at        DATETIME2(0) NOT NULL,
+
+    CONSTRAINT FK_refund_requests_order FOREIGN KEY (order_id)
+        REFERENCES dbo.orders(order_id),
+    CONSTRAINT UQ_refund_requests_order UNIQUE (order_id),
+    CONSTRAINT CK_refund_requests_amount CHECK (refund_amount > 0)
+);
+GO
+
 -- 25. order_addresses
 CREATE TABLE dbo.order_addresses (
     order_address_id    BIGINT IDENTITY(1,1) PRIMARY KEY,

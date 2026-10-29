@@ -7,12 +7,42 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.math.BigDecimal;
+import java.util.Optional;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
+
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @Transactional(readOnly = true)
+    public Optional<BigDecimal> getPaidOnlineOrderAmount(Long orderId) {
+        Payment paidPayment = null;
+        for (Payment payment : paymentRepository.findByOrderOrderIdOrderByPaymentIdAsc(orderId)) {
+            if (payment.getStatus() == Payment.Status.PROCESSING
+                    || payment.getStatus() == Payment.Status.REFUNDED
+                    || payment.getStatus() == Payment.Status.PARTIALLY_REFUNDED) {
+                return Optional.empty();
+            }
+            if (payment.getStatus() == Payment.Status.PAID) {
+                if (paidPayment != null) {
+                    return Optional.empty();
+                }
+                paidPayment = payment;
+            }
+        }
+        if (paidPayment == null || paidPayment.getPaymentMethod() == null || paidPayment.getPaidAt() == null
+                || paidPayment.getAmount() == null || paidPayment.getAmount().signum() <= 0) {
+            return Optional.empty();
+        }
+        String method = paidPayment.getPaymentMethod().getMethodCode();
+        boolean online = "VNPAY".equals(method)
+                || ("BANK_TRANSFER".equals(method) && "VNPAY".equals(paidPayment.getProvider()));
+        return online ? Optional.of(paidPayment.getAmount()) : Optional.empty();
+    }
 
     @Transactional(readOnly = true)
     public boolean isCodOrder(Long orderId) {

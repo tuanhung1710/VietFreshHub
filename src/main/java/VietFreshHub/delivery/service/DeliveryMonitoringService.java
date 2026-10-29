@@ -24,6 +24,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +50,38 @@ public class DeliveryMonitoringService {
     private final DeliveryStatusHistoryRepository deliveryStatusHistoryRepository;
     private final ShopService shopService;
     private final AuthService authService;
+
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public boolean areAllFailedAndReturned(List<Long> shopOrderIds) {
+        if (shopOrderIds == null || shopOrderIds.isEmpty()) {
+            return false;
+        }
+        List<Delivery> deliveries = deliveryRepository
+                .findByShopOrder_ShopOrderIdInOrderByDeliveryIdAsc(shopOrderIds);
+        if (deliveries.size() != shopOrderIds.size()) {
+            return false;
+        }
+        List<Long> deliveryIds = deliveries.stream().map(Delivery::getDeliveryId).toList();
+        Map<Long, List<DeliveryAssignment>> assignments = findAssignments(deliveryIds);
+        Set<String> confirmations = confirmationKeys(deliveryStatusHistoryRepository
+                .findByDelivery_DeliveryIdInAndStatusAndNoteStartingWithAndChangedByIsNotNull(
+                        deliveryIds, DeliveryStatus.FAILED, DeliveryStatusHistoryWriter.GOODS_RETURN_NOTE_PREFIX));
+        for (Delivery delivery : deliveries) {
+            DeliveryAssignment assignment = selectAssignment(delivery,
+                    assignments.getOrDefault(delivery.getDeliveryId(), List.of()));
+            if (!isReturnConfirmed(delivery, assignment, confirmations)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isReturnConfirmed(Delivery delivery, DeliveryAssignment assignment, Set<String> confirmations) {
+        return delivery.getStatus() == DeliveryStatus.FAILED && assignment != null
+                && assignment.getStatus() == DeliveryAssignmentStatus.COMPLETED
+                && confirmations.contains(confirmationKey(delivery.getDeliveryId(),
+                        DeliveryStatusHistoryWriter.goodsReturnConfirmationNote(assignment.getAssignmentId())));
+    }
 
     public Page<DeliveryMonitoringRow> getManagedShopDeliveries(Authentication authentication,
                                                                DeliveryStatus status, String orderCode,
@@ -239,10 +272,7 @@ public class DeliveryMonitoringService {
                 && delivery.getPickedUpAt() != null && delivery.getDeliveredAt() == null
                 && delivery.getFailureReason() != null && !delivery.getFailureReason().isBlank()
                 && !isLegacyRedelivery(delivery);
-        boolean returnConfirmed = delivery.getStatus() == DeliveryStatus.FAILED && assignment != null
-                && assignment.getStatus() == DeliveryAssignmentStatus.COMPLETED
-                && confirmations.contains(confirmationKey(delivery.getDeliveryId(),
-                        DeliveryStatusHistoryWriter.goodsReturnConfirmationNote(assignment.getAssignmentId())));
+        boolean returnConfirmed = isReturnConfirmed(delivery, assignment, confirmations);
         String returnLabel = null;
         if (delivery.getStatus() == DeliveryStatus.FAILED) {
             returnLabel = returnConfirmed ? "Cửa hàng đã xác nhận nhận lại hàng"

@@ -17,6 +17,7 @@ public class CustomerOrderDetailsController {
     private final CustomerOrderQueryService orders;
     private final VietFreshHub.order.service.CustomerOrderService lifecycle;
     private final VnpayPaymentService vnpayPayments;
+    private final VietFreshHub.refund.service.RefundRequestService refunds;
     @GetMapping("/{orderId}")
     public String detail(@PathVariable Long orderId,Authentication authentication,Model model) {
         return render(orderId,authentication,model,false);
@@ -32,6 +33,7 @@ public class CustomerOrderDetailsController {
         model.addAttribute("confirmation",confirmation);
         model.addAttribute("actions",lifecycle.actions(customerId,orderId));
         model.addAttribute("canRetryVnpayPayment",vnpayPayments.canRetry(orderId,customerId));
+        model.addAttribute("refund",refunds.getCustomerState(orderId,authentication));
         return "customer/order-detail";
     }
     @ExceptionHandler(ResourceNotFoundException.class)

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/order-pages :: head('Thông tin nhận hoàn tiền')}"></head>
+<body>
+<header th:replace="~{fragments/storefront :: header}"></header>
+<main class="container page">
+    <p><a th:href="@{/customer/orders/{id}(id=${refund.orderId})}">← Chi tiết đơn hàng</a></p>
+    <section class="panel">
+        <h1>Thông tin nhận hoàn tiền</h1>
+        <p>Mã đơn hàng: <strong th:text="${refund.orderCode}"></strong></p>
+        <p>Số tiền hoàn:
+            <strong th:text="${#numbers.formatDecimal(refund.refundAmount,1,'POINT',2,'COMMA')} + ' ₫'"></strong>
+        </p>
+        <p>Vui lòng kiểm tra kỹ thông tin người nhận. VietFreshHub không xác minh tài khoản qua ngân hàng.
+            Thông tin không thể sửa sau khi gửi.</p>
+        <form method="post" th:action="@{/customer/orders/{id}/refund-information(id=${refund.orderId})}"
+              th:object="${form}">
+            <p th:if="${#fields.hasGlobalErrors()}" th:each="error : ${#fields.globalErrors()}"
+               th:text="${error}" role="alert"></p>
+            <div>
+                <label for="bankName">Ngân hàng nhận tiền</label>
+                <input type="text" id="bankName" th:field="*{bankName}" maxlength="120" required
+                       th:attr="aria-invalid=${#fields.hasErrors('bankName')}">
+                <p th:if="${#fields.hasErrors('bankName')}" th:errors="*{bankName}" role="alert"></p>
+            </div>
+            <div>
+                <label for="bankAccountNumber">Số tài khoản</label>
+                <input type="text" id="bankAccountNumber" th:field="*{bankAccountNumber}" maxlength="50" required
+                       th:attr="aria-invalid=${#fields.hasErrors('bankAccountNumber')}">
+                <p th:if="${#fields.hasErrors('bankAccountNumber')}" th:errors="*{bankAccountNumber}" role="alert"></p>
+            </div>
+            <div>
+                <label for="accountHolderName">Tên chủ tài khoản</label>
+                <input type="text" id="accountHolderName" th:field="*{accountHolderName}" maxlength="150" required
+                       th:attr="aria-invalid=${#fields.hasErrors('accountHolderName')}">
+                <p th:if="${#fields.hasErrors('accountHolderName')}" th:errors="*{accountHolderName}" role="alert"></p>
+            </div>
+            <button type="submit" class="button">Gửi thông tin hoàn tiền</button>
+        </form>
+    </section>
+</main>
+<footer th:replace="~{fragments/storefront :: footer}"></footer>
+</body>
+</html>

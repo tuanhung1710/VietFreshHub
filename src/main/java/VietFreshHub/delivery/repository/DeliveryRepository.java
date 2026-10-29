@@ -23,6 +23,8 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>, JpaSp
 
     Optional<Delivery> findByShopOrder_ShopOrderId(Long shopOrderId);
 
+    List<Delivery> findByShopOrder_ShopOrderIdInOrderByDeliveryIdAsc(List<Long> shopOrderIds);
+
     @Override
     @EntityGraph(attributePaths = {"shopOrder", "shopOrder.order", "shopOrder.shop"})
     Page<Delivery> findAll(Specification<Delivery> specification, Pageable pageable);
