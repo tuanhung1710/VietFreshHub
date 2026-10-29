@@ -9,7 +9,7 @@
         <h1>Thông tin nhận hoàn tiền</h1>
         <p>Mã đơn hàng: <strong th:text="${refund.orderCode}"></strong></p>
         <p>Số tiền hoàn:
-            <strong th:text="${#numbers.formatDecimal(refund.refundAmount,1,'POINT',2,'COMMA')} + ' ₫'"></strong>
+            <strong th:text="${#numbers.formatInteger(refund.refundAmount,1,'POINT')} + 'đ'"></strong>
         </p>
         <p>Vui lòng kiểm tra kỹ thông tin người nhận. VietFreshHub không xác minh tài khoản qua ngân hàng.
             Thông tin không thể sửa sau khi gửi.</p>

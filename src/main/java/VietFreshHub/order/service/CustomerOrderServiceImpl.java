@@ -7,6 +7,7 @@ import VietFreshHub.cart.entity.CartItem;
 import VietFreshHub.cart.repository.*;
 import VietFreshHub.delivery.dto.DeliveryTrackingStaff;
 import VietFreshHub.delivery.service.DeliveryAssignmentService;
+import VietFreshHub.delivery.service.DeliveryStatusHistoryWriter;
 import VietFreshHub.checkout.repository.CheckoutInventoryBatchRepository;
 import VietFreshHub.order.dto.*;
 import VietFreshHub.order.entity.*;
@@ -58,22 +59,25 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         if(filter==null || filter.getPage()<1 || filter.getPage()>10000 || filter.getKeyword()==null
                 || filter.getKeyword().length()>100 || !filter.isDateRangeValid() || !filter.isDatabaseDateRangeValid())
             throw new CustomerOrderException("Bộ lọc đơn hàng không hợp lệ.");
-        Order.Status status;
         String statusText=filter.getStatus()==null ? "" : filter.getStatus().trim();
-        try { status=statusText.isEmpty() ? null : Order.Status.valueOf(statusText); }
-        catch(IllegalArgumentException ex) { throw new CustomerOrderException("Trạng thái lọc không hợp lệ."); }
+        if(!statusText.isEmpty() && !OrderLabels.customerStatusOptions().containsKey(statusText))
+            throw new CustomerOrderException("Trạng thái lọc không hợp lệ.");
         filter.setKeyword(filter.getKeyword().trim()); filter.setStatus(statusText);
         ZoneId zone=ZoneId.of("Asia/Ho_Chi_Minh");
         LocalDateTime from=filter.getFromDate()==null ? null : LocalDateTime.ofInstant(filter.getFromDate().atStartOfDay(zone).toInstant(),ZoneOffset.UTC);
-        // DATETIME2 cannot bind year zero, which can occur at VN midnight on 0001-01-01.
         if(from!=null && from.getYear()<1) from=LocalDateTime.of(1,1,1,0,0);
         LocalDateTime until=filter.getToDate()==null ? null : LocalDateTime.ofInstant(filter.getToDate().plusDays(1).atStartOfDay(zone).toInstant(),ZoneOffset.UTC);
         var sort=Sort.by(Sort.Order.desc("placedAt"),Sort.Order.desc("orderId"));
-        var page=orders.findHistory(customerId,status,filter.getKeyword(),from,until,PageRequest.of(filter.getPage()-1,10,sort));
+        var page=orders.findHistory(customerId,statusText,filter.getKeyword(),from,until,PageRequest.of(filter.getPage()-1,10,sort));
         if(page.getTotalElements()==0) return Page.empty(PageRequest.of(0,10,sort));
         if(page.getNumber()>=page.getTotalPages())
-            return orders.findHistory(customerId,status,filter.getKeyword(),from,until,PageRequest.of(page.getTotalPages()-1,10,sort));
-        return page;
+            page=orders.findHistory(customerId,statusText,filter.getKeyword(),from,until,PageRequest.of(page.getTotalPages()-1,10,sort));
+        Map<Long,List<CustomerShopOrderStatus>> shopsByOrder=new HashMap<>();
+        var shopStatuses=orders.findCustomerShopStatuses(customerId,page.getContent().stream().map(OrderListRow::orderId).toList());
+        for(var shopStatus:shopStatuses)
+            shopsByOrder.computeIfAbsent(shopStatus.orderId(),id -> new ArrayList<>()).add(shopStatus);
+        return page.map(row -> new OrderListRow(row.orderId(),row.orderCode(),row.status(),row.paymentStatus(),
+                row.grandTotal(),row.placedAt(),List.copyOf(shopsByOrder.getOrDefault(row.orderId(),List.of()))));
     }
 
     @Override @Transactional(readOnly=true)
@@ -159,6 +163,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         var rows=deliveries.findByShopOrderOrderOrderIdOrderByDeliveryIdAsc(orderId);
         var history=rows.isEmpty() ? List.<OrderDeliveryHistoryView>of() : deliveryHistory.findByDeliveryDeliveryIdInOrderByCreatedAtAscHistoryIdAsc(rows.stream().map(OrderDeliveryView::getDeliveryId).toList());
         var statuses=orderHistory.findByShopOrderOrderOrderIdOrderByCreatedAtAscHistoryIdAsc(orderId);
+        var currentStatuses=orders.findCustomerShopStatuses(customerId,List.of(orderId));
         var staff=rows.isEmpty() ? List.<DeliveryTrackingStaff>of() : deliveryAssignments.getTrackingStaff(customerId,orderId);
         var groups=children.stream().map(child -> {
             OrderDeliveryView delivery=rows.stream().filter(d -> d.getShopOrder().getShopOrderId().equals(child.getShopOrderId())).findFirst().orElse(null);
@@ -169,26 +174,26 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
             shopHistory.stream()
                     .filter(h -> !"OUT_FOR_DELIVERY".equals(h.getStatus()) || !deliveryStates.contains("OUT_FOR_DELIVERY"))
                     .filter(h -> !"COMPLETED".equals(h.getStatus()) || !deliveryStates.contains("DELIVERED"))
-                    .forEach(h -> timeline.add(new OrderTrackingResponse.Event(OrderLabels.local(h.getCreatedAt()),trackingShopLabel(h.getStatus()),h.getNote(),"ORDER")));
+                    .forEach(h -> timeline.add(new OrderTrackingResponse.Event(OrderLabels.local(h.getCreatedAt()),OrderLabels.customerStatus(h.getStatus()),h.getNote(),"ORDER")));
             if(delivery!=null) {
                 for(var event:deliveryEvents) {
                     String staffName=event.getChangedBy()==null ? null : trackingStaffName(staff,delivery.getDeliveryId(),event.getChangedBy());
-                    String eventLabel=trackingDeliveryLabel(event.getStatus(),staffName);
+                    boolean goodsReturned="FAILED".equals(event.getStatus()) && event.getChangedBy()!=null
+                            && event.getNote()!=null && event.getNote().startsWith(DeliveryStatusHistoryWriter.GOODS_RETURN_NOTE_PREFIX);
+                    String eventLabel=goodsReturned ? null : trackingDeliveryLabel(event.getStatus(),staffName);
                     if(eventLabel!=null) timeline.add(new OrderTrackingResponse.Event(OrderLabels.local(event.getCreatedAt()),eventLabel,null,"DELIVERY"));
                 }
             }
             timeline.sort(Comparator.comparing(OrderTrackingResponse.Event::occurredAt));
             addMissingConfirmation(child,shopHistory,timeline);
-            String label=trackingShopLabel(child.getStatus());
-            String deliveryStatusCode=child.getStatus();
-            if(delivery!=null && !"CANCELLED".equals(child.getStatus())
-                    && !Set.of("UNASSIGNED","ASSIGNED").contains(delivery.getStatus())) {
+            var currentStatus=currentStatuses.stream().filter(s -> s.shopOrderId().equals(child.getShopOrderId())).findFirst().orElse(null);
+            String deliveryStatusCode=currentStatus==null ? null : currentStatus.status();
+            String label=OrderLabels.customerStatus(deliveryStatusCode);
+            if(delivery!=null && "ACCEPTED".equals(deliveryStatusCode)) {
                 String staffName=trackingStaffName(staff,delivery.getDeliveryId(),null);
-                String deliveryLabel=trackingDeliveryLabel(delivery.getStatus(),staffName);
-                label=deliveryLabel==null ? "Thông tin giao hàng cần được kiểm tra." : deliveryLabel;
-                deliveryStatusCode=deliveryLabel==null ? null : delivery.getStatus();
+                label=trackingDeliveryLabel(deliveryStatusCode,staffName);
             }
-            return new OrderTrackingResponse.ShopTracking(child.getShopOrderId(),child.getShop().getShopName(),trackingShopLabel(child.getStatus()),
+            return new OrderTrackingResponse.ShopTracking(child.getShopOrderId(),child.getShop().getShopName(),OrderLabels.customerStatus(child.getStatus()),
                     child.getStatus(),label,deliveryStatusCode,List.copyOf(timeline));
         }).toList();
         return new OrderTrackingResponse(orderId,order.getOrderCode(),OrderLabels.order(order.getStatus()),order.getStatus().name(),groups);
@@ -199,28 +204,17 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         boolean confirmed=child.getConfirmedAt()!=null || confirmedStates.contains(child.getStatus())
                 || history.stream().anyMatch(entry -> confirmedStates.contains(entry.getStatus()));
         if(!confirmed) return;
-        var confirmation=new OrderTrackingResponse.Event(OrderLabels.local(child.getConfirmedAt()),trackingShopLabel("CONFIRMED"),null,"ORDER");
+        var confirmation=new OrderTrackingResponse.Event(OrderLabels.local(child.getConfirmedAt()),OrderLabels.customerStatus("CONFIRMED"),null,"ORDER");
         int position=0;
         for(int i=0;i<timeline.size();i++) {
             var entry=timeline.get(i);
-            if("ORDER".equals(entry.kind()) && trackingShopLabel("PENDING").equals(entry.label())) position=i+1;
+            if("ORDER".equals(entry.kind()) && OrderLabels.customerStatus("PENDING").equals(entry.label())) position=i+1;
         }
         timeline.add(position,confirmation);
     }
     private String trackingStaffName(List<DeliveryTrackingStaff> staff,Long deliveryId,Long staffId) {
         return staff.stream().filter(s -> s.deliveryId().equals(deliveryId) && (staffId==null || s.staffId().equals(staffId)))
                 .findFirst().map(DeliveryTrackingStaff::staffName).orElse(null);
-    }
-    private String trackingShopLabel(String status) {
-        return switch(status) {
-            case "PENDING" -> "Chờ cửa hàng xác nhận đơn hàng";
-            case "CONFIRMED" -> "Cửa hàng đã xác nhận đơn hàng";
-            case "PREPARING" -> "Cửa hàng đang chuẩn bị đơn hàng";
-            case "READY_FOR_DELIVERY" -> "Sẵn sàng giao hàng";
-            case "OUT_FOR_DELIVERY" -> "Đang giao hàng";
-            case "CANCELLED" -> "Đã hủy đơn hàng";
-            default -> OrderLabels.shop(status);
-        };
     }
     private String trackingDeliveryLabel(String status,String staffName) {
         return switch(status) {

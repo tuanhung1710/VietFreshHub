@@ -1,6 +1,9 @@
 package VietFreshHub.order.service;
 import VietFreshHub.order.entity.Order;
 import java.time.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 public final class OrderLabels {
     private OrderLabels() {}
     public static String order(Order.Status status) { return switch(status) {
@@ -17,6 +20,31 @@ public final class OrderLabels {
         case "PICKED_UP" -> "Đã lấy hàng"; case "OUT_FOR_DELIVERY" -> "Đang giao"; case "DELIVERED" -> "Giao thành công";
         case "REDELIVERY_SCHEDULED" -> "Đã hẹn giao lại"; case "FAILED" -> "Giao thất bại"; case "CANCELLED" -> "Giao hàng đã hủy"; default -> "Cập nhật giao hàng";
     }; }
+    public static String customerStatus(String status) {
+        return switch (status == null ? "" : status) {
+            case "PENDING" -> "Chờ cửa hàng xác nhận đơn hàng";
+            case "CONFIRMED" -> "Cửa hàng đã xác nhận đơn hàng";
+            case "PREPARING" -> "Cửa hàng đang chuẩn bị đơn hàng";
+            case "READY_FOR_DELIVERY" -> "Sẵn sàng giao hàng";
+            case "ACCEPTED" -> "Nhân viên đã nhận nhiệm vụ";
+            case "PICKED_UP" -> "Nhân viên giao hàng đã lấy hàng";
+            case "OUT_FOR_DELIVERY" -> "Đang giao hàng";
+            case "DELIVERED" -> "Giao hàng thành công";
+            case "COMPLETED" -> "Hoàn thành";
+            case "FAILED" -> "Giao hàng thất bại";
+            case "CANCELLED" -> "Đã hủy đơn hàng";
+            default -> "Thông tin giao hàng cần được kiểm tra.";
+        };
+    }
+
+    public static Map<String, String> customerStatusOptions() {
+        Map<String, String> options = new LinkedHashMap<>();
+        for (String status : List.of("PENDING", "CONFIRMED", "PREPARING", "READY_FOR_DELIVERY", "ACCEPTED",
+                "PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED", "COMPLETED", "FAILED", "CANCELLED")) {
+            options.put(status, customerStatus(status));
+        }
+        return options;
+    }
     public static String payment(String status) { return switch(status==null ? "" : status) {
         case "UNPAID" -> "Chưa thu tiền"; case "PENDING" -> "Đang chờ thanh toán"; case "PAID" -> "Đã thanh toán";
         case "PARTIALLY_REFUNDED" -> "Hoàn tiền một phần"; case "REFUNDED" -> "Đã hoàn tiền";

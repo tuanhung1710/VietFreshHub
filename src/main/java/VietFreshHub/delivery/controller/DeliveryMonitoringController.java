@@ -49,11 +49,14 @@ public class DeliveryMonitoringController {
     @GetMapping("/admin/deliveries")
     public String adminDeliveries(@RequestParam(required = false) DeliveryStatus status,
                                    @RequestParam(defaultValue = "") String orderCode,
+                                   @RequestParam(required = false) Long shopId,
                                    @RequestParam(defaultValue = "desc") String direction,
                                    @RequestParam(defaultValue = "0") int page,
                                    Authentication authentication, Model model) {
+        model.addAttribute("shops", deliveryMonitoringService.getAdminShopOptions(authentication));
+        model.addAttribute("selectedShopId", shopId);
         return showList(deliveryMonitoringService.getAdminDeliveries(
-                        authentication, status, orderCode, direction, page),
+                        authentication, status, orderCode, shopId, direction, page),
                 status, orderCode, direction, "/admin/deliveries", "/admin/accounts",
                 "Giao hàng toàn hệ thống", model);
     }

@@ -18,7 +18,12 @@
     <p th:unless="${invalidFilter}" class="muted" th:text="${orderPage.totalElements} + ' đơn hàng'"></p>
     <section th:if="${!invalidFilter and orderPage.empty}" class="panel empty"><h2 th:text="${filter.hasFilters()} ? 'Chưa có đơn hàng phù hợp' : 'Bạn chưa có đơn hàng nào'"></h2><p class="muted" th:text="${filter.hasFilters()} ? 'Bạn có thể thay đổi hoặc xóa bộ lọc để tìm lại đơn hàng.' : 'Đơn hàng của bạn sẽ xuất hiện tại đây sau khi đặt hàng.'"></p><a class="button secondary" th:href="@{/home}">Khám phá sản phẩm</a></section>
     <section class="order-list" aria-label="Danh sách đơn hàng"><article th:each="order : ${orderPage.content}" class="panel history-order">
-        <div class="history-order-top"><div><span class="muted" th:text="${#temporals.format(order.placedAtLocal(),'HH:mm dd/MM/yyyy')}"></span><h2 class="order-code" th:text="${order.orderCode}"></h2><p class="history-payment muted" th:text="'Thanh toán: ' + ${order.paymentStatusLabel()}"></p></div><span class="order-state" th:text="${order.statusLabel()}"></span></div>
+        <div class="history-order-top"><div><span class="muted" th:text="${#temporals.format(order.placedAtLocal(),'HH:mm dd/MM/yyyy')}"></span><h2 class="order-code" th:text="${order.orderCode}"></h2><p class="history-payment muted" th:text="'Thanh toán: ' + ${order.paymentStatusLabel()}"></p></div>
+            <div>
+                <p th:each="shop : ${order.shops}"><strong th:text="${shop.shopName}"></strong>: <span class="order-state" th:attr="data-status=${shop.status}" th:text="${shop.statusLabel()}"></span></p>
+                <p th:if="${#lists.isEmpty(order.shops)}" class="muted">Chưa có thông tin cửa hàng.</p>
+            </div>
+        </div>
         <div class="history-order-bottom"><div><span class="muted">Giá trị đơn</span><strong class="price" th:text="${#numbers.formatDecimal(order.grandTotal,1,'POINT',order.grandTotal.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></strong></div>
             <div class="history-actions"><a class="button secondary" th:href="@{/customer/orders/{id}/tracking(id=${order.orderId})}">Theo dõi</a><a class="button" th:href="@{/customer/orders/{id}(id=${order.orderId})}">Xem chi tiết</a></div></div>
     </article></section>

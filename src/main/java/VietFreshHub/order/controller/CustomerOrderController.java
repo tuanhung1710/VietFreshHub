@@ -4,7 +4,6 @@ import VietFreshHub.cart.service.CartService;
 import VietFreshHub.order.dto.*;
 import VietFreshHub.exception.CustomerOrderException;
 import VietFreshHub.order.service.CustomerOrderService;
-import VietFreshHub.order.entity.Order;
 import VietFreshHub.order.service.OrderLabels;
 import VietFreshHub.exception.ResourceNotFoundException;
 import jakarta.validation.Valid;
@@ -48,9 +47,7 @@ public class CustomerOrderController {
                 model.addAttribute("pageNotice","Trang yêu cầu không còn tồn tại. Đang hiển thị trang " + (page.getNumber()+1) + ".");
         }
         model.addAttribute("cartBadgeTotal",readOrders.getCartBadgeTotal(customerId));
-        java.util.Map<String,String> options=new java.util.LinkedHashMap<>();
-        for(var status:Order.Status.values()) options.put(status.name(),OrderLabels.order(status));
-        model.addAttribute("statusOptions",options);
+        model.addAttribute("statusOptions",OrderLabels.customerStatusOptions());
         return "customer/orders";
     }
     @GetMapping("/{orderId}/tracking")

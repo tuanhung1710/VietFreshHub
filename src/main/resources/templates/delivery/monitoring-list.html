@@ -39,6 +39,9 @@
         .delivery-time { color: #56655d; }
         .empty-state { margin: 0; padding: 32px 20px; color: #56655d; text-align: center; }
         .pagination { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 20px; font-size: 14px; }
+        @media (min-width: 1101px) {
+            .monitoring-filters.admin-filters { grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(160px, 1fr)) auto; }
+        }
         @media (max-width: 1100px) {
             .monitoring-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
@@ -59,18 +62,24 @@
     <header class="page-header">
         <div>
             <h1>Giám sát giao hàng</h1>
-            <p th:unless="${sellerView}" th:text="${scopeLabel}"></p>
         </div>
         <span th:replace="~{fragments/notifications :: bell}"></span>
     </header>
-    <p class="page-description" th:unless="${sellerView}">Thông tin chỉ đọc. Thời gian hiển thị theo giờ Việt Nam.</p>
 
     <section class="filters-card" aria-label="Bộ lọc giao hàng">
-        <form class="monitoring-filters" method="get" th:action="@{${basePath}}">
+        <form class="monitoring-filters" th:classappend="${sellerView ? '' : 'admin-filters'}" method="get" th:action="@{${basePath}}">
             <div class="filter-field">
-                <label for="order-code" th:text="${sellerView ? 'Tìm kiếm' : 'Mã đơn hàng'}">Tìm kiếm</label>
+                <label for="order-code">Tìm kiếm</label>
                 <input id="order-code" type="search" name="orderCode" th:value="${orderCode}"
-                       th:placeholder="${sellerView ? 'Mã đơn hàng, Nhân viên giao hàng' : 'Nhập mã đơn hàng'}">
+                       placeholder="Mã đơn hàng, Nhân viên giao hàng">
+            </div>
+            <div class="filter-field" th:unless="${sellerView}">
+                <label for="shop-id">Cửa hàng</label>
+                <select id="shop-id" name="shopId">
+                    <option value="" th:selected="${selectedShopId == null}">Tất cả cửa hàng</option>
+                    <option th:each="shop : ${shops}" th:value="${shop.shopId}"
+                            th:selected="${selectedShopId == shop.shopId}" th:text="${shop.shopName}"></option>
+                </select>
             </div>
             <div class="filter-field">
                 <label for="delivery-status">Trạng thái giao hàng</label>
@@ -92,7 +101,6 @@
                 <a class="button secondary" th:href="@{${basePath}}">Xóa bộ lọc</a>
             </div>
         </form>
-        <p class="sort-note" th:unless="${sellerView}">Sắp xếp theo thời gian giao thành công; các đơn chưa có thời gian này nằm cuối danh sách.</p>
     </section>
 
     <div class="table-container">
@@ -134,10 +142,10 @@
 
     <nav class="pagination" aria-label="Phân trang giao hàng">
         <a th:if="${deliveriesPage.hasPrevious()}"
-           th:href="@{${basePath}(page=${deliveriesPage.number - 1},status=${selectedStatus},orderCode=${orderCode},direction=${direction})}">Trang trước</a>
+           th:href="@{${basePath}(page=${deliveriesPage.number - 1},status=${selectedStatus},orderCode=${orderCode},shopId=${selectedShopId},direction=${direction})}">Trang trước</a>
         <span th:text="|Trang ${deliveriesPage.number + 1} / ${deliveriesPage.totalPages == 0 ? 1 : deliveriesPage.totalPages}|"></span>
         <a th:if="${deliveriesPage.hasNext()}"
-           th:href="@{${basePath}(page=${deliveriesPage.number + 1},status=${selectedStatus},orderCode=${orderCode},direction=${direction})}">Trang sau</a>
+           th:href="@{${basePath}(page=${deliveriesPage.number + 1},status=${selectedStatus},orderCode=${orderCode},shopId=${selectedShopId},direction=${direction})}">Trang sau</a>
     </nav>
 </main>
 </body>

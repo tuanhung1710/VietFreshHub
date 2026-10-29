@@ -19,6 +19,7 @@ import VietFreshHub.order.entity.ShopOrder;
 import VietFreshHub.order.service.OrderLabels;
 import VietFreshHub.order.service.OrderService;
 import VietFreshHub.shop.entity.ShopLocation;
+import VietFreshHub.shop.dto.ShopOption;
 import VietFreshHub.shop.service.ShopService;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
@@ -104,9 +105,14 @@ public class DeliveryMonitoringService {
     }
 
     public Page<DeliveryMonitoringRow> getAdminDeliveries(Authentication authentication, DeliveryStatus status,
-                                                         String orderCode, String direction, int page) {
+                                                         String orderCode, Long shopId, String direction, int page) {
         requireAdmin(authentication);
-        return findDeliveries(null, status, orderCode, direction, page);
+        return findDeliveries(shopId, status, orderCode, direction, page);
+    }
+
+    public List<ShopOption> getAdminShopOptions(Authentication authentication) {
+        requireAdmin(authentication);
+        return shopService.getAdminShopOptions(authentication);
     }
 
     public AdminDeliveryMonitoringDetail getAdminDeliveryDetail(Long deliveryId, Authentication authentication) {
@@ -193,20 +199,16 @@ public class DeliveryMonitoringService {
             if (!search.isEmpty()) {
                 Predicate matchingOrderCode = builder.like(
                         builder.lower(root.get("shopOrder").get("order").get("orderCode")), searchPattern, '\\');
-                if (shopId == null) {
-                    predicates.add(matchingOrderCode);
-                } else {
-                    var matchingStaff = query.subquery(Long.class);
-                    var assignment = matchingStaff.from(DeliveryAssignment.class);
-                    matchingStaff.select(assignment.get("assignmentId")).where(
-                            builder.equal(assignment.get("delivery").get("deliveryId"), root.get("deliveryId")),
-                            assignment.get("status").in(DeliveryAssignmentStatus.ACCEPTED, DeliveryAssignmentStatus.COMPLETED),
-                            builder.isNotNull(assignment.get("acceptedAt")),
-                            builder.like(builder.lower(assignment.get("deliveryStaff").get("fullName")), searchPattern, '\\'));
-                    predicates.add(builder.or(matchingOrderCode, builder.and(
-                            builder.not(root.get("status").in(DeliveryStatus.UNASSIGNED, DeliveryStatus.ASSIGNED)),
-                            builder.exists(matchingStaff))));
-                }
+                var matchingStaff = query.subquery(Long.class);
+                var assignment = matchingStaff.from(DeliveryAssignment.class);
+                matchingStaff.select(assignment.get("assignmentId")).where(
+                        builder.equal(assignment.get("delivery").get("deliveryId"), root.get("deliveryId")),
+                        assignment.get("status").in(DeliveryAssignmentStatus.ACCEPTED, DeliveryAssignmentStatus.COMPLETED),
+                        builder.isNotNull(assignment.get("acceptedAt")),
+                        builder.like(builder.lower(assignment.get("deliveryStaff").get("fullName")), searchPattern, '\\'));
+                predicates.add(builder.or(matchingOrderCode, builder.and(
+                        builder.not(root.get("status").in(DeliveryStatus.UNASSIGNED, DeliveryStatus.ASSIGNED)),
+                        builder.exists(matchingStaff))));
             }
             if (query != null && query.getResultType() != Long.class && query.getResultType() != long.class) {
                 Expression<?> timestamp = root.get("deliveredAt");
