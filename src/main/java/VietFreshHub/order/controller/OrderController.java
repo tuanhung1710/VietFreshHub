@@ -65,6 +65,22 @@ public class OrderController {
                 "Hiện không có đơn hàng sẵn sàng giao.", "/seller/ready-orders", "ready", false, model);
     }
 
+    @GetMapping("/seller/failed-orders")
+    public String failedOrders(@ModelAttribute("filter") OrderFilterRequest filter,
+                               @RequestParam(defaultValue = "0") int page,
+                               Authentication authentication, Model model) {
+        return showOrders(orderService.getFailedOrders(authentication, filter, page), "Giao hàng thất bại",
+                "Hiện không có đơn hàng giao thất bại.", "/seller/failed-orders", "failed", false, model);
+    }
+
+    @GetMapping("/seller/cancelled-orders")
+    public String cancelledOrders(@ModelAttribute("filter") OrderFilterRequest filter,
+                                  @RequestParam(defaultValue = "0") int page,
+                                  Authentication authentication, Model model) {
+        return showOrders(orderService.getCancelledOrders(authentication, filter, page), "Đã hủy",
+                "Hiện không có đơn hàng đã hủy.", "/seller/cancelled-orders", "cancelled", false, model);
+    }
+
     @GetMapping("/seller/processed-orders")
     public String processedOrders(@ModelAttribute("filter") OrderFilterRequest filter,
                                   @RequestParam(defaultValue = "0") int page,

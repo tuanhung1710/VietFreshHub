@@ -78,8 +78,10 @@ public class RefundRequestService {
         if (!"PAID".equals(order.getPaymentStatus()) || paidAmount == null
                 || order.getGrandTotal() == null || paidAmount.compareTo(order.getGrandTotal()) != 0) {
             reason = "Không xác minh được một khoản thanh toán online thành công khớp toàn bộ đơn hàng.";
-        } else if (!deliveries.areAllFailedAndReturned(refundOrder.shopOrderIds())) {
-            reason = "Chỉ hỗ trợ hoàn toàn bộ đơn khi mọi phần giao hàng đều thất bại và cửa hàng đã xác nhận nhận lại hàng."
+        } else if (!refundOrder.cancelledByCustomerBeforeConfirmation()
+                && !deliveries.areAllFailedAndReturned(refundOrder.shopOrderIds())) {
+            reason = "Chỉ hỗ trợ hoàn toàn bộ đơn khi khách hủy trước lúc cửa hàng xác nhận,"
+                    + " hoặc mọi phần giao hàng đều thất bại và cửa hàng đã xác nhận nhận lại hàng."
                     + " Đơn có kết quả giao hàng khác nhau nằm ngoài phạm vi này.";
         }
         return new CustomerRefundState(order.getOrderId(), order.getOrderCode(), paidAmount,

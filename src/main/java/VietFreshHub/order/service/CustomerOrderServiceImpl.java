@@ -19,6 +19,7 @@ import VietFreshHub.order.service.CustomerOrderService;
 import VietFreshHub.order.service.OrderLabels;
 import VietFreshHub.payment.entity.Payment;
 import VietFreshHub.payment.repository.PaymentRepository;
+import VietFreshHub.payment.service.PaymentService;
 import VietFreshHub.catalog.repository.CatalogVariantRepository;
 import VietFreshHub.catalog.service.CatalogService;
 import VietFreshHub.exception.ResourceNotFoundException;
@@ -37,6 +38,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
     private final OrderRepository orders;
     private final ShopOrderRepository shopOrders;
     private final PaymentRepository payments;
+    private final PaymentService paymentService;
     private final OrderDeliveryReadRepository deliveries;
     private final OrderDeliveryHistoryReadRepository deliveryHistory;
     private final OrderStatusHistoryRepository orderHistory;
@@ -100,7 +102,9 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
             child.setStatus("CANCELLED"); child.setCancelledAt(now);
             OrderStatusHistory history=new OrderStatusHistory(); history.setShopOrder(child); history.setStatus("CANCELLED"); history.setChangedBy(actor); history.setNote(note); em.persist(history);
         }
-        pay.forEach(p -> p.setStatus(Payment.Status.CANCELLED)); order.setStatus(Order.Status.CANCELLED); order.setCancelledAt(now);
+        pay.stream().filter(p -> p.getStatus()!=Payment.Status.PAID)
+                .forEach(p -> p.setStatus(Payment.Status.CANCELLED));
+        order.setStatus(Order.Status.CANCELLED); order.setCancelledAt(now);
         em.flush(); events.publishEvent(new OrderCancelledEvent(orderId,customerId));
     }
     private String cancellationHint(Order order,List<ShopOrder> children,List<Payment> pay,List<OrderDeliveryView> delivery) {
@@ -108,15 +112,18 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         if(children.isEmpty()) return "Đơn hàng chưa có thông tin cửa hàng, không thể hủy.";
         if(children.stream().anyMatch(c -> "CANCELLED".equals(c.getStatus())))
             return "Một đơn cửa hàng đã được hủy. Không thể hủy lại hoặc hủy một phần đơn này.";
-        if(children.stream().anyMatch(c -> !"PENDING".equals(c.getStatus())))
+        if(children.stream().anyMatch(c -> !"PENDING".equals(c.getStatus()) || c.getConfirmedAt()!=null))
             return children.size()==1 ? "Đơn hàng đã được cửa hàng xác nhận nên không thể hủy."
                     : "Một hoặc nhiều cửa hàng đã xác nhận đơn hàng. Bạn không thể hủy toàn bộ đơn này.";
         if(order.getStatus()!=Order.Status.PENDING) return "Đơn đã bắt đầu xử lý, không còn đủ điều kiện hủy.";
         if(delivery.stream().anyMatch(d -> !Set.of("UNASSIGNED","ASSIGNED","ACCEPTED","CANCELLED").contains(d.getStatus())))
             return "Đơn đã được lấy hoặc đang giao, không thể hủy.";
-        if("PAID".equals(order.getPaymentStatus()) || "PARTIALLY_REFUNDED".equals(order.getPaymentStatus()) || "REFUNDED".equals(order.getPaymentStatus())
+        boolean paidOnline="PAID".equals(order.getPaymentStatus()) && order.getGrandTotal()!=null
+                && paymentService.getPaidOnlineOrderAmount(order.getOrderId())
+                .filter(amount -> amount.compareTo(order.getGrandTotal())==0).isPresent();
+        if(!paidOnline && ("PAID".equals(order.getPaymentStatus()) || "PARTIALLY_REFUNDED".equals(order.getPaymentStatus()) || "REFUNDED".equals(order.getPaymentStatus())
                 || pay.stream().anyMatch(p -> !"COD".equals(p.getPaymentMethod().getMethodCode()) || p.getPaidAt()!=null
-                || !Set.of(Payment.Status.PENDING,Payment.Status.FAILED,Payment.Status.CANCELLED).contains(p.getStatus())))
+                || !Set.of(Payment.Status.PENDING,Payment.Status.FAILED,Payment.Status.CANCELLED).contains(p.getStatus()))))
             return "Đơn có giao dịch cần đối soát/hoàn tiền. Vui lòng liên hệ hỗ trợ để hủy an toàn.";
         if(order.getDiscountTotal().signum()>0 || children.stream().anyMatch(c -> c.getDiscountTotal().signum()>0))
             return "Đơn có ưu đãi cần đối soát trước khi hủy. Vui lòng liên hệ hỗ trợ.";

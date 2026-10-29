@@ -23,6 +23,10 @@ public interface OrderService {
 
     Page<IncomingOrderResponse> getReadyOrders(Authentication authentication, OrderFilterRequest filter, int page);
 
+    Page<IncomingOrderResponse> getFailedOrders(Authentication authentication, OrderFilterRequest filter, int page);
+
+    Page<IncomingOrderResponse> getCancelledOrders(Authentication authentication, OrderFilterRequest filter, int page);
+
     Page<ProcessedOrderResponse> getProcessedOrderHistory(Authentication authentication, OrderFilterRequest filter, int page);
 
     long countFilteredOrders(Authentication authentication, OrderFilterRequest filter, String view);

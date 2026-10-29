@@ -1,4 +1,4 @@
-package VietFreshHub.order.service.impl;
+package VietFreshHub.order.service;
 
 import VietFreshHub.auth.entity.User;
 import VietFreshHub.auth.service.AuthService;
@@ -18,8 +18,6 @@ import VietFreshHub.order.entity.ShopOrder;
 import VietFreshHub.order.repository.OrderAddressRepository;
 import VietFreshHub.order.repository.OrderDeliveryReadRepository;
 import VietFreshHub.order.repository.ShopOrderRepository;
-import VietFreshHub.order.service.OrderLabels;
-import VietFreshHub.order.service.OrderService;
 import VietFreshHub.payment.service.PaymentService;
 import VietFreshHub.shop.entity.ShopLocation;
 import VietFreshHub.shop.service.ShopService;
@@ -111,6 +109,19 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<IncomingOrderResponse> getFailedOrders(Authentication authentication, OrderFilterRequest filter, int page) {
+        return findFilteredShopOrders(authentication, filter, "failed", page)
+                .map(shopOrder -> toOrderResponse(shopOrder, true));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<IncomingOrderResponse> getCancelledOrders(Authentication authentication, OrderFilterRequest filter, int page) {
+        return findFilteredShopOrders(authentication, filter, "cancelled", page).map(this::toOrderResponse);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<ProcessedOrderResponse> getProcessedOrderHistory(Authentication authentication, OrderFilterRequest filter, int page) {
         return findFilteredShopOrders(authentication, filter, "processed", page).map(shopOrder -> {
             Order order = shopOrder.getOrder();
@@ -142,7 +153,9 @@ public class OrderServiceImpl implements OrderService {
                 shopOrderRepository.countByShopIdAndStatus(shopId, "CONFIRMED"),
                 shopOrderRepository.countByShopIdAndStatus(shopId, "PREPARING"),
                 shopOrderRepository.countByShopIdAndStatus(shopId, "READY_FOR_DELIVERY"),
-                shopOrderRepository.countByShopIdAndStatus(shopId, "COMPLETED")
+                shopOrderRepository.countByShopIdAndStatus(shopId, "COMPLETED"),
+                shopOrderRepository.count(buildOrderSpecification(authentication, new OrderFilterRequest(), "failed")),
+                shopOrderRepository.countByShopIdAndStatus(shopId, "CANCELLED")
         );
     }
 
@@ -360,10 +373,13 @@ public class OrderServiceImpl implements OrderService {
             case "confirmed" -> List.of("CONFIRMED");
             case "preparing" -> List.of("PREPARING");
             case "ready" -> List.of("READY_FOR_DELIVERY");
+            case "failed" -> List.of("OUT_FOR_DELIVERY");
+            case "cancelled" -> List.of("CANCELLED");
             case "processed" -> List.of("COMPLETED", "CANCELLED");
             default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Danh sách đơn hàng không hợp lệ.");
         };
-        boolean filterStatus = "all".equals(view) || "processed".equals(view);
+        boolean filterStatus = "all".equals(view) || "processed".equals(view) || "failed".equals(view);
+        String selectedStatus = "failed".equals(view) ? "DELIVERY_FAILED" : filter.getStatus();
 
         return (root, query, builder) -> {
             Join<ShopOrder, Order> order = root.join("order", JoinType.LEFT);
@@ -373,8 +389,8 @@ public class OrderServiceImpl implements OrderService {
             if (!statuses.isEmpty()) {
                 predicates.add(root.get("status").in(statuses));
             }
-            if (filterStatus && filter.getStatus() != null && !filter.getStatus().isBlank()) {
-                String status = filter.getStatus().trim();
+            if (filterStatus && selectedStatus != null && !selectedStatus.isBlank()) {
+                String status = selectedStatus.trim();
                 if ("DELIVERY_FAILED".equals(status) || "OUT_FOR_DELIVERY".equals(status)) {
                     predicates.add(builder.equal(root.get("status"), "OUT_FOR_DELIVERY"));
                     Subquery<Long> failedDelivery = query.subquery(Long.class);

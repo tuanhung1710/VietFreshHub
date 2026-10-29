@@ -13,4 +13,6 @@ public class OrderCountsResponse {
     private long preparingOrders;
     private long readyOrders;
     private long completedOrders;
+    private long failedOrders;
+    private long cancelledOrders;
 }
