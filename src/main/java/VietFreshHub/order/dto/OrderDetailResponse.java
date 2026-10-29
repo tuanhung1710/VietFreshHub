@@ -24,4 +24,12 @@ public class OrderDetailResponse {
     private BigDecimal shippingFee;
     private BigDecimal totalAmount;
     private List<OrderItemResponse> items;
+    private String shopName;
+    private String shopPhone;
+    private String shopAddress;
+    private BigDecimal subtotal;
+    private BigDecimal discountTotal;
+    private String paymentMethodLabel;
+    private String totalAmountInWords;
+    private LocalDateTime invoicePlacedAt;
 }

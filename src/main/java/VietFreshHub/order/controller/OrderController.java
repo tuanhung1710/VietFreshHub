@@ -18,9 +18,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
@@ -120,38 +117,6 @@ public class OrderController {
         return "redirect:/seller/orders/" + shopOrderId;
     }
 
-    @PostMapping("/seller/orders/bulk-confirm")
-    public String confirmOrders(@RequestParam(required = false) List<Long> shopOrderIds,
-                                Authentication authentication, RedirectAttributes redirectAttributes) {
-        orderService.confirmOrders(shopOrderIds, authentication);
-        redirectAttributes.addFlashAttribute("clearOrderSelection", "incoming");
-        return "redirect:/seller/incoming-orders";
-    }
-
-    @PostMapping("/seller/orders/bulk-prepare")
-    public String startPreparingOrders(@RequestParam(required = false) List<Long> shopOrderIds,
-                                      Authentication authentication, RedirectAttributes redirectAttributes) {
-        orderService.startPreparingOrders(shopOrderIds, authentication);
-        redirectAttributes.addFlashAttribute("clearOrderSelection", "confirmed");
-        return "redirect:/seller/confirmed-orders";
-    }
-
-    @PostMapping("/seller/orders/bulk-ready")
-    public String markOrdersReady(@RequestParam(required = false) List<Long> shopOrderIds,
-                                 Authentication authentication, RedirectAttributes redirectAttributes) {
-        orderService.markOrdersReady(shopOrderIds, authentication);
-        redirectAttributes.addFlashAttribute("clearOrderSelection", "preparing");
-        return "redirect:/seller/preparing-orders";
-    }
-
-    @PostMapping("/seller/orders/bulk-invoices")
-    public String bulkInvoices(@RequestParam(required = false) List<Long> shopOrderIds,
-                               @RequestParam String view,
-                               Authentication authentication, Model model) {
-        model.addAttribute("invoices", orderService.getBulkInvoices(shopOrderIds, authentication, view));
-        return "store_manager/bulk-invoices";
-    }
-
     private String showOrders(Page<IncomingOrderResponse> orders, String pageTitle,
                               String emptyMessage, String filterAction, String orderView,
                               boolean showStatusFilter, Model model) {
@@ -162,13 +127,6 @@ public class OrderController {
         model.addAttribute("filterAction", filterAction);
         model.addAttribute("orderView", orderView);
         model.addAttribute("showStatusFilter", showStatusFilter);
-        model.addAttribute("bulkAction", switch (orderView) {
-            case "incoming" -> "/seller/orders/bulk-confirm";
-            case "confirmed" -> "/seller/orders/bulk-prepare";
-            case "preparing" -> "/seller/orders/bulk-ready";
-            case "ready" -> "/seller/orders/bulk-invoices";
-            default -> null;
-        });
         return "store_manager/incoming-orders";
     }
 

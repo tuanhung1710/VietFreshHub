@@ -17,9 +17,11 @@ import VietFreshHub.order.entity.OrderStatusHistory;
 import VietFreshHub.order.entity.ShopOrder;
 import VietFreshHub.order.repository.OrderAddressRepository;
 import VietFreshHub.order.repository.OrderDeliveryReadRepository;
-import VietFreshHub.order.repository.OrderItemRepository;
 import VietFreshHub.order.repository.ShopOrderRepository;
+import VietFreshHub.order.service.OrderLabels;
 import VietFreshHub.order.service.OrderService;
+import VietFreshHub.payment.service.PaymentService;
+import VietFreshHub.shop.entity.ShopLocation;
 import VietFreshHub.shop.service.ShopService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
@@ -50,17 +52,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.TreeSet;
 
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
+    private static final String[] VIETNAMESE_DIGITS = {
+            "không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"
+    };
+    private static final String[] INVOICE_NUMBER_SCALES = {"", "nghìn", "triệu", "tỷ", "nghìn tỷ", "triệu tỷ"};
+
     private final ShopOrderRepository shopOrderRepository;
     private final OrderAddressRepository orderAddressRepository;
     private final OrderDeliveryReadRepository orderDeliveryReadRepository;
-    private final OrderItemRepository orderItemRepository;
     private final ShopService shopService;
+    private final PaymentService paymentService;
     private final DeliveryCreationService deliveryCreationService;
     private final AuthService authService;
     private final EntityManager entityManager;
@@ -144,7 +150,11 @@ public class OrderServiceImpl implements OrderService {
         Long shopId = shopService.getManagedShopId(authentication);
         ShopOrder shopOrder = shopOrderRepository.findByShopOrderIdAndShopId(shopOrderId, shopId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        return toOrderDetailResponse(shopOrder);
+        Long orderId = shopOrder.getOrder().getOrderId();
+        OrderAddress address = orderAddressRepository.findByOrderId(orderId).orElse(null);
+        String shopAddress = formatInvoiceShopAddress(shopService.findLocationByShopId(shopId).orElse(null));
+        String paymentMethod = paymentService.getInvoicePaymentMethodLabel(orderId);
+        return toOrderDetailResponse(shopOrder, address, shopAddress, paymentMethod);
     }
 
     @Override
@@ -221,14 +231,14 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    private OrderDetailResponse toOrderDetailResponse(ShopOrder shopOrder) {
+    private OrderDetailResponse toOrderDetailResponse(ShopOrder shopOrder, OrderAddress address,
+                                                     String shopAddress, String paymentMethod) {
         Order order = shopOrder.getOrder();
-        OrderAddress address = orderAddressRepository.findByOrderId(order.getOrderId()).orElse(null);
         List<OrderItemResponse> items = new ArrayList<>();
         boolean deliveryFailed = "OUT_FOR_DELIVERY".equals(shopOrder.getStatus())
                 && getFailedShopOrderIds(List.of(shopOrder.getShopOrderId())).contains(shopOrder.getShopOrderId());
 
-        for (OrderItem item : orderItemRepository.findByShopOrderId(shopOrder.getShopOrderId())) {
+        for (OrderItem item : shopOrder.getItems()) {
             items.add(new OrderItemResponse(
                     item.getProductNameSnapshot(),
                     item.getVariantNameSnapshot(),
@@ -251,7 +261,15 @@ public class OrderServiceImpl implements OrderService {
                 order.getPaymentStatus(),
                 shopOrder.getShippingFee(),
                 shopOrder.getTotalAmount(),
-                items
+                items,
+                shopOrder.getShop().getShopName(),
+                shopOrder.getShop().getPhone(),
+                shopAddress,
+                shopOrder.getSubtotal(),
+                shopOrder.getDiscountTotal(),
+                paymentMethod,
+                formatInvoiceAmountInWords(shopOrder.getTotalAmount()),
+                OrderLabels.local(order.getPlacedAt())
         );
     }
 
@@ -293,56 +311,6 @@ public class OrderServiceImpl implements OrderService {
         deliveryCreationService.ensureDeliveryForReadyShopOrder(shopOrder);
     }
 
-    @Override
-    @Transactional
-    public void confirmOrders(List<Long> shopOrderIds, Authentication authentication) {
-        List<ShopOrder> shopOrders = getShopOrdersForUpdate(shopOrderIds, authentication);
-        for (ShopOrder shopOrder : shopOrders) {
-            if (!"PENDING".equals(shopOrder.getStatus())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Chỉ có thể xác nhận đơn hàng đang chờ xác nhận.");
-            }
-            ensureVnpayPaid(shopOrder.getOrder());
-        }
-        for (ShopOrder shopOrder : shopOrders) {
-            shopOrder.confirm();
-            recordOrderStatus(shopOrder, authService.getCurrentUserId(authentication));
-        }
-    }
-
-    @Override
-    @Transactional
-    public void startPreparingOrders(List<Long> shopOrderIds, Authentication authentication) {
-        List<ShopOrder> shopOrders = getShopOrdersForUpdate(shopOrderIds, authentication);
-        for (ShopOrder shopOrder : shopOrders) {
-            if (!"CONFIRMED".equals(shopOrder.getStatus())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Chỉ có thể bắt đầu chuẩn bị đơn hàng đã xác nhận.");
-            }
-        }
-        for (ShopOrder shopOrder : shopOrders) {
-            shopOrder.startPreparing();
-            recordOrderStatus(shopOrder, authService.getCurrentUserId(authentication));
-        }
-    }
-
-    @Override
-    @Transactional
-    public void markOrdersReady(List<Long> shopOrderIds, Authentication authentication) {
-        List<ShopOrder> shopOrders = getShopOrdersForUpdate(shopOrderIds, authentication);
-        for (ShopOrder shopOrder : shopOrders) {
-            if (!"PREPARING".equals(shopOrder.getStatus())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Chỉ có thể đánh dấu sẵn sàng giao hàng cho đơn hàng đang chuẩn bị.");
-            }
-        }
-        for (ShopOrder shopOrder : shopOrders) {
-            shopOrder.markReady();
-            recordOrderStatus(shopOrder, authService.getCurrentUserId(authentication));
-            deliveryCreationService.ensureDeliveryForReadyShopOrder(shopOrder);
-        }
-    }
-
     private void recordOrderStatus(ShopOrder shopOrder, Long changedBy) {
         OrderStatusHistory history = new OrderStatusHistory();
         history.setShopOrder(shopOrder);
@@ -353,74 +321,6 @@ public class OrderServiceImpl implements OrderService {
             shopOrder.setConfirmedAt(history.getCreatedAt());
         }
         entityManager.persist(history);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<OrderDetailResponse> getBulkInvoices(List<Long> shopOrderIds, Authentication authentication, String view) {
-        Long shopId = shopService.getManagedShopId(authentication);
-        String expectedStatus = switch (view) {
-            case "preparing" -> "PREPARING";
-            case "ready" -> "READY_FOR_DELIVERY";
-            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Danh sách in hóa đơn không hợp lệ.");
-        };
-        List<ShopOrder> shopOrders = new ArrayList<>();
-        for (Long shopOrderId : validateSelectedIds(shopOrderIds)) {
-            ShopOrder shopOrder = shopOrderRepository.findByShopOrderIdAndShopId(shopOrderId, shopId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-            if (!expectedStatus.equals(shopOrder.getStatus())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Đơn hàng được chọn không còn thuộc trạng thái của danh sách in hóa đơn.");
-            }
-            shopOrders.add(shopOrder);
-        }
-        List<OrderDetailResponse> invoices = new ArrayList<>();
-        for (ShopOrder shopOrder : shopOrders) {
-            invoices.add(toOrderDetailResponse(shopOrder));
-        }
-        return invoices;
-    }
-
-    private List<Long> validateSelectedIds(List<Long> shopOrderIds) {
-        if (shopOrderIds == null || shopOrderIds.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Vui lòng chọn ít nhất một đơn hàng.");
-        }
-        TreeSet<Long> selectedIds = new TreeSet<>();
-        for (Long shopOrderId : shopOrderIds) {
-            if (shopOrderId == null || shopOrderId <= 0) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đơn hàng được chọn không hợp lệ.");
-            }
-            selectedIds.add(shopOrderId);
-        }
-        return new ArrayList<>(selectedIds);
-    }
-
-    private List<ShopOrder> getShopOrdersForUpdate(List<Long> shopOrderIds, Authentication authentication) {
-        Long shopId = shopService.getManagedShopId(authentication);
-        List<Long> selectedIds = validateSelectedIds(shopOrderIds);
-        TreeSet<Long> orderIds = new TreeSet<>();
-        for (Long shopOrderId : selectedIds) {
-            ShopOrder shopOrder = shopOrderRepository.findById(shopOrderId)
-                    .filter(value -> shopId.equals(value.getShopId()))
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-            orderIds.add(shopOrder.getOrder().getOrderId());
-        }
-        for (Long orderId : orderIds) {
-            Order order = entityManager.getReference(Order.class, orderId);
-            entityManager.refresh(order, LockModeType.PESSIMISTIC_WRITE);
-            if (order.getStatus() == Order.Status.CANCELLED) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Không thể xử lý đơn hàng đã hủy.");
-            }
-            ensureVnpayPaid(order);
-        }
-        List<ShopOrder> shopOrders = new ArrayList<>();
-        for (Long shopOrderId : selectedIds) {
-            ShopOrder shopOrder = shopOrderRepository.findForUpdateByShopOrderIdAndShopId(shopOrderId, shopId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-            entityManager.refresh(shopOrder, LockModeType.PESSIMISTIC_WRITE);
-            shopOrders.add(shopOrder);
-        }
-        return shopOrders;
     }
 
     private Page<ShopOrder> findFilteredShopOrders(Authentication authentication, OrderFilterRequest filter,
@@ -584,7 +484,23 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private ShopOrder getShopOrderForUpdate(Long shopOrderId, Authentication authentication) {
-        return getShopOrdersForUpdate(List.of(shopOrderId), authentication).getFirst();
+        Long shopId = shopService.getManagedShopId(authentication);
+        if (shopOrderId == null || shopOrderId <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đơn hàng được chọn không hợp lệ.");
+        }
+        ShopOrder shopOrder = shopOrderRepository.findById(shopOrderId)
+                .filter(value -> shopId.equals(value.getShopId()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        Order order = entityManager.getReference(Order.class, shopOrder.getOrder().getOrderId());
+        entityManager.refresh(order, LockModeType.PESSIMISTIC_WRITE);
+        if (order.getStatus() == Order.Status.CANCELLED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Không thể xử lý đơn hàng đã hủy.");
+        }
+        ensureVnpayPaid(order);
+        shopOrder = shopOrderRepository.findForUpdateByShopOrderIdAndShopId(shopOrderId, shopId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        entityManager.refresh(shopOrder, LockModeType.PESSIMISTIC_WRITE);
+        return shopOrder;
     }
 
     private void ensureVnpayPaid(Order order) {
@@ -606,6 +522,79 @@ public class OrderServiceImpl implements OrderService {
             }
         }
         return String.join(", ", parts);
+    }
+
+    private String formatInvoiceShopAddress(ShopLocation location) {
+        if (location == null) {
+            return null;
+        }
+        if (location.getFormattedAddress() != null && !location.getFormattedAddress().isBlank()) {
+            return location.getFormattedAddress();
+        }
+        List<String> parts = new ArrayList<>();
+        for (String part : new String[]{location.getAddressLine(), location.getWard(),
+                location.getDistrict(), location.getProvince()}) {
+            if (part != null && !part.isBlank()) {
+                parts.add(part);
+            }
+        }
+        return String.join(", ", parts);
+    }
+
+    private String formatInvoiceAmountInWords(BigDecimal amount) {
+        long remaining = amount.abs().longValue();
+        List<String> parts = new ArrayList<>();
+        int scale = 0;
+        while (remaining > 0) {
+            int group = (int) (remaining % 1000);
+            if (group > 0) {
+                String groupWords = readInvoiceNumberGroup(group, remaining >= 1000);
+                if (scale > 0) {
+                    groupWords += " " + INVOICE_NUMBER_SCALES[scale];
+                }
+                parts.addFirst(groupWords);
+            }
+            remaining /= 1000;
+            scale++;
+        }
+        String words = parts.isEmpty() ? VIETNAMESE_DIGITS[0] : String.join(" ", parts);
+        String decimalAmount = amount.abs().stripTrailingZeros().toPlainString();
+        int decimalPoint = decimalAmount.indexOf('.');
+        if (decimalPoint >= 0) {
+            words += " phẩy";
+            for (int index = decimalPoint + 1; index < decimalAmount.length(); index++) {
+                words += " " + VIETNAMESE_DIGITS[decimalAmount.charAt(index) - '0'];
+            }
+        }
+        if (amount.signum() < 0) {
+            words = "âm " + words;
+        }
+        return Character.toUpperCase(words.charAt(0)) + words.substring(1) + " đồng.";
+    }
+
+    private String readInvoiceNumberGroup(int number, boolean fullHundreds) {
+        int hundreds = number / 100;
+        int tens = number / 10 % 10;
+        int units = number % 10;
+        List<String> words = new ArrayList<>();
+        if (hundreds > 0 || fullHundreds) {
+            words.add(VIETNAMESE_DIGITS[hundreds] + " trăm");
+        }
+        if (tens > 1) {
+            words.add(VIETNAMESE_DIGITS[tens] + " mươi");
+        } else if (tens == 1) {
+            words.add("mười");
+        } else if (units > 0 && !words.isEmpty()) {
+            words.add("lẻ");
+        }
+        if (units == 1 && tens > 1) {
+            words.add("mốt");
+        } else if (units == 5 && tens > 0) {
+            words.add("lăm");
+        } else if (units > 0) {
+            words.add(VIETNAMESE_DIGITS[units]);
+        }
+        return String.join(" ", words);
     }
 
     private String getOrderStatusLabel(String status, boolean deliveryFailed) {

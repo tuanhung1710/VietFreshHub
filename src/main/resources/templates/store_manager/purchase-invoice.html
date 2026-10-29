@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<article class="invoice" th:fragment="invoice(orderDetail, headingId)">
+    <header>
+        <p class="invoice-brand">VIETFRESH HUB</p>
+        <h2 th:id="${headingId}">HÓA ĐƠN MUA HÀNG</h2>
+        <div class="invoice-metadata">
+            <p>Mã đơn hàng: <span th:text="${orderDetail.orderCode}"></span></p>
+            <p>Ngày đặt: <span th:text="${orderDetail.invoicePlacedAt == null ? '—' : #temporals.format(orderDetail.invoicePlacedAt, 'dd-MM-yyyy HH:mm')}"></span></p>
+        </div>
+    </header>
+    <section class="invoice-contact">
+        <h3>THÔNG TIN CỬA HÀNG</h3>
+        <p><span>Tên cửa hàng:</span><span th:text="${#strings.isEmpty(#strings.trim(orderDetail.shopName)) ? 'Chưa có thông tin' : orderDetail.shopName}"></span></p>
+        <p><span>Số điện thoại liên hệ:</span><span th:text="${#strings.isEmpty(#strings.trim(orderDetail.shopPhone)) ? 'Chưa có thông tin' : orderDetail.shopPhone}"></span></p>
+        <p><span>Địa chỉ:</span><span th:text="${#strings.isEmpty(#strings.trim(orderDetail.shopAddress)) ? 'Chưa có thông tin' : orderDetail.shopAddress}"></span></p>
+    </section>
+    <section class="invoice-contact">
+        <h3>THÔNG TIN NHẬN HÀNG</h3>
+        <p><span>Người nhận:</span><span th:text="${orderDetail.recipientName ?: '—'}"></span></p>
+        <p><span>Số điện thoại liên hệ:</span><span th:text="${orderDetail.phone ?: '—'}"></span></p>
+        <p><span>Địa chỉ:</span><span th:text="${orderDetail.deliveryAddress ?: '—'}"></span></p>
+    </section>
+    <section class="invoice-items">
+        <h3>CHI TIẾT ĐƠN HÀNG</h3>
+        <table>
+            <colgroup>
+                <col class="invoice-index-column">
+                <col class="invoice-product-column">
+                <col class="invoice-variant-column">
+                <col class="invoice-price-column">
+                <col class="invoice-quantity-column">
+                <col class="invoice-amount-column">
+            </colgroup>
+            <thead>
+            <tr>
+                <th scope="col" class="invoice-index">STT</th>
+                <th scope="col">Sản phẩm</th>
+                <th scope="col">Phân loại</th>
+                <th scope="col" class="money">Đơn giá</th>
+                <th scope="col" class="invoice-quantity">Số lượng</th>
+                <th scope="col" class="money">Thành tiền</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${#lists.isEmpty(orderDetail.items)}">
+                <td colspan="6">Không có sản phẩm trong đơn.</td>
+            </tr>
+            <tr th:each="item, row : ${orderDetail.items}">
+                <td class="invoice-index" th:text="${row.count}"></td>
+                <td th:text="${item.productName}"></td>
+                <td th:text="${item.variantName}"></td>
+                <td class="money"><span th:replace="~{store_manager/purchase-invoice :: money(${item.unitPrice})}"></span></td>
+                <td class="invoice-quantity" th:text="${item.quantity}"></td>
+                <td class="money"><span th:replace="~{store_manager/purchase-invoice :: money(${item.totalAmount})}"></span></td>
+            </tr>
+            </tbody>
+        </table>
+        <div class="invoice-settlement">
+            <dl class="invoice-totals">
+                <div class="invoice-total-row">
+                    <dt>Tổng tiền hàng:</dt>
+                    <dd><span th:replace="~{store_manager/purchase-invoice :: money(${orderDetail.subtotal})}"></span></dd>
+                </div>
+                <div class="invoice-total-row" th:if="${orderDetail.discountTotal.signum() != 0}">
+                    <dt>Giảm giá:</dt>
+                    <dd><span th:replace="~{store_manager/purchase-invoice :: money(${orderDetail.discountTotal.negate()})}"></span></dd>
+                </div>
+                <div class="invoice-total-row">
+                    <dt>Phí vận chuyển:</dt>
+                    <dd><span th:replace="~{store_manager/purchase-invoice :: money(${orderDetail.shippingFee})}"></span></dd>
+                </div>
+                <div class="invoice-total-row invoice-grand-total">
+                    <dt>TỔNG CỘNG:</dt>
+                    <dd><span th:replace="~{store_manager/purchase-invoice :: money(${orderDetail.totalAmount})}"></span></dd>
+                </div>
+            </dl>
+            <p class="invoice-payment"><span>Phương thức thanh toán:</span> <span th:text="${orderDetail.paymentMethodLabel}"></span></p>
+            <p class="invoice-amount-words">Số tiền bằng chữ: <strong><em th:text="${orderDetail.totalAmountInWords}"></em></strong></p>
+        </div>
+    </section>
+</article>
+<span th:fragment="money(amount)" th:text="${#numbers.formatDecimal(amount, 1, 'POINT', amount.stripTrailingZeros().scale() > 0 ? 2 : 0, 'COMMA') + ' VND'}"></span>
+</body>
+</html>

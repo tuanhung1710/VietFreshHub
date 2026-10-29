@@ -10,7 +10,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 public interface OrderService {
 
@@ -48,11 +47,4 @@ public interface OrderService {
 
     void markReady(Long shopOrderId, Authentication authentication);
 
-    void confirmOrders(List<Long> shopOrderIds, Authentication authentication);
-
-    void startPreparingOrders(List<Long> shopOrderIds, Authentication authentication);
-
-    void markOrdersReady(List<Long> shopOrderIds, Authentication authentication);
-
-    List<OrderDetailResponse> getBulkInvoices(List<Long> shopOrderIds, Authentication authentication, String view);
 }
