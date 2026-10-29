@@ -36,7 +36,48 @@ public class DeliveryController {
     @GetMapping("/delivery")
     public String showDeliveryPage(Authentication authentication, Model model) {
         model.addAttribute("assignedDeliveries", deliveryStaffQueryService.getAssignedDeliveries(authentication));
+        model.addAttribute("activeAssignmentCount", deliveryStaffQueryService.getActiveAssignmentCount(authentication));
+        model.addAttribute("maxActiveAssignments", DeliveryAssignmentService.MAX_ACTIVE_ASSIGNMENTS);
         return "delivery/home";
+    }
+
+    @GetMapping("/delivery/available")
+    public String showAvailableDeliveries(@RequestParam(defaultValue = "false") boolean fragment,
+                                         Authentication authentication, Model model) {
+        model.addAttribute("availableDeliveries", deliveryStaffQueryService.getAvailableDeliveries(authentication));
+        return fragment ? "delivery/available :: deliveries" : "delivery/available";
+    }
+
+    @GetMapping("/delivery/available/{deliveryId}")
+    public String showAvailableDeliveryDetail(@PathVariable Long deliveryId, Authentication authentication,
+                                             Model model, HttpServletResponse response) {
+        try {
+            model.addAttribute("availableDelivery",
+                    deliveryStaffQueryService.getAvailableDeliveryDetail(deliveryId, authentication));
+        } catch (ResponseStatusException exception) {
+            if (exception.getStatusCode().value() != HttpStatus.CONFLICT.value()) {
+                throw exception;
+            }
+            response.setStatus(HttpServletResponse.SC_CONFLICT);
+            model.addAttribute("availabilityMessage", exception.getReason());
+        }
+        return "delivery/available-detail";
+    }
+
+    @PostMapping("/delivery/available/{deliveryId}/claim")
+    public String claimDelivery(@PathVariable Long deliveryId, Authentication authentication,
+                                Model model, HttpServletResponse response) {
+        try {
+            deliveryAssignmentService.claimDelivery(deliveryId, authentication);
+            return "redirect:/delivery/available";
+        } catch (ResponseStatusException exception) {
+            if (exception.getStatusCode().value() != HttpStatus.CONFLICT.value()) {
+                throw exception;
+            }
+            response.setStatus(HttpServletResponse.SC_CONFLICT);
+            model.addAttribute("errorMessage", exception.getReason());
+            return showAvailableDeliveryDetail(deliveryId, authentication, model, response);
+        }
     }
 
     @GetMapping("/delivery/cod-summary")
@@ -84,18 +125,6 @@ public class DeliveryController {
                 deliveryStaffQueryService.getAssignedDeliveryDetail(assignmentId, authentication));
         model.addAttribute("failureRequest", new DeliveryFailureRequest());
         return "delivery/detail";
-    }
-
-    @PostMapping("/delivery/assignments/{assignmentId}/accept")
-    public String acceptAssignment(@PathVariable Long assignmentId, Authentication authentication) {
-        deliveryAssignmentService.accept(assignmentId, authentication);
-        return "redirect:/delivery/assignments/" + assignmentId;
-    }
-
-    @PostMapping("/delivery/assignments/{assignmentId}/reject")
-    public String rejectAssignment(@PathVariable Long assignmentId, Authentication authentication) {
-        deliveryAssignmentService.reject(assignmentId, authentication);
-        return "redirect:/delivery";
     }
 
     @PostMapping("/delivery/assignments/{assignmentId}/pickup")

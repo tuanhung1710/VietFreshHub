@@ -6,7 +6,6 @@ import VietFreshHub.delivery.entity.DeliveryStatus;
 import VietFreshHub.order.entity.ShopOrder;
 import VietFreshHub.order.service.OrderService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -22,7 +21,6 @@ public class DeliveryStaffActionService {
     private final DeliveryStatusHistoryWriter deliveryStatusHistoryWriter;
     private final OrderService orderService;
     private final DeliveryNotificationService deliveryNotificationService;
-    private final ApplicationEventPublisher events;
 
     @Transactional
     public void confirmPickup(Long assignmentId, Authentication authentication) {
@@ -78,7 +76,6 @@ public class DeliveryStaffActionService {
         deliveryStatusHistoryWriter.record(delivery, assignment.getDeliveryStaff().getUserId(), null);
         assignment.complete();
         deliveryNotificationService.notifyCompleted(delivery);
-        events.publishEvent(new DeliveryAssignmentRetryEvent());
     }
 
     @Transactional

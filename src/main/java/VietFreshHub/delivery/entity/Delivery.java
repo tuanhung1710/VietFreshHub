@@ -78,17 +78,9 @@ public class Delivery {
     @Column(name = "redelivery_scheduled_at", columnDefinition = "datetime2(0)")
     private LocalDateTime redeliveryScheduledAt;
 
-    public void markAssigned(LocalDateTime assignedAt) {
-        this.status = DeliveryStatus.ASSIGNED;
-        this.assignedAt = assignedAt;
-    }
-
-    public void releaseAssignment() {
-        this.status = DeliveryStatus.UNASSIGNED;
-    }
-
-    public void accept() {
+    public void accept(LocalDateTime acceptedAt) {
         this.status = DeliveryStatus.ACCEPTED;
+        this.assignedAt = acceptedAt;
     }
 
     public void markPickedUp(LocalDateTime pickedUpAt) {

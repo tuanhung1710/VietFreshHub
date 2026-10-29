@@ -54,24 +54,12 @@ public class DeliveryAssignment {
     @Column(name = "accepted_at", columnDefinition = "datetime2(0)")
     private LocalDateTime acceptedAt;
 
-    public DeliveryAssignment(Delivery delivery, User deliveryStaff, LocalDateTime assignedAt) {
+    public DeliveryAssignment(Delivery delivery, User deliveryStaff, LocalDateTime acceptedAt) {
         this.delivery = delivery;
         this.deliveryStaff = deliveryStaff;
-        this.status = DeliveryAssignmentStatus.ASSIGNED;
-        this.assignedAt = assignedAt;
-    }
-
-    public void accept(LocalDateTime acceptedAt) {
         this.status = DeliveryAssignmentStatus.ACCEPTED;
+        this.assignedAt = acceptedAt;
         this.acceptedAt = acceptedAt;
-    }
-
-    public void reject() {
-        this.status = DeliveryAssignmentStatus.REJECTED;
-    }
-
-    public void cancel() {
-        this.status = DeliveryAssignmentStatus.CANCELLED;
     }
 
     public void complete() {

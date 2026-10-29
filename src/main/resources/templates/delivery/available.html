@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhận đơn mới | VIETFRESH HUB</title>
+</head>
+<body>
+<header>
+    <a th:href="@{/delivery}">Trang chủ giao hàng</a>
+</header>
+<main>
+    <h1>Đơn giao hàng có thể nhận</h1>
+    <p id="available-refresh-status" role="status" hidden></p>
+    <section id="available-deliveries" th:fragment="deliveries"
+             th:attr="data-refresh-url=@{/delivery/available(fragment=true)}">
+        <p th:if="${#lists.isEmpty(availableDeliveries)}">Hiện chưa có đơn giao hàng nào có thể nhận.</p>
+        <table th:unless="${#lists.isEmpty(availableDeliveries)}">
+            <thead>
+            <tr>
+                <th scope="col">Mã đơn hàng</th>
+                <th scope="col">Cửa hàng lấy hàng</th>
+                <th scope="col">Địa chỉ lấy hàng</th>
+                <th scope="col">Địa chỉ giao hàng</th>
+                <th scope="col">Nhận đơn</th>
+                <th scope="col">Chi tiết</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="delivery : ${availableDeliveries}">
+                <td th:text="${delivery.orderCode}"></td>
+                <td th:text="${delivery.shopName ?: 'Chưa có thông tin'}"></td>
+                <td th:insert="~{delivery/available-detail :: address(location=${delivery.pickupLocation})}"></td>
+                <td th:insert="~{delivery/available-detail :: address(location=${delivery.deliveryLocation})}"></td>
+                <td>
+                    <form method="post" th:action="@{/delivery/available/{deliveryId}/claim(deliveryId=${delivery.deliveryId})}">
+                        <button type="submit">Nhận đơn</button>
+                    </form>
+                </td>
+                <td><a th:href="@{/delivery/available/{deliveryId}(deliveryId=${delivery.deliveryId})}">Xem chi tiết</a></td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+</main>
+<script>
+    async function refreshAvailableDeliveries() {
+        if (!document.hidden) {
+            try {
+                const currentList = document.getElementById('available-deliveries');
+                const response = await fetch(currentList.dataset.refreshUrl, {cache: 'no-store'});
+                if (!response.ok || response.redirected) {
+                    throw new Error('Không thể cập nhật danh sách.');
+                }
+                const page = new DOMParser().parseFromString(await response.text(), 'text/html');
+                const updatedList = page.getElementById('available-deliveries');
+                if (!updatedList) {
+                    throw new Error('Không tìm thấy danh sách.');
+                }
+                currentList.replaceWith(updatedList);
+                document.getElementById('available-refresh-status').textContent = '';
+                document.getElementById('available-refresh-status').hidden = true;
+            } catch (error) {
+                document.getElementById('available-refresh-status').textContent =
+                    'Chưa tải được danh sách mới. Hệ thống sẽ thử lại sau 1 giây.';
+                document.getElementById('available-refresh-status').hidden = false;
+            }
+        }
+        window.setTimeout(refreshAvailableDeliveries, 1000);
+    }
+    window.setTimeout(refreshAvailableDeliveries, 1000);
+</script>
+</body>
+</html>

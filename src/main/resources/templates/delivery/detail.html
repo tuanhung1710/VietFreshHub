@@ -141,19 +141,9 @@
         <h2 id="cash-heading">TIỀN THU HỘ</h2>
         <p th:text="${#numbers.formatDecimal(deliveryDetail.cashToCollect, 1, 'POINT', deliveryDetail.cashToCollect.stripTrailingZeros().scale() > 0 ? 2 : 0, 'COMMA')} + ' VND'"></p>
     </section>
-    <form class="delivery-actions" method="post"
-          th:if="${deliveryDetail.assignmentStatus.name() == 'ASSIGNED' and deliveryDetail.deliveryStatus.name() == 'ASSIGNED'}"
-          th:action="@{/delivery/assignments/{assignmentId}/accept(assignmentId=${deliveryDetail.assignmentId})}">
-        <p th:if="${deliveryDetail.assignedAt != null}"
-           th:text="|Hạn chấp nhận: ${#temporals.format(deliveryDetail.assignedAt.plusSeconds(30), 'dd-MM-yyyy HH:mm:ss')}|"></p>
-        <p th:if="${deliveryDetail.remainingOfferSeconds == 0}">Lời mời đã hết hạn; hệ thống đang thu hồi phân công.</p>
-        <button type="submit" th:disabled="${deliveryDetail.remainingOfferSeconds == 0}">CHẤP NHẬN PHÂN CÔNG</button>
-    </form>
-    <form class="delivery-actions" method="post"
-          th:if="${deliveryDetail.assignmentStatus.name() == 'ASSIGNED' and deliveryDetail.deliveryStatus.name() == 'ASSIGNED'}"
-          th:action="@{/delivery/assignments/{assignmentId}/reject(assignmentId=${deliveryDetail.assignmentId})}">
-        <button type="submit">TỪ CHỐI ĐƠN</button>
-    </form>
+    <p th:if="${deliveryDetail.assignmentStatus.name() == 'ASSIGNED'}" role="status">
+        Phân công cũ chưa hoàn tất chuyển đổi; chỉ có thể xem và cần đối soát thủ công.
+    </p>
     <form class="delivery-actions" method="post"
           th:if="${deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'ACCEPTED'}"
           th:action="@{/delivery/assignments/{assignmentId}/pickup(assignmentId=${deliveryDetail.assignmentId})}">

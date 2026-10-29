@@ -1,6 +1,7 @@
 package VietFreshHub.delivery.service;
 
 import VietFreshHub.auth.service.AuthService;
+import VietFreshHub.auth.entity.User;
 import VietFreshHub.delivery.dto.DeliveryTrackingStaff;
 import VietFreshHub.delivery.entity.Delivery;
 import VietFreshHub.delivery.entity.DeliveryAssignment;
@@ -12,7 +13,6 @@ import VietFreshHub.delivery.repository.DeliveryStatusHistoryRepository;
 import VietFreshHub.order.service.OrderService;
 import VietFreshHub.shop.service.ShopService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -28,17 +28,15 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DeliveryAssignmentService {
 
-    public static final int OFFER_TIMEOUT_SECONDS = 30;
+    public static final int MAX_ACTIVE_ASSIGNMENTS = 5;
 
     private final DeliveryAssignmentRepository deliveryAssignmentRepository;
     private final DeliveryRepository deliveryRepository;
-    private final DeliveryService deliveryService;
     private final DeliveryStatusHistoryWriter deliveryStatusHistoryWriter;
     private final DeliveryStatusHistoryRepository deliveryStatusHistoryRepository;
     private final AuthService authService;
     private final ShopService shopService;
     private final OrderService orderService;
-    private final ApplicationEventPublisher events;
     private final DeliveryNotificationService deliveryNotificationService;
 
     @Transactional(readOnly = true)
@@ -50,77 +48,32 @@ public class DeliveryAssignmentService {
     }
 
     @Transactional
-    public void accept(Long assignmentId, Authentication authentication) {
-        Long deliveryStaffId = authService.getCurrentDeliveryStaffId(authentication);
-        if (!authService.lockActiveDeliveryStaffIdsForAssignment().contains(deliveryStaffId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tài khoản không còn đủ điều kiện nhận đơn.");
-        }
-        DeliveryAssignment assignment = getAssignmentForUpdate(assignmentId, deliveryStaffId);
-        requireStatus(assignment, DeliveryAssignmentStatus.ASSIGNED);
-
+    public Long claimDelivery(Long deliveryId, Authentication authentication) {
+        User deliveryStaff = authService.lockCurrentDeliveryStaffForAssignment(authentication);
+        Long deliveryStaffId = deliveryStaff.getUserId();
         if (deliveryAssignmentRepository.countByDeliveryStaff_UserIdAndStatusIn(deliveryStaffId,
                 List.of(DeliveryAssignmentStatus.ASSIGNED, DeliveryAssignmentStatus.ACCEPTED))
-                > AutoAssignmentService.MAX_ACTIVE_ASSIGNMENTS) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Số phân công đang giữ vượt quá sức chứa cho phép.");
+                >= MAX_ACTIVE_ASSIGNMENTS) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Bạn đã nhận đủ 5 đơn giao hàng đang hoạt động.");
         }
 
-        Delivery delivery = assignment.getDelivery();
-        deliveryService.accept(delivery.getDeliveryId());
-        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-        if (isOfferExpired(assignment, now)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Phân công giao hàng đã hết thời hạn chấp nhận.");
-        }
-        assignment.accept(now.isBefore(assignment.getAssignedAt())
-                ? assignment.getAssignedAt() : now.withNano(0));
-        deliveryStatusHistoryWriter.record(delivery, deliveryStaffId, null);
-    }
-
-    @Transactional
-    public void reject(Long assignmentId, Authentication authentication) {
-        Long deliveryStaffId = authService.getCurrentDeliveryStaffId(authentication);
-        DeliveryAssignment assignment = getAssignmentForUpdate(assignmentId, deliveryStaffId);
-        requireStatus(assignment, DeliveryAssignmentStatus.ASSIGNED);
-
-        Delivery delivery = assignment.getDelivery();
-        deliveryService.releaseAssignment(delivery.getDeliveryId());
-        if (isOfferExpired(assignment, LocalDateTime.now(ZoneOffset.UTC))) {
-            assignment.cancel();
-        } else {
-            assignment.reject();
-        }
-        deliveryStatusHistoryWriter.record(delivery, deliveryStaffId, null);
-        events.publishEvent(new DeliveryAssignmentRetryEvent());
-    }
-
-    @Transactional(readOnly = true)
-    public List<Long> findTimedOutInitialAssignmentIds() {
-        return deliveryAssignmentRepository.findTimedOutAssignmentIds(
-                DeliveryAssignmentStatus.ASSIGNED, DeliveryStatus.ASSIGNED,
-                LocalDateTime.now(ZoneOffset.UTC).minusSeconds(OFFER_TIMEOUT_SECONDS));
-    }
-
-    @Transactional
-    public void timeoutInitialAssignment(Long assignmentId) {
-        Long deliveryId = deliveryAssignmentRepository.findDeliveryIdByAssignmentId(assignmentId).orElse(null);
-        if (deliveryId == null) {
-            return;
-        }
         Delivery delivery = getDeliveryForUpdate(deliveryId);
-        DeliveryAssignment assignment = deliveryAssignmentRepository.findForUpdateByAssignmentId(assignmentId)
-                .orElse(null);
-        if (assignment == null || assignment.getStatus() != DeliveryAssignmentStatus.ASSIGNED
-                || delivery.getStatus() != DeliveryStatus.ASSIGNED
-                || delivery.getRedeliveryRequestedAt() != null || delivery.getRedeliveryScheduledAt() != null
-                || !isOfferExpired(assignment, LocalDateTime.now(ZoneOffset.UTC))) {
-            return;
+        if (delivery.getStatus() != DeliveryStatus.UNASSIGNED
+                || deliveryAssignmentRepository.existsByDelivery_DeliveryIdAndStatusIn(deliveryId,
+                        List.of(DeliveryAssignmentStatus.ASSIGNED, DeliveryAssignmentStatus.ACCEPTED))) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Đơn giao hàng đã có người nhận.");
+        }
+        if (!"READY_FOR_DELIVERY".equals(delivery.getShopOrder().getStatus())
+                || delivery.getRedeliveryRequestedAt() != null || delivery.getRedeliveryScheduledAt() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Đơn giao hàng không còn đủ điều kiện nhận.");
         }
 
-        assignment.cancel();
-        deliveryService.releaseAssignment(deliveryId);
-        deliveryStatusHistoryWriter.record(delivery, null, null);
-        events.publishEvent(new DeliveryAssignmentRetryEvent());
+        LocalDateTime acceptedAt = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
+        delivery.accept(acceptedAt);
+        DeliveryAssignment assignment = deliveryAssignmentRepository.save(
+                new DeliveryAssignment(delivery, deliveryStaff, acceptedAt));
+        deliveryStatusHistoryWriter.record(delivery, deliveryStaffId, null);
+        return assignment.getAssignmentId();
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -171,7 +124,6 @@ public class DeliveryAssignmentService {
         assignment.complete();
         deliveryStatusHistoryWriter.record(delivery, managerId, confirmationNote);
         deliveryNotificationService.notifyGoodsReturnConfirmed(assignment);
-        events.publishEvent(new DeliveryAssignmentRetryEvent());
     }
 
     private DeliveryAssignment getAssignmentForUpdate(Long assignmentId, Long deliveryStaffId) {
@@ -195,11 +147,6 @@ public class DeliveryAssignmentService {
         return deliveryRepository.findForUpdateByDeliveryId(deliveryId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Không tìm thấy thông tin giao hàng."));
-    }
-
-    private boolean isOfferExpired(DeliveryAssignment assignment, LocalDateTime now) {
-        return assignment.getAssignedAt() == null
-                || !now.isBefore(assignment.getAssignedAt().plusSeconds(OFFER_TIMEOUT_SECONDS));
     }
 
     private void requireStatus(DeliveryAssignment assignment, DeliveryAssignmentStatus requiredStatus) {

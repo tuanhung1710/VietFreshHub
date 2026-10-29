@@ -26,7 +26,6 @@ public class DeliveryDetailResponse {
     private LocalDateTime deliveredAt;
     private String failureReason;
     private String returnStatusLabel;
-    private long remainingOfferSeconds;
     private String assignmentStatusLabel;
     private String deliveryStatusLabel;
     private String recipientName;

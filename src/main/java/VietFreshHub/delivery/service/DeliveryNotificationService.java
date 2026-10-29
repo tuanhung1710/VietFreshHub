@@ -18,8 +18,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 
 @Service
@@ -31,15 +29,6 @@ public class DeliveryNotificationService {
     private final AuthService authService;
     private final DeliveryRepository deliveryRepository;
     private final DeliveryAssignmentRepository deliveryAssignmentRepository;
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void notifyAssigned(DeliveryAssignment assignment) {
-        String orderCode = assignment.getDelivery().getShopOrder().getOrder().getOrderCode();
-        notificationService.createInApp(assignment.getDeliveryStaff().getUserId(), "DELIVERY_ASSIGNED",
-                "Bạn có đơn giao hàng mới",
-                "Bạn được phân công giao đơn #" + orderCode + ". Vui lòng chấp nhận trong vòng 30 giây.",
-                "DELIVERY_ASSIGNMENT", assignment.getAssignmentId());
-    }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void notifyStarted(Delivery delivery) {
@@ -93,11 +82,8 @@ public class DeliveryNotificationService {
                                     DeliveryAssignmentStatus.COMPLETED, DeliveryAssignmentStatus.REJECTED,
                                     DeliveryAssignmentStatus.CANCELLED))
                     .orElseThrow(this::unavailable);
-            boolean expiredOffer = assignment.getStatus() == DeliveryAssignmentStatus.ASSIGNED
-                    && (assignment.getAssignedAt() == null || !LocalDateTime.now(ZoneOffset.UTC).isBefore(
-                            assignment.getAssignedAt().plusSeconds(DeliveryAssignmentService.OFFER_TIMEOUT_SECONDS)));
             if (assignment.getStatus() == DeliveryAssignmentStatus.REJECTED
-                    || assignment.getStatus() == DeliveryAssignmentStatus.CANCELLED || expiredOffer) {
+                    || assignment.getStatus() == DeliveryAssignmentStatus.CANCELLED) {
                 return "/delivery";
             }
             return "/delivery/assignments/" + assignment.getAssignmentId();

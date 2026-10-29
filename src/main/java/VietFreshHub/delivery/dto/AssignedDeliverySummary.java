@@ -21,5 +21,4 @@ public class AssignedDeliverySummary {
     private LocalDateTime acceptedAt;
     private String assignmentStatusLabel;
     private String deliveryStatusLabel;
-    private long remainingOfferSeconds;
 }

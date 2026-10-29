@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi tiết đơn có thể nhận | VIETFRESH HUB</title>
+</head>
+<body>
+<header>
+    <a th:href="@{/delivery/available}">Danh sách đơn có thể nhận</a>
+    <a th:href="@{/delivery}">Trang chủ giao hàng</a>
+</header>
+<main>
+    <h1>Chi tiết đơn giao hàng</h1>
+    <p th:if="${errorMessage != null}" th:text="${errorMessage}" role="alert"></p>
+    <p th:if="${availabilityMessage != null}" th:text="${availabilityMessage}" role="alert"></p>
+    <div th:if="${availableDelivery != null}">
+        <dl>
+            <dt>Mã đơn hàng</dt>
+            <dd th:text="${availableDelivery.orderCode}"></dd>
+            <dt>Mã đơn cửa hàng</dt>
+            <dd th:text="${availableDelivery.shopOrderId}"></dd>
+            <dt>Cửa hàng lấy hàng</dt>
+            <dd th:text="${availableDelivery.shopName ?: 'Chưa có thông tin'}"></dd>
+            <dt>Địa chỉ lấy hàng</dt>
+            <dd th:insert="~{delivery/available-detail :: address(location=${availableDelivery.pickupLocation})}"></dd>
+            <dt>Địa chỉ giao hàng</dt>
+            <dd th:insert="~{delivery/available-detail :: address(location=${availableDelivery.deliveryLocation})}"></dd>
+            <dt>Khoảng cách đã lưu (m)</dt>
+            <dd th:text="${availableDelivery.shippingDistanceMeters == null ? 'Chưa có dữ liệu' : availableDelivery.shippingDistanceMeters}"></dd>
+        </dl>
+        <p>Đơn chỉ được nhận sau khi hệ thống kiểm tra tình trạng đơn và sức chứa của bạn.</p>
+        <form method="post" th:action="@{/delivery/available/{deliveryId}/claim(deliveryId=${availableDelivery.deliveryId})}">
+            <button type="submit">Nhận đơn</button>
+        </form>
+    </div>
+</main>
+<template>
+<th:block th:fragment="address(location)">
+    <span th:if="${location == null}">Chưa có thông tin địa chỉ</span>
+    <span th:if="${location != null}">
+        <span th:if="${!#strings.isEmpty(#strings.trim(location.formattedAddress))}"
+              th:text="${location.formattedAddress}"></span>
+        <span th:if="${#strings.isEmpty(#strings.trim(location.formattedAddress))}">
+            <span th:text="${location.addressLine ?: '—'}"></span>
+            <span th:if="${!#strings.isEmpty(location.ward)}" th:text="|, ${location.ward}|"></span>
+            <span th:if="${!#strings.isEmpty(location.district)}" th:text="|, ${location.district}|"></span>
+            <span th:if="${!#strings.isEmpty(location.province)}" th:text="|, ${location.province}|"></span>
+        </span>
+    </span>
+</th:block>
+</template>
+</body>
+</html>
