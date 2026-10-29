@@ -67,13 +67,13 @@ public class DeliveryStaffQueryService {
     }
 
     @Transactional(readOnly = true)
-    public AvailableDeliveryResponse getAvailableDeliveryDetail(Long deliveryId, Authentication authentication) {
+    public DeliveryDetailResponse getDeliveryDetailForClaim(Long deliveryId, Authentication authentication) {
         authService.getCurrentDeliveryStaffId(authentication);
         Delivery delivery = deliveryRepository.findOne(DeliveryRepository.availableForClaim()
                         .and((root, query, builder) -> builder.equal(root.get("deliveryId"), deliveryId)))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT,
                         "Đơn giao hàng không còn trong danh sách có thể nhận."));
-        return toAvailableDeliveryResponse(delivery);
+        return toDeliveryDetailResponse(delivery, null);
     }
 
     @Transactional(readOnly = true)
@@ -89,10 +89,9 @@ public class DeliveryStaffQueryService {
         DeliveryLocationResponse pickupLocation = shopService.findLocationByShopId(shopOrder.getShopId())
                 .map(this::toDeliveryLocation)
                 .orElse(null);
-        return new AvailableDeliveryResponse(delivery.getDeliveryId(), shopOrder.getShopOrderId(),
-                shopOrder.getOrder().getOrderCode(),
+        return new AvailableDeliveryResponse(delivery.getDeliveryId(), shopOrder.getOrder().getOrderCode(),
                 shopOrder.getShop() == null ? null : shopOrder.getShop().getShopName(),
-                pickupLocation, toDeliveryLocation(address), shopOrder.getShippingDistanceMeters());
+                pickupLocation, toDeliveryLocation(address));
     }
 
     @Transactional(readOnly = true)
@@ -251,7 +250,7 @@ public class DeliveryStaffQueryService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Không tìm thấy phân công giao hàng."));
 
-        return toDeliveryDetailResponse(assignment);
+        return toDeliveryDetailResponse(assignment.getDelivery(), assignment);
     }
 
     private AssignedDeliverySummary toAssignedDeliverySummary(DeliveryAssignment assignment) {
@@ -272,8 +271,7 @@ public class DeliveryStaffQueryService {
         );
     }
 
-    private DeliveryDetailResponse toDeliveryDetailResponse(DeliveryAssignment assignment) {
-        Delivery delivery = assignment.getDelivery();
+    private DeliveryDetailResponse toDeliveryDetailResponse(Delivery delivery, DeliveryAssignment assignment) {
         ShopOrder shopOrder = delivery.getShopOrder();
         Order order = shopOrder.getOrder();
         OrderAddress address = orderService.getOrderAddress(order.getOrderId());
@@ -282,21 +280,21 @@ public class DeliveryStaffQueryService {
                 .orElse(null);
 
         return new DeliveryDetailResponse(
-                assignment.getAssignmentId(),
+                assignment == null ? null : assignment.getAssignmentId(),
                 delivery.getDeliveryId(),
                 shopOrder.getShopOrderId(),
                 shopOrder.getShopId(),
                 order.getOrderCode(),
-                assignment.getStatus(),
+                assignment == null ? null : assignment.getStatus(),
                 delivery.getStatus(),
                 order.getPlacedAt(),
-                toDeliveryLocalTime(assignment.getAssignedAt()),
-                toDeliveryLocalTime(assignment.getAcceptedAt()),
+                assignment == null ? null : toDeliveryLocalTime(assignment.getAssignedAt()),
+                assignment == null ? null : toDeliveryLocalTime(assignment.getAcceptedAt()),
                 toDeliveryLocalTime(delivery.getPickedUpAt()),
                 delivery.getStatus() == DeliveryStatus.DELIVERED ? toDeliveryLocalTime(delivery.getDeliveredAt()) : null,
                 delivery.getFailureReason(),
-                returnStatusLabel(assignment),
-                assignmentStatusLabel(assignment.getStatus()),
+                assignment == null ? null : returnStatusLabel(assignment),
+                assignment == null ? null : assignmentStatusLabel(assignment.getStatus()),
                 OrderLabels.delivery(delivery.getStatus().name()),
                 address == null ? null : address.getRecipientName(),
                 address == null ? null : address.getPhone(),

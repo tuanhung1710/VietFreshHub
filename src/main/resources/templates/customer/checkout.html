@@ -54,8 +54,8 @@
                 <div class="summary-line"><span>Tiền sản phẩm</span><strong th:text="${#numbers.formatInteger(cart.totalAmount,0,'POINT')} + ' ₫'"></strong></div>
                 <div class="summary-line"><span th:text="${checkout.deliveryOutOfRange ? 'Phí vận chuyển:' : 'Phí vận chuyển (' + #maps.size(shopGroups) + ' shop)'}"></span><strong data-shipping-amount th:if="${checkout.shippingFee != null}" th:text="${#numbers.formatInteger(checkout.shippingFee,0,'POINT')} + ' ₫'"></strong><strong data-shipping-amount th:if="${checkout.deliveryOutOfRange}">Không hỗ trợ</strong></div>
                 <p th:if="${checkout.deliveryOutOfRange}" class="item-error" role="alert" data-shipping-error><strong>Không có phương thức vận chuyển phù hợp</strong></p>
-                <p th:if="${checkout.shippingError != null}" class="item-error" role="alert" data-shipping-error th:text="${checkout.shippingError}"></p>
-                <a th:if="${checkout.shippingError != null}" th:href="@{/customer/checkout(checkoutToken=${form.checkoutToken},addressId=${form.addressId})}" class="button secondary">Tính lại phí giao hàng</a>
+                <p th:if="${checkout.shippingError != null and !checkout.deliveryOutOfRange}" class="item-error" role="alert" data-shipping-error th:text="${checkout.shippingError}"></p>
+                <a th:if="${checkout.shippingError != null and !checkout.deliveryOutOfRange}" th:href="@{/customer/checkout(checkoutToken=${form.checkoutToken},addressId=${form.addressId})}" class="button secondary">Tính lại phí giao hàng</a>
                 <div class="summary-line summary-total"><span>Tổng thanh toán</span><strong class="price" data-grand-total th:if="${checkout.grandTotal != null}" th:text="${#numbers.formatInteger(checkout.grandTotal,0,'POINT')} + ' ₫'"></strong><strong data-grand-total th:if="${checkout.grandTotal == null}">Chưa thể xác định</strong></div>
                 <button class="button full" type="submit" th:disabled="${!checkout.canConfirm()}" data-confirm-order>Xác nhận đặt hàng</button>
                 <a th:href="@{/cart}" class="checkout-back">← Quay lại giỏ hàng</a>

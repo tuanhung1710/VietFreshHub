@@ -69,6 +69,7 @@
 </header>
 <main>
     <h1>CHI TIẾT GIAO HÀNG</h1>
+    <p th:if="${errorMessage != null}" th:text="${errorMessage}" role="alert"></p>
     <p>Mã đơn hàng: #<span th:text="${deliveryDetail.orderCode}"></span></p>
     <section class="information-card" aria-labelledby="pickup-heading">
         <h2 id="pickup-heading">ĐỊA ĐIỂM NHẬN HÀNG</h2>
@@ -141,26 +142,31 @@
         <h2 id="cash-heading">TIỀN THU HỘ</h2>
         <p th:text="${#numbers.formatDecimal(deliveryDetail.cashToCollect, 1, 'POINT', deliveryDetail.cashToCollect.stripTrailingZeros().scale() > 0 ? 2 : 0, 'COMMA')} + ' VND'"></p>
     </section>
-    <p th:if="${deliveryDetail.assignmentStatus.name() == 'ASSIGNED'}" role="status">
+    <form class="delivery-actions" method="post"
+          th:if="${deliveryDetail.assignmentId == null and deliveryDetail.deliveryStatus.name() == 'UNASSIGNED'}"
+          th:action="@{/delivery/available/{deliveryId}/claim(deliveryId=${deliveryDetail.deliveryId})}">
+        <button type="submit">NHẬN ĐƠN</button>
+    </form>
+    <p th:if="${deliveryDetail.assignmentId != null and deliveryDetail.assignmentStatus.name() == 'ASSIGNED'}" role="status">
         Phân công cũ chưa hoàn tất chuyển đổi; chỉ có thể xem và cần đối soát thủ công.
     </p>
     <form class="delivery-actions" method="post"
-          th:if="${deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'ACCEPTED'}"
+          th:if="${deliveryDetail.assignmentId != null and deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'ACCEPTED'}"
           th:action="@{/delivery/assignments/{assignmentId}/pickup(assignmentId=${deliveryDetail.assignmentId})}">
         <button type="submit">LẤY HÀNG THÀNH CÔNG</button>
     </form>
     <form class="delivery-actions" method="post"
-          th:if="${deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'PICKED_UP'}"
+          th:if="${deliveryDetail.assignmentId != null and deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'PICKED_UP'}"
           th:action="@{/delivery/assignments/{assignmentId}/start-delivery(assignmentId=${deliveryDetail.assignmentId})}">
         <button type="submit">BẮT ĐẦU GIAO HÀNG</button>
     </form>
     <form class="delivery-actions" method="post"
-          th:if="${deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'OUT_FOR_DELIVERY'}"
+          th:if="${deliveryDetail.assignmentId != null and deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'OUT_FOR_DELIVERY'}"
           th:action="@{/delivery/assignments/{assignmentId}/delivered(assignmentId=${deliveryDetail.assignmentId})}">
         <button type="submit">GIAO HÀNG THÀNH CÔNG</button>
     </form>
     <form class="delivery-actions" method="post"
-          th:if="${deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'OUT_FOR_DELIVERY'}"
+          th:if="${deliveryDetail.assignmentId != null and deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'OUT_FOR_DELIVERY'}"
           th:action="@{/delivery/assignments/{assignmentId}/failed(assignmentId=${deliveryDetail.assignmentId})}"
           th:object="${failureRequest}">
         <details th:open="${#fields.hasAnyErrors()}">

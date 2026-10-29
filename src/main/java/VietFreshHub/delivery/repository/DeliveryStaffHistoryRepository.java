@@ -233,8 +233,7 @@ public class DeliveryStaffHistoryRepository {
             where.append("""
                      and (lower(order_code) like :keyword escape '\\'
                        or lower(recipient_name) like :keyword escape '\\'
-                       or lower(phone) like :keyword escape '\\'
-                       or lower(shop_name) like :keyword escape '\\')
+                       or lower(phone) like :keyword escape '\\')
                     """);
             String escaped = filter.getKeyword().toLowerCase(Locale.ROOT).replace("\\", "\\\\")
                     .replace("%", "\\%").replace("_", "\\_").replace("[", "\\[");

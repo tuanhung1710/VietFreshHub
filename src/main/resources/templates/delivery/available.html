@@ -11,6 +11,7 @@
 </header>
 <main>
     <h1>Đơn giao hàng có thể nhận</h1>
+    <p th:if="${errorMessage != null}" th:text="${errorMessage}" role="alert"></p>
     <p id="available-refresh-status" role="status" hidden></p>
     <section id="available-deliveries" th:fragment="deliveries"
              th:attr="data-refresh-url=@{/delivery/available(fragment=true)}">
@@ -30,8 +31,8 @@
             <tr th:each="delivery : ${availableDeliveries}">
                 <td th:text="${delivery.orderCode}"></td>
                 <td th:text="${delivery.shopName ?: 'Chưa có thông tin'}"></td>
-                <td th:insert="~{delivery/available-detail :: address(location=${delivery.pickupLocation})}"></td>
-                <td th:insert="~{delivery/available-detail :: address(location=${delivery.deliveryLocation})}"></td>
+                <td th:insert="~{delivery/available :: address(location=${delivery.pickupLocation})}"></td>
+                <td th:insert="~{delivery/available :: address(location=${delivery.deliveryLocation})}"></td>
                 <td>
                     <form method="post" th:action="@{/delivery/available/{deliveryId}/claim(deliveryId=${delivery.deliveryId})}">
                         <button type="submit">Nhận đơn</button>
@@ -43,6 +44,21 @@
         </table>
     </section>
 </main>
+<template>
+<th:block th:fragment="address(location)">
+    <span th:if="${location == null}">Chưa có thông tin địa chỉ</span>
+    <span th:if="${location != null}">
+        <span th:if="${!#strings.isEmpty(#strings.trim(location.formattedAddress))}"
+              th:text="${location.formattedAddress}"></span>
+        <span th:if="${#strings.isEmpty(#strings.trim(location.formattedAddress))}">
+            <span th:text="${location.addressLine ?: '—'}"></span>
+            <span th:if="${!#strings.isEmpty(location.ward)}" th:text="|, ${location.ward}|"></span>
+            <span th:if="${!#strings.isEmpty(location.district)}" th:text="|, ${location.district}|"></span>
+            <span th:if="${!#strings.isEmpty(location.province)}" th:text="|, ${location.province}|"></span>
+        </span>
+    </span>
+</th:block>
+</template>
 <script>
     async function refreshAvailableDeliveries() {
         if (!document.hidden) {

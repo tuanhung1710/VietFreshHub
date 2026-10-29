@@ -49,34 +49,37 @@ public class DeliveryController {
     }
 
     @GetMapping("/delivery/available/{deliveryId}")
-    public String showAvailableDeliveryDetail(@PathVariable Long deliveryId, Authentication authentication,
-                                             Model model, HttpServletResponse response) {
+    public String showDeliveryForClaim(@PathVariable Long deliveryId, Authentication authentication,
+                                       Model model, HttpServletResponse response) {
         try {
-            model.addAttribute("availableDelivery",
-                    deliveryStaffQueryService.getAvailableDeliveryDetail(deliveryId, authentication));
+            model.addAttribute("deliveryDetail",
+                    deliveryStaffQueryService.getDeliveryDetailForClaim(deliveryId, authentication));
+            return "delivery/detail";
         } catch (ResponseStatusException exception) {
             if (exception.getStatusCode().value() != HttpStatus.CONFLICT.value()) {
                 throw exception;
             }
             response.setStatus(HttpServletResponse.SC_CONFLICT);
-            model.addAttribute("availabilityMessage", exception.getReason());
+            if (!model.containsAttribute("errorMessage")) {
+                model.addAttribute("errorMessage", exception.getReason());
+            }
+            return showAvailableDeliveries(false, authentication, model);
         }
-        return "delivery/available-detail";
     }
 
     @PostMapping("/delivery/available/{deliveryId}/claim")
     public String claimDelivery(@PathVariable Long deliveryId, Authentication authentication,
                                 Model model, HttpServletResponse response) {
         try {
-            deliveryAssignmentService.claimDelivery(deliveryId, authentication);
-            return "redirect:/delivery/available";
+            Long assignmentId = deliveryAssignmentService.claimDelivery(deliveryId, authentication);
+            return "redirect:/delivery/assignments/" + assignmentId;
         } catch (ResponseStatusException exception) {
             if (exception.getStatusCode().value() != HttpStatus.CONFLICT.value()) {
                 throw exception;
             }
             response.setStatus(HttpServletResponse.SC_CONFLICT);
             model.addAttribute("errorMessage", exception.getReason());
-            return showAvailableDeliveryDetail(deliveryId, authentication, model, response);
+            return showDeliveryForClaim(deliveryId, authentication, model, response);
         }
     }
 
