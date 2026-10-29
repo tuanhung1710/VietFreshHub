@@ -4,12 +4,14 @@ import VietFreshHub.order.dto.IncomingOrderResponse;
 import VietFreshHub.order.dto.OrderCountsResponse;
 import VietFreshHub.order.dto.OrderDetailResponse;
 import VietFreshHub.order.dto.OrderFilterRequest;
+import VietFreshHub.order.dto.OrderProcessingHistoryEntry;
 import VietFreshHub.order.dto.ProcessedOrderResponse;
 import VietFreshHub.order.entity.OrderAddress;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface OrderService {
 
@@ -38,6 +40,8 @@ public interface OrderService {
     Long getDeliveryIdForManagedShopOrder(Long shopOrderId, Authentication authentication);
 
     OrderAddress getOrderAddress(Long orderId);
+
+    List<OrderProcessingHistoryEntry> getProcessingHistoryForAdmin(Long shopOrderId, Authentication authentication);
 
     void lockOrderForDeliveryCompletion(Long orderId);
 

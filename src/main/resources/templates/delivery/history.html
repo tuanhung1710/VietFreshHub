@@ -76,10 +76,12 @@
                 </select>
             </label>
             <label class="custom-date" th:hidden="${filter.period != 'CUSTOM'}">Từ ngày
-                <input type="date" th:field="*{fromDate}" th:disabled="${filter.period != 'CUSTOM'}">
+                <input type="date" th:field="*{fromDate}" th:disabled="${filter.period != 'CUSTOM'}" aria-describedby="fromDate-error">
+                <span id="fromDate-error" class="error" aria-live="polite" hidden></span>
             </label>
             <label class="custom-date" th:hidden="${filter.period != 'CUSTOM'}">Đến ngày
-                <input type="date" th:field="*{toDate}" th:disabled="${filter.period != 'CUSTOM'}">
+                <input type="date" th:field="*{toDate}" th:disabled="${filter.period != 'CUSTOM'}" aria-describedby="toDate-error">
+                <span id="toDate-error" class="error" aria-live="polite" hidden></span>
             </label>
             <label>Cửa hàng
                 <select th:field="*{shopId}">
@@ -109,7 +111,7 @@
             </div>
         </details>
         <div class="filter-actions">
-            <button type="submit">Áp dụng bộ lọc</button>
+            <button id="apply-history-filter" type="submit">Áp dụng bộ lọc</button>
             <a th:href="@{/delivery/history(keyword=${filter.keyword},sort=${filter.sort})}">Xóa bộ lọc</a>
         </div>
     </form>
@@ -171,6 +173,69 @@
 <script>
     const historyPeriod = document.getElementById('period');
     const historyDateFields = document.querySelectorAll('.custom-date');
+    const historyFromDate = document.getElementById('fromDate');
+    const historyToDate = document.getElementById('toDate');
+    const historyFromDateError = document.getElementById('fromDate-error');
+    const historyToDateError = document.getElementById('toDate-error');
+    const applyHistoryFilter = document.getElementById('apply-history-filter');
+
+    function isHistoryDateAfter(date, limit) {
+        if (!date || !limit) {
+            return false;
+        }
+        if (date.length !== limit.length) {
+            return date.length > limit.length;
+        }
+        return date > limit;
+    }
+
+    function validateHistoryDateRange() {
+        const dateParts = new Intl.DateTimeFormat('en', {
+            timeZone: 'Asia/Ho_Chi_Minh',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        }).formatToParts(new Date());
+        const today = ['year', 'month', 'day']
+            .map(type => dateParts.find(part => part.type === type).value).join('-');
+        const fromDate = historyFromDate.value;
+        const toDate = historyToDate.value;
+        let fromMessage = '';
+        let toMessage = '';
+
+        if (historyPeriod.value === 'CUSTOM') {
+            fromMessage = historyFromDate.validity.badInput ? 'Vui lòng nhập Từ ngày hợp lệ.' : '';
+            toMessage = historyToDate.validity.badInput ? 'Vui lòng nhập Đến ngày hợp lệ.' : '';
+            if (isHistoryDateAfter(fromDate, today)) {
+                fromMessage = 'Từ ngày không được lớn hơn ngày hiện tại.';
+            }
+            if (isHistoryDateAfter(toDate, today)) {
+                toMessage = 'Đến ngày không được lớn hơn ngày hiện tại.';
+            }
+            if (isHistoryDateAfter(fromDate, toDate)) {
+                fromMessage += (fromMessage ? ' ' : '') + 'Từ ngày không được sau Đến ngày.';
+            }
+        }
+
+        historyToDate.max = today;
+        historyFromDate.max = toDate && !isHistoryDateAfter(toDate, today) ? toDate : today;
+        if (fromDate) {
+            historyToDate.min = fromDate;
+        } else {
+            historyToDate.removeAttribute('min');
+        }
+
+        historyFromDateError.textContent = fromMessage;
+        historyToDateError.textContent = toMessage;
+        historyFromDateError.hidden = !fromMessage;
+        historyToDateError.hidden = !toMessage;
+        historyFromDate.setAttribute('aria-invalid', String(Boolean(fromMessage)));
+        historyToDate.setAttribute('aria-invalid', String(Boolean(toMessage)));
+        const valid = !fromMessage && !toMessage;
+        applyHistoryFilter.disabled = !valid;
+        applyHistoryFilter.textContent = valid ? 'Áp dụng bộ lọc' : 'KIỂM TRA NGÀY';
+        return valid;
+    }
 
     function updateHistoryDateFields() {
         const custom = historyPeriod.value === 'CUSTOM';
@@ -178,7 +243,16 @@
             field.hidden = !custom;
             field.querySelector('input').disabled = !custom;
         });
+        validateHistoryDateRange();
     }
+
+    historyFromDate.addEventListener('input', validateHistoryDateRange);
+    historyToDate.addEventListener('input', validateHistoryDateRange);
+    historyPeriod.form.addEventListener('submit', event => {
+        if (!validateHistoryDateRange()) {
+            event.preventDefault();
+        }
+    });
 
     historyPeriod.addEventListener('change', () => {
         updateHistoryDateFields();

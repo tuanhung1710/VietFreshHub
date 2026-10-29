@@ -1,6 +1,7 @@
 package VietFreshHub.delivery.controller;
 
 import VietFreshHub.delivery.dto.DeliveryMonitoringDetail;
+import VietFreshHub.delivery.dto.AdminDeliveryMonitoringDetail;
 import VietFreshHub.delivery.dto.DeliveryMonitoringRow;
 import VietFreshHub.delivery.entity.DeliveryStatus;
 import VietFreshHub.delivery.service.DeliveryMonitoringService;
@@ -59,8 +60,9 @@ public class DeliveryMonitoringController {
 
     @GetMapping("/admin/deliveries/{deliveryId}")
     public String adminDeliveryDetail(@PathVariable Long deliveryId, Authentication authentication, Model model) {
-        return showDetail(deliveryMonitoringService.getAdminDeliveryDetail(deliveryId, authentication),
-                "/admin/deliveries", model);
+        AdminDeliveryMonitoringDetail detail = deliveryMonitoringService.getAdminDeliveryDetail(deliveryId, authentication);
+        model.addAttribute("adminDetail", detail);
+        return showDetail(detail.deliveryDetail(), "/admin/deliveries", model);
     }
 
     @PostMapping("/seller/deliveries/{deliveryId}/confirm-return")

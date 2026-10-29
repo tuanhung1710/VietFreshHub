@@ -204,9 +204,16 @@ public class DeliveryStaffQueryService {
                     throw historyFilterError("Ngày nằm ngoài phạm vi dữ liệu được hỗ trợ.");
                 }
             }
+            LocalDate today = LocalDate.now(DELIVERY_ZONE);
+            if (filter.getFromDate() != null && filter.getFromDate().isAfter(today)) {
+                throw historyFilterError("Từ ngày không được lớn hơn ngày hiện tại.");
+            }
+            if (filter.getToDate() != null && filter.getToDate().isAfter(today)) {
+                throw historyFilterError("Đến ngày không được lớn hơn ngày hiện tại.");
+            }
             if (filter.getFromDate() != null && filter.getToDate() != null
                     && filter.getFromDate().isAfter(filter.getToDate())) {
-                throw historyFilterError("Từ ngày không được sau đến ngày.");
+                throw historyFilterError("Từ ngày không được sau Đến ngày.");
             }
         }
     }

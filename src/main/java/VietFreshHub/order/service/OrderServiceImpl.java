@@ -8,6 +8,7 @@ import VietFreshHub.order.dto.OrderCountsResponse;
 import VietFreshHub.order.dto.OrderDetailResponse;
 import VietFreshHub.order.dto.OrderFilterRequest;
 import VietFreshHub.order.dto.OrderItemResponse;
+import VietFreshHub.order.dto.OrderProcessingHistoryEntry;
 import VietFreshHub.order.dto.ProcessedOrderResponse;
 import VietFreshHub.order.entity.Order;
 import VietFreshHub.order.entity.OrderAddress;
@@ -17,6 +18,7 @@ import VietFreshHub.order.entity.OrderStatusHistory;
 import VietFreshHub.order.entity.ShopOrder;
 import VietFreshHub.order.repository.OrderAddressRepository;
 import VietFreshHub.order.repository.OrderDeliveryReadRepository;
+import VietFreshHub.order.repository.OrderStatusHistoryRepository;
 import VietFreshHub.order.repository.ShopOrderRepository;
 import VietFreshHub.payment.service.PaymentService;
 import VietFreshHub.shop.entity.ShopLocation;
@@ -36,6 +38,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -65,6 +68,7 @@ public class OrderServiceImpl implements OrderService {
     private final ShopOrderRepository shopOrderRepository;
     private final OrderAddressRepository orderAddressRepository;
     private final OrderDeliveryReadRepository orderDeliveryReadRepository;
+    private final OrderStatusHistoryRepository orderStatusHistoryRepository;
     private final ShopService shopService;
     private final PaymentService paymentService;
     private final DeliveryCreationService deliveryCreationService;
@@ -189,6 +193,32 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(readOnly = true)
+    public List<OrderProcessingHistoryEntry> getProcessingHistoryForAdmin(Long shopOrderId,
+                                                                         Authentication authentication) {
+        authService.getCurrentUserId(authentication);
+        ShopOrder shopOrder = shopOrderRepository.findById(shopOrderId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng."));
+        List<OrderProcessingHistoryEntry> history = new ArrayList<>();
+        history.add(new OrderProcessingHistoryEntry("Khách hàng đặt đơn",
+                OrderLabels.local(shopOrder.getOrder().getPlacedAt()), null));
+        for (OrderStatusHistory event : orderStatusHistoryRepository
+                .findByShopOrder_ShopOrderIdAndStatusInOrderByCreatedAtAscHistoryIdAsc(shopOrderId,
+                        List.of("CONFIRMED", "PREPARING", "READY_FOR_DELIVERY"))) {
+            String statusLabel = switch (event.getStatus()) {
+                case "CONFIRMED" -> "Cửa hàng đã xác nhận đơn hàng";
+                case "PREPARING" -> "Cửa hàng đang chuẩn bị đơn hàng";
+                case "READY_FOR_DELIVERY" -> "Sẵn sàng giao hàng";
+                default -> OrderLabels.shop(event.getStatus());
+            };
+            history.add(new OrderProcessingHistoryEntry(statusLabel, OrderLabels.local(event.getCreatedAt()),
+                    event.getNote()));
+        }
+        return history;
+    }
+
+    @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void lockOrderForDeliveryCompletion(Long orderId) {
         Order order = entityManager.find(Order.class, orderId);
@@ -253,6 +283,8 @@ public class OrderServiceImpl implements OrderService {
         List<OrderItemResponse> items = new ArrayList<>();
         boolean deliveryFailed = "OUT_FOR_DELIVERY".equals(shopOrder.getStatus())
                 && getFailedShopOrderIds(List.of(shopOrder.getShopOrderId())).contains(shopOrder.getShopOrderId());
+        boolean deliveryTrackingAvailable = "READY_FOR_DELIVERY".equals(shopOrder.getStatus())
+                || "COMPLETED".equals(shopOrder.getStatus()) || deliveryFailed;
 
         for (OrderItem item : shopOrder.getItems()) {
             items.add(new OrderItemResponse(
@@ -285,7 +317,8 @@ public class OrderServiceImpl implements OrderService {
                 shopOrder.getDiscountTotal(),
                 paymentMethod,
                 formatInvoiceAmountInWords(shopOrder.getTotalAmount()),
-                placedAt
+                placedAt,
+                deliveryTrackingAvailable
         );
     }
 

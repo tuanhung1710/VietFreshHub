@@ -168,7 +168,7 @@
 
     <section class="order-actions" aria-labelledby="order-actions-heading"
              th:if="${orderDetail.orderStatus == 'PENDING' or orderDetail.orderStatus == 'CONFIRMED'
-                 or orderDetail.orderStatus == 'PREPARING' or orderDetail.orderStatus == 'READY_FOR_DELIVERY'}">
+                 or orderDetail.orderStatus == 'PREPARING' or orderDetail.deliveryTrackingAvailable}">
         <h2 id="order-actions-heading">THAO TÁC</h2>
         <form method="post" th:if="${orderDetail.orderStatus == 'PENDING' and (orderDetail.paymentStatus != 'PENDING' and orderDetail.paymentStatus != 'FAILED')}"
               th:action="@{/seller/orders/{shopOrderId}/confirm(shopOrderId=${shopOrderId})}">
@@ -184,8 +184,8 @@
                 <button type="submit">HÀNG ĐÃ CHUẨN BỊ XONG, SẴN SÀNG GIAO HÀNG</button>
             </form>
         </div>
-        <div class="action-row" th:if="${orderDetail.orderStatus == 'READY_FOR_DELIVERY'}">
-            <button type="button" class="invoice-action" onclick="openInvoiceModal()">🖨 IN LẠI HÓA ĐƠN</button>
+        <div class="action-row" th:if="${orderDetail.deliveryTrackingAvailable}">
+            <button th:if="${orderDetail.orderStatus == 'READY_FOR_DELIVERY'}" type="button" class="invoice-action" onclick="openInvoiceModal()">🖨 IN LẠI HÓA ĐƠN</button>
             <a th:href="@{/seller/orders/{shopOrderId}/delivery-tracking(shopOrderId=${shopOrderId})}">THEO DÕI GIAO HÀNG</a>
         </div>
     </section>

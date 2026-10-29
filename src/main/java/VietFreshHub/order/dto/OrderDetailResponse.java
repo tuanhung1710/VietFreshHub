@@ -32,4 +32,5 @@ public class OrderDetailResponse {
     private String paymentMethodLabel;
     private String totalAmountInWords;
     private LocalDateTime invoicePlacedAt;
+    private boolean deliveryTrackingAvailable;
 }

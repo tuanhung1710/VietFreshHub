@@ -1,6 +1,7 @@
 package VietFreshHub.delivery.service;
 
 import VietFreshHub.auth.service.AuthService;
+import VietFreshHub.delivery.dto.AdminDeliveryMonitoringDetail;
 import VietFreshHub.delivery.dto.DeliveryMonitoringAssignment;
 import VietFreshHub.delivery.dto.DeliveryMonitoringDetail;
 import VietFreshHub.delivery.dto.DeliveryMonitoringHistoryEntry;
@@ -13,8 +14,11 @@ import VietFreshHub.delivery.entity.DeliveryStatusHistory;
 import VietFreshHub.delivery.repository.DeliveryAssignmentRepository;
 import VietFreshHub.delivery.repository.DeliveryRepository;
 import VietFreshHub.delivery.repository.DeliveryStatusHistoryRepository;
+import VietFreshHub.order.entity.OrderAddress;
 import VietFreshHub.order.entity.ShopOrder;
 import VietFreshHub.order.service.OrderLabels;
+import VietFreshHub.order.service.OrderService;
+import VietFreshHub.shop.entity.ShopLocation;
 import VietFreshHub.shop.service.ShopService;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
@@ -50,6 +54,7 @@ public class DeliveryMonitoringService {
     private final DeliveryStatusHistoryRepository deliveryStatusHistoryRepository;
     private final ShopService shopService;
     private final AuthService authService;
+    private final OrderService orderService;
 
     @PreAuthorize("hasRole('CUSTOMER')")
     public boolean areAllFailedAndReturned(List<Long> shopOrderIds) {
@@ -104,12 +109,37 @@ public class DeliveryMonitoringService {
         return findDeliveries(null, status, orderCode, direction, page);
     }
 
-    public DeliveryMonitoringDetail getAdminDeliveryDetail(Long deliveryId, Authentication authentication) {
+    public AdminDeliveryMonitoringDetail getAdminDeliveryDetail(Long deliveryId, Authentication authentication) {
         requireAdmin(authentication);
         Delivery delivery = deliveryRepository.findByDeliveryId(deliveryId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Không tìm thấy thông tin giao hàng."));
-        return toMonitoringDetail(delivery);
+        ShopOrder shopOrder = delivery.getShopOrder();
+        var orderHistory = orderService.getProcessingHistoryForAdmin(shopOrder.getShopOrderId(), authentication);
+        OrderAddress recipient = orderService.getOrderAddress(shopOrder.getOrder().getOrderId());
+        ShopLocation pickup = shopService.findLocationByShopId(shopOrder.getShopId()).orElse(null);
+        return new AdminDeliveryMonitoringDetail(toMonitoringDetail(delivery),
+                shopOrder.getShop() == null ? null : shopOrder.getShop().getPhone(),
+                pickup == null ? null : formatAddress(pickup.getFormattedAddress(), pickup.getAddressLine(),
+                        pickup.getWard(), pickup.getDistrict(), pickup.getProvince()),
+                recipient == null ? null : recipient.getRecipientName(),
+                recipient == null ? null : recipient.getPhone(),
+                recipient == null ? null : formatAddress(recipient.getFormattedAddress(), recipient.getAddressLine(),
+                        recipient.getWard(), recipient.getDistrict(), recipient.getProvince()), orderHistory);
+    }
+
+    private String formatAddress(String formattedAddress, String addressLine, String ward,
+                                 String district, String province) {
+        if (formattedAddress != null && !formattedAddress.isBlank()) {
+            return formattedAddress;
+        }
+        List<String> parts = new ArrayList<>();
+        for (String part : new String[]{addressLine, ward, district, province}) {
+            if (part != null && !part.isBlank()) {
+                parts.add(part);
+            }
+        }
+        return parts.isEmpty() ? null : String.join(", ", parts);
     }
 
     private void requireAdmin(Authentication authentication) {
