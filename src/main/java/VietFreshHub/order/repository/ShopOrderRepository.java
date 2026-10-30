@@ -60,6 +60,9 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, Jpa
     @EntityGraph(attributePaths = {"shop", "items.variant.product"})
     List<ShopOrder> findByOrderOrderIdOrderByShopOrderIdAsc(Long orderId);
 
+    @Query("select s from ShopOrder s where s.order.orderId = :orderId order by s.shopOrderId")
+    List<ShopOrder> findForOrderNotification(@Param("orderId") Long orderId);
+
     boolean existsByOrder_OrderIdAndStatusNot(Long orderId, String status);
 
     long countByShopId(Long shopId);

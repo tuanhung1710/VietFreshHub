@@ -73,6 +73,7 @@ public class DeliveryAssignmentService {
         DeliveryAssignment assignment = deliveryAssignmentRepository.save(
                 new DeliveryAssignment(delivery, deliveryStaff, acceptedAt));
         deliveryStatusHistoryWriter.record(delivery, deliveryStaffId, null);
+        deliveryNotificationService.notifyClaimed(assignment);
         return assignment.getAssignmentId();
     }
 

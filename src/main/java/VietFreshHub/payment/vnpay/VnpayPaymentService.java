@@ -7,6 +7,7 @@ import VietFreshHub.order.entity.Order;
 import VietFreshHub.order.entity.OrderItem;
 import VietFreshHub.order.repository.OrderRepository;
 import VietFreshHub.order.service.OrderInventoryReleaseService;
+import VietFreshHub.order.service.OrderNotificationService;
 import VietFreshHub.order.service.OrderService;
 import VietFreshHub.payment.entity.Payment;
 import VietFreshHub.payment.entity.PaymentMethod;
@@ -43,6 +44,7 @@ public class VnpayPaymentService {
     private final InventoryReservationService reservations;
     private final OrderInventoryReleaseService releases;
     private final OrderService orderService;
+    private final OrderNotificationService orderNotificationService;
     private final VnpayQueryClient queryClient;
     private final EntityManager em;
 
@@ -225,6 +227,7 @@ public class VnpayPaymentService {
             other.setStatus(Payment.Status.CANCELLED);
             record(other, "SUPERSEDED_BY_SUCCESS", fields.get("vnp_TransactionNo"), "CANCELLED", Map.of("event", "another VNPAY attempt paid the order"));
         }
+        orderNotificationService.notifyPaidOrder(orderId);
         return returnResult(orderId, true, "Thanh toán VNPAY thành công.");
     }
 

@@ -2,7 +2,7 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Lịch sử đơn hàng đã giao thành công</title>
+    <title>Lịch sử đơn hàng đã xử lý</title>
     <style>
         table {
             border-collapse: collapse;
@@ -20,7 +20,7 @@
     <span th:replace="~{fragments/notifications :: bell}"></span>
 </div>
 <a th:href="@{/seller}">Trang chủ</a>
-<h1>LỊCH SỬ ĐƠN HÀNG ĐÃ GIAO THÀNH CÔNG</h1>
+<h1>LỊCH SỬ ĐƠN HÀNG ĐÃ XỬ LÝ</h1>
 <div th:replace="~{store_manager/order-filters :: filters('processed', '/seller/processed-orders', true, true, ${totalElements})}"></div>
 <table>
     <thead>

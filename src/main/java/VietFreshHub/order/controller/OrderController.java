@@ -85,9 +85,6 @@ public class OrderController {
     public String processedOrders(@ModelAttribute("filter") OrderFilterRequest filter,
                                   @RequestParam(defaultValue = "0") int page,
                                   Authentication authentication, Model model) {
-        if (filter.getStatus() == null) {
-            filter.setStatus("COMPLETED");
-        }
         Page<?> orders = orderService.getProcessedOrderHistory(authentication, filter, page);
         model.addAttribute("processedOrders", orders.getContent());
         addPageAttributes(orders, model);

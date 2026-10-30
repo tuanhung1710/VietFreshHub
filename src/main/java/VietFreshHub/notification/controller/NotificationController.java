@@ -3,6 +3,7 @@ package VietFreshHub.notification.controller;
 import VietFreshHub.delivery.service.DeliveryNotificationService;
 import VietFreshHub.notification.dto.NotificationRow;
 import VietFreshHub.notification.service.NotificationService;
+import VietFreshHub.order.service.OrderNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,7 @@ public class NotificationController {
 
     private final NotificationService notificationService;
     private final DeliveryNotificationService deliveryNotificationService;
+    private final OrderNotificationService orderNotificationService;
 
     @GetMapping
     public String list(@RequestParam(defaultValue = "0") int page, Authentication authentication, Model model) {
@@ -49,6 +51,9 @@ public class NotificationController {
     @GetMapping("/{notificationId}/open")
     public String open(@PathVariable Long notificationId, Authentication authentication) {
         NotificationRow notification = notificationService.getOwnedNotification(notificationId, authentication);
+        if ("ORDER".equals(notification.entityType()) || "SHOP_ORDER".equals(notification.entityType())) {
+            return "redirect:" + orderNotificationService.getDestination(notification, authentication);
+        }
         return "redirect:" + deliveryNotificationService.getDestination(notification, authentication);
     }
 }

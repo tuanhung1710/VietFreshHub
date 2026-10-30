@@ -32,6 +32,7 @@ public class DeliveryStaffActionService {
         }
         deliveryService.markPickedUp(delivery.getDeliveryId());
         deliveryStatusHistoryWriter.record(delivery, assignment.getDeliveryStaff().getUserId(), null);
+        deliveryNotificationService.notifyPickedUp(delivery);
     }
 
     @Transactional

@@ -3,6 +3,7 @@ package VietFreshHub.order.service;
 import VietFreshHub.auth.entity.User;
 import VietFreshHub.auth.service.AuthService;
 import VietFreshHub.delivery.service.DeliveryCreationService;
+import VietFreshHub.delivery.service.DeliveryReturnQueryService;
 import VietFreshHub.order.dto.IncomingOrderResponse;
 import VietFreshHub.order.dto.OrderCountsResponse;
 import VietFreshHub.order.dto.OrderDetailResponse;
@@ -72,6 +73,8 @@ public class OrderServiceImpl implements OrderService {
     private final ShopService shopService;
     private final PaymentService paymentService;
     private final DeliveryCreationService deliveryCreationService;
+    private final DeliveryReturnQueryService deliveryReturnQueryService;
+    private final OrderNotificationService orderNotificationService;
     private final AuthService authService;
     private final EntityManager entityManager;
 
@@ -135,7 +138,8 @@ public class OrderServiceImpl implements OrderService {
                     order.getCustomer().getFullName(),
                     OrderLabels.local(order.getPlacedAt()),
                     shopOrder.getTotalAmount(),
-                    getOrderStatusLabel(shopOrder.getStatus()),
+                    "OUT_FOR_DELIVERY".equals(shopOrder.getStatus())
+                            ? "Giao thất bại - đã nhận lại hàng" : getOrderStatusLabel(shopOrder.getStatus()),
                     shopOrder.getPaymentStatus()
             );
         });
@@ -157,7 +161,7 @@ public class OrderServiceImpl implements OrderService {
                 shopOrderRepository.countByShopIdAndStatus(shopId, "CONFIRMED"),
                 shopOrderRepository.countByShopIdAndStatus(shopId, "PREPARING"),
                 shopOrderRepository.countByShopIdAndStatus(shopId, "READY_FOR_DELIVERY"),
-                shopOrderRepository.countByShopIdAndStatus(shopId, "COMPLETED"),
+                shopOrderRepository.count(buildOrderSpecification(authentication, new OrderFilterRequest(), "processed")),
                 shopOrderRepository.count(buildOrderSpecification(authentication, new OrderFilterRequest(), "failed")),
                 shopOrderRepository.countByShopIdAndStatus(shopId, "CANCELLED")
         );
@@ -360,6 +364,7 @@ public class OrderServiceImpl implements OrderService {
         ensureVnpayPaid(shopOrder);
         shopOrder.confirm();
         recordOrderStatus(shopOrder, authService.getCurrentUserId(authentication));
+        orderNotificationService.notifyConfirmed(shopOrder);
     }
 
     @Override
@@ -372,6 +377,7 @@ public class OrderServiceImpl implements OrderService {
         }
         shopOrder.startPreparing();
         recordOrderStatus(shopOrder, authService.getCurrentUserId(authentication));
+        orderNotificationService.notifyPreparing(shopOrder);
     }
 
     @Override
@@ -385,6 +391,7 @@ public class OrderServiceImpl implements OrderService {
         shopOrder.markReady();
         recordOrderStatus(shopOrder, authService.getCurrentUserId(authentication));
         deliveryCreationService.ensureDeliveryForReadyShopOrder(shopOrder);
+        orderNotificationService.notifyReady(shopOrder);
     }
 
     private void recordOrderStatus(ShopOrder shopOrder, Long changedBy) {
@@ -435,7 +442,7 @@ public class OrderServiceImpl implements OrderService {
             case "ready" -> List.of("READY_FOR_DELIVERY");
             case "failed" -> List.of("OUT_FOR_DELIVERY");
             case "cancelled" -> List.of("CANCELLED");
-            case "processed" -> List.of("COMPLETED", "CANCELLED");
+            case "processed" -> List.of();
             default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Danh sách đơn hàng không hợp lệ.");
         };
         boolean filterStatus = "all".equals(view) || "processed".equals(view) || "failed".equals(view);
@@ -446,12 +453,18 @@ public class OrderServiceImpl implements OrderService {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(builder.equal(root.get("shopId"), shopId));
 
-            if (!statuses.isEmpty()) {
+            if ("processed".equals(view)) {
+                Predicate returnedFailure = deliveryReturnQueryService.confirmedReturnedFailures()
+                        .toPredicate(root, query, builder);
+                predicates.add(builder.or(root.get("status").in("COMPLETED", "CANCELLED"), returnedFailure));
+            } else if (!statuses.isEmpty()) {
                 predicates.add(root.get("status").in(statuses));
             }
             if (filterStatus && selectedStatus != null && !selectedStatus.isBlank()) {
                 String status = selectedStatus.trim();
-                if ("DELIVERY_FAILED".equals(status) || "OUT_FOR_DELIVERY".equals(status)) {
+                if ("processed".equals(view) && "RETURNED_FAILED".equals(status)) {
+                    predicates.add(builder.equal(root.get("status"), "OUT_FOR_DELIVERY"));
+                } else if ("DELIVERY_FAILED".equals(status) || "OUT_FOR_DELIVERY".equals(status)) {
                     predicates.add(builder.equal(root.get("status"), "OUT_FOR_DELIVERY"));
                     Subquery<Long> failedDelivery = query.subquery(Long.class);
                     Root<OrderDeliveryView> delivery = failedDelivery.from(OrderDeliveryView.class);
