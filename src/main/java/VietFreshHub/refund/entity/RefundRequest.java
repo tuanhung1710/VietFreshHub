@@ -1,6 +1,7 @@
 package VietFreshHub.refund.entity;
 
 import VietFreshHub.order.entity.Order;
+import VietFreshHub.order.entity.ShopOrder;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -10,7 +11,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -23,8 +23,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(schema = "dbo", name = "refund_requests",
-        uniqueConstraints = @UniqueConstraint(name = "UQ_refund_requests_order", columnNames = "order_id"))
+@Table(schema = "dbo", name = "refund_requests")
 @Immutable
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -38,6 +37,10 @@ public class RefundRequest {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "order_id", nullable = false, updatable = false)
     private Order order;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shop_order_id", updatable = false)
+    private ShopOrder shopOrder;
 
     @Nationalized
     @Column(name = "bank_name", nullable = false, length = 120, updatable = false)
@@ -66,5 +69,11 @@ public class RefundRequest {
         this.accountHolderName = accountHolderName;
         this.refundAmount = refundAmount;
         this.submittedAt = submittedAt;
+    }
+
+    public RefundRequest(ShopOrder shopOrder, String bankName, String bankAccountNumber, String accountHolderName,
+                         BigDecimal refundAmount, LocalDateTime submittedAt) {
+        this(shopOrder.getOrder(), bankName, bankAccountNumber, accountHolderName, refundAmount, submittedAt);
+        this.shopOrder = shopOrder;
     }
 }

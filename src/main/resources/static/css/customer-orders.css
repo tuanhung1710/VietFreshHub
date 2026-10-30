@@ -26,6 +26,7 @@
 .order-detail-page .payment-state { color: var(--green); font-weight: 650; }
 .order-detail-page .payment-state[data-state="FAILED"],
 .order-detail-page .payment-state[data-state="CANCELLED"] { color: var(--danger); }
+.order-detail-page .cancel-order > summary.button { color: #fff; }
 .order-detail-page .order-item-placeholder { display: grid; place-items: center; width: 64px; height: 64px; border: 1px solid var(--line); border-radius: 5px; color: var(--muted); font-size: 11px; text-align: center; }
 @media(max-width:760px) {
     .order-detail-page .order-item-placeholder { width: 55px; height: 55px; }

@@ -55,6 +55,29 @@ public class CustomerOrderController {
         Long customerId=currentCustomer.requireCustomerId(authentication); model.addAttribute("tracking",orders.tracking(customerId,orderId));
         model.addAttribute("cart",carts.getActiveCart(customerId)); return "customer/order-tracking";
     }
+    @GetMapping("/shops/{shopOrderId}/tracking")
+    public String shopTracking(@PathVariable Long shopOrderId,Authentication authentication,Model model) {
+        Long customerId=currentCustomer.requireCustomerId(authentication);
+        model.addAttribute("tracking",orders.shopTracking(customerId,shopOrderId));
+        model.addAttribute("shopOrderId",shopOrderId);
+        model.addAttribute("cartBadgeTotal",readOrders.getCartBadgeTotal(customerId));
+        return "customer/order-tracking";
+    }
+    @PostMapping("/shops/{shopOrderId}/cancel")
+    public String cancelShop(@PathVariable Long shopOrderId,@Valid @ModelAttribute("cancelForm") OrderCancelRequest form,BindingResult errors,
+                             Authentication authentication,RedirectAttributes flash) {
+        Long customerId=currentCustomer.requireCustomerId(authentication);
+        if(errors.hasErrors()) {
+            flash.addFlashAttribute("errorMessage","Lý do hủy tối đa 500 ký tự.");
+            flash.addFlashAttribute("cancelReason",form.getReason());
+        } else try {
+            orders.cancelShop(customerId,shopOrderId,form.getReason());
+            flash.addFlashAttribute("successMessage","Đơn cửa hàng đã được hủy.");
+        } catch(CustomerOrderException ex) {
+            flash.addFlashAttribute("errorMessage",ex.getMessage());
+        }
+        return "redirect:/customer/orders/shops/"+shopOrderId;
+    }
     @PostMapping("/{orderId}/cancel")
     public String cancel(@PathVariable Long orderId,@Valid @ModelAttribute("cancelForm") OrderCancelRequest form,BindingResult errors,
                          Authentication authentication,RedirectAttributes flash) {

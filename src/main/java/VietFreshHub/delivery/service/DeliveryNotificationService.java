@@ -61,7 +61,7 @@ public class DeliveryNotificationService {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void notifyGoodsReturnConfirmed(DeliveryAssignment assignment) {
-        String orderCode = assignment.getDelivery().getShopOrder().getOrder().getOrderCode();
+        String orderCode = assignment.getDelivery().getShopOrder().getShopOrderCode();
         notificationService.createInApp(assignment.getDeliveryStaff().getUserId(), "GOODS_RETURN_CONFIRMED",
                 "Cửa hàng đã xác nhận nhận lại hàng",
                 "Cửa hàng đã xác nhận nhận lại hàng của đơn #" + orderCode + ".",
@@ -92,7 +92,7 @@ public class DeliveryNotificationService {
                 .orElseThrow(this::unavailable);
         Order order = delivery.getShopOrder().getOrder();
         if (hasRole(authentication, "ROLE_CUSTOMER") && order.getCustomer().getUserId().equals(userId)) {
-            return "/customer/orders/" + order.getOrderId() + "/tracking";
+            return "/customer/orders/shops/" + delivery.getShopOrder().getShopOrderId() + "/tracking";
         }
         if (!"DELIVERY_STARTED".equals(notification.type()) && hasRole(authentication, "ROLE_STORE_MANAGER")) {
             Long shopId = shopService.getManagedShopId(authentication);
@@ -111,7 +111,7 @@ public class DeliveryNotificationService {
 
     private String deliveryLabel(Delivery delivery) {
         return "Đơn giao hàng #" + delivery.getDeliveryId() + " thuộc mã #"
-                + delivery.getShopOrder().getOrder().getOrderCode();
+                + delivery.getShopOrder().getShopOrderCode();
     }
 
     private boolean hasRole(Authentication authentication, String role) {

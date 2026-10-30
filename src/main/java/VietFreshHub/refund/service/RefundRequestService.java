@@ -5,6 +5,7 @@ import VietFreshHub.order.entity.Order;
 import VietFreshHub.order.service.OrderLabels;
 import VietFreshHub.order.service.OrderRefundService;
 import VietFreshHub.order.service.OrderRefundService.RefundOrder;
+import VietFreshHub.order.service.OrderRefundService.RefundShopOrder;
 import VietFreshHub.payment.service.PaymentService;
 import VietFreshHub.refund.dto.CustomerRefundState;
 import VietFreshHub.refund.dto.RefundInformationForm;
@@ -68,14 +69,16 @@ public class RefundRequestService {
 
     private CustomerRefundState describe(RefundOrder refundOrder) {
         Order order = refundOrder.order();
-        RefundRequest submitted = requests.findByOrderOrderId(order.getOrderId()).orElse(null);
+        RefundRequest submitted = requests.findByOrderOrderIdAndShopOrderIsNull(order.getOrderId()).orElse(null);
         if (submitted != null) {
             return new CustomerRefundState(order.getOrderId(), order.getOrderCode(), submitted.getRefundAmount(),
                     false, OrderLabels.local(submitted.getSubmittedAt()), null);
         }
         BigDecimal paidAmount = payments.getPaidOnlineOrderAmount(order.getOrderId()).orElse(null);
         String reason = null;
-        if (!"PAID".equals(order.getPaymentStatus()) || paidAmount == null
+        if (requests.existsByOrderOrderIdAndShopOrderIsNotNull(order.getOrderId())) {
+            reason = "Lượt đặt hàng đã có yêu cầu hoàn tiền riêng theo cửa hàng.";
+        } else if (!"PAID".equals(order.getPaymentStatus()) || paidAmount == null
                 || order.getGrandTotal() == null || paidAmount.compareTo(order.getGrandTotal()) != 0) {
             reason = "Không xác minh được một khoản thanh toán online thành công khớp toàn bộ đơn hàng.";
         } else if (!refundOrder.cancelledByCustomerBeforeConfirmation()
@@ -85,6 +88,52 @@ public class RefundRequestService {
                     + " Đơn có kết quả giao hàng khác nhau nằm ngoài phạm vi này.";
         }
         return new CustomerRefundState(order.getOrderId(), order.getOrderCode(), paidAmount,
+                reason == null, null, reason);
+    }
+
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @Transactional(readOnly = true)
+    public CustomerRefundState getCustomerShopState(Long shopOrderId, Authentication authentication) {
+        return describeShop(orders.getShopForCustomer(shopOrderId, authentication));
+    }
+
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @Transactional
+    public void submitShop(Long shopOrderId, Authentication authentication, @NotNull @Valid RefundInformationForm form) {
+        RefundShopOrder refundOrder = orders.lockShopForCustomer(shopOrderId, authentication);
+        CustomerRefundState state = describeShop(refundOrder);
+        if (state.submittedAt() != null) return;
+        if (!state.eligible()) throw new ResponseStatusException(HttpStatus.CONFLICT, state.unavailableReason());
+        requests.saveAndFlush(new RefundRequest(refundOrder.shopOrder(), form.getBankName().strip(),
+                form.getBankAccountNumber(), form.getAccountHolderName().strip(), state.refundAmount(),
+                LocalDateTime.now(ZoneOffset.UTC).withNano(0)));
+    }
+
+    private CustomerRefundState describeShop(RefundShopOrder refundOrder) {
+        var shopOrder = refundOrder.shopOrder();
+        Order order = shopOrder.getOrder();
+        RefundRequest submitted = requests.findByShopOrderShopOrderId(shopOrder.getShopOrderId()).orElse(null);
+        if (submitted != null) {
+            return new CustomerRefundState(order.getOrderId(), shopOrder.getShopOrderCode(), submitted.getRefundAmount(),
+                    false, OrderLabels.local(submitted.getSubmittedAt()), null);
+        }
+        BigDecimal paidAmount = payments.getPaidOnlineOrderAmount(order.getOrderId()).orElse(null);
+        BigDecimal refundAmount = shopOrder.getTotalAmount();
+        String reason = null;
+        if (requests.findByOrderOrderIdAndShopOrderIsNull(order.getOrderId()).isPresent()) {
+            reason = "Lượt đặt hàng đã có yêu cầu hoàn tiền toàn bộ.";
+        } else if (!"PAID".equals(shopOrder.getPaymentStatus()) || paidAmount == null
+                || order.getGrandTotal() == null || paidAmount.compareTo(order.getGrandTotal()) != 0) {
+            reason = "Không xác minh được khoản thanh toán online thành công của đơn cửa hàng.";
+        } else if (refundAmount == null || refundAmount.signum() <= 0
+                || requests.sumRefundAmount(order.getOrderId()).add(refundAmount).compareTo(paidAmount) > 0) {
+            reason = "Số tiền hoàn của đơn cửa hàng không khớp khoản đã thanh toán.";
+        } else if (!refundOrder.cancelledByCustomerBeforeConfirmation()
+                && !deliveries.areAllFailedAndReturned(java.util.List.of(shopOrder.getShopOrderId()))) {
+            reason = "Chỉ hỗ trợ hoàn tiền đơn cửa hàng đã hủy trước khi xác nhận,"
+                    + " hoặc giao thất bại và cửa hàng đã xác nhận nhận lại hàng.";
+        }
+        return new CustomerRefundState(order.getOrderId(), shopOrder.getShopOrderCode(), refundAmount,
                 reason == null, null, reason);
     }
 
@@ -124,7 +173,9 @@ public class RefundRequestService {
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
                         "Kỳ có dữ liệu yêu cầu hoàn tiền không hợp lệ; cần kiểm tra dữ liệu trước khi xuất.");
             }
-            rows.add(new RefundPeriod.Row(request.getRefundRequestId(), request.getOrder().getOrderCode(),
+            String orderCode = request.getShopOrder() == null ? request.getOrder().getOrderCode()
+                    : request.getShopOrder().getShopOrderCode();
+            rows.add(new RefundPeriod.Row(request.getRefundRequestId(), orderCode,
                     request.getBankName(), request.getBankAccountNumber(), request.getAccountHolderName(),
                     request.getRefundAmount(), OrderLabels.local(request.getSubmittedAt())));
             total = total.add(request.getRefundAmount());

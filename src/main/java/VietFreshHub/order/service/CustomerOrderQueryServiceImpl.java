@@ -16,6 +16,7 @@ public class CustomerOrderQueryServiceImpl implements CustomerOrderQueryService 
     private final OrderRepository orders;
     private final OrderAddressRepository addresses;
     private final CustomerOrderReadRepository reads;
+    private final ShopOrderRepository shopOrders;
 
     @Override @Transactional(readOnly=true)
     public Long getCartBadgeTotal(Long customerId) {
@@ -36,7 +37,7 @@ public class CustomerOrderQueryServiceImpl implements CustomerOrderQueryService 
         }
         var groups=reads.findShops(customerId,orderId).stream().map(shop -> new OrderDetailsResponse.ShopGroup(
                 shop.getShopOrderId(),shop.getShopName(),OrderLabels.shop(shop.getStatus()),shop.getShippingFee(),shop.getTotalAmount(),
-                List.copyOf(items.getOrDefault(shop.getShopOrderId(),List.of())),shop.getSubtotal(),shop.getDiscountTotal())).toList();
+                List.copyOf(items.getOrDefault(shop.getShopOrderId(),List.of())),shop.getSubtotal(),shop.getDiscountTotal(),shop.getPaymentStatus())).toList();
         var payments=reads.findPayments(customerId,orderId).stream().map(payment -> new OrderDetailsResponse.PaymentInfo(
                 payment.getPaymentId(),payment.getMethodName(),payment.getMethodCode(),payment.getStatus().name(),
                 OrderLabels.paymentTransaction(payment.getStatus()),payment.getAmount(),OrderLabels.local(payment.getPaidAt()))).toList();
@@ -46,6 +47,27 @@ public class CustomerOrderQueryServiceImpl implements CustomerOrderQueryService 
         return new OrderDetailsResponse(orderId,order.getOrderCode(),OrderLabels.order(order.getStatus()),OrderLabels.payment(order.getPaymentStatus()),
                 address.getRecipientName(),address.getPhone(),addressText,order.getSubtotal(),order.getDiscountTotal(),order.getShippingFee(),
                 order.getGrandTotal(),OrderLabels.local(order.getPlacedAt()),groups,payments);
+    }
+    @Override @Transactional(readOnly=true)
+    public OrderDetailsResponse getShopDetails(Long customerId,Long shopOrderId) {
+        var shop=shopOrders.findByShopOrderIdAndOrderCustomerUserId(shopOrderId,customerId).orElseThrow(this::notFound);
+        var order=shop.getOrder();
+        var address=addresses.findByOrderOrderId(order.getOrderId()).orElseThrow(this::notFound);
+        var status=shopOrders.findCustomerStatuses(customerId,List.of(shopOrderId)).stream().findFirst().orElseThrow(this::notFound);
+        var items=reads.findShopItems(customerId,shopOrderId).stream().map(row -> {
+            String image=row.getImageUrl()==null || row.getImageUrl().isBlank() ? null : row.getImageUrl();
+            return new OrderDetailsResponse.Item(row.getProductName(),row.getVariantName(),row.getSku(),image,
+                    row.getQuantity(),row.getUnitPrice(),row.getTotalAmount(),row.getDiscountAmount());
+        }).toList();
+        var group=new OrderDetailsResponse.ShopGroup(shop.getShopOrderId(),shop.getShop().getShopName(),status.statusLabel(),
+                shop.getShippingFee(),shop.getTotalAmount(),items,shop.getSubtotal(),shop.getDiscountTotal(),shop.getPaymentStatus());
+        String addressText=address.getFormattedAddress()!=null && !address.getFormattedAddress().isBlank() ? address.getFormattedAddress()
+                : java.util.stream.Stream.of(address.getAddressLine(),address.getWard(),address.getDistrict(),address.getProvince())
+                    .filter(part -> part!=null && !part.isBlank()).collect(Collectors.joining(", "));
+        return new OrderDetailsResponse(order.getOrderId(),shop.getShopOrderCode(),status.statusLabel(),
+                OrderLabels.payment(shop.getPaymentStatus()),address.getRecipientName(),address.getPhone(),addressText,
+                shop.getSubtotal(),shop.getDiscountTotal(),shop.getShippingFee(),shop.getTotalAmount(),
+                OrderLabels.local(order.getPlacedAt()),List.of(group),List.of());
     }
     private ResourceNotFoundException notFound() { return new ResourceNotFoundException("Không tìm thấy đơn hàng của bạn."); }
 }

@@ -22,6 +22,18 @@ public class CustomerOrderDetailsController {
     public String detail(@PathVariable Long orderId,Authentication authentication,Model model) {
         return render(orderId,authentication,model,false);
     }
+    @GetMapping("/shops/{shopOrderId}")
+    public String shopDetail(@PathVariable Long shopOrderId,Authentication authentication,Model model) {
+        Long customerId=currentCustomer.requireCustomerId(authentication);
+        model.addAttribute("order",orders.getShopDetails(customerId,shopOrderId));
+        model.addAttribute("cartBadgeTotal",orders.getCartBadgeTotal(customerId));
+        model.addAttribute("shopOrderId",shopOrderId);
+        model.addAttribute("confirmation",false);
+        model.addAttribute("canRetryVnpayPayment",false);
+        model.addAttribute("actions",lifecycle.shopActions(customerId,shopOrderId));
+        model.addAttribute("refund",refunds.getCustomerShopState(shopOrderId,authentication));
+        return "customer/order-detail";
+    }
     @GetMapping("/{orderId}/confirmation")
     public String confirmation(@PathVariable Long orderId,Authentication authentication,Model model) {
         return render(orderId,authentication,model,true);

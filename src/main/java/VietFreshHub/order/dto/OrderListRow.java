@@ -1,16 +1,12 @@
 package VietFreshHub.order.dto;
-import VietFreshHub.order.entity.Order;
+import VietFreshHub.common.BusinessCodes;
 import VietFreshHub.order.service.OrderLabels;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
-public record OrderListRow(Long orderId,String orderCode,Order.Status status,String paymentStatus,
-                           BigDecimal grandTotal,LocalDateTime placedAt,List<CustomerShopOrderStatus> shops) {
-    public OrderListRow(Long orderId, String orderCode, Order.Status status, String paymentStatus,
-                        BigDecimal grandTotal, LocalDateTime placedAt) {
-        this(orderId, orderCode, status, paymentStatus, grandTotal, placedAt, List.of());
-    }
+public record OrderListRow(Long shopOrderId,Long orderId,String shopName,String status,
+                           String paymentStatus,BigDecimal totalAmount,LocalDateTime placedAt) {
+    public String orderCode() { return BusinessCodes.format("VFH",shopOrderId); }
     public String paymentStatusLabel() { return OrderLabels.payment(paymentStatus); }
-    public String statusLabel() { return OrderLabels.order(status); }
+    public String statusLabel() { return OrderLabels.customerStatus(status); }
     public LocalDateTime placedAtLocal() { return OrderLabels.local(placedAt); }
 }

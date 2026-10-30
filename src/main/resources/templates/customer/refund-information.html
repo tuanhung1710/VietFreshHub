@@ -4,7 +4,7 @@
 <body>
 <header th:replace="~{fragments/storefront :: header}"></header>
 <main class="container page">
-    <p><a th:href="@{/customer/orders/{id}(id=${refund.orderId})}">← Chi tiết đơn hàng</a></p>
+    <p><a th:href="@{${orderDetailPath}}">← Chi tiết đơn hàng</a></p>
     <section class="panel">
         <h1>Thông tin nhận hoàn tiền</h1>
         <p>Mã đơn hàng: <strong th:text="${refund.orderCode}"></strong></p>
@@ -13,7 +13,7 @@
         </p>
         <p>Vui lòng kiểm tra kỹ thông tin người nhận. VietFreshHub không xác minh tài khoản qua ngân hàng.
             Thông tin không thể sửa sau khi gửi.</p>
-        <form method="post" th:action="@{/customer/orders/{id}/refund-information(id=${refund.orderId})}"
+        <form method="post" th:action="@{${refundAction}}"
               th:object="${form}">
             <p th:if="${#fields.hasGlobalErrors()}" th:each="error : ${#fields.globalErrors()}"
                th:text="${error}" role="alert"></p>

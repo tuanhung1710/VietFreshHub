@@ -547,6 +547,7 @@ GO
 CREATE TABLE dbo.refund_requests (
     refund_request_id    BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
     order_id            BIGINT NOT NULL,
+    shop_order_id       BIGINT NULL,
     bank_name           NVARCHAR(120) NOT NULL,
     bank_account_number NVARCHAR(50) NOT NULL,
     account_holder_name NVARCHAR(150) NOT NULL,
@@ -555,9 +556,11 @@ CREATE TABLE dbo.refund_requests (
 
     CONSTRAINT FK_refund_requests_order FOREIGN KEY (order_id)
         REFERENCES dbo.orders(order_id),
-    CONSTRAINT UQ_refund_requests_order UNIQUE (order_id),
     CONSTRAINT CK_refund_requests_amount CHECK (refund_amount > 0)
 );
+GO
+
+CREATE UNIQUE INDEX UQ_refund_requests_order ON dbo.refund_requests(order_id) WHERE shop_order_id IS NULL;
 GO
 
 -- 25. order_addresses
@@ -610,6 +613,7 @@ CREATE TABLE dbo.shop_orders (
     order_id            BIGINT NOT NULL,
     shop_id             BIGINT NOT NULL,
     status              VARCHAR(30) NOT NULL CONSTRAINT DF_shop_orders_status DEFAULT ('PENDING'),
+    payment_status      VARCHAR(30) NOT NULL CONSTRAINT DF_shop_orders_payment_status DEFAULT ('UNPAID'),
     subtotal            DECIMAL(18,2) NOT NULL CONSTRAINT DF_shop_orders_subtotal DEFAULT (0),
     discount_total      DECIMAL(18,2) NOT NULL CONSTRAINT DF_shop_orders_discount DEFAULT (0),
     shipping_fee        DECIMAL(18,2) NOT NULL CONSTRAINT DF_shop_orders_shipping DEFAULT (0),
@@ -629,11 +633,19 @@ CREATE TABLE dbo.shop_orders (
     CONSTRAINT CK_shop_orders_status CHECK (
         status IN ('PENDING', 'CONFIRMED', 'PREPARING', 'READY_FOR_DELIVERY', 'OUT_FOR_DELIVERY', 'COMPLETED', 'CANCELLED')
     ),
+    CONSTRAINT CK_shop_orders_payment_status CHECK (
+        payment_status IN ('UNPAID', 'PENDING', 'PAID', 'PARTIALLY_REFUNDED', 'REFUNDED', 'FAILED')
+    ),
     CONSTRAINT CK_shop_orders_amounts CHECK (
         subtotal >= 0 AND discount_total >= 0 AND shipping_fee >= 0 AND total_amount >= 0
     ),
     CONSTRAINT CK_shop_orders_shipping_distance CHECK (shipping_distance_meters IS NULL OR shipping_distance_meters >= 0)
 );
+GO
+
+ALTER TABLE dbo.refund_requests ADD CONSTRAINT FK_refund_requests_shop_order
+    FOREIGN KEY (shop_order_id) REFERENCES dbo.shop_orders(shop_order_id);
+CREATE UNIQUE INDEX UQ_refund_requests_shop_order ON dbo.refund_requests(shop_order_id) WHERE shop_order_id IS NOT NULL;
 GO
 
 -- 27. order_items

@@ -131,12 +131,12 @@ public class OrderServiceImpl implements OrderService {
             Order order = shopOrder.getOrder();
             return new ProcessedOrderResponse(
                     shopOrder.getShopOrderId(),
-                    order.getOrderCode(),
+                    shopOrder.getShopOrderCode(),
                     order.getCustomer().getFullName(),
                     OrderLabels.local(order.getPlacedAt()),
                     shopOrder.getTotalAmount(),
                     getOrderStatusLabel(shopOrder.getStatus()),
-                    order.getPaymentStatus()
+                    shopOrder.getPaymentStatus()
             );
         });
     }
@@ -258,8 +258,17 @@ public class OrderServiceImpl implements OrderService {
         if (completedAt == null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Chưa ghi nhận thời gian giao hàng thành công.");
         }
+        boolean delivered = orderDeliveryReadRepository
+                .findByShopOrderShopOrderIdInOrderByDeliveryIdAsc(List.of(shopOrderId)).stream()
+                .anyMatch(delivery -> "DELIVERED".equals(delivery.getStatus()) && delivery.getDeliveredAt() != null);
+        if (!delivered) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Chưa xác nhận giao hàng thành công.");
+        }
 
         shopOrder.markCompleted();
+        if (paymentService.isCodOrder(order.getOrderId())) {
+            shopOrder.setPaymentStatus("PAID");
+        }
         if (shopOrder.getCompletedAt() == null) {
             shopOrder.setCompletedAt(completedAt);
         }
@@ -272,6 +281,24 @@ public class OrderServiceImpl implements OrderService {
             order.setStatus(Order.Status.COMPLETED);
             if (order.getCompletedAt() == null) {
                 order.setCompletedAt(completedAt);
+            }
+        }
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void updateShopPaymentStatusesForVnpay(Long orderId, String paymentStatus) {
+        if (!Set.of("PENDING", "PAID", "FAILED").contains(paymentStatus)) {
+            throw new IllegalArgumentException("Trạng thái thanh toán VNPAY không hợp lệ.");
+        }
+        Order order = entityManager.find(Order.class, orderId);
+        if (order == null || !paymentStatus.equals(order.getPaymentStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Trạng thái lượt thanh toán chưa được xác nhận.");
+        }
+        for (ShopOrder shopOrder : shopOrderRepository.findByOrderOrderIdOrderByShopOrderIdAsc(orderId)) {
+            if (!"CANCELLED".equals(shopOrder.getStatus())
+                    && Set.of("UNPAID", "PENDING", "FAILED").contains(shopOrder.getPaymentStatus())) {
+                shopOrder.setPaymentStatus(paymentStatus);
             }
         }
     }
@@ -297,7 +324,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         return new OrderDetailResponse(
-                order.getOrderCode(),
+                shopOrder.getShopOrderCode(),
                 placedAt,
                 order.getCustomer().getFullName(),
                 address == null ? null : address.getRecipientName(),
@@ -305,8 +332,8 @@ public class OrderServiceImpl implements OrderService {
                 address == null ? null : formatDeliveryAddress(address),
                 shopOrder.getStatus(),
                 getOrderStatusLabel(shopOrder.getStatus(), deliveryFailed),
-                getPaymentStatusLabel(order.getPaymentStatus()),
-                order.getPaymentStatus(),
+                getPaymentStatusLabel(shopOrder.getPaymentStatus()),
+                shopOrder.getPaymentStatus(),
                 shopOrder.getShippingFee(),
                 shopOrder.getTotalAmount(),
                 items,
@@ -330,7 +357,7 @@ public class OrderServiceImpl implements OrderService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Chỉ có thể xác nhận đơn hàng đang chờ xác nhận.");
         }
-        ensureVnpayPaid(shopOrder.getOrder());
+        ensureVnpayPaid(shopOrder);
         shopOrder.confirm();
         recordOrderStatus(shopOrder, authService.getCurrentUserId(authentication));
     }
@@ -473,13 +500,14 @@ public class OrderServiceImpl implements OrderService {
                 if (!List.of("UNPAID", "PAID").contains(paymentStatus)) {
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Trạng thái thanh toán không hợp lệ.");
                 }
-                predicates.add(builder.equal(order.get("paymentStatus"), paymentStatus));
+                predicates.add(builder.equal(root.get("paymentStatus"), paymentStatus));
             }
             if (filter.getKeyword() != null && !filter.getKeyword().isBlank()) {
                 String keyword = filter.getKeyword().trim().toLowerCase(Locale.ROOT)
                         .replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_").replace("[", "\\[");
                 String pattern = "%" + keyword + "%";
-                Long shopOrderCode = VietFreshHub.common.BusinessCodes.parse("SOR", filter.getKeyword());
+                Long shopOrderCode = VietFreshHub.common.BusinessCodes.parse("VFH", filter.getKeyword());
+                if (shopOrderCode == null) shopOrderCode = VietFreshHub.common.BusinessCodes.parse("SOR", filter.getKeyword());
                 List<Predicate> references = new ArrayList<>();
                 references.add(builder.like(builder.lower(order.get("orderCode")), pattern, '\\'));
                 references.add(builder.like(builder.lower(order.join("customer", JoinType.LEFT).get("fullName")), pattern, '\\'));
@@ -523,13 +551,13 @@ public class OrderServiceImpl implements OrderService {
         Order order = shopOrder.getOrder();
         return new IncomingOrderResponse(
                 shopOrder.getShopOrderId(),
-                order.getOrderCode(),
+                shopOrder.getShopOrderCode(),
                 order.getCustomer().getFullName(),
                 OrderLabels.local(order.getPlacedAt()),
                 shopOrder.getTotalAmount(),
                 shopOrder.getStatus(),
                 getOrderStatusLabel(shopOrder.getStatus(), deliveryFailed),
-                order.getPaymentStatus()
+                shopOrder.getPaymentStatus()
         );
     }
 
@@ -553,18 +581,19 @@ public class OrderServiceImpl implements OrderService {
         if (order.getStatus() == Order.Status.CANCELLED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Không thể xử lý đơn hàng đã hủy.");
         }
-        ensureVnpayPaid(order);
         shopOrder = shopOrderRepository.findForUpdateByShopOrderIdAndShopId(shopOrderId, shopId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
         entityManager.refresh(shopOrder, LockModeType.PESSIMISTIC_WRITE);
+        ensureVnpayPaid(shopOrder);
         return shopOrder;
     }
 
-    private void ensureVnpayPaid(Order order) {
+    private void ensureVnpayPaid(ShopOrder shopOrder) {
+        Order order = shopOrder.getOrder();
         Long attempts = entityManager.createQuery("select count(p) from Payment p where p.order.orderId=:orderId "
                         + "and (p.provider='VNPAY' or p.paymentMethod.methodCode='VNPAY')", Long.class)
                 .setParameter("orderId", order.getOrderId()).getSingleResult();
-        if (attempts > 0 && !"PAID".equals(order.getPaymentStatus())) {
+        if (attempts > 0 && !"PAID".equals(shopOrder.getPaymentStatus())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Cửa hàng chỉ có thể xác nhận đơn VNPAY sau khi thanh toán được xác nhận.");
         }

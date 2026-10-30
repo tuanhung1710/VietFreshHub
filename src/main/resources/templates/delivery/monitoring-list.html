@@ -15,7 +15,7 @@
         .page-description { margin: 12px 0 24px; color: #56655d; font-size: 14px; }
         .page-header + .filters-card { margin-top: 24px; }
         .filters-card { padding: 20px; border: 1px solid #d9e2dc; border-radius: 8px; background: white; }
-        .monitoring-filters { display: grid; grid-template-columns: minmax(220px, 1.4fr) minmax(200px, 1fr) minmax(220px, 1fr) auto; gap: 16px; align-items: end; }
+        .monitoring-filters { display: grid; grid-template-columns: minmax(200px, 1.4fr) repeat(3, minmax(160px, 1fr)) auto; gap: 16px; align-items: end; }
         .filter-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
         .filter-field label { font-size: 14px; font-weight: 600; }
         .filter-field input, .filter-field select { width: 100%; height: 42px; box-sizing: border-box; padding: 8px 10px; border: 1px solid #b8c8be; border-radius: 5px; background: white; color: inherit; font: inherit; }
@@ -39,10 +39,10 @@
         .delivery-time { color: #56655d; }
         .empty-state { margin: 0; padding: 32px 20px; color: #56655d; text-align: center; }
         .pagination { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 20px; font-size: 14px; }
-        @media (min-width: 1101px) {
-            .monitoring-filters.admin-filters { grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(160px, 1fr)) auto; }
+        @media (min-width: 1301px) {
+            .monitoring-filters.admin-filters { grid-template-columns: minmax(200px, 1.4fr) repeat(4, minmax(160px, 1fr)) auto; }
         }
-        @media (max-width: 1100px) {
+        @media (max-width: 1300px) {
             .monitoring-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         @media (max-width: 600px) {
@@ -90,7 +90,14 @@
                 </select>
             </div>
             <div class="filter-field">
-                <label for="sort-direction">Thời gian giao thành công</label>
+                <label for="sort-by">Sắp xếp theo</label>
+                <select id="sort-by" name="sortBy">
+                    <option value="placedAt" th:selected="${sortBy == 'placedAt'}">Thời gian đặt hàng</option>
+                    <option value="deliveredAt" th:selected="${sortBy == 'deliveredAt'}">Thời gian giao thành công</option>
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="sort-direction">Thứ tự</label>
                 <select id="sort-direction" name="direction">
                     <option value="desc" th:selected="${direction == 'desc'}">Mới nhất trước</option>
                     <option value="asc" th:selected="${direction == 'asc'}">Cũ nhất trước</option>
@@ -111,6 +118,7 @@
                 <th class="row-number" scope="col">STT</th>
                 <th scope="col">Mã đơn hàng</th>
                 <th scope="col" th:unless="${sellerView}">Cửa hàng</th>
+                <th scope="col">Thời gian đặt hàng</th>
                 <th scope="col">Trạng thái giao hàng</th>
                 <th scope="col">Nhân viên giao hàng</th>
                 <th scope="col">Thời gian giao hàng thành công</th>
@@ -124,6 +132,12 @@
                 <td class="order-code" th:text="${delivery.orderCode}"></td>
                 <td class="shop-name" th:unless="${sellerView}">
                     <span th:text="${delivery.shopName == null ? 'Cửa hàng' : delivery.shopName}"></span>
+                </td>
+                <td class="date-cell">
+                    <th:block th:if="${delivery.placedAt != null}">
+                        <span th:text="${#temporals.format(delivery.placedAt, 'dd-MM-yyyy')}"></span><br>
+                        <span class="delivery-time" th:text="${#temporals.format(delivery.placedAt, 'HH:mm')}"></span>
+                    </th:block>
                 </td>
                 <td class="delivery-status" th:text="${delivery.deliveryStatusLabel}"></td>
                 <td class="staff-name" th:text="${delivery.deliveryStaffName}"></td>
@@ -142,10 +156,10 @@
 
     <nav class="pagination" aria-label="Phân trang giao hàng">
         <a th:if="${deliveriesPage.hasPrevious()}"
-           th:href="@{${basePath}(page=${deliveriesPage.number - 1},status=${selectedStatus},orderCode=${orderCode},shopId=${selectedShopId},direction=${direction})}">Trang trước</a>
+           th:href="@{${basePath}(page=${deliveriesPage.number - 1},status=${selectedStatus},orderCode=${orderCode},shopId=${selectedShopId},sortBy=${sortBy},direction=${direction})}">Trang trước</a>
         <span th:text="|Trang ${deliveriesPage.number + 1} / ${deliveriesPage.totalPages == 0 ? 1 : deliveriesPage.totalPages}|"></span>
         <a th:if="${deliveriesPage.hasNext()}"
-           th:href="@{${basePath}(page=${deliveriesPage.number + 1},status=${selectedStatus},orderCode=${orderCode},shopId=${selectedShopId},direction=${direction})}">Trang sau</a>
+           th:href="@{${basePath}(page=${deliveriesPage.number + 1},status=${selectedStatus},orderCode=${orderCode},shopId=${selectedShopId},sortBy=${sortBy},direction=${direction})}">Trang sau</a>
     </nav>
 </main>
 </body>

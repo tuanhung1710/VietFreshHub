@@ -167,6 +167,7 @@ public class CheckoutServiceImpl implements CheckoutService {
         List<Long> shopOrderIds=new ArrayList<>();
         for(List<CartItem> lines:groups.values()) {
             ShopOrder shopOrder=new ShopOrder(); shopOrder.setOrder(order);
+            if("BANK_TRANSFER".equals(methodCode)) shopOrder.setPaymentStatus("PENDING");
             shopOrder.setShop(lines.getFirst().getVariant().getProduct().getShop());
             ShopShippingQuote quote=draft.shopQuotes().get(shopOrder.getShopId());
             BigDecimal fee=quote.shippingFee();

@@ -7,6 +7,7 @@ import VietFreshHub.order.entity.Order;
 import VietFreshHub.order.entity.OrderItem;
 import VietFreshHub.order.repository.OrderRepository;
 import VietFreshHub.order.service.OrderInventoryReleaseService;
+import VietFreshHub.order.service.OrderService;
 import VietFreshHub.payment.entity.Payment;
 import VietFreshHub.payment.entity.PaymentMethod;
 import VietFreshHub.payment.entity.PaymentTransaction;
@@ -41,6 +42,7 @@ public class VnpayPaymentService {
     private final PaymentTransactionRepository transactions;
     private final InventoryReservationService reservations;
     private final OrderInventoryReleaseService releases;
+    private final OrderService orderService;
     private final VnpayQueryClient queryClient;
     private final EntityManager em;
 
@@ -120,7 +122,7 @@ public class VnpayPaymentService {
             releases.release(releaseLines(items), customerId);
         }
         if (!reservations.canReserve(lines)) {
-            order.setPaymentStatus("FAILED");
+            updatePaymentStatus(order, "FAILED");
             return new StartResult(null, "Sản phẩm không còn đủ hàng để giữ cho lượt thanh toán mới. Vui lòng liên hệ hỗ trợ.");
         }
         reservations.reserve(lines, customerId);
@@ -134,7 +136,7 @@ public class VnpayPaymentService {
         em.persist(next);
         em.flush();
         next.setTransactionReference(transactionReference(next.getPaymentId()));
-        order.setPaymentStatus("PENDING");
+        updatePaymentStatus(order, "PENDING");
         em.flush();
         return new StartResult(gateway.createPaymentUrl(next, remoteAddress), null);
     }
@@ -204,20 +206,20 @@ public class VnpayPaymentService {
         if (reservationState == InventoryReservationService.ReservationState.NONE) {
             if (!reservations.canReserve(lines)) {
                 payment.setStatus(Payment.Status.PROCESSING);
-                order.setPaymentStatus("PENDING");
+                updatePaymentStatus(order, "PENDING");
                 record(payment, "LATE_SUCCESS_STOCK_UNAVAILABLE", fields.get("vnp_TransactionNo"), "PROCESSING", fields);
                 return returnResult(orderId, false, "VNPAY báo thanh toán thành công nhưng sản phẩm cần được kiểm tra tồn kho.");
             }
             reservations.reserve(lines, order.getCustomer().getUserId());
         } else if (reservationState == InventoryReservationService.ReservationState.INCONSISTENT) {
             payment.setStatus(Payment.Status.PROCESSING);
-            order.setPaymentStatus("PENDING");
+            updatePaymentStatus(order, "PENDING");
             record(payment, "SUCCESS_STOCK_REVIEW", fields.get("vnp_TransactionNo"), "PROCESSING", fields);
             return returnResult(orderId, false, "VNPAY báo thanh toán thành công nhưng tồn kho cần được kiểm tra thêm.");
         }
         payment.setStatus(Payment.Status.PAID);
         payment.setPaidAt(paidAt);
-        order.setPaymentStatus("PAID");
+        updatePaymentStatus(order, "PAID");
         record(payment, "PAYMENT_SUCCESS", fields.get("vnp_TransactionNo"), "PAID", fields);
         for (Payment other : payments.findOtherPendingVnpayPayments(orderId, payment.getPaymentId(), Payment.Status.PENDING)) {
             other.setStatus(Payment.Status.CANCELLED);
@@ -284,11 +286,16 @@ public class VnpayPaymentService {
         payment.setStatus(Payment.Status.FAILED);
         boolean anotherOpenAttempt = payments.existsOtherVnpayPaymentWithStatus(order.getOrderId(), payment.getPaymentId(), OPEN_STATUSES);
         if (!anotherOpenAttempt && !"PAID".equals(order.getPaymentStatus()) && order.getStatus() == Order.Status.PENDING) {
-            order.setPaymentStatus("FAILED");
+            updatePaymentStatus(order, "FAILED");
             List<OrderItem> items = orderItems(order.getOrderId());
             releases.release(releaseLines(items), order.getCustomer().getUserId());
         }
         record(payment, event, fields.get("vnp_TransactionNo"), "FAILED", fields);
+    }
+
+    private void updatePaymentStatus(Order order, String paymentStatus) {
+        order.setPaymentStatus(paymentStatus);
+        orderService.updateShopPaymentStatusesForVnpay(order.getOrderId(), paymentStatus);
     }
 
     private void record(Payment payment, String event, String providerTransactionId, String status, Map<String, String> fields) {

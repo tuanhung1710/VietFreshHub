@@ -49,6 +49,8 @@ public interface OrderService {
 
     void completeDeliveredShopOrder(Long shopOrderId, LocalDateTime completedAt, Long changedBy);
 
+    void updateShopPaymentStatusesForVnpay(Long orderId, String paymentStatus);
+
     void confirmOrder(Long shopOrderId, Authentication authentication);
 
     void startPreparing(Long shopOrderId, Authentication authentication);

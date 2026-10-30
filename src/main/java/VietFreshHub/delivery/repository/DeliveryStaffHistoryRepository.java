@@ -32,7 +32,7 @@ public class DeliveryStaffHistoryRepository {
             with assignment_data as (
                 select a.assignment_id, a.delivery_id, a.delivery_staff_id, a.status as assignment_status, a.accepted_at,
                        d.status as current_status, d.delivered_at, d.picked_up_at, d.failure_reason,
-                       so.total_amount, so.shop_id,
+                       so.total_amount, so.shop_id, so.shop_order_id,
                        o.order_id, o.order_code, s.shop_name, oa.recipient_name, oa.phone,
                        coalesce(nullif(oa.formatted_address, ''), oa.address_line) as delivery_address,
                        failure.created_at as failed_at, failure.history_id as failed_history_id,
@@ -230,8 +230,13 @@ public class DeliveryStaffHistoryRepository {
                            Map<String, Object> parameters) {
         StringBuilder where = new StringBuilder("where outcome is not null");
         if (!filter.getKeyword().isEmpty()) {
+            Long shopOrderId = VietFreshHub.common.BusinessCodes.parse("VFH", filter.getKeyword());
+            where.append(" and (lower(order_code) like :keyword escape '\\'");
+            if (shopOrderId != null) {
+                where.append(" or shop_order_id = :shopOrderId");
+                parameters.put("shopOrderId", shopOrderId);
+            }
             where.append("""
-                     and (lower(order_code) like :keyword escape '\\'
                        or lower(recipient_name) like :keyword escape '\\'
                        or lower(phone) like :keyword escape '\\')
                     """);
@@ -298,7 +303,7 @@ public class DeliveryStaffHistoryRepository {
 
     private String selectColumns() {
         return """
-                select assignment_id, delivery_id, order_code, shop_id, shop_name, recipient_name, phone,
+                select assignment_id, delivery_id, shop_order_id, shop_id, shop_name, recipient_name, phone,
                        delivery_address, outcome, total_amount,
                        convert(varchar(19), result_at, 126) as result_time,
                        case when method_count = 1 then method_name
@@ -341,7 +346,8 @@ public class DeliveryStaffHistoryRepository {
 
     private DeliveryHistoryRow toRow(Object[] row) {
         return new DeliveryHistoryRow(((Number) row[0]).longValue(), ((Number) row[1]).longValue(),
-                (String) row[2], ((Number) row[3]).longValue(), (String) row[4], (String) row[5],
+                VietFreshHub.common.BusinessCodes.format("VFH", ((Number) row[2]).longValue()),
+                ((Number) row[3]).longValue(), (String) row[4], (String) row[5],
                 (String) row[6], (String) row[7], (String) row[8], decimal(row[9]), dateTime(row[10]),
                 (String) row[11], (String) row[12], ((Number) row[13]).intValue() == 1,
                 dateTime(row[14]), dateTime(row[15]), (String) row[16], decimal(row[17]));

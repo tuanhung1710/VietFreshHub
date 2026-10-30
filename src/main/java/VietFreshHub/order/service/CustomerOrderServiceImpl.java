@@ -67,17 +67,12 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         LocalDateTime from=filter.getFromDate()==null ? null : LocalDateTime.ofInstant(filter.getFromDate().atStartOfDay(zone).toInstant(),ZoneOffset.UTC);
         if(from!=null && from.getYear()<1) from=LocalDateTime.of(1,1,1,0,0);
         LocalDateTime until=filter.getToDate()==null ? null : LocalDateTime.ofInstant(filter.getToDate().plusDays(1).atStartOfDay(zone).toInstant(),ZoneOffset.UTC);
-        var sort=Sort.by(Sort.Order.desc("placedAt"),Sort.Order.desc("orderId"));
-        var page=orders.findHistory(customerId,statusText,filter.getKeyword(),from,until,PageRequest.of(filter.getPage()-1,10,sort));
-        if(page.getTotalElements()==0) return Page.empty(PageRequest.of(0,10,sort));
+        Long referenceId=VietFreshHub.common.BusinessCodes.parse("VFH",filter.getKeyword());
+        var page=shopOrders.findCustomerHistory(customerId,statusText,filter.getKeyword(),referenceId,from,until,PageRequest.of(filter.getPage()-1,10));
+        if(page.getTotalElements()==0) return Page.empty(PageRequest.of(0,10));
         if(page.getNumber()>=page.getTotalPages())
-            page=orders.findHistory(customerId,statusText,filter.getKeyword(),from,until,PageRequest.of(page.getTotalPages()-1,10,sort));
-        Map<Long,List<CustomerShopOrderStatus>> shopsByOrder=new HashMap<>();
-        var shopStatuses=orders.findCustomerShopStatuses(customerId,page.getContent().stream().map(OrderListRow::orderId).toList());
-        for(var shopStatus:shopStatuses)
-            shopsByOrder.computeIfAbsent(shopStatus.orderId(),id -> new ArrayList<>()).add(shopStatus);
-        return page.map(row -> new OrderListRow(row.orderId(),row.orderCode(),row.status(),row.paymentStatus(),
-                row.grandTotal(),row.placedAt(),List.copyOf(shopsByOrder.getOrDefault(row.orderId(),List.of()))));
+            page=shopOrders.findCustomerHistory(customerId,statusText,filter.getKeyword(),referenceId,from,until,PageRequest.of(page.getTotalPages()-1,10));
+        return page;
     }
 
     @Override @Transactional(readOnly=true)
@@ -86,6 +81,57 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         var pay=payments.findByOrderOrderIdOrderByPaymentIdAsc(orderId); var delivery=deliveries.findByShopOrderOrderOrderIdOrderByDeliveryIdAsc(orderId);
         String hint=cancellationHint(order,children,pay,delivery);
         return new OrderActionsResponse(hint==null,hint,pay.isEmpty() ? "Chưa có phương thức thanh toán" : pay.getFirst().getPaymentMethod().getName());
+    }
+    @Override @Transactional(readOnly=true)
+    public OrderActionsResponse shopActions(Long customerId,Long shopOrderId) {
+        var shop=shopOrders.findByShopOrderIdAndOrderCustomerUserId(shopOrderId,customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng của bạn."));
+        var pay=payments.findByOrderOrderIdOrderByPaymentIdAsc(shop.getOrder().getOrderId());
+        var delivery=deliveries.findByShopOrderShopOrderIdInOrderByDeliveryIdAsc(List.of(shopOrderId));
+        String hint=cancellationHint(shop.getOrder(),List.of(shop),pay,delivery,true);
+        return new OrderActionsResponse(hint==null,hint,pay.isEmpty() ? "Chưa có phương thức thanh toán" : pay.getFirst().getPaymentMethod().getName());
+    }
+
+    @Override @Transactional
+    public void cancelShop(Long customerId,Long shopOrderId,String reason) {
+        if(reason!=null && reason.length()>500) throw new CustomerOrderException("Lý do hủy tối đa 500 ký tự.");
+        User actor=lockCustomer(customerId);
+        var shop=shopOrders.findByShopOrderIdAndOrderCustomerUserId(shopOrderId,customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng của bạn."));
+        Order order=shop.getOrder();
+        em.refresh(order,LockModeType.PESSIMISTIC_WRITE);
+        em.refresh(shop,LockModeType.PESSIMISTIC_WRITE);
+        if(!customerId.equals(order.getCustomer().getUserId()) || !order.getOrderId().equals(shop.getOrder().getOrderId()))
+            throw new ResourceNotFoundException("Không tìm thấy đơn hàng của bạn.");
+        if("CANCELLED".equals(shop.getStatus())) return;
+        var pay=payments.findByOrderOrderIdOrderByPaymentIdAsc(order.getOrderId());
+        pay.forEach(payment -> em.refresh(payment,LockModeType.PESSIMISTIC_WRITE));
+        var delivery=deliveries.findByShopOrderShopOrderIdInOrderByDeliveryIdAsc(List.of(shopOrderId));
+        delivery.forEach(row -> em.refresh(row,LockModeType.PESSIMISTIC_READ));
+        String hint=cancellationHint(order,List.of(shop),pay,delivery,true);
+        if(hint!=null) throw new CustomerOrderException(hint);
+        var lines=shop.getItems().stream().map(item -> new OrderInventoryReleaseService.Line(
+                item.getOrderItemId(),item.getVariant().getVariantId(),item.getQuantity())).toList();
+        inventory.release(lines,customerId);
+        LocalDateTime now=LocalDateTime.now(ZoneOffset.UTC).withNano(0);
+        shop.setStatus("CANCELLED");
+        shop.setCancelledAt(now);
+        OrderStatusHistory history=new OrderStatusHistory();
+        history.setShopOrder(shop); history.setStatus("CANCELLED"); history.setChangedBy(actor);
+        history.setNote("Khách hàng hủy đơn."+(reason==null || reason.isBlank() ? "" : " Lý do: "+reason.trim()));
+        em.persist(history);
+        var remaining=shopOrders.findByOrderOrderIdOrderByShopOrderIdAsc(order.getOrderId()).stream()
+                .filter(child -> !"CANCELLED".equals(child.getStatus())).toList();
+        if(remaining.isEmpty()) {
+            order.setStatus(Order.Status.CANCELLED); order.setCancelledAt(now);
+            pay.stream().filter(payment -> payment.getStatus()!=Payment.Status.PAID)
+                    .forEach(payment -> payment.setStatus(Payment.Status.CANCELLED));
+        }
+        var codAmount=remaining.stream().map(ShopOrder::getTotalAmount).reduce(java.math.BigDecimal.ZERO,java.math.BigDecimal::add);
+        pay.stream().filter(payment -> "COD".equals(payment.getPaymentMethod().getMethodCode())
+                && payment.getStatus()==Payment.Status.PENDING).forEach(payment -> payment.setAmount(codAmount));
+        em.flush();
+        if(remaining.isEmpty()) events.publishEvent(new OrderCancelledEvent(order.getOrderId(),customerId));
     }
     @Override @Transactional
     public void cancel(Long customerId,Long orderId,String reason) {
@@ -112,20 +158,24 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         em.flush(); events.publishEvent(new OrderCancelledEvent(orderId,customerId));
     }
     private String cancellationHint(Order order,List<ShopOrder> children,List<Payment> pay,List<OrderDeliveryView> delivery) {
+        return cancellationHint(order,children,pay,delivery,false);
+    }
+    private String cancellationHint(Order order,List<ShopOrder> children,List<Payment> pay,List<OrderDeliveryView> delivery,boolean shopOnly) {
         if(order.getStatus()==Order.Status.CANCELLED) return "Đơn hàng đã được hủy.";
         if(children.isEmpty()) return "Đơn hàng chưa có thông tin cửa hàng, không thể hủy.";
         if(children.stream().anyMatch(c -> "CANCELLED".equals(c.getStatus())))
-            return "Một đơn cửa hàng đã được hủy. Không thể hủy lại hoặc hủy một phần đơn này.";
+            return shopOnly ? "Đơn cửa hàng đã được hủy." : "Một đơn cửa hàng đã được hủy. Không thể hủy lại hoặc hủy một phần đơn này.";
         if(children.stream().anyMatch(c -> !"PENDING".equals(c.getStatus()) || c.getConfirmedAt()!=null))
             return children.size()==1 ? "Đơn hàng đã được cửa hàng xác nhận nên không thể hủy."
                     : "Một hoặc nhiều cửa hàng đã xác nhận đơn hàng. Bạn không thể hủy toàn bộ đơn này.";
-        if(order.getStatus()!=Order.Status.PENDING) return "Đơn đã bắt đầu xử lý, không còn đủ điều kiện hủy.";
+        if(!shopOnly && order.getStatus()!=Order.Status.PENDING) return "Đơn đã bắt đầu xử lý, không còn đủ điều kiện hủy.";
         if(delivery.stream().anyMatch(d -> !Set.of("UNASSIGNED","ASSIGNED","ACCEPTED","CANCELLED").contains(d.getStatus())))
             return "Đơn đã được lấy hoặc đang giao, không thể hủy.";
-        boolean paidOnline="PAID".equals(order.getPaymentStatus()) && order.getGrandTotal()!=null
+        String paymentStatus=shopOnly ? children.getFirst().getPaymentStatus() : order.getPaymentStatus();
+        boolean paidOnline="PAID".equals(paymentStatus) && order.getGrandTotal()!=null
                 && paymentService.getPaidOnlineOrderAmount(order.getOrderId())
                 .filter(amount -> amount.compareTo(order.getGrandTotal())==0).isPresent();
-        if(!paidOnline && ("PAID".equals(order.getPaymentStatus()) || "PARTIALLY_REFUNDED".equals(order.getPaymentStatus()) || "REFUNDED".equals(order.getPaymentStatus())
+        if(!paidOnline && ("PAID".equals(paymentStatus) || "PARTIALLY_REFUNDED".equals(paymentStatus) || "REFUNDED".equals(paymentStatus)
                 || pay.stream().anyMatch(p -> !"COD".equals(p.getPaymentMethod().getMethodCode()) || p.getPaidAt()!=null
                 || !Set.of(Payment.Status.PENDING,Payment.Status.FAILED,Payment.Status.CANCELLED).contains(p.getStatus()))))
             return "Đơn có giao dịch cần đối soát/hoàn tiền. Vui lòng liên hệ hỗ trợ để hủy an toàn.";
@@ -159,11 +209,26 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
 
     @Override @Transactional(readOnly=true)
     public OrderTrackingResponse tracking(Long customerId,Long orderId) {
-        Order order=owned(customerId,orderId); var children=shopOrders.findByOrderOrderIdOrderByShopOrderIdAsc(orderId);
-        var rows=deliveries.findByShopOrderOrderOrderIdOrderByDeliveryIdAsc(orderId);
+        Order order=owned(customerId,orderId);
+        return tracking(customerId,order,shopOrders.findByOrderOrderIdOrderByShopOrderIdAsc(orderId));
+    }
+
+    @Override @Transactional(readOnly=true)
+    public OrderTrackingResponse shopTracking(Long customerId,Long shopOrderId) {
+        var shop=shopOrders.findByShopOrderIdAndOrderCustomerUserId(shopOrderId,customerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng của bạn."));
+        var tracking=tracking(customerId,shop.getOrder(),List.of(shop));
+        var state=tracking.shops().getFirst();
+        return new OrderTrackingResponse(tracking.orderId(),shop.getShopOrderCode(),state.deliveryStatus(),state.deliveryStatusCode(),tracking.shops());
+    }
+
+    private OrderTrackingResponse tracking(Long customerId,Order order,List<ShopOrder> children) {
+        Long orderId=order.getOrderId();
+        var shopOrderIds=children.stream().map(ShopOrder::getShopOrderId).toList();
+        var rows=shopOrderIds.isEmpty() ? List.<OrderDeliveryView>of() : deliveries.findByShopOrderShopOrderIdInOrderByDeliveryIdAsc(shopOrderIds);
         var history=rows.isEmpty() ? List.<OrderDeliveryHistoryView>of() : deliveryHistory.findByDeliveryDeliveryIdInOrderByCreatedAtAscHistoryIdAsc(rows.stream().map(OrderDeliveryView::getDeliveryId).toList());
-        var statuses=orderHistory.findByShopOrderOrderOrderIdOrderByCreatedAtAscHistoryIdAsc(orderId);
-        var currentStatuses=orders.findCustomerShopStatuses(customerId,List.of(orderId));
+        var statuses=shopOrderIds.isEmpty() ? List.<OrderStatusHistory>of() : orderHistory.findByShopOrderShopOrderIdInOrderByCreatedAtAscHistoryIdAsc(shopOrderIds);
+        var currentStatuses=shopOrderIds.isEmpty() ? List.<CustomerShopOrderStatus>of() : shopOrders.findCustomerStatuses(customerId,shopOrderIds);
         var staff=rows.isEmpty() ? List.<DeliveryTrackingStaff>of() : deliveryAssignments.getTrackingStaff(customerId,orderId);
         var groups=children.stream().map(child -> {
             OrderDeliveryView delivery=rows.stream().filter(d -> d.getShopOrder().getShopOrderId().equals(child.getShopOrderId())).findFirst().orElse(null);

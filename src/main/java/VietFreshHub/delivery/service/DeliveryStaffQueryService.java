@@ -89,7 +89,7 @@ public class DeliveryStaffQueryService {
         DeliveryLocationResponse pickupLocation = shopService.findLocationByShopId(shopOrder.getShopId())
                 .map(this::toDeliveryLocation)
                 .orElse(null);
-        return new AvailableDeliveryResponse(delivery.getDeliveryId(), shopOrder.getOrder().getOrderCode(),
+        return new AvailableDeliveryResponse(delivery.getDeliveryId(), shopOrder.getShopOrderCode(),
                 shopOrder.getShop() == null ? null : shopOrder.getShop().getShopName(),
                 pickupLocation, toDeliveryLocation(address));
     }
@@ -268,7 +268,7 @@ public class DeliveryStaffQueryService {
                 assignment.getAssignmentId(),
                 delivery.getDeliveryId(),
                 shopOrder.getShopOrderId(),
-                shopOrder.getOrder().getOrderCode(),
+                shopOrder.getShopOrderCode(),
                 assignment.getStatus(),
                 delivery.getStatus(),
                 toDeliveryLocalTime(assignment.getAssignedAt()),
@@ -291,7 +291,7 @@ public class DeliveryStaffQueryService {
                 delivery.getDeliveryId(),
                 shopOrder.getShopOrderId(),
                 shopOrder.getShopId(),
-                order.getOrderCode(),
+                shopOrder.getShopOrderCode(),
                 assignment == null ? null : assignment.getStatus(),
                 delivery.getStatus(),
                 order.getPlacedAt(),

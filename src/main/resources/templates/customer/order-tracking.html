@@ -1,12 +1,12 @@
 <!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/storefront :: head('Theo dõi đơn hàng')}"></head><body>
 <header th:replace="~{fragments/storefront :: header}"></header><main class="container page tracking-page">
-    <p><a th:href="@{/customer/orders/{id}(id=${tracking.orderId})}">← Chi tiết đơn hàng</a></p>
+    <p><a th:if="${shopOrderId != null}" th:href="@{/customer/orders/shops/{id}(id=${shopOrderId})}">← Chi tiết đơn hàng</a><a th:if="${shopOrderId == null}" th:href="@{/customer/orders/{id}(id=${tracking.orderId})}">← Chi tiết đơn hàng</a></p>
     <div class="page-heading"><h1 class="checkout-title">Theo dõi đơn hàng</h1><p class="order-code">
-        Mã đơn hàng: <span th:text="${tracking.orderCode}"></span>
+        <span th:text="${shopOrderId == null ? 'Mã lượt thanh toán: ' : 'Mã đơn hàng: '}"></span><span th:text="${tracking.orderCode}"></span>
     </p></div>
     <div class="tracking-shops"><section th:each="shop : ${tracking.shops}" class="panel tracking-shop">
-        <div class="order-shop-heading"><h2 th:text="${shop.shopName}"></h2></div>
+        <div class="order-shop-heading"><h2 th:text="${shop.shopName}"></h2><span class="order-code" th:text="${shop.orderCode()}"></span></div>
         <p><strong class="order-state" th:attr="data-status=${shop.deliveryStatusCode}" th:text="${shop.deliveryStatus}"></strong></p>
         <p th:if="${#lists.isEmpty(shop.events)}" class="muted">Chưa có lịch sử cập nhật.</p>
         <ol class="order-timeline"><li th:each="event : ${shop.events}"><time th:if="${event.occurredAt != null}" th:text="${#temporals.format(event.occurredAt,'HH:mm dd/MM/yyyy')}"></time><span th:if="${event.occurredAt == null}" class="muted">Chưa ghi nhận thời gian</span><div><strong th:text="${event.label}"></strong><p th:if="${event.note != null}" class="muted" th:text="${event.note}"></p></div></li></ol>

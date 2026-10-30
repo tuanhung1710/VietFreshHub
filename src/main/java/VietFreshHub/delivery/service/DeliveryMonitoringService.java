@@ -91,9 +91,9 @@ public class DeliveryMonitoringService {
 
     public Page<DeliveryMonitoringRow> getManagedShopDeliveries(Authentication authentication,
                                                                DeliveryStatus status, String orderCode,
-                                                               String direction, int page) {
+                                                               String sortBy, String direction, int page) {
         Long shopId = shopService.getManagedShopId(authentication);
-        return findDeliveries(shopId, status, orderCode, direction, page);
+        return findDeliveries(shopId, status, orderCode, sortBy, direction, page);
     }
 
     public DeliveryMonitoringDetail getManagedShopDeliveryDetail(Long deliveryId, Authentication authentication) {
@@ -105,9 +105,9 @@ public class DeliveryMonitoringService {
     }
 
     public Page<DeliveryMonitoringRow> getAdminDeliveries(Authentication authentication, DeliveryStatus status,
-                                                         String orderCode, Long shopId, String direction, int page) {
+                                                         String orderCode, Long shopId, String sortBy, String direction, int page) {
         requireAdmin(authentication);
-        return findDeliveries(shopId, status, orderCode, direction, page);
+        return findDeliveries(shopId, status, orderCode, sortBy, direction, page);
     }
 
     public List<ShopOption> getAdminShopOptions(Authentication authentication) {
@@ -157,12 +157,15 @@ public class DeliveryMonitoringService {
     }
 
     private Page<DeliveryMonitoringRow> findDeliveries(Long shopId, DeliveryStatus status, String orderCode,
-                                                       String direction, int page) {
+                                                       String sortBy, String direction, int page) {
         if (page < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Số trang không hợp lệ.");
         }
         if (!"asc".equals(direction) && !"desc".equals(direction)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Chiều sắp xếp không hợp lệ.");
+        }
+        if (!"placedAt".equals(sortBy) && !"deliveredAt".equals(sortBy)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tiêu chí sắp xếp không hợp lệ.");
         }
         String search = orderCode == null ? "" : orderCode.strip().toLowerCase(Locale.ROOT);
         String searchPattern = "%" + search.replace("\\", "\\\\").replace("%", "\\%")
@@ -199,6 +202,9 @@ public class DeliveryMonitoringService {
             if (!search.isEmpty()) {
                 Predicate matchingOrderCode = builder.like(
                         builder.lower(root.get("shopOrder").get("order").get("orderCode")), searchPattern, '\\');
+                Long shopOrderId = VietFreshHub.common.BusinessCodes.parse("VFH", search);
+                if (shopOrderId != null) matchingOrderCode = builder.or(matchingOrderCode,
+                        builder.equal(root.get("shopOrder").get("shopOrderId"), shopOrderId));
                 var matchingStaff = query.subquery(Long.class);
                 var assignment = matchingStaff.from(DeliveryAssignment.class);
                 matchingStaff.select(assignment.get("assignmentId")).where(
@@ -211,13 +217,17 @@ public class DeliveryMonitoringService {
                         builder.exists(matchingStaff))));
             }
             if (query != null && query.getResultType() != Long.class && query.getResultType() != long.class) {
-                Expression<?> timestamp = root.get("deliveredAt");
+                boolean byPlacedAt = "placedAt".equals(sortBy);
+                Expression<?> timestamp = byPlacedAt ? root.get("shopOrder").get("order").get("placedAt")
+                        : root.get("deliveredAt");
+                Expression<?> tieBreaker = byPlacedAt ? root.get("shopOrder").get("shopOrderId")
+                        : root.get("deliveryId");
                 Expression<Integer> nullRank = builder.<Integer>selectCase()
                         .when(builder.isNull(timestamp), 1).otherwise(0);
                 boolean ascending = "asc".equals(direction);
                 query.orderBy(builder.asc(nullRank),
                         ascending ? builder.asc(timestamp) : builder.desc(timestamp),
-                        ascending ? builder.asc(root.get("deliveryId")) : builder.desc(root.get("deliveryId")));
+                        ascending ? builder.asc(tieBreaker) : builder.desc(tieBreaker));
             }
             return builder.and(predicates.toArray(Predicate[]::new));
         };
@@ -313,8 +323,9 @@ public class DeliveryMonitoringService {
         }
 
         return new DeliveryMonitoringRow(
-                delivery.getDeliveryId(), shopOrder.getOrder().getOrderCode(), shopOrder.getShopOrderId(),
+                delivery.getDeliveryId(), shopOrder.getShopOrderCode(), shopOrder.getShopOrderId(),
                 shopOrder.getShopId(), shopOrder.getShop() == null ? null : shopOrder.getShop().getShopName(),
+                OrderLabels.local(shopOrder.getOrder().getPlacedAt()),
                 deliveryLabel,
                 current || delivery.getStatus() == DeliveryStatus.UNASSIGNED
                         ? "Phân công hiện tại" : "Phân công gần nhất trong lịch sử",
