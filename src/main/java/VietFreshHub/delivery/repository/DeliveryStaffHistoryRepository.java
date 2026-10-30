@@ -231,17 +231,29 @@ public class DeliveryStaffHistoryRepository {
                            Map<String, Object> parameters) {
         StringBuilder where = new StringBuilder("where outcome is not null");
         if (!filter.getKeyword().isEmpty()) {
-            Long shopOrderId = VietFreshHub.common.BusinessCodes.parse("VFH", filter.getKeyword());
+            String keyword = filter.getKeyword().toLowerCase(Locale.ROOT);
+            String codeKeyword = keyword.equals("vhf") || keyword.startsWith("vhf-")
+                    ? "vfh" + keyword.substring(3) : keyword;
+            Long shopOrderId = VietFreshHub.common.BusinessCodes.parse("VFH", codeKeyword);
             where.append(" and (lower(order_code) like :keyword escape '\\'");
             if (shopOrderId != null) {
                 where.append(" or shop_order_id = :shopOrderId");
                 parameters.put("shopOrderId", shopOrderId);
+            } else {
+                where.append("""
+                           or concat('vfh-', case when len(cast(shop_order_id as varchar(20))) < 6
+                               then right(concat('000000', cast(shop_order_id as varchar(20))), 6)
+                               else cast(shop_order_id as varchar(20)) end) like :codeKeyword escape '\\'
+                        """);
+                String escapedCode = codeKeyword.replace("\\", "\\\\").replace("%", "\\%")
+                        .replace("_", "\\_").replace("[", "\\[");
+                parameters.put("codeKeyword", "%" + escapedCode + "%");
             }
             where.append("""
                        or lower(recipient_name) like :keyword escape '\\'
                        or lower(phone) like :keyword escape '\\')
                     """);
-            String escaped = filter.getKeyword().toLowerCase(Locale.ROOT).replace("\\", "\\\\")
+            String escaped = keyword.replace("\\", "\\\\")
                     .replace("%", "\\%").replace("_", "\\_").replace("[", "\\[");
             parameters.put("keyword", "%" + escaped + "%");
         }

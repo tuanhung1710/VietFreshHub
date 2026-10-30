@@ -12,7 +12,7 @@ public class OrderCountsResponse {
     private long confirmedOrders;
     private long preparingOrders;
     private long readyOrders;
-    private long processedOrders;
+    private long completedOrders;
     private long failedOrders;
     private long cancelledOrders;
 }

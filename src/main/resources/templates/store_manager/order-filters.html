@@ -296,8 +296,6 @@
                         <label><input type="radio" name="status" value="DELIVERY_FAILED"
                                       th:checked="${filter.status == 'DELIVERY_FAILED'}"><span>Giao hàng thất bại</span></label>
                     </th:block>
-                    <label th:if="${orderView == 'processed'}"><input type="radio" name="status" value="RETURNED_FAILED"
-                                  th:checked="${filter.status == 'RETURNED_FAILED'}"><span>Giao thất bại - đã nhận lại hàng</span></label>
                     <label><input type="radio" name="status" value="COMPLETED"
                                   th:checked="${filter.status == 'COMPLETED'}"><span>Hoàn thành</span></label>
                     <label><input type="radio" name="status" value="CANCELLED"

@@ -82,14 +82,12 @@ public class OrderController {
                 "Hiện không có đơn hàng đã hủy.", "/seller/cancelled-orders", "cancelled", false, model);
     }
 
-    @GetMapping("/seller/processed-orders")
-    public String processedOrders(@ModelAttribute("filter") OrderFilterRequest filter,
+    @GetMapping({"/seller/completed-orders", "/seller/processed-orders"})
+    public String completedOrders(@ModelAttribute("filter") OrderFilterRequest filter,
                                   @RequestParam(defaultValue = "0") int page,
                                   Authentication authentication, Model model) {
-        Page<?> orders = orderService.getProcessedOrderHistory(authentication, filter, page);
-        model.addAttribute("processedOrders", orders.getContent());
-        addPageAttributes(orders, model);
-        return "store_manager/processed-orders";
+        return showOrders(orderService.getCompletedOrders(authentication, filter, page), "Đơn đã hoàn thành",
+                "Hiện không có đơn hàng đã hoàn thành.", "/seller/completed-orders", "completed", false, model);
     }
 
     @GetMapping("/seller/orders/filter-count")

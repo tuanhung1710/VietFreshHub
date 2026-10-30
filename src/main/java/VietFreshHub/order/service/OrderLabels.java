@@ -48,7 +48,7 @@ public final class OrderLabels {
     }; }
     public static Map<String, String> shopPaymentStatusOptions() {
         Map<String, String> options = new LinkedHashMap<>();
-        for (String status : List.of("UNPAID", "PENDING", "PAID", "FAILED", "PARTIALLY_REFUNDED", "REFUNDED")) {
+        for (String status : List.of("UNPAID", "PAID")) {
             options.put(status, payment(status));
         }
         return options;

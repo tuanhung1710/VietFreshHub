@@ -10,7 +10,6 @@ import VietFreshHub.order.dto.OrderDetailResponse;
 import VietFreshHub.order.dto.OrderFilterRequest;
 import VietFreshHub.order.dto.OrderItemResponse;
 import VietFreshHub.order.dto.OrderProcessingHistoryEntry;
-import VietFreshHub.order.dto.ProcessedOrderResponse;
 import VietFreshHub.order.entity.Order;
 import VietFreshHub.order.entity.OrderAddress;
 import VietFreshHub.order.entity.OrderDeliveryView;
@@ -131,20 +130,8 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ProcessedOrderResponse> getProcessedOrderHistory(Authentication authentication, OrderFilterRequest filter, int page) {
-        return findFilteredShopOrders(authentication, filter, "processed", page).map(shopOrder -> {
-            Order order = shopOrder.getOrder();
-            return new ProcessedOrderResponse(
-                    shopOrder.getShopOrderId(),
-                    shopOrder.getShopOrderCode(),
-                    order.getCustomer().getFullName(),
-                    OrderLabels.local(order.getPlacedAt()),
-                    shopOrder.getTotalAmount(),
-                    "OUT_FOR_DELIVERY".equals(shopOrder.getStatus())
-                            ? "Giao thất bại - đã nhận lại hàng" : getOrderStatusLabel(shopOrder.getStatus()),
-                    shopOrder.getPaymentStatus()
-            );
-        });
+    public Page<IncomingOrderResponse> getCompletedOrders(Authentication authentication, OrderFilterRequest filter, int page) {
+        return findFilteredShopOrders(authentication, filter, "completed", page).map(this::toOrderResponse);
     }
 
     @Override
@@ -163,7 +150,7 @@ public class OrderServiceImpl implements OrderService {
                 shopOrderRepository.countByShopIdAndStatus(shopId, "CONFIRMED"),
                 shopOrderRepository.countByShopIdAndStatus(shopId, "PREPARING"),
                 shopOrderRepository.countByShopIdAndStatus(shopId, "READY_FOR_DELIVERY"),
-                shopOrderRepository.count(buildOrderSpecification(authentication, new OrderFilterRequest(), "processed")),
+                shopOrderRepository.countByShopIdAndStatus(shopId, "COMPLETED"),
                 shopOrderRepository.count(buildOrderSpecification(authentication, new OrderFilterRequest(), "failed")),
                 shopOrderRepository.countByShopIdAndStatus(shopId, "CANCELLED")
         );
@@ -486,7 +473,7 @@ public class OrderServiceImpl implements OrderService {
         if (filter.getSort() == null || filter.getSort().isBlank()) {
             filter.setSort("NEWEST");
         }
-        int pageSize = "all".equals(view) || "processed".equals(view) ? 50 : 15;
+        int pageSize = "all".equals(view) ? 50 : 15;
         Pageable pageable = PageRequest.of(page, pageSize, resolveOrderSort(filter.getSort()));
         return shopOrderRepository.findAll(specification, pageable);
     }
@@ -505,7 +492,8 @@ public class OrderServiceImpl implements OrderService {
                                                             String view) {
         Long shopId = shopService.getManagedShopId(authentication);
         validateDateRange(filter);
-        String paymentStatus = filter.getPaymentStatus() == null ? "" : filter.getPaymentStatus().trim();
+        String paymentStatus = "completed".equals(view) || filter.getPaymentStatus() == null
+                ? "" : filter.getPaymentStatus().trim();
         if (!paymentStatus.isEmpty() && !OrderLabels.shopPaymentStatusOptions().containsKey(paymentStatus)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Trạng thái thanh toán không hợp lệ.");
         }
@@ -518,10 +506,10 @@ public class OrderServiceImpl implements OrderService {
             case "ready" -> List.of("READY_FOR_DELIVERY");
             case "failed" -> List.of("OUT_FOR_DELIVERY");
             case "cancelled" -> List.of("CANCELLED");
-            case "processed" -> List.of();
+            case "completed" -> List.of("COMPLETED");
             default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Danh sách đơn hàng không hợp lệ.");
         };
-        boolean filterStatus = "all".equals(view) || "processed".equals(view) || "failed".equals(view);
+        boolean filterStatus = "all".equals(view) || "failed".equals(view);
         String selectedStatus = "failed".equals(view) ? "DELIVERY_FAILED" : filter.getStatus();
 
         return (root, query, builder) -> {
@@ -529,18 +517,12 @@ public class OrderServiceImpl implements OrderService {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(builder.equal(root.get("shopId"), shopId));
 
-            if ("processed".equals(view)) {
-                Predicate returnedFailure = deliveryReturnQueryService.confirmedReturnedFailures()
-                        .toPredicate(root, query, builder);
-                predicates.add(builder.or(root.get("status").in("COMPLETED", "CANCELLED"), returnedFailure));
-            } else if (!statuses.isEmpty()) {
+            if (!statuses.isEmpty()) {
                 predicates.add(root.get("status").in(statuses));
             }
             if (filterStatus && selectedStatus != null && !selectedStatus.isBlank()) {
                 String status = selectedStatus.trim();
-                if ("processed".equals(view) && "RETURNED_FAILED".equals(status)) {
-                    predicates.add(builder.equal(root.get("status"), "OUT_FOR_DELIVERY"));
-                } else if ("DELIVERY_FAILED".equals(status) || "OUT_FOR_DELIVERY".equals(status)) {
+                if ("DELIVERY_FAILED".equals(status) || "OUT_FOR_DELIVERY".equals(status)) {
                     predicates.add(builder.equal(root.get("status"), "OUT_FOR_DELIVERY"));
                     Subquery<Long> failedDelivery = query.subquery(Long.class);
                     Root<OrderDeliveryView> delivery = failedDelivery.from(OrderDeliveryView.class);
@@ -588,10 +570,16 @@ public class OrderServiceImpl implements OrderService {
                 predicates.add(builder.equal(root.get("paymentStatus"), paymentStatus));
             }
             if (filter.getKeyword() != null && !filter.getKeyword().isBlank()) {
-                String keyword = filter.getKeyword().trim().toLowerCase(Locale.ROOT)
-                        .replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_").replace("[", "\\[");
-                String pattern = "%" + keyword + "%";
-                Long shopOrderCode = VietFreshHub.common.BusinessCodes.parse("VFH", filter.getKeyword());
+                String keyword = filter.getKeyword().trim().toLowerCase(Locale.ROOT);
+                String codeKeyword = keyword;
+                if (codeKeyword.equals("vhf") || codeKeyword.startsWith("vhf-")) {
+                    codeKeyword = "vfh" + codeKeyword.substring(3);
+                }
+                String pattern = "%" + keyword.replace("\\", "\\\\").replace("%", "\\%")
+                        .replace("_", "\\_").replace("[", "\\[") + "%";
+                String codePattern = "%" + codeKeyword.replace("\\", "\\\\").replace("%", "\\%")
+                        .replace("_", "\\_").replace("[", "\\[") + "%";
+                Long shopOrderCode = VietFreshHub.common.BusinessCodes.parse("VFH", codeKeyword);
                 if (shopOrderCode == null) shopOrderCode = VietFreshHub.common.BusinessCodes.parse("SOR", filter.getKeyword());
                 if (shopOrderCode != null) {
                     predicates.add(builder.equal(root.get("shopOrderId"), shopOrderCode));
@@ -602,7 +590,7 @@ public class OrderServiceImpl implements OrderService {
                                     builder.sum(builder.length(idText), 1), builder.literal(6)))
                             .otherwise(idText);
                     Expression<String> displayedCode = builder.concat("vfh-", paddedId);
-                    predicates.add(builder.or(builder.like(displayedCode, pattern, '\\'),
+                    predicates.add(builder.or(builder.like(displayedCode, codePattern, '\\'),
                             builder.like(builder.lower(order.join("customer", JoinType.LEFT).get("fullName")), pattern, '\\')));
                 }
             }

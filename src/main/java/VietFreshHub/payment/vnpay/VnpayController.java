@@ -24,9 +24,9 @@ public class VnpayController {
         }
         if (result.successful()) {
             flash.addFlashAttribute("successMessage", result.message());
-        } else {
-            flash.addFlashAttribute("errorMessage", result.message());
+            return "redirect:/customer/orders";
         }
+        flash.addFlashAttribute("errorMessage", result.message());
         return "redirect:/customer/orders/" + result.orderId();
     }
 }

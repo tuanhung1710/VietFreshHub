@@ -23,9 +23,8 @@
 .order-detail-page .payment-record { border: 1px solid var(--line); padding: 12px; border-radius: 6px; margin-top: 10px; }
 .order-detail-page .payment-record p { margin: 6px 0; font-size: 12px; }
 .order-detail-page .payment-record strong { font-size: 13px; }
-.order-detail-page .payment-state { color: var(--green); font-weight: 650; }
-.order-detail-page .payment-state[data-state="FAILED"],
-.order-detail-page .payment-state[data-state="CANCELLED"] { color: var(--danger); }
+.order-detail-page .payment-method,
+.order-detail-page .payment-state { color: #000; font-weight: 400; }
 .order-detail-page .cancel-order > summary.button { color: #fff; }
 .order-detail-page .order-item-placeholder { display: grid; place-items: center; width: 64px; height: 64px; border: 1px solid var(--line); border-radius: 5px; color: var(--muted); font-size: 11px; text-align: center; }
 @media(max-width:760px) {

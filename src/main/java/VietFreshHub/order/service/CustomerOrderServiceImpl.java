@@ -65,8 +65,12 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         LocalDateTime from=filter.getFromDate()==null ? null : LocalDateTime.ofInstant(filter.getFromDate().atStartOfDay(zone).toInstant(),ZoneOffset.UTC);
         if(from!=null && from.getYear()<1) from=LocalDateTime.of(1,1,1,0,0);
         LocalDateTime until=filter.getToDate()==null ? null : LocalDateTime.ofInstant(filter.getToDate().plusDays(1).atStartOfDay(zone).toInstant(),ZoneOffset.UTC);
-        Long referenceId=VietFreshHub.common.BusinessCodes.parse("VFH",filter.getKeyword());
-        String keywordPattern="%"+filter.getKeyword().toLowerCase(Locale.ROOT)
+        String codeKeyword=filter.getKeyword().toLowerCase(Locale.ROOT);
+        if(codeKeyword.equals("vhf") || codeKeyword.startsWith("vhf-")) {
+            codeKeyword="vfh"+codeKeyword.substring(3);
+        }
+        Long referenceId=VietFreshHub.common.BusinessCodes.parse("VFH",codeKeyword);
+        String keywordPattern="%"+codeKeyword
                 .replace("!","!!").replace("\\","!\\").replace("%","!%").replace("_","!_").replace("[","![")+"%";
         var page=shopOrders.findCustomerHistory(customerId,statusText,filter.getKeyword(),keywordPattern,referenceId,from,until,PageRequest.of(filter.getPage()-1,10));
         if(page.getTotalElements()==0) return Page.empty(PageRequest.of(0,10));

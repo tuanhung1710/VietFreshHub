@@ -168,7 +168,11 @@ public class DeliveryMonitoringService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tiêu chí sắp xếp không hợp lệ.");
         }
         String search = orderCode == null ? "" : orderCode.strip().toLowerCase(Locale.ROOT);
+        String codeSearch = search.equals("vhf") || search.startsWith("vhf-")
+                ? "vfh" + search.substring(3) : search;
         String searchPattern = "%" + search.replace("\\", "\\\\").replace("%", "\\%")
+                .replace("_", "\\_").replace("[", "\\[") + "%";
+        String codeSearchPattern = "%" + codeSearch.replace("\\", "\\\\").replace("%", "\\%")
                 .replace("_", "\\_").replace("[", "\\[") + "%";
         Specification<Delivery> specification = (root, query, builder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -202,9 +206,20 @@ public class DeliveryMonitoringService {
             if (!search.isEmpty()) {
                 Predicate matchingOrderCode = builder.like(
                         builder.lower(root.get("shopOrder").get("order").get("orderCode")), searchPattern, '\\');
-                Long shopOrderId = VietFreshHub.common.BusinessCodes.parse("VFH", search);
-                if (shopOrderId != null) matchingOrderCode = builder.or(matchingOrderCode,
-                        builder.equal(root.get("shopOrder").get("shopOrderId"), shopOrderId));
+                Long shopOrderId = VietFreshHub.common.BusinessCodes.parse("VFH", codeSearch);
+                if (shopOrderId != null) {
+                    matchingOrderCode = builder.or(matchingOrderCode,
+                            builder.equal(root.get("shopOrder").get("shopOrderId"), shopOrderId));
+                } else {
+                    Expression<String> idText = root.get("shopOrder").get("shopOrderId").cast(String.class);
+                    Expression<String> paddedId = builder.<String>selectCase()
+                            .when(builder.lt(builder.length(idText), 6), builder.substring(builder.concat("000000", idText),
+                                    builder.sum(builder.length(idText), 1), builder.literal(6)))
+                            .otherwise(idText);
+                    Expression<String> displayedCode = builder.concat("vfh-", paddedId);
+                    matchingOrderCode = builder.or(matchingOrderCode,
+                            builder.like(displayedCode, codeSearchPattern, '\\'));
+                }
                 var matchingStaff = query.subquery(Long.class);
                 var assignment = matchingStaff.from(DeliveryAssignment.class);
                 matchingStaff.select(assignment.get("assignmentId")).where(
@@ -355,7 +370,8 @@ public class DeliveryMonitoringService {
                     .equals(event.getNote()));
             String performerName = event.getChangedBy() == null ? "Hệ thống"
                     : performerNames.getOrDefault(event.getChangedBy(), "Chưa ghi nhận họ tên");
-            return new DeliveryMonitoringHistoryEntry(historyStatusLabel(event.getStatus()),
+            return new DeliveryMonitoringHistoryEntry(
+                    returnConfirmation ? "Trả hàng" : historyStatusLabel(event.getStatus()),
                     OrderLabels.local(event.getCreatedAt()), performerName,
                     returnConfirmation ? "Cửa hàng đã xác nhận nhận lại hàng" : event.getNote());
         }).toList();

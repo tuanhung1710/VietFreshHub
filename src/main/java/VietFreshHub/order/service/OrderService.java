@@ -5,7 +5,6 @@ import VietFreshHub.order.dto.OrderCountsResponse;
 import VietFreshHub.order.dto.OrderDetailResponse;
 import VietFreshHub.order.dto.OrderFilterRequest;
 import VietFreshHub.order.dto.OrderProcessingHistoryEntry;
-import VietFreshHub.order.dto.ProcessedOrderResponse;
 import VietFreshHub.order.entity.OrderAddress;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
@@ -30,7 +29,7 @@ public interface OrderService {
 
     Page<IncomingOrderResponse> getCancelledOrders(Authentication authentication, OrderFilterRequest filter, int page);
 
-    Page<ProcessedOrderResponse> getProcessedOrderHistory(Authentication authentication, OrderFilterRequest filter, int page);
+    Page<IncomingOrderResponse> getCompletedOrders(Authentication authentication, OrderFilterRequest filter, int page);
 
     long countFilteredOrders(Authentication authentication, OrderFilterRequest filter, String view);
 
