@@ -135,7 +135,7 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
     @Transactional
     public Long createManualBatch(List<Long> payoutIds) {
         if (payoutIds == null || payoutIds.isEmpty() || payoutIds.stream().anyMatch(Objects::isNull)) {
-            throw badRequest("Chọn ít nhất một khoản payout đủ điều kiện.");
+            throw badRequest("Hãy chọn ít nhất một khoản chi trả đủ điều kiện.");
         }
 
         List<Long> selectedIds = payoutIds.stream().distinct().sorted().toList();
@@ -144,18 +144,18 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
         for (Long payoutId : selectedIds) {
             SellerPayout payout = payouts.findByPayoutIdForUpdate(payoutId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            "Không tìm thấy khoản payout đã chọn."));
+                            "Không tìm thấy khoản chi trả đã chọn."));
             if (!BATCHABLE_STATUSES.contains(payout.getStatus())) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Một khoản đã chọn không còn ở trạng thái chờ payout.");
+                        "Một khoản đã chọn không còn ở trạng thái chờ chi trả.");
             }
             if (payout.getEligibleAt() == null) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Một khoản đã chọn chưa được xác nhận giao thành công.");
+                        "Có đơn chưa được xác nhận giao thành công.");
             }
             if (payout.getFundsConfirmedAt() == null) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Một khoản đã chọn chưa được xác nhận tiền về sàn.");
+                        "Có đơn chưa được xác nhận tiền đã về sàn.");
             }
             selected.add(payout);
         }
@@ -165,7 +165,7 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
                 .stream().collect(Collectors.toMap(ShopPayoutAccount::getShopId, Function.identity()));
         if (selectedShopIds.stream().anyMatch(shopId -> !verifiedAccounts.containsKey(shopId))) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Mỗi shop được chọn phải có tài khoản payout đã xác minh.");
+                    "Mỗi cửa hàng được chọn cần có tài khoản ngân hàng đã xác minh.");
         }
 
         String manualSlot = "MANUAL-" + UUID.randomUUID().toString().replace("-", "");
@@ -334,13 +334,13 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
     @Transactional
     public void confirmCodRemittance(Long payoutId, Long confirmedBy) {
         SellerPayout payout = payouts.findByPayoutIdForUpdate(payoutId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy khoản payout."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy khoản chi trả."));
         if (payout.getFundsSource() != SellerPayout.FundsSource.COD) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Chỉ xác nhận COD sau khi sàn thực nhận tiền từ shipper.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Chỉ xác nhận tiền COD sau khi sàn đã thực nhận tiền từ shipper.");
         }
         if (payout.getStatus() == SellerPayout.Status.PROCESSING || payout.getStatus() == SellerPayout.Status.PAID
                 || payout.getStatus() == SellerPayout.Status.CANCELLED) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Khoản payout đã được đưa vào lô hoặc đã hoàn tất.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Khoản chi trả này đã được đưa vào đợt hoặc đã hoàn tất.");
         }
         if (payout.getFundsConfirmedAt() == null) {
             payout.setFundsConfirmedAt(utcNow());
@@ -353,17 +353,17 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
     public void recordTransferResult(Long batchId, Long shopId, boolean successful,
                                     String reference, String failureReason, Long changedBy) {
         SellerPayoutBatch batch = batches.findByBatchId(batchId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy lô payout."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đợt chi trả."));
         List<SellerPayoutBatchItem> items = batchItems.findByBatchAndShop(batchId, shopId);
-        if (items.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy cửa hàng trong lô payout.");
+        if (items.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy cửa hàng trong đợt chi trả.");
         if (items.stream().anyMatch(item -> item.getStatus() != SellerPayoutBatchItem.Status.PENDING)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Kết quả chuyển khoản cho cửa hàng này đã được ghi nhận.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Kết quả chuyển khoản cho cửa hàng này đã được cập nhật.");
         }
         String normalizedReference = reference == null ? "" : reference.strip();
         String normalizedReason = failureReason == null ? "" : failureReason.strip();
-        if (successful && normalizedReference.isBlank()) throw badRequest("Vui lòng nhập mã tham chiếu giao dịch.");
+        if (successful && normalizedReference.isBlank()) throw badRequest("Vui lòng nhập mã giao dịch ngân hàng.");
         if (!successful && normalizedReason.isBlank()) throw badRequest("Vui lòng nhập lý do chuyển khoản thất bại.");
-        if (normalizedReference.length() > 255 || normalizedReason.length() > 1000) throw badRequest("Thông tin kết quả vượt quá độ dài cho phép.");
+        if (normalizedReference.length() > 255 || normalizedReason.length() > 1000) throw badRequest("Thông tin kết quả quá dài. Vui lòng kiểm tra lại.");
 
         LocalDateTime now = utcNow();
         for (SellerPayoutBatchItem item : items) {
@@ -384,7 +384,7 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
     @Transactional(readOnly = true)
     public PayoutBatchExport getBatchExport(Long batchId) {
         SellerPayoutBatch batch = batches.findByBatchId(batchId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy lô payout."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đợt chi trả."));
         List<PayoutBatchExportItem> items = batchItems.findForBatch(batchId).stream().map(item -> {
             SellerPayout payout = item.getPayout();
             ShopOrder shopOrder = payout.getShopOrder();

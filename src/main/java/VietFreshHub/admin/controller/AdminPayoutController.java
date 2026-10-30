@@ -51,8 +51,8 @@ public class AdminPayoutController {
             sellerPayoutService.setAccountVerified(shopId, verified,
                     authService.getCurrentUserId(authentication));
             redirectAttributes.addFlashAttribute("successMessage", verified
-                    ? "Đã xác minh tài khoản payout của shop."
-                    : "Đã thu hồi xác minh tài khoản payout của shop.");
+                    ? "Đã xác minh tài khoản ngân hàng nhận tiền của cửa hàng."
+                    : "Đã thu hồi xác minh tài khoản ngân hàng của cửa hàng.");
         } catch (ResponseStatusException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getReason());
         }
@@ -64,7 +64,7 @@ public class AdminPayoutController {
                              RedirectAttributes redirectAttributes) {
         try {
             sellerPayoutService.confirmCodRemittance(payoutId, authService.getCurrentUserId(authentication));
-            redirectAttributes.addFlashAttribute("successMessage", "Đã xác nhận sàn nhận được khoản COD từ shipper.");
+            redirectAttributes.addFlashAttribute("successMessage", "Đã xác nhận tiền COD đã về sàn.");
         } catch (ResponseStatusException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getReason());
         }
@@ -77,7 +77,7 @@ public class AdminPayoutController {
         try {
             Long batchId = sellerPayoutService.createManualBatch(payoutIds);
             redirectAttributes.addFlashAttribute("successMessage",
-                    "Đã tạo lô payout thủ công #" + batchId + ". Tải file Excel trong mục Các đợt payout.");
+                    "Đã tạo đợt chi trả #" + batchId + ". Bạn có thể tải file Excel trong mục Các đợt chi trả.");
         } catch (ResponseStatusException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getReason());
         }
@@ -100,7 +100,7 @@ public class AdminPayoutController {
                     "Kết quả chuyển khoản không hợp lệ.");
             sellerPayoutService.recordTransferResult(batchId, shopId, successful, reference, failureReason,
                     authService.getCurrentUserId(authentication));
-            redirectAttributes.addFlashAttribute("successMessage", "Đã ghi nhận kết quả chuyển khoản.");
+            redirectAttributes.addFlashAttribute("successMessage", "Đã lưu kết quả chuyển khoản.");
         } catch (ResponseStatusException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getReason());
         }
