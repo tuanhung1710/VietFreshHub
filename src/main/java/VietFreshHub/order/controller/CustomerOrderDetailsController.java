@@ -19,35 +19,36 @@ public class CustomerOrderDetailsController {
     private final VietFreshHub.order.service.CustomerOrderService lifecycle;
     private final VnpayPaymentService vnpayPayments;
     private final VietFreshHub.refund.service.RefundRequestService refunds;
-    @GetMapping("/{orderId}")
-    public String detail(@PathVariable Long orderId,@RequestParam(required=false) Long shopOrderId,
+    @GetMapping(value="/{shopOrderId}",params="!shopOrderId")
+    public String detail(@PathVariable Long shopOrderId,
                          Authentication authentication,Model model) {
         Long customerId=currentCustomer.requireCustomerId(authentication);
-        var receipt=orders.getDetails(customerId,orderId);
-        var selectedShop=receipt.shops().stream()
-                .filter(shop -> shopOrderId==null || shop.shopOrderId().equals(shopOrderId))
-                .findFirst().orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng của bạn."));
-        if(shopOrderId!=null && receipt.shops().size()==1) {
-            return "redirect:/customer/orders/"+orderId;
-        }
-        Long selectedShopOrderId=selectedShop.shopOrderId();
-        model.addAttribute("order",orders.getShopDetails(customerId,selectedShopOrderId));
+        var order=orders.getShopDetails(customerId,shopOrderId);
+        var receipt=orders.getDetails(customerId,order.orderId());
+        model.addAttribute("order",order);
         model.addAttribute("receipt",receipt);
         model.addAttribute("cartBadgeTotal",orders.getCartBadgeTotal(customerId));
-        model.addAttribute("shopOrderId",selectedShopOrderId);
-        model.addAttribute("canRetryVnpayPayment",vnpayPayments.canRetry(orderId,customerId));
-        model.addAttribute("actions",lifecycle.shopActions(customerId,selectedShopOrderId));
-        model.addAttribute("refund",refunds.getCustomerShopState(selectedShopOrderId,authentication));
-        model.addAttribute("receiptRefund",refunds.getCustomerState(orderId,authentication));
+        model.addAttribute("shopOrderId",shopOrderId);
+        model.addAttribute("canRetryVnpayPayment",vnpayPayments.canRetry(order.orderId(),customerId));
+        model.addAttribute("actions",lifecycle.shopActions(customerId,shopOrderId));
+        model.addAttribute("refund",refunds.getCustomerShopState(shopOrderId,authentication));
+        model.addAttribute("receiptRefund",refunds.getCustomerState(order.orderId(),authentication));
         return "customer/order-detail";
+    }
+    @GetMapping(value="/{orderId}",params="shopOrderId")
+    public String legacyDetail(@PathVariable Long orderId,@RequestParam Long shopOrderId,
+                               Authentication authentication) {
+        var receipt=orders.getDetails(currentCustomer.requireCustomerId(authentication),orderId);
+        if(receipt.shops().stream().noneMatch(shop -> shop.shopOrderId().equals(shopOrderId))) {
+            throw new ResourceNotFoundException("Không tìm thấy đơn hàng của bạn.");
+        }
+        return "redirect:/customer/orders/"+shopOrderId;
     }
     @GetMapping("/shops/{shopOrderId}")
     public String shopDetail(@PathVariable Long shopOrderId,Authentication authentication) {
         Long customerId=currentCustomer.requireCustomerId(authentication);
-        var order=orders.getShopDetails(customerId,shopOrderId);
-        var receipt=orders.getDetails(customerId,order.orderId());
-        return "redirect:/customer/orders/"+order.orderId()
-                +(receipt.shops().size()>1 ? "?shopOrderId="+shopOrderId : "");
+        orders.getShopDetails(customerId,shopOrderId);
+        return "redirect:/customer/orders/"+shopOrderId;
     }
     @GetMapping("/{orderId}/confirmation")
     public String confirmation(@PathVariable Long orderId,Authentication authentication,RedirectAttributes flash) {

@@ -56,14 +56,14 @@ public class RefundRequestService {
     @PreAuthorize("hasRole('CUSTOMER')")
     @Transactional(readOnly = true)
     public CustomerRefundState getCustomerShopState(Long shopOrderId, Authentication authentication) {
-        return describeShop(orders.getShopForCustomer(shopOrderId, authentication));
+        return describeShop(orders.getShopForCustomer(shopOrderId, authentication), authentication);
     }
 
     @PreAuthorize("hasRole('CUSTOMER')")
     @Transactional
     public void submitShop(Long shopOrderId, Authentication authentication, @NotNull @Valid RefundInformationForm form) {
         RefundShopOrder refundOrder = orders.lockShopForCustomer(shopOrderId, authentication);
-        CustomerRefundState state = describeShop(refundOrder);
+        CustomerRefundState state = describeShop(refundOrder, authentication);
         if (state.submittedAt() != null) return;
         if (!state.eligible()) throw new ResponseStatusException(HttpStatus.CONFLICT, state.unavailableReason());
         requests.saveAndFlush(new RefundRequest(refundOrder.shopOrder(), form.getBankName().strip(),
@@ -71,7 +71,7 @@ public class RefundRequestService {
                 LocalDateTime.now(ZoneOffset.UTC).withNano(0)));
     }
 
-    private CustomerRefundState describeShop(RefundShopOrder refundOrder) {
+    private CustomerRefundState describeShop(RefundShopOrder refundOrder, Authentication authentication) {
         var shopOrder = refundOrder.shopOrder();
         Order order = shopOrder.getOrder();
         RefundRequest submitted = requests.findByShopOrderShopOrderId(shopOrder.getShopOrderId()).orElse(null);
@@ -91,9 +91,9 @@ public class RefundRequestService {
                 || requests.sumRefundAmount(order.getOrderId()).add(refundAmount).compareTo(paidAmount) > 0) {
             reason = "Số tiền hoàn của đơn cửa hàng không khớp khoản đã thanh toán.";
         } else if (!refundOrder.cancelledByCustomerBeforeConfirmation()
-                && !deliveries.areAllFailedAndReturned(java.util.List.of(shopOrder.getShopOrderId()))) {
+                && !deliveries.isShopOrderDeliveryFailed(shopOrder.getShopOrderId(), authentication)) {
             reason = "Chỉ hỗ trợ hoàn tiền đơn cửa hàng đã hủy trước khi xác nhận,"
-                    + " hoặc giao thất bại và cửa hàng đã xác nhận nhận lại hàng.";
+                    + " hoặc giao hàng thất bại.";
         }
         return new CustomerRefundState(order.getOrderId(), shopOrder.getShopOrderCode(), refundAmount,
                 reason == null, null, reason);

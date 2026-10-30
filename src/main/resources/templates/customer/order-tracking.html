@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/storefront :: head('Theo dõi đơn hàng')}"></head><body>
 <header th:replace="~{fragments/storefront :: header}"></header><main class="container page tracking-page">
-    <p><a th:href="@{/customer/orders/shops/{id}(id=${shopOrderId})}">← Chi tiết đơn hàng</a></p>
+    <p><a th:href="@{/customer/orders/{id}(id=${shopOrderId})}">← Chi tiết đơn hàng</a></p>
     <div class="page-heading"><h1 class="checkout-title">Theo dõi đơn hàng</h1><p class="order-code">
         Mã đơn hàng: <span th:text="${tracking.orderCode}"></span>
     </p></div>

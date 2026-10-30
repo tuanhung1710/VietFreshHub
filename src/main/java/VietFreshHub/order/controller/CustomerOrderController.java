@@ -48,12 +48,7 @@ public class CustomerOrderController {
         model.addAttribute("statusOptions",OrderLabels.customerStatusOptions());
         return "customer/orders";
     }
-    @GetMapping("/{orderId}/tracking")
-    public String tracking(@PathVariable Long orderId,Authentication authentication,Model model) {
-        readOrders.getDetails(currentCustomer.requireCustomerId(authentication),orderId);
-        return "redirect:/customer/orders/"+orderId;
-    }
-    @GetMapping("/shops/{shopOrderId}/tracking")
+    @GetMapping({"/{shopOrderId}/tracking","/shops/{shopOrderId}/tracking"})
     public String shopTracking(@PathVariable Long shopOrderId,Authentication authentication,Model model) {
         Long customerId=currentCustomer.requireCustomerId(authentication);
         model.addAttribute("tracking",orders.shopTracking(customerId,shopOrderId));
@@ -74,13 +69,13 @@ public class CustomerOrderController {
         } catch(CustomerOrderException ex) {
             flash.addFlashAttribute("errorMessage",ex.getMessage());
         }
-        return "redirect:/customer/orders/shops/"+shopOrderId;
+        return "redirect:/customer/orders/"+shopOrderId;
     }
     @PostMapping({"/{orderId}/cancel","/{orderId}/reorder"})
     public String legacyAction(@PathVariable Long orderId,Authentication authentication,RedirectAttributes flash) {
         readOrders.getDetails(currentCustomer.requireCustomerId(authentication),orderId);
         flash.addFlashAttribute("errorMessage","Vui lòng chọn đơn cửa hàng để hủy hoặc mua lại.");
-        return "redirect:/customer/orders/"+orderId;
+        return "redirect:/customer/orders";
     }
     @PostMapping("/shops/{shopOrderId}/reorder")
     public String reorderShop(@PathVariable Long shopOrderId,Authentication authentication,RedirectAttributes flash) {
@@ -90,7 +85,7 @@ public class CustomerOrderController {
             if(result.addedLines()>0) flash.addFlashAttribute("successMessage","Đã thêm "+result.addedLines()+" phân loại vào giỏ theo giá hiện tại. Vui lòng kiểm tra trước khi đặt hàng.");
             else flash.addFlashAttribute("errorMessage","Chưa thêm được sản phẩm nào từ đơn này. Xem các sản phẩm không khả dụng bên dưới.");
             flash.addFlashAttribute("reorderSkipped",result.skipped()); return "redirect:/cart";
-        } catch(CustomerOrderException ex) { flash.addFlashAttribute("errorMessage",ex.getMessage()); return "redirect:/customer/orders/shops/"+shopOrderId; }
+        } catch(CustomerOrderException ex) { flash.addFlashAttribute("errorMessage",ex.getMessage()); return "redirect:/customer/orders/"+shopOrderId; }
     }
     @PostMapping("/{orderId}/retry-payment")
     public String retryPayment(@PathVariable Long orderId,Authentication authentication,
@@ -103,7 +98,7 @@ public class CustomerOrderController {
         } catch(CustomerOrderException | VietFreshHub.exception.ResourceNotFoundException | CheckoutException ex) {
             flash.addFlashAttribute("errorMessage",ex.getMessage());
         }
-        return "redirect:/customer/orders/"+orderId;
+        return "redirect:/customer/orders";
     }
     @ExceptionHandler(ResourceNotFoundException.class)
     public ModelAndView notFound() { var view=new ModelAndView("customer/order-not-found"); view.setStatus(HttpStatus.NOT_FOUND); return view; }

@@ -108,7 +108,7 @@ public class CheckoutController {
                     var start=vnpayPayments.startInitialPayment(order.paymentId(),customerId,request.getRemoteAddr());
                     if(start.started()) return "redirect:"+start.paymentUrl();
                     flash.addFlashAttribute("errorMessage",start.message());
-                    return "redirect:/customer/orders/"+order.orderId();
+                    return "redirect:/customer/orders";
                 }
                 flash.addFlashAttribute("successMessage","Đặt hàng thành công.");
                 return "redirect:/customer/orders";

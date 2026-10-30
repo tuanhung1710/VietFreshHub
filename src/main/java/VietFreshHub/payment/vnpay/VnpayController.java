@@ -27,6 +27,6 @@ public class VnpayController {
             return "redirect:/customer/orders";
         }
         flash.addFlashAttribute("errorMessage", result.message());
-        return "redirect:/customer/orders/" + result.orderId();
+        return "redirect:/customer/orders";
     }
 }

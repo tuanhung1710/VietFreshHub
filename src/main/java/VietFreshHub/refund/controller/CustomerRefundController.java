@@ -47,7 +47,7 @@ public class CustomerRefundController {
     public String legacyRefund(@PathVariable Long orderId, Authentication authentication, RedirectAttributes flash) {
         refunds.getCustomerState(orderId, authentication);
         flash.addFlashAttribute("errorMessage", "Vui lòng chọn đơn cửa hàng để xem hoặc gửi thông tin hoàn tiền.");
-        return "redirect:/customer/orders/" + orderId;
+        return "redirect:/customer/orders";
     }
 
     @GetMapping("/shops/{shopOrderId}/refund-information")
@@ -91,7 +91,7 @@ public class CustomerRefundController {
         model.addAttribute("refund", state);
         String detailPath = detailPath(shopOrderId);
         model.addAttribute("orderDetailPath", detailPath);
-        model.addAttribute("refundAction", detailPath + "/refund-information");
+        model.addAttribute("refundAction", "/customer/orders/shops/" + shopOrderId + "/refund-information");
         model.addAttribute("cartBadgeTotal", orders.getCartBadgeTotal(currentCustomer.requireCustomerId(authentication)));
         return "customer/refund-information";
     }
@@ -103,7 +103,7 @@ public class CustomerRefundController {
     }
 
     private String detailPath(Long shopOrderId) {
-        return "/customer/orders/shops/" + shopOrderId;
+        return "/customer/orders/" + shopOrderId;
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)

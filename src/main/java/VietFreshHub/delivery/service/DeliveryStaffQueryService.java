@@ -61,7 +61,7 @@ public class DeliveryStaffQueryService {
     @Transactional(readOnly = true)
     public List<AvailableDeliveryResponse> getAvailableDeliveries(Authentication authentication) {
         authService.getCurrentDeliveryStaffId(authentication);
-        return deliveryRepository.findAll(DeliveryRepository.availableForClaim(), Sort.by("createdAt", "deliveryId")).stream()
+        return deliveryRepository.findAll(DeliveryRepository.availableForClaim(), Sort.by(Sort.Direction.DESC, "createdAt", "deliveryId")).stream()
                 .map(this::toAvailableDeliveryResponse)
                 .toList();
     }

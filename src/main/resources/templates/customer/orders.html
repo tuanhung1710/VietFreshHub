@@ -24,7 +24,7 @@
             </div>
         </div>
         <div class="history-order-bottom"><div><span class="muted">Giá trị đơn</span><strong class="price" th:text="${#numbers.formatDecimal(order.totalAmount,1,'POINT',order.totalAmount.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></strong></div>
-            <div class="history-actions"><a class="button secondary" th:href="@{/customer/orders/shops/{id}/tracking(id=${order.shopOrderId})}">Theo dõi</a><a class="button" th:href="@{/customer/orders/{id}(id=${order.orderId},shopOrderId=${order.shopOrderId})}">Xem chi tiết</a></div></div>
+            <div class="history-actions"><a class="button secondary" th:href="@{/customer/orders/{id}/tracking(id=${order.shopOrderId})}">Theo dõi</a><a class="button" th:href="@{/customer/orders/{id}(id=${order.shopOrderId})}">Xem chi tiết</a></div></div>
     </article></section>
     <nav th:if="${orderPage.totalPages > 1}" class="pagination" aria-label="Phân trang đơn hàng">
         <a th:if="${orderPage.hasPrevious()}" class="button secondary" th:href="@{/customer/orders(page=${orderPage.number},keyword=${filter.keyword},status=${filter.status},fromDate=${filter.fromDate != null ? #temporals.format(filter.fromDate,'yyyy-MM-dd') : null},toDate=${filter.toDate != null ? #temporals.format(filter.toDate,'yyyy-MM-dd') : null})}">← Trang trước</a>

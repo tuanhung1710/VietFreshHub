@@ -58,28 +58,12 @@ public class DeliveryMonitoringService {
     private final OrderService orderService;
 
     @PreAuthorize("hasRole('CUSTOMER')")
-    public boolean areAllFailedAndReturned(List<Long> shopOrderIds) {
-        if (shopOrderIds == null || shopOrderIds.isEmpty()) {
-            return false;
-        }
-        List<Delivery> deliveries = deliveryRepository
-                .findByShopOrder_ShopOrderIdInOrderByDeliveryIdAsc(shopOrderIds);
-        if (deliveries.size() != shopOrderIds.size()) {
-            return false;
-        }
-        List<Long> deliveryIds = deliveries.stream().map(Delivery::getDeliveryId).toList();
-        Map<Long, List<DeliveryAssignment>> assignments = findAssignments(deliveryIds);
-        Set<String> confirmations = confirmationKeys(deliveryStatusHistoryRepository
-                .findByDelivery_DeliveryIdInAndStatusAndNoteStartingWithAndChangedByIsNotNull(
-                        deliveryIds, DeliveryStatus.FAILED, DeliveryStatusHistoryWriter.GOODS_RETURN_NOTE_PREFIX));
-        for (Delivery delivery : deliveries) {
-            DeliveryAssignment assignment = selectAssignment(delivery,
-                    assignments.getOrDefault(delivery.getDeliveryId(), List.of()));
-            if (!isReturnConfirmed(delivery, assignment, confirmations)) {
-                return false;
-            }
-        }
-        return true;
+    public boolean isShopOrderDeliveryFailed(Long shopOrderId, Authentication authentication) {
+        Long customerId = authService.getCurrentUserId(authentication);
+        return deliveryRepository.findByShopOrder_ShopOrderId(shopOrderId)
+                .filter(delivery -> delivery.getShopOrder().getOrder().getCustomer().getUserId().equals(customerId))
+                .filter(delivery -> delivery.getStatus() == DeliveryStatus.FAILED)
+                .isPresent();
     }
 
     private boolean isReturnConfirmed(Delivery delivery, DeliveryAssignment assignment, Set<String> confirmations) {

@@ -207,7 +207,8 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
                     String staffName=event.getChangedBy()==null ? null : trackingStaffName(staff,delivery.getDeliveryId(),event.getChangedBy());
                     boolean goodsReturned="FAILED".equals(event.getStatus()) && event.getChangedBy()!=null
                             && event.getNote()!=null && event.getNote().startsWith(DeliveryStatusHistoryWriter.GOODS_RETURN_NOTE_PREFIX);
-                    String eventLabel=goodsReturned ? "Cửa hàng đã xác nhận nhận lại hàng" : trackingDeliveryLabel(event.getStatus(),staffName);
+                    if(goodsReturned) continue;
+                    String eventLabel=trackingDeliveryLabel(event.getStatus(),staffName);
                     if(eventLabel!=null) timeline.add(new OrderTrackingResponse.Event(OrderLabels.local(event.getCreatedAt()),eventLabel,null,"DELIVERY"));
                 }
             }

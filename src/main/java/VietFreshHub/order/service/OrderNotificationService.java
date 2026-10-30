@@ -107,9 +107,9 @@ public class OrderNotificationService {
         }
         if ("ORDER".equals(notification.entityType()) && "ORDER_PLACED".equals(notification.type())
                 && hasRole(authentication, "ROLE_CUSTOMER")) {
-            Order order = orderRepository.findByOrderIdAndCustomerUserId(notification.entityId(), userId)
+            orderRepository.findByOrderIdAndCustomerUserId(notification.entityId(), userId)
                     .orElseThrow(this::unavailable);
-            return "/customer/orders/" + order.getOrderId();
+            return "/customer/orders";
         }
         if ("SHOP_ORDER".equals(notification.entityType())) {
             boolean forSeller = "NEW_SHOP_ORDER".equals(notification.type()) || "SHOP_ORDER_CANCELLED".equals(notification.type());
@@ -123,7 +123,7 @@ public class OrderNotificationService {
                 ShopOrder shopOrder = shopOrderRepository
                         .findByShopOrderIdAndOrderCustomerUserId(notification.entityId(), userId)
                         .orElseThrow(this::unavailable);
-                return "/customer/orders/shops/" + shopOrder.getShopOrderId();
+                return "/customer/orders/" + shopOrder.getShopOrderId();
             }
         }
         throw unavailable();
