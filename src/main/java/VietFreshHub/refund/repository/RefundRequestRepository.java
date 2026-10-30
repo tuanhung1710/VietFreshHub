@@ -17,8 +17,6 @@ public interface RefundRequestRepository extends JpaRepository<RefundRequest, Lo
 
     Optional<RefundRequest> findByShopOrderShopOrderId(Long shopOrderId);
 
-    boolean existsByOrderOrderIdAndShopOrderIsNotNull(Long orderId);
-
     @Query("select coalesce(sum(r.refundAmount),0) from RefundRequest r where r.order.orderId=:orderId")
     BigDecimal sumRefundAmount(@Param("orderId") Long orderId);
 

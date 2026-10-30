@@ -9,10 +9,9 @@ import java.util.Optional;
 public interface OrderRepository extends JpaRepository<Order,Long> {
     String CUSTOMER_SHOP_STATUS = """
             case
-                when s.status = 'CANCELLED' then 'CANCELLED'
-                when d.status in ('ACCEPTED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED', 'FAILED') then d.status
-                when d.deliveryId is null or d.status in ('UNASSIGNED', 'ASSIGNED') then s.status
-                else null
+                when s.status in ('CANCELLED', 'COMPLETED') then s.status
+                when d.status in ('ACCEPTED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED', 'FAILED', 'REDELIVERY_SCHEDULED') then d.status
+                else s.status
             end
             """;
 

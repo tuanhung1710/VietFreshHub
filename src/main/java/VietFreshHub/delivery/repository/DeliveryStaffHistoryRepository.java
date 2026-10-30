@@ -32,7 +32,7 @@ public class DeliveryStaffHistoryRepository {
             with assignment_data as (
                 select a.assignment_id, a.delivery_id, a.delivery_staff_id, a.status as assignment_status, a.accepted_at,
                        d.status as current_status, d.delivered_at, d.picked_up_at, d.failure_reason,
-                       so.total_amount, so.shop_id, so.shop_order_id,
+                       so.total_amount, so.shop_id, so.shop_order_id, so.payment_status as shop_payment_status,
                        o.order_id, o.order_code, s.shop_name, oa.recipient_name, oa.phone,
                        coalesce(nullif(oa.formatted_address, ''), oa.address_line) as delivery_address,
                        failure.created_at as failed_at, failure.history_id as failed_history_id,
@@ -161,7 +161,7 @@ public class DeliveryStaffHistoryRepository {
                 select coalesce(sum(eligible.total_amount), 0), count(*)
                 from (select delivery_id, max(total_amount) as total_amount
                 """ + eligible + """
-                  and attribution_verified = 1 and method_count = 1 group by delivery_id) eligible
+                  and attribution_verified = 1 and method_count = 1 and shop_payment_status = 'PAID' group by delivery_id) eligible
                 """, parameters).getSingleResult();
         long unresolved = ((Number) query(HISTORY + """
                 select count(distinct delivery_id) from history
@@ -170,7 +170,8 @@ public class DeliveryStaffHistoryRepository {
                 """ + endCondition + """
                   and delivered_at >= started_at
                   and (next_started_at is null or delivered_at < next_started_at)
-                  and (outcome is null or outcome <> 'DELIVERED' or attribution_verified = 0 or method_count <> 1)
+                  and (outcome is null or outcome <> 'DELIVERED' or attribution_verified = 0 or method_count <> 1
+                    or shop_payment_status <> 'PAID')
                 """, parameters).getSingleResult()).longValue();
         return new DailyCodSummary(date, decimal(values[0]), ((Number) values[1]).longValue(), unresolved);
     }
@@ -325,7 +326,9 @@ public class DeliveryStaffHistoryRepository {
                        ), 126) as pickup_time,
                        case when outcome = 'FAILED' and current_status = 'FAILED'
                          and next_started_at is null then failure_reason end as attempt_failure_reason,
-                       case when method_count = 1 and has_cod = 1 then total_amount else 0 end as cash_to_collect
+                       case when outcome = 'DELIVERED' and attribution_verified = 1
+                         and method_count = 1 and has_cod = 1 and shop_payment_status = 'PAID'
+                         then total_amount else 0 end as cash_to_collect
                 from history
                 """;
     }

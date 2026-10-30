@@ -95,8 +95,6 @@
     <section class="information-card" aria-labelledby="recipient-heading">
         <h2 id="recipient-heading">THÔNG TIN NGƯỜI NHẬN</h2>
         <dl>
-            <dt>Mã đơn hàng</dt>
-            <dd th:text="${deliveryDetail.orderCode}"></dd>
             <dt>Người nhận</dt>
             <dd th:text="${deliveryDetail.recipientName ?: '—'}"></dd>
             <dt>SĐT</dt>
@@ -139,7 +137,10 @@
         </dl>
     </section>
     <section class="information-card" aria-labelledby="cash-heading">
-        <h2 id="cash-heading">TIỀN THU HỘ</h2>
+        <h2 id="cash-heading">THANH TOÁN CỦA ĐƠN HÀNG</h2>
+        <p>Giá trị đơn hàng: <strong th:text="${#numbers.formatDecimal(deliveryDetail.totalAmount, 1, 'POINT', deliveryDetail.totalAmount.stripTrailingZeros().scale() > 0 ? 2 : 0, 'COMMA')} + ' VND'"></strong></p>
+        <p th:text="${deliveryDetail.paymentStatusLabel}"></p>
+        <p>Số tiền còn cần thu:</p>
         <p th:text="${#numbers.formatDecimal(deliveryDetail.cashToCollect, 1, 'POINT', deliveryDetail.cashToCollect.stripTrailingZeros().scale() > 0 ? 2 : 0, 'COMMA')} + ' VND'"></p>
     </section>
     <form class="delivery-actions" method="post"

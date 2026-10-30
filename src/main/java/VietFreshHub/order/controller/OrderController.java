@@ -3,6 +3,7 @@ package VietFreshHub.order.controller;
 import VietFreshHub.order.dto.IncomingOrderResponse;
 import VietFreshHub.order.dto.OrderFilterRequest;
 import VietFreshHub.order.service.OrderService;
+import VietFreshHub.order.service.OrderLabels;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.CacheControl;
@@ -144,6 +145,7 @@ public class OrderController {
     }
 
     private void addPageAttributes(Page<?> page, Model model) {
+        model.addAttribute("paymentStatusOptions", OrderLabels.shopPaymentStatusOptions());
         model.addAttribute("currentPage", page.getNumber());
         model.addAttribute("totalPages", page.getTotalPages());
         model.addAttribute("totalElements", page.getTotalElements());

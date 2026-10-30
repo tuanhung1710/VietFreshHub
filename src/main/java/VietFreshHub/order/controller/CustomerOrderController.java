@@ -1,6 +1,5 @@
 package VietFreshHub.order.controller;
 import VietFreshHub.auth.service.CurrentCustomerService;
-import VietFreshHub.cart.service.CartService;
 import VietFreshHub.order.dto.*;
 import VietFreshHub.exception.CustomerOrderException;
 import VietFreshHub.order.service.CustomerOrderService;
@@ -24,7 +23,6 @@ import VietFreshHub.exception.CheckoutException;
 public class CustomerOrderController {
     private final CurrentCustomerService currentCustomer;
     private final CustomerOrderService orders;
-    private final CartService carts;
     private final VietFreshHub.order.service.CustomerOrderQueryService readOrders;
     private final VnpayPaymentService vnpayPayments;
     @GetMapping
@@ -52,8 +50,8 @@ public class CustomerOrderController {
     }
     @GetMapping("/{orderId}/tracking")
     public String tracking(@PathVariable Long orderId,Authentication authentication,Model model) {
-        Long customerId=currentCustomer.requireCustomerId(authentication); model.addAttribute("tracking",orders.tracking(customerId,orderId));
-        model.addAttribute("cart",carts.getActiveCart(customerId)); return "customer/order-tracking";
+        readOrders.getDetails(currentCustomer.requireCustomerId(authentication),orderId);
+        return "redirect:/customer/orders/"+orderId;
     }
     @GetMapping("/shops/{shopOrderId}/tracking")
     public String shopTracking(@PathVariable Long shopOrderId,Authentication authentication,Model model) {
@@ -78,24 +76,21 @@ public class CustomerOrderController {
         }
         return "redirect:/customer/orders/shops/"+shopOrderId;
     }
-    @PostMapping("/{orderId}/cancel")
-    public String cancel(@PathVariable Long orderId,@Valid @ModelAttribute("cancelForm") OrderCancelRequest form,BindingResult errors,
-                         Authentication authentication,RedirectAttributes flash) {
-        Long customerId=currentCustomer.requireCustomerId(authentication);
-        if(errors.hasErrors()) { flash.addFlashAttribute("errorMessage","Lý do hủy tối đa 500 ký tự."); flash.addFlashAttribute("cancelReason",form.getReason()); }
-        else try { orders.cancel(customerId,orderId,form.getReason()); flash.addFlashAttribute("successMessage","Đơn hàng đã hủy. Hàng đã giữ được giải phóng."); }
-        catch(CustomerOrderException ex) { flash.addFlashAttribute("errorMessage",ex.getMessage()); }
+    @PostMapping({"/{orderId}/cancel","/{orderId}/reorder"})
+    public String legacyAction(@PathVariable Long orderId,Authentication authentication,RedirectAttributes flash) {
+        readOrders.getDetails(currentCustomer.requireCustomerId(authentication),orderId);
+        flash.addFlashAttribute("errorMessage","Vui lòng chọn đơn cửa hàng để hủy hoặc mua lại.");
         return "redirect:/customer/orders/"+orderId;
     }
-    @PostMapping("/{orderId}/reorder")
-    public String reorder(@PathVariable Long orderId,Authentication authentication,RedirectAttributes flash) {
+    @PostMapping("/shops/{shopOrderId}/reorder")
+    public String reorderShop(@PathVariable Long shopOrderId,Authentication authentication,RedirectAttributes flash) {
         Long customerId=currentCustomer.requireCustomerId(authentication);
         try {
-            var result=orders.reorder(customerId,orderId);
+            var result=orders.reorderShop(customerId,shopOrderId);
             if(result.addedLines()>0) flash.addFlashAttribute("successMessage","Đã thêm "+result.addedLines()+" phân loại vào giỏ theo giá hiện tại. Vui lòng kiểm tra trước khi đặt hàng.");
             else flash.addFlashAttribute("errorMessage","Chưa thêm được sản phẩm nào từ đơn này. Xem các sản phẩm không khả dụng bên dưới.");
             flash.addFlashAttribute("reorderSkipped",result.skipped()); return "redirect:/cart";
-        } catch(CustomerOrderException ex) { flash.addFlashAttribute("errorMessage",ex.getMessage()); return "redirect:/customer/orders/"+orderId; }
+        } catch(CustomerOrderException ex) { flash.addFlashAttribute("errorMessage",ex.getMessage()); return "redirect:/customer/orders/shops/"+shopOrderId; }
     }
     @PostMapping("/{orderId}/retry-payment")
     public String retryPayment(@PathVariable Long orderId,Authentication authentication,

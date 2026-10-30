@@ -43,7 +43,6 @@ public class CustomerOrderDetailsController {
         model.addAttribute("order",orders.getDetails(customerId,orderId));
         model.addAttribute("cartBadgeTotal",orders.getCartBadgeTotal(customerId));
         model.addAttribute("confirmation",confirmation);
-        model.addAttribute("actions",lifecycle.actions(customerId,orderId));
         model.addAttribute("canRetryVnpayPayment",vnpayPayments.canRetry(orderId,customerId));
         model.addAttribute("refund",refunds.getCustomerState(orderId,authentication));
         return "customer/order-detail";

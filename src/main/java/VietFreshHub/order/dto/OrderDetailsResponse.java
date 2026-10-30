@@ -25,9 +25,12 @@ public record OrderDetailsResponse(Long orderId,String orderCode,String statusLa
                 discountTotal,shippingFee,grandTotal,placedAt,shops,List.of());
     }
     public record ShopGroup(Long shopOrderId,String shopName,String statusLabel,BigDecimal shippingFee,
-                            BigDecimal totalAmount,List<Item> items,BigDecimal subtotal,BigDecimal discountTotal,String paymentStatus) {
+                            BigDecimal totalAmount,List<Item> items,BigDecimal subtotal,BigDecimal discountTotal,String paymentStatus,String paymentStatusLabel) {
         public String orderCode() { return BusinessCodes.format("VFH",shopOrderId); }
-        public String paymentStatusLabel() { return OrderLabels.payment(paymentStatus); }
+        public ShopGroup(Long shopOrderId,String shopName,String statusLabel,BigDecimal shippingFee,
+                         BigDecimal totalAmount,List<Item> items,BigDecimal subtotal,BigDecimal discountTotal,String paymentStatus) {
+            this(shopOrderId,shopName,statusLabel,shippingFee,totalAmount,items,subtotal,discountTotal,paymentStatus,OrderLabels.payment(paymentStatus));
+        }
         public ShopGroup(Long shopOrderId,String shopName,String statusLabel,BigDecimal shippingFee,
                          BigDecimal totalAmount,List<Item> items,String paymentStatus) {
             this(shopOrderId,shopName,statusLabel,shippingFee,totalAmount,items,

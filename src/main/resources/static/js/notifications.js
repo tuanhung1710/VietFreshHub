@@ -31,6 +31,8 @@
         return;
     }
 
+    const refreshInterval = document.getElementById('notification-inbox') ? 1000 : 10000;
+
     async function refreshNotifications() {
         if (!document.hidden) {
             try {
@@ -59,12 +61,12 @@
             } catch (error) {
                 const status = document.getElementById('notification-refresh-status');
                 if (status) {
-                    status.textContent = 'Chưa tải được thông báo mới. Hệ thống sẽ thử lại sau 10 giây.';
+                    status.textContent = 'Chưa tải được thông báo mới. Hệ thống sẽ thử lại sau 1 giây.';
                 }
             }
         }
-        window.setTimeout(refreshNotifications, 10000);
+        window.setTimeout(refreshNotifications, refreshInterval);
     }
 
-    window.setTimeout(refreshNotifications, 10000);
+    window.setTimeout(refreshNotifications, refreshInterval);
 })();

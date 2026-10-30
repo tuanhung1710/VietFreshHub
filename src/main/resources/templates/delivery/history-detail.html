@@ -87,7 +87,7 @@
             <dl>
                 <dt>Thanh toán</dt>
                 <dd th:text="${record.paymentName}"></dd>
-                <dt>Tiền thu hộ</dt>
+                <dt>Tiền COD đã thu</dt>
                 <dd th:text="${#numbers.formatDecimal(record.cashToCollect, 1, 'POINT', record.cashToCollect.stripTrailingZeros().scale() > 0 ? 2 : 0, 'COMMA')} + ' VND'"></dd>
             </dl>
         </section>

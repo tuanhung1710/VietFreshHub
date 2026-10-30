@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.ModelAndView;
@@ -42,47 +43,53 @@ public class CustomerRefundController {
         binder.setAllowedFields("bankName", "bankAccountNumber", "accountHolderName");
     }
 
-    @GetMapping({"/{orderId}/refund-information", "/shops/{shopOrderId}/refund-information"})
-    public String form(@PathVariable(required = false) Long orderId, @PathVariable(required = false) Long shopOrderId,
+    @RequestMapping(value = "/{orderId}/refund-information", method = {RequestMethod.GET, RequestMethod.POST})
+    public String legacyRefund(@PathVariable Long orderId, Authentication authentication, RedirectAttributes flash) {
+        refunds.getCustomerState(orderId, authentication);
+        flash.addFlashAttribute("errorMessage", "Vui lòng chọn đơn cửa hàng để xem hoặc gửi thông tin hoàn tiền.");
+        return "redirect:/customer/orders/" + orderId;
+    }
+
+    @GetMapping("/shops/{shopOrderId}/refund-information")
+    public String form(@PathVariable Long shopOrderId,
                        Authentication authentication, Model model) {
-        CustomerRefundState state = state(orderId, shopOrderId, authentication);
+        CustomerRefundState state = refunds.getCustomerShopState(shopOrderId, authentication);
         if (state.submittedAt() != null) {
-            return "redirect:" + detailPath(state.orderId(), shopOrderId);
+            return "redirect:" + detailPath(shopOrderId);
         }
         requireEligible(state);
         model.addAttribute("form", new RefundInformationForm());
         return render(state, shopOrderId, authentication, model);
     }
 
-    @PostMapping({"/{orderId}/refund-information", "/shops/{shopOrderId}/refund-information"})
-    public String submit(@PathVariable(required = false) Long orderId, @PathVariable(required = false) Long shopOrderId, Authentication authentication,
+    @PostMapping("/shops/{shopOrderId}/refund-information")
+    public String submit(@PathVariable Long shopOrderId, Authentication authentication,
                          @Valid @ModelAttribute("form") RefundInformationForm form, BindingResult bindingResult,
                          Model model, RedirectAttributes redirectAttributes) {
-        CustomerRefundState state = state(orderId, shopOrderId, authentication);
+        CustomerRefundState state = refunds.getCustomerShopState(shopOrderId, authentication);
         if (state.submittedAt() != null) {
             redirectAttributes.addFlashAttribute("successMessage", "Đã gửi thông tin hoàn tiền.");
-            return "redirect:" + detailPath(state.orderId(), shopOrderId);
+            return "redirect:" + detailPath(shopOrderId);
         }
         requireEligible(state);
         if (bindingResult.hasErrors()) {
             return render(state, shopOrderId, authentication, model);
         }
         try {
-            if (shopOrderId == null) refunds.submit(orderId, authentication, form);
-            else refunds.submitShop(shopOrderId, authentication, form);
+            refunds.submitShop(shopOrderId, authentication, form);
         } catch (DataIntegrityViolationException exception) {
-            if (state(orderId, shopOrderId, authentication).submittedAt() == null) {
+            if (refunds.getCustomerShopState(shopOrderId, authentication).submittedAt() == null) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
                         "Chưa lưu được thông tin hoàn tiền. Vui lòng tải lại đơn hàng.");
             }
         }
         redirectAttributes.addFlashAttribute("successMessage", "Đã gửi thông tin hoàn tiền.");
-        return "redirect:" + detailPath(state.orderId(), shopOrderId);
+        return "redirect:" + detailPath(shopOrderId);
     }
 
     private String render(CustomerRefundState state, Long shopOrderId, Authentication authentication, Model model) {
         model.addAttribute("refund", state);
-        String detailPath = detailPath(state.orderId(), shopOrderId);
+        String detailPath = detailPath(shopOrderId);
         model.addAttribute("orderDetailPath", detailPath);
         model.addAttribute("refundAction", detailPath + "/refund-information");
         model.addAttribute("cartBadgeTotal", orders.getCartBadgeTotal(currentCustomer.requireCustomerId(authentication)));
@@ -95,13 +102,8 @@ public class CustomerRefundController {
         }
     }
 
-    private CustomerRefundState state(Long orderId, Long shopOrderId, Authentication authentication) {
-        return shopOrderId == null ? refunds.getCustomerState(orderId, authentication)
-                : refunds.getCustomerShopState(shopOrderId, authentication);
-    }
-
-    private String detailPath(Long orderId, Long shopOrderId) {
-        return shopOrderId == null ? "/customer/orders/" + orderId : "/customer/orders/shops/" + shopOrderId;
+    private String detailPath(Long shopOrderId) {
+        return "/customer/orders/shops/" + shopOrderId;
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)

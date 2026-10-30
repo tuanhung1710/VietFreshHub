@@ -33,7 +33,7 @@ public class OrderNotificationService {
     @Transactional(propagation = Propagation.MANDATORY)
     public void onOrderPlaced(OrderPlacedEvent event) {
         Order order = orderRepository.findById(event.orderId()).orElseThrow(this::unavailable);
-        if (order.getStatus() == Order.Status.PENDING && paymentService.isCodOrder(order.getOrderId())) {
+        if (paymentService.isCodOrder(order.getOrderId())) {
             notifyActionableOrder(order, false);
         }
     }
@@ -41,22 +41,24 @@ public class OrderNotificationService {
     @Transactional(propagation = Propagation.MANDATORY)
     public void notifyPaidOrder(Long orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow(this::unavailable);
-        if (order.getStatus() == Order.Status.PENDING && "PAID".equals(order.getPaymentStatus())) {
+        if ("PAID".equals(order.getPaymentStatus())) {
             notifyActionableOrder(order, true);
         }
     }
 
     private void notifyActionableOrder(Order order, boolean paidOnline) {
         String paymentMessage = paidOnline ? "Đã thanh toán qua VNPAY." : "Thanh toán khi nhận hàng (COD).";
-        notificationService.createInApp(order.getCustomer().getUserId(), "ORDER_PLACED",
-                paidOnline ? "Thanh toán đơn hàng thành công" : "Đặt hàng thành công",
-                "Đơn đặt hàng #" + order.getOrderCode() + " đã được ghi nhận. " + paymentMessage,
-                "ORDER", order.getOrderId());
-        for (ShopOrder shopOrder : shopOrderRepository.findForOrderNotification(order.getOrderId())) {
+        var children = shopOrderRepository.findForOrderNotification(order.getOrderId());
+        for (ShopOrder shopOrder : children) {
             if (!"PENDING".equals(shopOrder.getStatus())
                     || (paidOnline && !"PAID".equals(shopOrder.getPaymentStatus()))) {
                 continue;
             }
+            notificationService.createInApp(order.getCustomer().getUserId(), "ORDER_PLACED",
+                    paidOnline ? "Thanh toán đơn hàng thành công" : "Đặt hàng thành công",
+                    "Lượt đặt hàng gồm " + children.size() + " đơn cửa hàng. Đơn #" + shopOrder.getShopOrderCode()
+                            + " tại " + shopOrder.getShop().getShopName() + " đã được ghi nhận. " + paymentMessage,
+                    "SHOP_ORDER", shopOrder.getShopOrderId());
             for (Long managerId : shopService.findActiveManagerUserIds(shopOrder.getShopId())) {
                 notificationService.createInApp(managerId, "NEW_SHOP_ORDER", "Bạn có đơn hàng mới",
                         "Đơn hàng #" + shopOrder.getShopOrderCode() + " đang chờ cửa hàng xác nhận. "
@@ -83,6 +85,15 @@ public class OrderNotificationService {
                 " đã sẵn sàng để nhân viên giao hàng đến lấy.");
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void notifyCancelledByCustomer(ShopOrder shopOrder) {
+        for (Long managerId : shopService.findActiveManagerUserIds(shopOrder.getShopId())) {
+            notificationService.createInApp(managerId, "SHOP_ORDER_CANCELLED", "Khách hàng đã hủy đơn hàng",
+                    "Khách hàng đã hủy đơn #" + shopOrder.getShopOrderCode() + ".",
+                    "SHOP_ORDER", shopOrder.getShopOrderId());
+        }
+    }
+
     private void notifyCustomer(ShopOrder shopOrder, String type, String title, String message) {
         notificationService.createInApp(shopOrder.getOrder().getCustomer().getUserId(), type, title,
                 "Đơn hàng #" + shopOrder.getShopOrderCode() + message, "SHOP_ORDER", shopOrder.getShopOrderId());
@@ -101,13 +112,14 @@ public class OrderNotificationService {
             return "/customer/orders/" + order.getOrderId();
         }
         if ("SHOP_ORDER".equals(notification.entityType())) {
-            if ("NEW_SHOP_ORDER".equals(notification.type()) && hasRole(authentication, "ROLE_STORE_MANAGER")) {
+            boolean forSeller = "NEW_SHOP_ORDER".equals(notification.type()) || "SHOP_ORDER_CANCELLED".equals(notification.type());
+            if (forSeller && hasRole(authentication, "ROLE_STORE_MANAGER")) {
                 Long shopId = shopService.getManagedShopId(authentication);
                 ShopOrder shopOrder = shopOrderRepository.findByShopOrderIdAndShopId(notification.entityId(), shopId)
                         .orElseThrow(this::unavailable);
                 return "/seller/orders/" + shopOrder.getShopOrderId();
             }
-            if (!"NEW_SHOP_ORDER".equals(notification.type()) && hasRole(authentication, "ROLE_CUSTOMER")) {
+            if (!forSeller && hasRole(authentication, "ROLE_CUSTOMER")) {
                 ShopOrder shopOrder = shopOrderRepository
                         .findByShopOrderIdAndOrderCustomerUserId(notification.entityId(), userId)
                         .orElseThrow(this::unavailable);

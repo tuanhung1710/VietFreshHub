@@ -17,6 +17,7 @@ public class OrderDeliveryView {
     @Column(nullable=false,length=30) private String status;
     @Column(name="assigned_at") private LocalDateTime assignedAt;
     @Column(name="picked_up_at") private LocalDateTime pickedUpAt;
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     @Column(name="delivered_at") private LocalDateTime deliveredAt;
     @Nationalized @Column(name="failure_reason",length=1000) private String failureReason;
     @Column(name="redelivery_requested_at") private LocalDateTime redeliveryRequestedAt;

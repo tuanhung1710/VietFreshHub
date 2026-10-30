@@ -2,10 +2,14 @@ package VietFreshHub.payment.service;
 
 import VietFreshHub.payment.entity.Payment;
 import VietFreshHub.payment.repository.PaymentRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -16,6 +20,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final EntityManager entityManager;
 
     @PreAuthorize("hasRole('CUSTOMER')")
     @Transactional(readOnly = true)
@@ -49,6 +54,33 @@ public class PaymentService {
         List<Payment> payments = paymentRepository.findByOrderOrderIdOrderByPaymentIdAsc(orderId);
         return !payments.isEmpty() && payments.stream()
                 .allMatch(payment -> "COD".equals(payment.getPaymentMethod().getMethodCode()));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean reconcileCodPayment(Long orderId, BigDecimal amount, LocalDateTime paidAt, boolean noCollectibleOrders) {
+        List<Payment> payments = paymentRepository.findByOrderOrderIdOrderByPaymentIdAsc(orderId);
+        if (payments.size() != 1 || !"COD".equals(payments.getFirst().getPaymentMethod().getMethodCode())) {
+            return false;
+        }
+        Payment payment = paymentRepository.findByIdForUpdate(payments.getFirst().getPaymentId())
+                .orElseThrow(() -> new IllegalStateException("Không tìm thấy bản ghi thanh toán COD."));
+        entityManager.refresh(payment, LockModeType.PESSIMISTIC_WRITE);
+        if (!"COD".equals(payment.getPaymentMethod().getMethodCode()) || "VNPAY".equals(payment.getProvider())
+                || payment.getPaidAt() != null
+                || (payment.getStatus() != Payment.Status.PENDING
+                && !(noCollectibleOrders && payment.getStatus() == Payment.Status.CANCELLED))) {
+            return false;
+        }
+        if (noCollectibleOrders) {
+            payment.setAmount(BigDecimal.ZERO);
+            payment.setStatus(Payment.Status.CANCELLED);
+            return false;
+        }
+        payment.setAmount(amount);
+        if (paidAt == null) return false;
+        payment.setStatus(Payment.Status.PAID);
+        payment.setPaidAt(paidAt);
+        return true;
     }
 
     @Transactional(readOnly = true)

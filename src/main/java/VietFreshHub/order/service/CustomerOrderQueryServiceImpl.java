@@ -2,6 +2,7 @@ package VietFreshHub.order.service;
 
 import VietFreshHub.order.dto.OrderDetailsResponse;
 import VietFreshHub.order.repository.*;
+import VietFreshHub.payment.service.PaymentService;
 import VietFreshHub.order.service.CustomerOrderQueryService;
 import VietFreshHub.order.service.OrderLabels;
 import VietFreshHub.exception.ResourceNotFoundException;
@@ -17,6 +18,7 @@ public class CustomerOrderQueryServiceImpl implements CustomerOrderQueryService 
     private final OrderAddressRepository addresses;
     private final CustomerOrderReadRepository reads;
     private final ShopOrderRepository shopOrders;
+    private final PaymentService paymentService;
 
     @Override @Transactional(readOnly=true)
     public Long getCartBadgeTotal(Long customerId) {
@@ -28,23 +30,26 @@ public class CustomerOrderQueryServiceImpl implements CustomerOrderQueryService 
         if(customerId==null || orderId==null || orderId<1) throw notFound();
         var order=orders.findByOrderIdAndCustomerUserId(orderId,customerId).orElseThrow(this::notFound);
         var address=addresses.findByOrderOrderId(orderId).orElseThrow(this::notFound);
-        // Fixed query count; no lazy catalog traversal or per-shop/per-item database reads.
         Map<Long,List<OrderDetailsResponse.Item>> items=new LinkedHashMap<>();
         for(var row:reads.findItems(customerId,orderId)) {
             String image=row.getImageUrl()==null || row.getImageUrl().isBlank() ? null : row.getImageUrl();
             items.computeIfAbsent(row.getShopOrderId(),key -> new ArrayList<>()).add(new OrderDetailsResponse.Item(
                     row.getProductName(),row.getVariantName(),row.getSku(),image,row.getQuantity(),row.getUnitPrice(),row.getTotalAmount(),row.getDiscountAmount()));
         }
-        var groups=reads.findShops(customerId,orderId).stream().map(shop -> new OrderDetailsResponse.ShopGroup(
-                shop.getShopOrderId(),shop.getShopName(),OrderLabels.shop(shop.getStatus()),shop.getShippingFee(),shop.getTotalAmount(),
-                List.copyOf(items.getOrDefault(shop.getShopOrderId(),List.of())),shop.getSubtotal(),shop.getDiscountTotal(),shop.getPaymentStatus())).toList();
+        Map<Long,String> statuses=new HashMap<>();
+        orders.findCustomerShopStatuses(customerId,List.of(orderId)).forEach(status -> statuses.put(status.shopOrderId(),status.statusLabel()));
         var payments=reads.findPayments(customerId,orderId).stream().map(payment -> new OrderDetailsResponse.PaymentInfo(
                 payment.getPaymentId(),payment.getMethodName(),payment.getMethodCode(),payment.getStatus().name(),
                 OrderLabels.paymentTransaction(payment.getStatus()),payment.getAmount(),OrderLabels.local(payment.getPaidAt()))).toList();
+        boolean cod=!payments.isEmpty() && payments.stream().allMatch(payment -> "COD".equals(payment.methodCode()));
+        var groups=reads.findShops(customerId,orderId).stream().map(shop -> new OrderDetailsResponse.ShopGroup(
+                shop.getShopOrderId(),shop.getShopName(),statuses.getOrDefault(shop.getShopOrderId(),OrderLabels.shop(shop.getStatus())),shop.getShippingFee(),shop.getTotalAmount(),
+                List.copyOf(items.getOrDefault(shop.getShopOrderId(),List.of())),shop.getSubtotal(),shop.getDiscountTotal(),shop.getPaymentStatus(),
+                OrderLabels.customerPayment(shop.getStatus(),shop.getPaymentStatus(),cod))).toList();
         String addressText=address.getFormattedAddress()!=null && !address.getFormattedAddress().isBlank() ? address.getFormattedAddress()
                 : java.util.stream.Stream.of(address.getAddressLine(),address.getWard(),address.getDistrict(),address.getProvince())
                     .filter(part -> part!=null && !part.isBlank()).collect(Collectors.joining(", "));
-        return new OrderDetailsResponse(orderId,order.getOrderCode(),OrderLabels.order(order.getStatus()),OrderLabels.payment(order.getPaymentStatus()),
+        return new OrderDetailsResponse(orderId,null,null,null,
                 address.getRecipientName(),address.getPhone(),addressText,order.getSubtotal(),order.getDiscountTotal(),order.getShippingFee(),
                 order.getGrandTotal(),OrderLabels.local(order.getPlacedAt()),groups,payments);
     }
@@ -59,13 +64,15 @@ public class CustomerOrderQueryServiceImpl implements CustomerOrderQueryService 
             return new OrderDetailsResponse.Item(row.getProductName(),row.getVariantName(),row.getSku(),image,
                     row.getQuantity(),row.getUnitPrice(),row.getTotalAmount(),row.getDiscountAmount());
         }).toList();
+        boolean cod=paymentService.isCodOrder(order.getOrderId());
+        String paymentLabel=OrderLabels.customerPayment(shop.getStatus(),shop.getPaymentStatus(),cod);
         var group=new OrderDetailsResponse.ShopGroup(shop.getShopOrderId(),shop.getShop().getShopName(),status.statusLabel(),
-                shop.getShippingFee(),shop.getTotalAmount(),items,shop.getSubtotal(),shop.getDiscountTotal(),shop.getPaymentStatus());
+                shop.getShippingFee(),shop.getTotalAmount(),items,shop.getSubtotal(),shop.getDiscountTotal(),shop.getPaymentStatus(),paymentLabel);
         String addressText=address.getFormattedAddress()!=null && !address.getFormattedAddress().isBlank() ? address.getFormattedAddress()
                 : java.util.stream.Stream.of(address.getAddressLine(),address.getWard(),address.getDistrict(),address.getProvince())
                     .filter(part -> part!=null && !part.isBlank()).collect(Collectors.joining(", "));
         return new OrderDetailsResponse(order.getOrderId(),shop.getShopOrderCode(),status.statusLabel(),
-                OrderLabels.payment(shop.getPaymentStatus()),address.getRecipientName(),address.getPhone(),addressText,
+                paymentLabel,address.getRecipientName(),address.getPhone(),addressText,
                 shop.getSubtotal(),shop.getDiscountTotal(),shop.getShippingFee(),shop.getTotalAmount(),
                 OrderLabels.local(order.getPlacedAt()),List.of(group),List.of());
     }

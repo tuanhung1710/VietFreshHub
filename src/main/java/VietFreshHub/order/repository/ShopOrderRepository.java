@@ -28,6 +28,9 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, Jpa
             + "where o.customer.userId = :customerId "
             + "and (:status = '' or (" + OrderRepository.CUSTOMER_SHOP_STATUS + ") = :status) "
             + "and (:keyword = '' or s.shopOrderId = :referenceId "
+            + "or (:referenceId is null and concat('vfh-', case when length(cast(s.shopOrderId as String)) < 6 "
+            + "then substring(concat('000000', cast(s.shopOrderId as String)), length(cast(s.shopOrderId as String)) + 1, 6) "
+            + "else cast(s.shopOrderId as String) end) like :keywordPattern escape '!') "
             + "or locate(lower(:keyword),lower(o.orderCode)) > 0) "
             + "and (:fromDate is null or o.placedAt >= :fromDate) "
             + "and (:untilDate is null or o.placedAt < :untilDate) ";
@@ -37,7 +40,7 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, Jpa
             + CUSTOMER_HISTORY_FROM + "order by o.placedAt desc,s.shopOrderId desc",
             countQuery = "select count(s.shopOrderId) " + CUSTOMER_HISTORY_FROM)
     Page<OrderListRow> findCustomerHistory(@Param("customerId") Long customerId, @Param("status") String status,
-            @Param("keyword") String keyword, @Param("referenceId") Long referenceId,
+            @Param("keyword") String keyword, @Param("keywordPattern") String keywordPattern, @Param("referenceId") Long referenceId,
             @Param("fromDate") LocalDateTime fromDate, @Param("untilDate") LocalDateTime untilDate, Pageable pageable);
 
     @EntityGraph(attributePaths = {"order", "shop"})

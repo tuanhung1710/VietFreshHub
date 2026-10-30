@@ -309,10 +309,8 @@
                 <div class="order-filter-options">
                     <label><input type="radio" name="paymentStatus" value=""
                                   th:checked="${#strings.isEmpty(filter.paymentStatus)}"><span>Tất cả</span></label>
-                    <label><input type="radio" name="paymentStatus" value="UNPAID"
-                                  th:checked="${filter.paymentStatus == 'UNPAID'}"><span>Chưa thanh toán</span></label>
-                    <label><input type="radio" name="paymentStatus" value="PAID"
-                                  th:checked="${filter.paymentStatus == 'PAID'}"><span>Đã thanh toán</span></label>
+                    <label th:each="option : ${paymentStatusOptions}"><input type="radio" name="paymentStatus" th:value="${option.key}"
+                                  th:checked="${filter.paymentStatus == option.key}"><span th:text="${option.value}"></span></label>
                 </div>
             </fieldset>
             <p id="order-filter-error" class="order-filter-error" role="alert" hidden></p>

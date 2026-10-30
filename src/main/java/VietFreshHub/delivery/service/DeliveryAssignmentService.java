@@ -102,6 +102,10 @@ public class DeliveryAssignmentService {
     public void confirmGoodsReturn(Long deliveryId, Authentication authentication) {
         Long shopId = shopService.getManagedShopId(authentication);
         Long managerId = authService.getCurrentUserId(authentication);
+        Long orderId = deliveryRepository.findOrderIdByDeliveryIdAndShopId(deliveryId, shopId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Không tìm thấy thông tin giao hàng."));
+        orderService.lockOrderForDeliveryCompletion(orderId);
         Delivery delivery = deliveryRepository.findForUpdateByDeliveryIdAndShopOrder_ShopId(deliveryId, shopId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Không tìm thấy thông tin giao hàng."));
@@ -124,6 +128,7 @@ public class DeliveryAssignmentService {
 
         assignment.complete();
         deliveryStatusHistoryWriter.record(delivery, managerId, confirmationNote);
+        orderService.reconcileCodPayment(orderId);
         deliveryNotificationService.notifyGoodsReturnConfirmed(assignment);
     }
 

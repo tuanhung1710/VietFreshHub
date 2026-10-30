@@ -49,11 +49,13 @@
         <td th:text="${#numbers.formatDecimal(order.totalAmount, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></td>
         <td th:text="${order.orderStatusLabel}"></td>
         <td th:switch="${order.paymentStatus}">
-            <span th:case="'UNPAID'">Chưa thanh toán</span>
+            <span th:case="'UNPAID'">Chưa thu tiền</span>
             <span th:case="'PENDING'">Đang chờ thanh toán</span>
             <span th:case="'PAID'">Đã thanh toán</span>
             <span th:case="'FAILED'">Thanh toán thất bại</span>
-            <span th:case="*" th:text="${order.paymentStatus}"></span>
+            <span th:case="'PARTIALLY_REFUNDED'">Hoàn tiền một phần</span>
+            <span th:case="'REFUNDED'">Đã hoàn tiền</span>
+            <span th:case="*">Cập nhật thanh toán</span>
         </td>
         <td>
             <a th:href="@{/seller/orders/{shopOrderId}(shopOrderId=${order.shopOrderId})}">Xem</a>

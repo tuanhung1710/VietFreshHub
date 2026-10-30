@@ -294,7 +294,7 @@ public class DeliveryStaffQueryService {
                 shopOrder.getShopOrderCode(),
                 assignment == null ? null : assignment.getStatus(),
                 delivery.getStatus(),
-                order.getPlacedAt(),
+                OrderLabels.local(order.getPlacedAt()),
                 assignment == null ? null : toDeliveryLocalTime(assignment.getAssignedAt()),
                 assignment == null ? null : toDeliveryLocalTime(assignment.getAcceptedAt()),
                 toDeliveryLocalTime(delivery.getPickedUpAt()),
@@ -308,7 +308,12 @@ public class DeliveryStaffQueryService {
                 pickupLocation,
                 toDeliveryLocation(address),
                 shopOrder.getShop() == null ? null : shopOrder.getShop().getShopName(),
-                paymentService.isCodOrder(order.getOrderId()) ? shopOrder.getTotalAmount() : BigDecimal.ZERO
+                paymentService.isCodOrder(order.getOrderId()) && "UNPAID".equals(shopOrder.getPaymentStatus())
+                        && !List.of("CANCELLED", "COMPLETED").contains(shopOrder.getStatus())
+                        && List.of(DeliveryStatus.UNASSIGNED, DeliveryStatus.ASSIGNED, DeliveryStatus.ACCEPTED,
+                                DeliveryStatus.PICKED_UP, DeliveryStatus.OUT_FOR_DELIVERY).contains(delivery.getStatus())
+                        ? shopOrder.getTotalAmount() : BigDecimal.ZERO,
+                shopOrder.getTotalAmount(), OrderLabels.payment(shopOrder.getPaymentStatus())
         );
     }
 

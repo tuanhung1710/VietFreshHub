@@ -683,8 +683,8 @@ public class InventoryServiceImpl implements InventoryService {
         }
         Map<Long, String> references = new HashMap<>();
         for (ShopOrder order : shopOrderRepository.findAllById(shopOrderIds.values())) {
-            if (shopId.equals(order.getShopId()) && order.getOrder() != null) {
-                references.put(order.getShopOrderId(), order.getOrder().getOrderCode());
+            if (shopId.equals(order.getShopId())) {
+                references.put(order.getShopOrderId(), order.getShopOrderCode());
             }
         }
         for (Map.Entry<Long, Long> line : shopOrderIds.entrySet()) {

@@ -34,4 +34,6 @@ public class DeliveryDetailResponse {
     private DeliveryLocationResponse deliveryLocation;
     private String shopName;
     private BigDecimal cashToCollect;
+    private BigDecimal totalAmount;
+    private String paymentStatusLabel;
 }

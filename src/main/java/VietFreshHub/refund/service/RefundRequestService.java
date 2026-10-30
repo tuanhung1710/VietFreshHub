@@ -4,7 +4,6 @@ import VietFreshHub.delivery.service.DeliveryMonitoringService;
 import VietFreshHub.order.entity.Order;
 import VietFreshHub.order.service.OrderLabels;
 import VietFreshHub.order.service.OrderRefundService;
-import VietFreshHub.order.service.OrderRefundService.RefundOrder;
 import VietFreshHub.order.service.OrderRefundService.RefundShopOrder;
 import VietFreshHub.payment.service.PaymentService;
 import VietFreshHub.refund.dto.CustomerRefundState;
@@ -46,49 +45,12 @@ public class RefundRequestService {
     @PreAuthorize("hasRole('CUSTOMER')")
     @Transactional(readOnly = true)
     public CustomerRefundState getCustomerState(Long orderId, Authentication authentication) {
-        RefundOrder order = orders.getForCustomer(orderId, authentication);
-        return describe(order);
-    }
-
-    @PreAuthorize("hasRole('CUSTOMER')")
-    @Transactional
-    public void submit(Long orderId, Authentication authentication,
-                       @NotNull @Valid RefundInformationForm form) {
-        RefundOrder order = orders.lockForCustomer(orderId, authentication);
-        CustomerRefundState state = describe(order);
-        if (state.submittedAt() != null) {
-            return;
-        }
-        if (!state.eligible()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, state.unavailableReason());
-        }
-        requests.saveAndFlush(new RefundRequest(order.order(), form.getBankName().strip(),
-                form.getBankAccountNumber(), form.getAccountHolderName().strip(), state.refundAmount(),
-                LocalDateTime.now(ZoneOffset.UTC).withNano(0)));
-    }
-
-    private CustomerRefundState describe(RefundOrder refundOrder) {
-        Order order = refundOrder.order();
-        RefundRequest submitted = requests.findByOrderOrderIdAndShopOrderIsNull(order.getOrderId()).orElse(null);
-        if (submitted != null) {
-            return new CustomerRefundState(order.getOrderId(), order.getOrderCode(), submitted.getRefundAmount(),
-                    false, OrderLabels.local(submitted.getSubmittedAt()), null);
-        }
-        BigDecimal paidAmount = payments.getPaidOnlineOrderAmount(order.getOrderId()).orElse(null);
-        String reason = null;
-        if (requests.existsByOrderOrderIdAndShopOrderIsNotNull(order.getOrderId())) {
-            reason = "Lượt đặt hàng đã có yêu cầu hoàn tiền riêng theo cửa hàng.";
-        } else if (!"PAID".equals(order.getPaymentStatus()) || paidAmount == null
-                || order.getGrandTotal() == null || paidAmount.compareTo(order.getGrandTotal()) != 0) {
-            reason = "Không xác minh được một khoản thanh toán online thành công khớp toàn bộ đơn hàng.";
-        } else if (!refundOrder.cancelledByCustomerBeforeConfirmation()
-                && !deliveries.areAllFailedAndReturned(refundOrder.shopOrderIds())) {
-            reason = "Chỉ hỗ trợ hoàn toàn bộ đơn khi khách hủy trước lúc cửa hàng xác nhận,"
-                    + " hoặc mọi phần giao hàng đều thất bại và cửa hàng đã xác nhận nhận lại hàng."
-                    + " Đơn có kết quả giao hàng khác nhau nằm ngoài phạm vi này.";
-        }
-        return new CustomerRefundState(order.getOrderId(), order.getOrderCode(), paidAmount,
-                reason == null, null, reason);
+        Order order = orders.getForCustomer(orderId, authentication);
+        RefundRequest submitted = requests.findByOrderOrderIdAndShopOrderIsNull(orderId).orElse(null);
+        return new CustomerRefundState(order.getOrderId(), null,
+                submitted == null ? null : submitted.getRefundAmount(), false,
+                submitted == null ? null : OrderLabels.local(submitted.getSubmittedAt()),
+                submitted == null ? "Vui lòng chọn đơn cửa hàng để xem thông tin hoàn tiền." : null);
     }
 
     @PreAuthorize("hasRole('CUSTOMER')")

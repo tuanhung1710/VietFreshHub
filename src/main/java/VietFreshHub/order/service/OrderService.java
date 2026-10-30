@@ -10,6 +10,7 @@ import VietFreshHub.order.entity.OrderAddress;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -48,6 +49,10 @@ public interface OrderService {
     void startShopOrderDelivery(Long shopOrderId, Long changedBy);
 
     void completeDeliveredShopOrder(Long shopOrderId, LocalDateTime completedAt, Long changedBy);
+
+    void reconcileCodPayment(Long orderId);
+
+    boolean isCheckoutPaymentEligible(Long orderId, BigDecimal amount);
 
     void updateShopPaymentStatusesForVnpay(Long orderId, String paymentStatus);
 
