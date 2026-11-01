@@ -17,15 +17,19 @@ public class CatalogServiceImpl implements CatalogService {
     private final CatalogBrowseRepository browse;
     public boolean isVisible(CatalogProduct p) {
         if (p == null || !"ACTIVE".equals(p.getStatus()) || p.isModerationBlocked()
-                || p.getShop() == null || !"ACTIVE".equals(p.getShop().getStatus())) return false;
+                || p.getShop() == null || !"ACTIVE".equals(p.getShop().getStatus())
+                || !"OPEN".equals(p.getShop().getAvailabilityStatus())) return false;
         var activeIds = VietFreshHub.catalog.service.CatalogCategoryPolicy.activeIds(products.findCatalogCategories());
+        var offers = pricing.offers(p.getVariants().stream().map(CatalogVariant::getVariantId).toList());
         return p.getCategories().stream().anyMatch(c -> activeIds.contains(c.getCategoryId()))
-                && p.getVariants().stream().anyMatch(v -> "ACTIVE".equals(v.getStatus()) || "OUT_OF_STOCK".equals(v.getStatus()));
+                && p.getVariants().stream().anyMatch(v -> "ACTIVE".equals(v.getStatus())
+                && offers.containsKey(v.getVariantId()) && offers.get(v.getVariantId()).availableStock() > 0);
     }
 
     public boolean isPurchasable(CatalogVariant v) {
-        return v != null && "ACTIVE".equals(v.getStatus()) && isVisible(v.getProduct())
-                && "OPEN".equals(v.getProduct().getShop().getAvailabilityStatus());
+        if (v == null || !"ACTIVE".equals(v.getStatus()) || !isVisible(v.getProduct())) return false;
+        var offer = pricing.offers(List.of(v.getVariantId())).get(v.getVariantId());
+        return offer != null && offer.availableStock() > 0;
     }
     public org.springframework.data.domain.Page<CatalogProductResponse> listProducts(int page) {
         return listProducts(page, "");
@@ -71,15 +75,15 @@ public class CatalogServiceImpl implements CatalogService {
     }
     private CatalogProductResponse toResponse(CatalogProduct p, Long selectedId,
             java.util.Map<Long, VietFreshHub.catalog.service.CatalogPricingService.Offer> offers) {
-        var options = p.getVariants().stream().filter(v -> "ACTIVE".equals(v.getStatus()) || "OUT_OF_STOCK".equals(v.getStatus())).map(v -> {
+        var options = p.getVariants().stream().filter(v -> "ACTIVE".equals(v.getStatus())
+                && offers.containsKey(v.getVariantId()) && offers.get(v.getVariantId()).availableStock() > 0).map(v -> {
             var offer = offers.get(v.getVariantId());
             int available = offer == null ? 0 : offer.availableStock();
             return CatalogProductResponse.VariantResponse.builder().variantId(v.getVariantId()).variantName(v.getVariantName())
                     .sku(v.getSku()).price(offer == null ? v.getPrice() : offer.price()).basePrice(v.getPrice()).status(v.getStatus()).availableStock(available)
                     .purchasable("ACTIVE".equals(v.getStatus()) && available > 0 && "OPEN".equals(p.getShop().getAvailabilityStatus())).build();
         }).sorted(Comparator.comparing(CatalogProductResponse.VariantResponse::getPrice)).toList();
-        var selected = selectedId == null ? options.stream().filter(CatalogProductResponse.VariantResponse::isPurchasable)
-                .findFirst().orElse(options.isEmpty() ? null : options.getFirst())
+        var selected = selectedId == null ? options.stream().findFirst().orElseThrow(this::notFound)
                 : options.stream().filter(v -> selectedId.equals(v.getVariantId())).findFirst().orElseThrow(this::notFound);
         return CatalogProductResponse.builder().productId(p.getProductId()).shopId(p.getShop().getShopId()).name(p.getName()).slug(p.getSlug())
                 .description(p.getDescription()).imageUrl(selected == null ? p.getImageUrl() : p.getVariants().stream()

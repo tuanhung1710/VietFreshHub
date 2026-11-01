@@ -23,7 +23,7 @@ public class InventoryAlertScheduler {
             int page = 0;
             org.springframework.data.domain.Page<VietFreshHub.shop.entity.Shop> result;
             do {
-                result = shops.findPublicShops("", PageRequest.of(page++, 100, Sort.by("shopId")));
+                result = shops.findByStatus("ACTIVE", PageRequest.of(page++, 100, Sort.by("shopId")));
                 for (var shop : result.getContent()) {
                     try {
                         alerts.refresh(shop.getShopId());

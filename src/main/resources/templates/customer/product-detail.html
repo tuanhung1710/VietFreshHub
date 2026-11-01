@@ -13,14 +13,13 @@
                 <a th:each="v : ${variants}" class="variant-option" th:classappend="${v.variantId == variantId} ? 'selected'"
                    th:aria-current="${v.variantId == variantId} ? 'true' : 'false'"
                    th:href="@{/product-detail/{id}(id=${v.variantId})}">
-                    <span th:text="${v.variantName}"></span><span th:unless="${v.purchasable}"> · Chưa khả dụng</span>
+                    <span th:text="${v.variantName}"></span>
                 </a>
             </div>
             <div th:if="${selectedVariant != null}">
                 <p th:if="${selectedVariant.basePrice > selectedVariant.price}">Giá gốc: <del th:text="${#numbers.formatInteger(selectedVariant.basePrice,0,'POINT')} + ' ₫'"></del> · Ưu đãi theo lô cận hạn</p>
                 <p class="price detail-price" th:text="${#numbers.formatInteger(selectedVariant.price,0,'POINT')} + ' ₫'"></p>
                 <p th:if="${purchasable}" class="muted" th:text="'Còn ' + ${availableStock} + ' sản phẩm có thể mua.'"></p>
-                <p th:unless="${purchasable}" class="item-error">Phân loại này hiện chưa thể đặt mua. Bạn có thể chọn phân loại khác hoặc quay lại sau.</p>
                 <form th:if="${purchasable and #authorization.expression('hasRole(''CUSTOMER'')')}" th:action="@{/cart/add}" method="post" class="detail-form">
                     <input type="hidden" name="variantId" th:value="${variantId}"><input type="hidden" name="redirect" value="detail">
                     <label for="quantity">Số lượng</label>
@@ -32,7 +31,6 @@
                 <p th:if="${purchasable and #authorization.expression('isAuthenticated() and !hasRole(''CUSTOMER'')')}" class="muted">Mua hàng bằng tài khoản khách hàng.</p>
                 <p class="muted">Giỏ hàng không giữ hàng. Hàng chỉ được giữ khi cửa hàng xác nhận đơn.</p>
             </div>
-            <p th:if="${selectedVariant == null}" class="muted">Cửa hàng chưa có phân loại để bán.</p>
         </section>
     </article>
 </main><footer th:replace="~{fragments/storefront :: footer}"></footer></body></html>

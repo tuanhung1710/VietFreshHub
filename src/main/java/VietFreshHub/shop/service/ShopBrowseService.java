@@ -20,6 +20,7 @@ public class ShopBrowseService {
 
     public Shop profile(Long shopId) {
         return shops.findByShopIdAndStatus(shopId, "ACTIVE")
+                .filter(shop -> "OPEN".equals(shop.getAvailabilityStatus()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy cửa hàng đang hoạt động."));
     }
 

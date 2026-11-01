@@ -46,10 +46,6 @@
             <label>Giá từ <input type="number" th:field="*{minPrice}" min="0" step="1"></label>
             <label>Đến <input type="number" th:field="*{maxPrice}" min="0" step="1"></label>
             <button>Lọc sản phẩm</button> <a th:href="@{/home}">Xóa bộ lọc</a>
-            <label>Khả dụng <select th:field="*{availability}">
-                <option value="all">Tất cả</option><option value="available">Đang nhận đơn, còn hàng</option>
-                <option value="unavailable">Chưa thể đặt mua</option>
-            </select></label>
             <label>Sắp xếp <select th:field="*{sort}">
                 <option value="newest">Mới nhất</option><option value="price_asc">Giá tăng dần</option>
                 <option value="price_desc">Giá giảm dần</option>
@@ -67,7 +63,6 @@
                 <a class="card-image" th:href="@{/product-detail(productId=${product.productId})}">
                     <img th:src="${product.imageUrl}" th:alt="${product.name}" loading="lazy" width="280" height="240">
                     <span th:if="${product.selectedVariant != null and product.selectedVariant.purchasable}" class="stock-label">Có sẵn</span>
-                    <span th:if="${product.selectedVariant == null or !product.selectedVariant.purchasable}" class="stock-label unavailable">Chưa nhận đơn</span>
                 </a>
                 <div class="card-content"><p class="shop-label"><a th:href="@{/shops/{id}(id=${product.shopId})}" th:text="${product.shopName}"></a></p>
                     <h3><a th:href="@{/product-detail(productId=${product.productId})}" th:text="${product.name}"></a></h3>

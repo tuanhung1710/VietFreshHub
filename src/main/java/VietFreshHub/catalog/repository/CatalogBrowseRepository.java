@@ -36,7 +36,7 @@ public class CatalogBrowseRepository {
                 .addValue("offset", page.getOffset()).addValue("size", PAGE_SIZE);
         String from = """
                 FROM dbo.products p JOIN dbo.shops s ON s.shop_id = p.shop_id JOIN product_offers offer ON offer.product_id=p.product_id
-                WHERE p.status = 'ACTIVE' AND p.moderation_blocked = 0 AND s.status = 'ACTIVE'
+                WHERE p.status = 'ACTIVE' AND p.moderation_blocked = 0 AND s.status = 'ACTIVE' AND s.availability_status='OPEN' AND offer.available=1
                   AND EXISTS (SELECT 1 FROM dbo.product_categories c WHERE c.product_id = p.product_id AND c.category_id IN (:categories))
                   AND EXISTS (SELECT 1 FROM dbo.product_variants v WHERE v.product_id = p.product_id AND v.status IN ('ACTIVE','OUT_OF_STOCK'))
                   AND LOWER(p.name) LIKE :keyword ESCAPE '!'
@@ -53,8 +53,6 @@ public class CatalogBrowseRepository {
             from += " AND offer.price <= :maxPrice";
             parameters.addValue("maxPrice", filter.getMaxPrice());
         }
-        if ("available".equals(filter.getAvailability())) from += " AND offer.available = 1";
-        if ("unavailable".equals(filter.getAvailability())) from += " AND offer.available = 0";
         Long count = jdbc.queryForObject(OFFERS + "SELECT COUNT(*) " + from, parameters, Long.class);
         String order = switch (filter.getSort()) {
             case "price_asc" -> "offer.price ASC, p.product_id DESC";

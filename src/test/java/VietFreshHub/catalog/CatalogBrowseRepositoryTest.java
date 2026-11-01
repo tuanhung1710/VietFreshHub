@@ -33,7 +33,7 @@ class CatalogBrowseRepositoryTest {
         jdbc.execute("CREATE TABLE dbo.order_items(variant_id BIGINT, shop_order_id BIGINT, quantity INT)");
         jdbc.execute("CREATE TABLE dbo.shop_orders(shop_order_id BIGINT, status VARCHAR)");
         jdbc.execute("CREATE TABLE dbo.reviews(product_id BIGINT, rating INT, status VARCHAR)");
-        jdbc.update("INSERT INTO dbo.shops VALUES(1,'ACTIVE','OPEN'),(2,'ACTIVE','CLOSED')");
+        jdbc.update("INSERT INTO dbo.shops VALUES(1,'ACTIVE','OPEN'),(2,'ACTIVE','OPEN')");
         jdbc.update("INSERT INTO dbo.products VALUES(1,1,'Xoài','ACTIVE',0),(2,2,'Cam','ACTIVE',0),(3,1,'Hidden','ACTIVE',1)");
         jdbc.update("INSERT INTO dbo.product_categories VALUES(1,7),(2,7),(3,7)");
         jdbc.update("INSERT INTO dbo.product_variants VALUES(1,1,'ACTIVE',50000),(2,2,'ACTIVE',20000),(3,3,'ACTIVE',10000)");
@@ -51,11 +51,11 @@ class CatalogBrowseRepositoryTest {
     }
 
     @Test
-    void closedShopsAreVisibleButNotAvailableForPurchase() {
-        filter.setAvailability("available");
+    void closedShopsAndSoldOutProductsNeverAppear() {
+        jdbc.update("UPDATE dbo.shops SET availability_status='CLOSED' WHERE shop_id=2");
         assertEquals(List.of(1L), repository.search(filter, Set.of(7L)).getContent());
-        filter.setAvailability("unavailable");
-        assertEquals(List.of(2L), repository.search(filter, Set.of(7L)).getContent());
+        jdbc.update("UPDATE dbo.inventory_batches SET quantity_on_hand=0");
+        assertTrue(repository.search(filter, Set.of(7L)).isEmpty());
     }
 
     @Test
@@ -93,7 +93,7 @@ class CatalogBrowseRepositoryTest {
     void shopFilterCombinesWithOtherFilters() {
         filter.setShopId(2L);
         assertEquals(List.of(2L), repository.search(filter, Set.of(7L)).getContent());
-        filter.setAvailability("available");
+        filter.setMaxPrice(new BigDecimal("16000"));
         assertTrue(repository.search(filter, Set.of(7L)).isEmpty());
     }
 }
