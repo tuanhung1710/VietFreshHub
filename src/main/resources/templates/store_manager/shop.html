@@ -55,13 +55,18 @@
     </ol>
 </section>
 <h2>QUẢN LÝ SẢN PHẨM VÀ KHO</h2>
-<section th:if="${inventoryAttention.hasAlerts()}" aria-label="Kho cần chú ý">
+<section aria-label="Kho cần chú ý">
     <h3>Kho cần chú ý</h3>
-    <ul>
-        <li th:if="${inventoryAttention.lowVariants > 0}"><a th:href="@{/seller/inventory(stock='low')}" th:text="${inventoryAttention.lowVariants + ' phân loại sắp hết hàng'}"></a></li>
-        <li th:if="${inventoryAttention.nearBatches > 0}"><a th:href="@{/seller/inventory(expiry='near')}" th:text="${inventoryAttention.nearBatches + ' lô sắp hết hạn'}"></a></li>
-        <li th:if="${inventoryAttention.expiredBatches > 0}"><a th:href="@{/seller/inventory(expiry='expired')}" th:text="${inventoryAttention.expiredBatches + ' lô đã hết hạn'}"></a></li>
-    </ul>
+    <p th:if="${inventoryLoadError}">Không thể tải dữ liệu tồn kho. Vui lòng thử lại sau.</p>
+    <th:block th:unless="${inventoryLoadError}">
+        <p th:unless="${inventoryAttention.hasInventoryData()}">Chưa có dữ liệu lô tồn kho để thống kê.</p>
+        <p th:if="${inventoryAttention.hasInventoryData() and !inventoryAttention.hasAlerts()}">Có dữ liệu tồn kho và hiện không có cảnh báo.</p>
+        <ul th:if="${inventoryAttention.hasAlerts()}">
+            <li th:if="${inventoryAttention.lowVariants > 0}"><a th:href="@{/seller/inventory(stock='low')}" th:text="${inventoryAttention.lowVariants + ' phân loại sắp hết hàng'}"></a></li>
+            <li th:if="${inventoryAttention.nearBatches > 0}"><a th:href="@{/seller/inventory(expiry='near')}" th:text="${inventoryAttention.nearBatches + ' lô sắp hết hạn'}"></a></li>
+            <li th:if="${inventoryAttention.expiredBatches > 0}"><a th:href="@{/seller/inventory(expiry='expired')}" th:text="${inventoryAttention.expiredBatches + ' lô đã hết hạn'}"></a></li>
+        </ul>
+    </th:block>
 </section>
 <nav aria-label="Sản phẩm và kho">
     <ul>

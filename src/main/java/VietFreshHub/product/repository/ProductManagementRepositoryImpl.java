@@ -310,10 +310,13 @@ public class ProductManagementRepositoryImpl implements ProductManagementReposit
                 AND b.expiry_date>=:today AND b.expiry_date<=DATEADD(day,COALESCE(p.expiry_warning_days,3),CAST(:today AS DATE))),
               (SELECT COUNT(*) FROM dbo.inventory_batches b JOIN variant_stock v ON v.variant_id=b.variant_id
                 WHERE v.status<>'DELETED' AND b.quantity_on_hand>0 AND b.expiry_date<:today)
+            ,(SELECT COUNT(*) FROM dbo.inventory_batches b JOIN variant_stock v ON v.variant_id=b.variant_id
+                WHERE v.status<>'DELETED')
             """);
         query.setParameter("shop", shop);
         query.setParameter("today", today);
         Object[] result = (Object[])query.getSingleResult();
-        return new VietFreshHub.inventory.dto.InventoryAttentionSummary(number(result[0]), number(result[1]), number(result[2]));
+        return new VietFreshHub.inventory.dto.InventoryAttentionSummary(
+                number(result[0]), number(result[1]), number(result[2]), number(result[3]));
     }
 }
