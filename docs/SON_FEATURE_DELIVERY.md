@@ -2,7 +2,7 @@
 
 Phạm vi được đối chiếu từ sheet `CRMS` của ProjectTracking: 41 dòng mang tên Sơn (TV2). Các ví dụ và hướng dẫn trong SRS được xem là tài liệu tham khảo, không phải yêu cầu sửa những module ngoài phân công.
 
-Lần thực hiện này bổ sung phần còn thiếu trên nền product/inventory hiện tại. Các commit có sẵn trước `5064afa` và thay đổi chưa commit của người dùng được giữ nguyên. Chưa push lên remote.
+Lần thực hiện này bổ sung phần còn thiếu trên nền product/inventory hiện tại. Các commit có sẵn trước `5064afa` và thay đổi chưa commit của người dùng được giữ nguyên. Chưa push lên remote. Theo yêu cầu bổ sung, storefront Customer đã được xây lại từ template HTML do người dùng cung cấp; chi tiết hiện hành nằm trong [STOREFRONT_TEMPLATE_DELIVERY.md](STOREFRONT_TEMPLATE_DELIVERY.md).
 
 ## Phần đã xử lý
 
@@ -25,12 +25,14 @@ Lần thực hiện này bổ sung phần còn thiếu trên nền product/inven
 
 18 dòng quản lý product/inventory đã có luồng chính từ trước (CRUD sản phẩm/SKU, danh mục, ảnh, kho/lô, nhập/điều chỉnh, lịch sử, giữ/giải phóng và giá gốc) được giữ lại và chạy kiểm thử hồi quy; không ghi nhận thành tính năng mới của lần này.
 
-## Quy tắc giao diện đã cập nhật theo yêu cầu sau
+## Giao diện Customer theo template được cung cấp
 
-- Thay toàn bộ template mua sắm thuộc phạm vi product/shop Customer bằng fragment `customer-shop` và stylesheet `customer-shop.css` riêng. Không dùng lại header, hero hoặc CSS storefront cũ cho các trang này.
-- Bố cục tập trung vào danh sách, bộ lọc, giá và chọn mua; dùng chung card, header và tab shop. Trang quản lý và giao diện của thành viên khác không được thiết kế lại.
+- Thay giao diện storefront Customer cũ bằng `vietfresh_fruit_home_and_category_pagination.html`: Home, catalog, danh sách shop, chi tiết shop, popup sản phẩm, header và footer. Xóa hai template chi tiết sản phẩm/shop cũ. CSS giữ nguyên nội dung `<style>` của bản gốc; không thêm phong cách mới.
+- Template gốc được lưu tại `src/test/resources/storefront/reference.html` để đối chiếu. Dữ liệu demo trong script gốc được thay bằng truy vấn database thật, vì vậy số danh mục/shop/sản phẩm và nội dung card phụ thuộc database.
+- Home và catalog giữ trang/kích thước trang riêng. Tất cả lựa chọn và mặc định lấy từ `common/PageSizes.java`; quy tắc phân trang và response nằm trong `common/Pagination.java`, `common/PageResponse.java`.
+- Trang quản lý và giao diện của thành viên khác không được thiết kế lại. Trang yêu thích/review/ưu đãi liên quan dùng header/footer mới.
 - Bỏ lựa chọn “hết hàng/chưa khả dụng” cho người mua. Điều kiện có thể mua được áp dụng bắt buộc ở backend, không chỉ ẩn nhãn ở HTML. Vì vậy dòng Filter by Availability trong sheet được thực hiện theo yêu cầu mới: catalog luôn lọc còn hàng; không cung cấp lựa chọn xem hàng hết tồn.
-- SKU hết tồn/ẩn không xuất hiện trong bộ chọn. Link chi tiết cũ trả HTTP 404 với đường dẫn khám phá sản phẩm khác.
+- Popup chọn SKU đang mua được theo giá chào bán. Link sản phẩm/SKU hết tồn hoặc bị ẩn trả HTTP 404.
 
 ## Chuẩn bị database
 
@@ -48,7 +50,7 @@ Cảnh báo chỉ phát khi điều kiện được phát hiện mới. Sau khi 
 
 ## Điểm bàn giao cho thành viên khác
 
-**TV3 — Checkout/Cart:** `CatalogPricingService.offers(List<Long> variantIds)` trả `price`, `basePrice`, `availableStock` tại giá hiện hành. Với markdown, `availableStock` chỉ gồm lô ở đúng mức giá thấp nhất. Cart/checkout hiện vẫn có đoạn dùng giá gốc `variant.getPrice()`; TV3 cần dùng cùng offer để snapshot/tính tiền và phân bổ đúng lô dưới khóa. Lần này chưa sửa nghiệp vụ cart, thanh toán hoặc reservation checkout; chưa thể coi giảm giá là hoàn tất end-to-end trong đơn hàng.
+**TV3 — Checkout/Cart:** `CatalogPricingService.offers(List<Long> variantIds)` trả `price`, `basePrice`, `availableStock` tại giá hiện hành. Cart đã dùng cùng offer để kiểm tra số lượng và tính giá; checkout lấy đơn giá đã tính trong cart để snapshot đơn hàng; reservation chỉ phân bổ lô có giá trùng đơn giá của dòng đơn. Với markdown, lượng khả dụng chỉ gồm các lô ở đúng mức giá chào bán. Các phần nối này được sửa để giá trên storefront không lệch khi thêm giỏ/tạo đơn, có kiểm thử bằng mocks; chưa tạo đơn/thanh toán thử trên SQL Server thật. Giao diện và luồng thanh toán của TV3 được giữ nguyên.
 
 **TV5 — Promotion:** trang shop đọc trực tiếp promotion/coupon và usage đã có. Việc áp dụng ưu đãi/voucher lên đơn thuộc module của TV5/TV3. Không tự cộng dồn promotion và batch markdown trong catalog.
 
@@ -56,10 +58,11 @@ Cảnh báo chỉ phát khi điều kiện được phát hiện mới. Sau khi 
 
 ## Kiểm chứng
 
-- Toàn bộ bộ kiểm thử: **256 tests, 0 failures, 0 errors, 0 skipped — BUILD SUCCESS** với JDK 21, Maven offline, datasource H2 cô lập và tắt scheduler cảnh báo kho. Log: `target/son-full-test.log`; kết quả suite: `target/surefire-reports`.
+- Hồi quy sau khi thay template: **269 tests, 0 failures, 0 errors, 0 skipped — BUILD SUCCESS** với JDK 21, Maven offline, datasource H2 cô lập và tắt scheduler cảnh báo kho. Test SQL Server được tách khỏi lượt này. Log: `target/template-full-test.log`; kết quả suite: `target/surefire-reports`.
+- JavaScript: **3 tests đạt**; kiểm thử contract xác nhận CSS bằng nội dung style của template gốc và đủ các vùng điều khiển.
 - Có kiểm thử SQL thực trên H2 cho giá/lượng theo markdown, lọc/sort, review, voucher, yêu thích và trạng thái cảnh báo; kiểm thử Spring MVC/Thymeleaf cho trang Guest/Customer, validation, CSRF và link cũ 404.
-- Bộ test dùng H2/mocks, không xác nhận đầy đủ dialect, trigger, khóa cạnh tranh hoặc dữ liệu SQL Server thật. Scheduler của module giao hàng/thanh toán hiện có có thể ghi lỗi thiếu bảng khi context mặc định của test khởi động trên H2 rỗng; đây không phải assertion thất bại.
-- Đã render HTML sáu trang chính. Phiên Computer Use xem trình duyệt hết thời gian chờ cấp quyền, nên chưa xác nhận trực quan bằng screenshot hoặc nghiệm thu mobile trên trình duyệt thật.
+- Test SQL Server thật chỉ gửi GET, tắt/mock toàn bộ scheduler có thể ghi dữ liệu: **1 test đạt**, kiểm tra shell, tùy chọn chung, dữ liệu Home và lọc rating/địa điểm. Log: `target/template-sqlserver-test.log`. Chưa kiểm tra cạnh tranh khi đặt hàng trên database thật. Scheduler giao hàng/thanh toán có sẵn vẫn có thể ghi lỗi thiếu bảng trong lượt H2 rỗng; các assertion đều đạt.
+- Đã kiểm tra trực quan trên trình duyệt desktop với dữ liệu thật: Home, lọc shop, chọn 5 sản phẩm/trang, trang 2, popup và chi tiết shop; khi quay lại Home, Home giữ kích thước trang riêng. Đã lưu screenshot. Chưa nghiệm thu riêng trên thiết bị mobile.
 
 ## Commit để duyệt
 
@@ -70,4 +73,4 @@ git log --reverse --oneline 5064afa..HEAD
 git diff 5064afa..HEAD
 ```
 
-Commit `cf8f7db` áp dụng quy tắc chỉ hiển thị hàng mua được; `6436619` thay giao diện Customer theo yêu cầu bổ sung. Các commit tiếp theo chỉ làm gọn code, kiểm thử và ghi tài liệu bàn giao. Cần sự đồng ý của người dùng trước khi push.
+Commit `cf8f7db` áp dụng quy tắc chỉ hiển thị hàng mua được. Giao diện ở `6436619` đã được thay bởi template người dùng cung cấp trong `213e3db`. Các commit sau `856c715` gồm bộ lọc/API, phân trang common, template mới và nối giá bán sang giỏ/đơn/phân bổ lô. Cần sự đồng ý của người dùng trước khi push.
