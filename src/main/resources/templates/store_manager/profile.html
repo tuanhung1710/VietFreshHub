@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Hồ sơ cửa hàng</title></head>
+<body>
+<nav><a th:href="@{/seller}">Cửa hàng của tôi</a> · <a th:href="@{/seller/pickup-location}">Địa điểm lấy hàng</a></nav>
+<h1 th:text="${shop.shopName}"></h1>
+<p th:if="${successMessage}" th:text="${successMessage}" role="status"></p>
+<dl>
+    <dt>Mã cửa hàng</dt><dd th:text="${shop.shopCode}"></dd>
+    <dt>Mô tả</dt><dd th:text="${shop.description}"></dd>
+    <dt>Điện thoại</dt><dd th:text="${shop.phone}"></dd>
+    <dt>Email</dt><dd th:text="${shop.email}"></dd>
+    <dt>Logo</dt><dd th:text="${shop.logoUrl}"></dd>
+    <dt>Ảnh bìa</dt><dd th:text="${shop.bannerUrl}"></dd>
+    <dt>Trạng thái nhận đơn</dt><dd th:text="${shop.availabilityStatus == 'OPEN' ? 'Đang nhận đơn' : 'Tạm ngừng nhận đơn'}"></dd>
+</dl>
+</body>
+</html>
