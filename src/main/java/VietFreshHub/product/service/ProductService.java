@@ -12,7 +12,6 @@ import VietFreshHub.product.dto.VariantRequest;
 import VietFreshHub.product.dto.VariantResponse;
 import VietFreshHub.product.entity.Category;
 import VietFreshHub.product.entity.PriceHistory;
-import VietFreshHub.product.entity.ProductVariant;
 
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
@@ -64,8 +63,6 @@ public interface ProductService {
     ProductResponse get(Authentication authentication, Long productId);
 
     VariantResponse getVariant(Authentication authentication, Long productId, Long variantId);
-
-    List<ProductVariant> lockManagedVariantsForInventory(Authentication authentication, Long productId);
 
     List<Category> categories();
 

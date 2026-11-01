@@ -64,7 +64,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.annotation.Propagation;
 
 import java.math.BigDecimal;
 import java.text.Normalizer;
@@ -739,17 +738,6 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public List<String> units() {
         return SALE_UNITS;
-    }
-
-    @Override
-    @Transactional(propagation = Propagation.MANDATORY)
-    public List<ProductVariant> lockManagedVariantsForInventory(Authentication authentication, Long productId) {
-        getOwnedProduct(authentication, productId, true);
-        List<ProductVariant> variants = productVariantRepository.findByProductIdOrderByVariantId(productId);
-        for (ProductVariant variant : variants) {
-            getVariantForUpdate(productId, variant.getVariantId());
-        }
-        return variants;
     }
 
     private Product getOwnedProduct(Authentication authentication, Long productId, boolean lock) {
