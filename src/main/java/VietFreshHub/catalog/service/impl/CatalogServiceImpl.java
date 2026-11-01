@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.math.BigDecimal;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -85,19 +87,23 @@ public class CatalogServiceImpl implements CatalogService {
         if (filter == null || filter.getPage() < 1 || filter.getPage() > 10000) throw new IllegalArgumentException("Trang không hợp lệ.");
         if (filter.getKeyword() == null || filter.getKeyword().length() > 100) throw new IllegalArgumentException("Từ khóa tìm kiếm tối đa 100 ký tự.");
         if (!filter.isPriceRangeValid()) throw new IllegalArgumentException("Khoảng giá không hợp lệ.");
-        var categoryIds = CatalogCategoryPolicy.matchingIds(products.findCatalogCategories(), filter.getCategoryId());
+        if (!filter.isPageSizeAllowed()) throw new IllegalArgumentException("Số sản phẩm mỗi trang không hợp lệ.");
+        var categories = products.findCatalogCategories();
+        var categoryIds = CatalogCategoryPolicy.matchingIds(categories, filter.getCategoryId());
         var ids = browse.search(filter, categoryIds);
         var byId = products.findAllById(ids.getContent()).stream()
                 .collect(Collectors.toMap(CatalogProduct::getProductId, Function.identity()));
         Map<Long, Offer> offers = offersFor(List.copyOf(byId.values()));
-        return ids.map(id -> toResponse(byId.get(id), null, offers));
+        var metrics = browse.metrics(ids.getContent());
+        return ids.map(id -> toResponse(byId.get(id), null, offers, metrics.get(id), categoryIds));
     }
 
     @Override
     public CatalogProductResponse getProduct(Long variantId, Long productId, String slug) {
         CatalogProduct product = findProduct(variantId, productId, slug);
         if (!hasPublicMetadata(product)) throw notFound();
-        return toResponse(product, variantId, offersFor(List.of(product)));
+        return toResponse(product, variantId, offersFor(List.of(product)), browse.metrics(List.of(product.getProductId())).get(product.getProductId()),
+                CatalogCategoryPolicy.activeIds(products.findCatalogCategories()));
     }
 
     private CatalogProduct findProduct(Long variantId, Long productId, String slug) {
@@ -120,7 +126,8 @@ public class CatalogServiceImpl implements CatalogService {
                 .map(CatalogVariant::getVariantId).distinct().toList());
     }
 
-    private CatalogProductResponse toResponse(CatalogProduct product, Long selectedId, Map<Long, Offer> offers) {
+    private CatalogProductResponse toResponse(CatalogProduct product, Long selectedId, Map<Long, Offer> offers,
+            CatalogBrowseRepository.ProductMetrics metrics, Set<Long> categoryIds) {
         var options = product.getVariants().stream().filter(variant -> hasOffer(variant, offers))
                 .map(variant -> toVariant(variant, offers.get(variant.getVariantId())))
                 .sorted(Comparator.comparing(VariantResponse::getPrice).thenComparing(VariantResponse::getVariantId)).toList();
@@ -128,8 +135,13 @@ public class CatalogServiceImpl implements CatalogService {
                 .findFirst().orElseThrow(this::notFound);
         String imageUrl = product.getVariants().stream().filter(variant -> selected.getVariantId().equals(variant.getVariantId()))
                 .findFirst().map(CatalogVariant::getDisplayImageUrl).orElse(product.getImageUrl());
+        var category = product.getCategories().stream().filter(c -> categoryIds.contains(c.getCategoryId()))
+                .min(Comparator.comparing(CatalogCategory::getCategoryId)).orElse(null);
         return CatalogProductResponse.builder().productId(product.getProductId()).shopId(product.getShop().getShopId())
                 .name(product.getName()).slug(product.getSlug()).description(product.getDescription()).imageUrl(imageUrl)
+                .shopPlace(metrics == null ? null : metrics.place()).rating(metrics == null ? BigDecimal.ZERO : metrics.rating())
+                .sales(metrics == null ? 0 : metrics.sales()).categoryId(category == null ? null : category.getCategoryId())
+                .categoryName(category == null ? "" : category.getName())
                 .shopName(product.getShop().getShopName()).variants(options).selectedVariant(selected).build();
     }
 
