@@ -10,7 +10,6 @@ import VietFreshHub.catalog.entity.CatalogVariant;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** Chuyển dữ liệu giỏ hàng sang DTO, không đọc hoặc ghi cơ sở dữ liệu. */
 public final class CartViewMapper {
     private CartViewMapper() {
     }
@@ -31,7 +30,7 @@ public final class CartViewMapper {
 
         for (CartItemDto item : items) {
             totalItems += item.getQuantity();
-            // Vẫn hiển thị món không thể mua, nhưng không cộng tiền món đó vào tổng.
+
             if (item.isPurchasable()) {
                 totalAmount = totalAmount.add(item.getItemSubtotal());
             } else {

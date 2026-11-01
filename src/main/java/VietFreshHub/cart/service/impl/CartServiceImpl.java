@@ -30,8 +30,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-/** Xử lý giỏ của từng khách. Thao tác giỏ chỉ kiểm tra tồn kho, chưa giữ hàng. */
 @Service
 @RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
@@ -51,7 +49,6 @@ public class CartServiceImpl implements CartService {
         Cart cart = findOrCreateCart(userId, user);
         CartItem item = findOrCreateItem(cart, variant);
 
-        // Dùng long để phép cộng không bị tràn số trước khi kiểm tra tồn kho.
         long combinedQuantity = (long) item.getQuantity() + request.getQuantity();
         int stock = availableStock(variant.getVariantId());
         if (combinedQuantity > stock) {
@@ -133,7 +130,6 @@ public class CartServiceImpl implements CartService {
         CartItem item = cartItemRepository.findByCartCartIdAndVariantVariantId(cart.getCartId(), variantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm không còn trong giỏ hàng."));
 
-        // Cho phép xóa cả sản phẩm đã hết hàng hoặc ngừng bán.
         if (quantity == 0) {
             deleteItem(cart, item);
             return;
@@ -205,7 +201,6 @@ public class CartServiceImpl implements CartService {
     }
 
     private List<Long> collectVariantIds(Cart cart) {
-        // Bỏ ID trùng nhưng giữ thứ tự xuất hiện để chỉ đọc tồn kho một lần cho mỗi biến thể.
         Set<Long> variantIds = new LinkedHashSet<>();
         for (CartItem item : cart.getItems()) {
             variantIds.add(item.getVariant().getVariantId());
@@ -219,7 +214,6 @@ public class CartServiceImpl implements CartService {
     }
 
     private User lockCustomer(Long userId) {
-        // Khóa tài khoản trước khi sửa giỏ, kể cả lúc tạo giỏ đầu tiên.
         User user = userRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new AccessDeniedException("Tài khoản không hợp lệ."));
         if (!"ACTIVE".equals(user.getStatus())) {
