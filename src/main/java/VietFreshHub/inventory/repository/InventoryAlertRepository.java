@@ -1,0 +1,50 @@
+package VietFreshHub.inventory.repository;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Repository;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+
+@Repository
+@RequiredArgsConstructor
+public class InventoryAlertRepository {
+    public record Alert(Long entityId, String title, String content) { }
+    private final NamedParameterJdbcTemplate jdbc;
+
+    public List<Alert> lowStock(Long shopId, LocalDate today) {
+        return jdbc.query("""
+                SELECT v.variant_id,p.name,v.variant_name,v.low_stock_threshold,
+                    COALESCE(SUM(CASE WHEN b.status='ACTIVE' AND (b.expiry_date IS NULL OR b.expiry_date>=:today)
+                        AND b.quantity_on_hand>b.reserved_quantity THEN CAST(b.quantity_on_hand AS BIGINT)-b.reserved_quantity ELSE 0 END),0) AS stock
+                FROM dbo.product_variants v JOIN dbo.products p ON p.product_id=v.product_id
+                LEFT JOIN dbo.inventory_batches b ON b.variant_id=v.variant_id
+                WHERE p.shop_id=:shop AND p.status<>'DELETED' AND v.status IN ('ACTIVE','OUT_OF_STOCK')
+                GROUP BY v.variant_id,p.name,v.variant_name,v.low_stock_threshold
+                HAVING COALESCE(SUM(CASE WHEN b.status='ACTIVE' AND (b.expiry_date IS NULL OR b.expiry_date>=:today)
+                        AND b.quantity_on_hand>b.reserved_quantity THEN CAST(b.quantity_on_hand AS BIGINT)-b.reserved_quantity ELSE 0 END),0)<=COALESCE(v.low_stock_threshold,0)
+                """, new MapSqlParameterSource("shop", shopId).addValue("today", today),
+                (row, index) -> new Alert(row.getLong("variant_id"), "Cảnh báo tồn kho thấp",
+                        row.getString("name") + " · " + row.getString("variant_name") + ": còn " + row.getLong("stock")
+                                + ", ngưỡng " + row.getInt("low_stock_threshold") + "."));
+    }
+
+    public Set<Long> activeIds(Long shopId, String type) {
+        return new HashSet<>(jdbc.query("SELECT entity_id FROM dbo.inventory_alert_states WHERE shop_id=:shop AND alert_type=:type AND active=1",
+                parameters(shopId, type), (row, index) -> row.getLong(1)));
+    }
+
+    public void setActive(Long shopId, String type, Long entityId, boolean active) {
+        var parameters = parameters(shopId, type).addValue("entity", entityId).addValue("active", active)
+                .addValue("now", VietFreshHub.inventory.rule.InventoryRules.now());
+        int updated = jdbc.update("UPDATE dbo.inventory_alert_states SET active=:active,updated_at=:now WHERE shop_id=:shop AND alert_type=:type AND entity_id=:entity", parameters);
+        if (updated == 0) jdbc.update("INSERT INTO dbo.inventory_alert_states(shop_id,alert_type,entity_id,active,updated_at) VALUES(:shop,:type,:entity,:active,:now)", parameters);
+    }
+
+    private MapSqlParameterSource parameters(Long shopId, String type) {
+        return new MapSqlParameterSource("shop", shopId).addValue("type", type);
+    }
+}
