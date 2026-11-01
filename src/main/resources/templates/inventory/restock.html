@@ -14,8 +14,8 @@
         <!-- Nội dung chính -->
         <div class="vf-workspace">
         <main class="container vf-main narrow vf-inventory-main">
-            <a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{/seller/inventory}">
-                ← Quản lý tồn kho
+            <a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{${inventoryReturnUrl}}">
+                ← Quay lại
             </a>
             <h1>
                 Nhập lô hàng mới
@@ -33,6 +33,7 @@
                 th:action="@{/seller/inventory/products/{p}/variants/{v}/restock(p=${productId},v=${variantId})}"
                 method="post"
             >
+                <input type="hidden" name="returnTo" th:value="${inventoryReturnUrl}">
                 <div th:replace="~{fragments/product-inventory :: errors}">
                 </div>
                 <h2 class="h5 mb-3">
@@ -62,10 +63,11 @@
                             type="number"
                             min="0"
                             step="0.01"
+                            data-vf-money
                             th:field="*{costPrice}"
                         >
                     </label>
-                    <label class="col-md-4 form-label" for="receivedDate">
+                    <label class="col-md-6 form-label" for="receivedDate">
                         Ngày nhập kho
                         <span class="text-danger">
                             *
@@ -79,18 +81,7 @@
                             required
                         >
                     </label>
-                    <label class="col-md-4 form-label">
-                        Số ngày bảo quản
-                        <input
-                            class="form-control mt-1 batch-shelf-life-days"
-                            th:field="*{shelfLifeDays}"
-                            type="number"
-                            min="0"
-                            step="1"
-                            placeholder="Ví dụ: 5"
-                        >
-                    </label>
-                    <label class="col-md-4 form-label" for="expiryDate">
+                    <label class="col-md-6 form-label" for="expiryDate">
                         Hạn sử dụng
                         <span class="text-danger">
                             *
@@ -101,11 +92,9 @@
                             type="date"
                             th:field="*{expiryDate}"
                             th:min="${today}"
+                            required
                         >
                     </label>
-                    <p class="col-12 small text-body-secondary mb-0">
-                        Khi lưu, hạn sử dụng được tính bằng ngày nhập kho + số ngày bảo quản (0 là trong ngày nhập). Để trống số ngày nếu chọn hạn sử dụng trực tiếp.
-                    </p>
                     <label class="col-12 form-label" for="reason">
                         Lý do nhập kho
                         <span class="text-danger">
@@ -124,7 +113,7 @@
                     <button type="submit" class="btn btn-success">
                         Nhập kho
                     </button>
-                    <a class="btn btn-outline-secondary" th:href="@{/seller/inventory}">
+                    <a class="btn btn-outline-secondary" th:href="@{${inventoryReturnUrl}}">
                         Hủy
                     </a>
                 </div>
@@ -134,5 +123,6 @@
 
         </div>
 
+        <script defer th:src="@{/js/inventory/inventory.js}"></script>
     </body>
 </html>
