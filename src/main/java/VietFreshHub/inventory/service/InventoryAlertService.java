@@ -27,7 +27,10 @@ public class InventoryAlertService {
         if (shop == null || !"ACTIVE".equals(shop.getStatus())) return;
         var recipients = ownership.findActiveManagerUserIds(shopId);
         if (recipients.isEmpty()) return;
-        reconcile(shopId, "LOW_STOCK", "INVENTORY_VARIANT", alerts.lowStock(shopId, InventoryRules.today()), recipients);
+        var today = InventoryRules.today();
+        reconcile(shopId, "LOW_STOCK", "INVENTORY_VARIANT", alerts.lowStock(shopId, today), recipients);
+        reconcile(shopId, "NEAR_EXPIRY", "INVENTORY_BATCH", alerts.expiry(shopId, today, false), recipients);
+        reconcile(shopId, "EXPIRED_STOCK", "INVENTORY_BATCH", alerts.expiry(shopId, today, true), recipients);
     }
 
     private void reconcile(Long shopId, String type, String entityType,

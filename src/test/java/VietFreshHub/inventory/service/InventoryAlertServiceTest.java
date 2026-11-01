@@ -14,6 +14,22 @@ import static org.mockito.Mockito.*;
 
 class InventoryAlertServiceTest {
     @Test
+    void nearExpiryAndExpiredAreDifferentTransitions() {
+        var repository = mock(InventoryAlertRepository.class);
+        var shops = mock(ShopRepository.class);
+        var ownership = mock(ShopService.class);
+        var notifications = mock(NotificationService.class);
+        var service = new InventoryAlertService(repository, shops, ownership, notifications);
+        when(shops.findByShopIdForUpdate(1L)).thenReturn(Optional.of(new Shop()));
+        when(ownership.findActiveManagerUserIds(1L)).thenReturn(List.of(9L));
+        when(repository.expiry(eq(1L), any(), eq(false))).thenReturn(List.of(new InventoryAlertRepository.Alert(8L, "Cận hạn", "Lô 8")));
+        when(repository.expiry(eq(1L), any(), eq(true))).thenReturn(List.of(new InventoryAlertRepository.Alert(7L, "Hết hạn", "Lô 7")));
+        service.refresh(1L);
+        verify(notifications).createInAppForTransition(9L, "NEAR_EXPIRY", "Cận hạn", "Lô 8", "INVENTORY_BATCH", 8L);
+        verify(notifications).createInAppForTransition(9L, "EXPIRED_STOCK", "Hết hạn", "Lô 7", "INVENTORY_BATCH", 7L);
+    }
+
+    @Test
     void scansOnlyNotifyOnEntryAndRearmAfterRecovery() {
         var repository = mock(InventoryAlertRepository.class);
         var shops = mock(ShopRepository.class);

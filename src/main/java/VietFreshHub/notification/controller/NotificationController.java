@@ -25,6 +25,7 @@ public class NotificationController {
 
     private final NotificationService notificationService;
     private final DeliveryNotificationService deliveryNotificationService;
+    private final VietFreshHub.inventory.service.InventoryNotificationDestination inventoryDestination;
 
     @GetMapping
     public String list(@RequestParam(defaultValue = "0") int page, Authentication authentication, Model model) {
@@ -49,6 +50,8 @@ public class NotificationController {
     @GetMapping("/{notificationId}/open")
     public String open(@PathVariable Long notificationId, Authentication authentication) {
         NotificationRow notification = notificationService.getOwnedNotification(notificationId, authentication);
+        var inventoryUrl = inventoryDestination.resolve(notification, authentication);
+        if (inventoryUrl.isPresent()) return "redirect:" + inventoryUrl.get();
         return "redirect:" + deliveryNotificationService.getDestination(notification, authentication);
     }
 }

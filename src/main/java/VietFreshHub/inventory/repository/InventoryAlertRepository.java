@@ -37,6 +37,29 @@ public class InventoryAlertRepository {
                 parameters(shopId, type), (row, index) -> row.getLong(1)));
     }
 
+    public List<Alert> expiry(Long shopId, LocalDate today, boolean expired) {
+        String condition = expired ? "b.expiry_date < :today"
+                : "b.expiry_date >= :today AND DATEDIFF(DAY,:today,b.expiry_date)<=COALESCE(p.expiry_warning_days,3)";
+        return jdbc.query("""
+                SELECT b.batch_id,b.expiry_date,p.name,v.variant_name,b.quantity_on_hand
+                FROM dbo.inventory_batches b JOIN dbo.product_variants v ON v.variant_id=b.variant_id
+                JOIN dbo.products p ON p.product_id=v.product_id
+                WHERE p.shop_id=:shop AND p.status<>'DELETED' AND v.status<>'DELETED'
+                    AND b.status='ACTIVE' AND b.quantity_on_hand>0 AND
+                """ + condition, new MapSqlParameterSource("shop", shopId).addValue("today", today),
+                (row, index) -> new Alert(row.getLong("batch_id"), expired ? "Lô hàng đã hết hạn" : "Lô hàng sắp hết hạn",
+                        VietFreshHub.common.BusinessCodes.format("LOT", row.getLong("batch_id")) + " · " + row.getString("name")
+                                + " · " + row.getString("variant_name") + ": hạn dùng " + row.getDate("expiry_date")
+                                + ", tồn thực tế " + row.getInt("quantity_on_hand") + "."));
+    }
+
+    public boolean belongsToShop(Long shopId, Long entityId, boolean batch) {
+        String from = batch ? "FROM dbo.inventory_batches b JOIN dbo.product_variants v ON v.variant_id=b.variant_id JOIN dbo.products p ON p.product_id=v.product_id WHERE b.batch_id=:entity"
+                : "FROM dbo.product_variants v JOIN dbo.products p ON p.product_id=v.product_id WHERE v.variant_id=:entity";
+        return jdbc.queryForObject("SELECT COUNT(*) " + from + " AND p.shop_id=:shop",
+                new MapSqlParameterSource("shop", shopId).addValue("entity", entityId), Long.class) > 0;
+    }
+
     public void setActive(Long shopId, String type, Long entityId, boolean active) {
         var parameters = parameters(shopId, type).addValue("entity", entityId).addValue("active", active)
                 .addValue("now", VietFreshHub.inventory.rule.InventoryRules.now());
