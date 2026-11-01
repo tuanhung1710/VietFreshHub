@@ -39,4 +39,17 @@ public class ShopProfileService {
     private String trim(String value) {
         return value == null || value.isBlank() ? null : value.strip();
     }
+
+    @Transactional
+    public void setAvailability(Authentication authentication, String status) {
+        if (!"OPEN".equals(status) && !"CLOSED".equals(status)) {
+            throw new IllegalArgumentException("Chỉ chấp nhận trạng thái OPEN hoặc CLOSED.");
+        }
+        Shop shop = shops.findByShopIdForUpdate(shopService.getManagedShopId(authentication))
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cửa hàng."));
+        if (!"ACTIVE".equals(shop.getStatus())) {
+            throw new IllegalArgumentException("Cửa hàng chưa hoạt động không thể đổi trạng thái nhận đơn.");
+        }
+        shop.setAvailabilityStatus(status);
+    }
 }

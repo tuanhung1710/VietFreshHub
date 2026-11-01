@@ -13,6 +13,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import jakarta.validation.Valid;
 import VietFreshHub.shop.dto.ShopProfileRequest;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 @RequiredArgsConstructor
@@ -47,6 +48,17 @@ public class ShopProfileController {
         if (errors.hasErrors()) return "store_manager/profile-form";
         profiles.update(authentication, form);
         flash.addFlashAttribute("successMessage", "Đã cập nhật hồ sơ cửa hàng.");
+        return "redirect:/seller/profile";
+    }
+
+    @PostMapping("/availability")
+    public String availability(Authentication authentication, @RequestParam String status, RedirectAttributes flash) {
+        try {
+            profiles.setAvailability(authentication, status);
+            flash.addFlashAttribute("successMessage", "Đã cập nhật trạng thái nhận đơn.");
+        } catch (IllegalArgumentException exception) {
+            flash.addFlashAttribute("errorMessage", exception.getMessage());
+        }
         return "redirect:/seller/profile";
     }
 }

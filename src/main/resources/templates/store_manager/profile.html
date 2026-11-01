@@ -6,6 +6,7 @@
 <h1 th:text="${shop.shopName}"></h1>
 <p><a th:href="@{/seller/profile/edit}">Sửa hồ sơ</a></p>
 <p th:if="${successMessage}" th:text="${successMessage}" role="status"></p>
+<p th:if="${errorMessage}" th:text="${errorMessage}" role="alert"></p>
 <dl>
     <dt>Mã cửa hàng</dt><dd th:text="${shop.shopCode}"></dd>
     <dt>Mô tả</dt><dd th:text="${shop.description}"></dd>
@@ -15,5 +16,12 @@
     <dt>Ảnh bìa</dt><dd th:text="${shop.bannerUrl}"></dd>
     <dt>Trạng thái nhận đơn</dt><dd th:text="${shop.availabilityStatus == 'OPEN' ? 'Đang nhận đơn' : 'Tạm ngừng nhận đơn'}"></dd>
 </dl>
+<form method="post" th:action="@{/seller/profile/availability}">
+    <label>Nhận đơn <select name="status">
+        <option value="OPEN" th:selected="${shop.availabilityStatus == 'OPEN'}">Mở cửa</option>
+        <option value="CLOSED" th:selected="${shop.availabilityStatus == 'CLOSED'}">Tạm đóng</option>
+    </select></label>
+    <button>Lưu trạng thái</button>
+</form>
 </body>
 </html>
