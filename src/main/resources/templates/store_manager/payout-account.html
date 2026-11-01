@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tài khoản nhận payout · VietFresh Hub</title>
+    <link rel="stylesheet" th:href="@{/css/store-manager-payout.css}">
+</head>
+<body>
+<main class="payout-page">
+    <a class="back-link" th:href="@{/seller}">← Về trang quản lý shop</a>
+    <header class="page-heading">
+        <p class="eyebrow">THANH TOÁN CỬA HÀNG</p>
+        <h1>Tài khoản nhận payout</h1>
+        <p>Shop <strong th:text="${payoutAccount.shopName}">Tên shop</strong> tự nhập tài khoản dùng để nhận tiền payout.</p>
+    </header>
+
+    <div th:if="${successMessage}" class="notice success" role="status" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="notice error" role="alert" th:text="${errorMessage}"></div>
+
+    <section class="account-panel" aria-labelledby="account-title">
+        <div class="status-row">
+            <div>
+                <h2 id="account-title" th:text="${payoutAccount.hasAccount ? 'Thông tin tài khoản' : 'Thêm tài khoản nhận tiền'}">Tài khoản nhận tiền</h2>
+                <p th:if="${!payoutAccount.hasAccount}" class="muted">Bạn chưa khai báo tài khoản nhận payout.</p>
+                <p th:if="${payoutAccount.hasAccount and payoutAccount.verified}" class="status verified">Đã được admin xác minh</p>
+                <p th:if="${payoutAccount.hasAccount and !payoutAccount.verified}" class="status pending">Đang chờ admin xác minh</p>
+            </div>
+        </div>
+
+        <div class="notice info">
+            Chỉ tài khoản đã được admin xác minh mới được dùng trong các đợt payout. Nếu bạn thay đổi thông tin, tài khoản sẽ cần xác minh lại.
+        </div>
+
+        <form method="post" th:action="@{/seller/payout-account}" class="account-form">
+            <label for="bankCode">Mã ngân hàng</label>
+            <input id="bankCode" name="bankCode" maxlength="30" required autocomplete="off"
+                   placeholder="Ví dụ: VCB" th:value="${payoutAccount.bankCode}">
+
+            <label for="bankName">Tên ngân hàng</label>
+            <input id="bankName" name="bankName" maxlength="100" required autocomplete="organization"
+                   placeholder="Tên ngân hàng" th:value="${payoutAccount.bankName}">
+
+            <label for="accountNumber">Số tài khoản</label>
+            <input id="accountNumber" name="accountNumber" maxlength="50" required autocomplete="off"
+                   inputmode="numeric" placeholder="Số tài khoản nhận tiền" th:value="${payoutAccount.accountNumber}">
+
+            <label for="accountHolder">Tên chủ tài khoản</label>
+            <input id="accountHolder" name="accountHolder" maxlength="150" required autocomplete="name"
+                   placeholder="Tên đúng như đăng ký với ngân hàng" th:value="${payoutAccount.accountHolder}">
+
+            <button type="submit" class="save-button">Lưu tài khoản</button>
+        </form>
+    </section>
+</main>
+</body>
+</html>

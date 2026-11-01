@@ -1,0 +1,26 @@
+:root { color-scheme: light; font-family: Inter, "Segoe UI", sans-serif; color: #20382a; background: #f4f8f4; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+.payout-page { width: min(680px, calc(100% - 32px)); margin: 32px auto 64px; }
+.back-link { color: #357449; font-size: 14px; font-weight: 700; text-decoration: none; }
+.back-link:hover { text-decoration: underline; }
+.page-heading { margin: 26px 0 20px; }
+.eyebrow { margin: 0 0 5px; color: #4b805c; font-size: 12px; font-weight: 800; letter-spacing: .12em; }
+h1 { margin: 0 0 8px; font-size: clamp(28px, 5vw, 36px); }
+.page-heading > p:last-child, .muted { color: #718076; }
+.account-panel { padding: 24px; border: 1px solid #dce8de; border-radius: 16px; background: #fff; box-shadow: 0 8px 28px #183b2710; }
+.status-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+h2 { margin: 0 0 8px; font-size: 21px; }
+.status { margin: 0; font-size: 13px; font-weight: 750; }
+.verified { color: #287044; }
+.pending { color: #94620a; }
+.notice { margin: 14px 0; padding: 12px 14px; border-radius: 9px; font-size: 14px; }
+.info { color: #315b3c; background: #edf5ee; }
+.success { color: #1b6332; background: #e6f5e9; }
+.error { color: #8b2727; background: #ffeded; }
+.account-form { display: grid; gap: 8px; margin-top: 20px; }
+.account-form label { margin-top: 8px; color: #4f6255; font-size: 13px; font-weight: 750; }
+.account-form input { width: 100%; padding: 11px 12px; border: 1px solid #d2dfd4; border-radius: 8px; background: #fff; color: #20382a; font: inherit; font-size: 14px; }
+.account-form input:focus { border-color: #47845a; outline: 3px solid #47845a22; }
+.save-button { justify-self: start; margin-top: 14px; padding: 11px 17px; border: 0; border-radius: 8px; background: #287044; color: #fff; font: inherit; font-weight: 750; cursor: pointer; }
+@media (max-width: 560px) { .payout-page { width: calc(100% - 20px); margin-top: 18px; } .account-panel { padding: 17px; } }
