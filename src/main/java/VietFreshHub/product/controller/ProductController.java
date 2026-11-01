@@ -1,5 +1,9 @@
 package VietFreshHub.product.controller;
 
+import org.springframework.dao.DataIntegrityViolationException;
+
+import VietFreshHub.product.exception.DuplicateProductNameException;
+
 import VietFreshHub.inventory.rule.InventoryRules;
 import VietFreshHub.product.dto.ActionRequest;
 import VietFreshHub.product.dto.BulkProductActionRequest;
@@ -93,14 +97,22 @@ public class ProductController {
             BindingResult errors,
             Model model,
             RedirectAttributes flash) {
+        // @Valid và bước chuyển đổi kiểu đã chạy; có lỗi thì giữ dữ liệu để người dùng sửa tại chỗ.
         if (errors.hasErrors()) {
             return showProductForm(model, null);
         }
         try {
             Long productId = productService.create(authentication, form);
             flash.addFlashAttribute(
-                    "success", "Đã tạo sản phẩm và các phân loại. Sản phẩm được mở bán khi đủ điều kiện và sẽ được hậu kiểm.");
+                    "success", "Đã tạo sản phẩm và các phân loại. Sản phẩm được mở bán khi đủ điều kiện.");
             return productRedirect(productId);
+        } catch (DuplicateProductNameException exception) {
+            errors.rejectValue("name", "duplicate", exception.getMessage());
+            return showProductForm(model, null);
+        } catch (DataIntegrityViolationException exception) {
+            // Hai yêu cầu có thể cùng vượt qua kiểm tra tên; ràng buộc duy nhất ở DB vẫn chặn trùng.
+            rejectDuplicateProductName(exception, errors);
+            return showProductForm(model, null);
         } catch (CatalogException exception) {
             errors.reject("business", exception.getMessage());
             return showProductForm(model, null);
@@ -127,6 +139,7 @@ public class ProductController {
             BindingResult errors,
             Model model,
             RedirectAttributes flash) {
+        // Trả lại chính form đang nhập khi lỗi, đồng thời nạp lại danh mục và các lựa chọn phụ.
         if (errors.hasErrors()) {
             return showProductForm(model, id);
         }
@@ -134,6 +147,12 @@ public class ProductController {
             productService.update(authentication, id, form);
             flash.addFlashAttribute("success", "Đã lưu thông tin sản phẩm.");
             return productRedirect(id);
+        } catch (DuplicateProductNameException exception) {
+            errors.rejectValue("name", "duplicate", exception.getMessage());
+            return showProductForm(model, id);
+        } catch (DataIntegrityViolationException exception) {
+            rejectDuplicateProductName(exception, errors);
+            return showProductForm(model, id);
         } catch (CatalogException exception) {
             errors.reject("business", exception.getMessage());
             return showProductForm(model, id);
@@ -319,4 +338,16 @@ public class ProductController {
     private String productRedirect(Long productId) {
         return "redirect:/seller/products/" + productId;
     }
+    private void rejectDuplicateProductName(DataIntegrityViolationException exception, BindingResult errors) {
+        // Lỗi SQL thường được bọc qua nhiều lớp exception; tìm đúng tên ràng buộc trong chuỗi nguyên nhân.
+        for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+            if (cause.getMessage() != null && cause.getMessage().contains("UX_products_shop_name")) {
+                errors.rejectValue("name", "duplicate", DuplicateProductNameException.MESSAGE);
+                return;
+            }
+        }
+        // Vi phạm ràng buộc khác phải được xử lý theo lỗi dữ liệu chung, không báo nhầm là trùng tên.
+        throw exception;
+    }
+
 }

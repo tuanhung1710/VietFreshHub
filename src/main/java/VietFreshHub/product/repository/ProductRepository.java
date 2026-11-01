@@ -1,5 +1,7 @@
 package VietFreshHub.product.repository;
 
+import org.springframework.data.repository.query.Param;
+
 import VietFreshHub.product.entity.Product;
 import VietFreshHub.product.enums.ApprovalStatus;
 import VietFreshHub.product.enums.ProductStatus;
@@ -66,4 +68,14 @@ public interface ProductRepository extends JpaRepository<Product, Long>, Product
             LocalDateTime createdTo,
             LocalDate today,
             Pageable pageable);
+    @Query(value = """
+            select count(*) from dbo.products
+            where shop_id = :shopId
+              and ltrim(rtrim(name)) collate Latin1_General_100_CI_AS
+                  = :name collate Latin1_General_100_CI_AS
+              and (:excludedProductId is null or product_id <> :excludedProductId)
+            """, nativeQuery = true)
+    long countDuplicateNames(@Param("shopId") Long shopId, @Param("name") String name,
+            @Param("excludedProductId") Long excludedProductId);
+
 }

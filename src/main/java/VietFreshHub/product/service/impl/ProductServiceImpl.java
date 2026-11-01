@@ -1,5 +1,7 @@
 package VietFreshHub.product.service.impl;
 
+import VietFreshHub.product.exception.DuplicateProductNameException;
+
 import static VietFreshHub.inventory.rule.InventoryRules.available;
 import static VietFreshHub.inventory.rule.InventoryRules.expired;
 import static VietFreshHub.inventory.rule.InventoryRules.nearExpiry;
@@ -955,14 +957,17 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public Long create(Authentication authentication, ProductRequest form) {
+        // Kiểm tra toàn bộ sản phẩm và phân loại trước khi bắt đầu ghi dữ liệu liên quan.
         Long shopId = shopService.getManagedShopId(authentication);
         Long actorId = authService.getCurrentUserId(authentication);
         validateProductFields(form);
+        validateUniqueName(shopId, form.getName(), null);
         validateNewVariants(form);
 
         Product product = new Product();
         product.setShopId(shopId);
         applyProductFields(product, form);
+        // Dùng slug tạm để lưu sản phẩm trước khi có ID tạo slug chính thức.
         product.setSlug("TMP-" + UUID.randomUUID());
         product.setStatus(ProductStatus.INACTIVE);
         product.setApprovalStatus(ApprovalStatus.PENDING);
@@ -976,7 +981,7 @@ public class ProductServiceImpl implements ProductService {
         for (VariantRequest variant : form.getVariants()) {
             createVariant(product, variant, actorId);
         }
-        // Create the category and SKUs before activation to retain publication trigger guards.
+        // Lưu đủ danh mục và phân loại trước khi mở bán để thỏa điều kiện trigger trong cơ sở dữ liệu.
         product.setSellerHidden(false);
         product.setStatus(ProductStatus.ACTIVE);
         productRepository.saveAndFlush(product);
@@ -1075,32 +1080,23 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public void update(Authentication authentication, Long productId, ProductRequest form) {
-        Product product = getOwnedProduct(authentication, productId, true);
+        // Khóa sản phẩm và kiểm tra quyền, dữ liệu, tên trùng trước khi xác định phần thay đổi.
+        Product product = getOwnedProductForUpdate(authentication, productId);
         requireWritableProduct(product);
         validateProductFields(form);
+        validateUniqueName(product.getShopId(), form.getName(), productId);
         String changeReason = reason(form.getReason());
         boolean metadataChanged = productMetadataChanged(product, form);
         Integer previousReminderDays = product.getExpiryWarningDays();
         boolean reminderChanged = !Objects.equals(previousReminderDays, form.getExpiryWarningDays());
         applyProductFields(product, form);
-        if (!metadataChanged) {
-            productRepository.saveAndFlush(product);
+        if (metadataChanged) {
+            updateProductMetadata(product, productId, form);
         } else {
-            ProductStatus businessStatus = product.getStatus();
-            resetApproval(product);
-            // Temporarily suspend publication within this transaction while replacing categories.
-            // Restore the seller's choice before commit; admin locks are never cleared.
-            product.setStatus(ProductStatus.INACTIVE);
-            productRepository.saveAndFlush(product);
-            productCategoryRepository.deleteByIdProductId(productId);
-            productCategoryRepository.flush();
-            productCategoryRepository.save(new ProductCategory(productId, form.getCategoryId()));
-            savePrimaryImage(productId, null, form.getImageUrl());
-            productCategoryRepository.flush();
-            product.setStatus(businessStatus);
             productRepository.saveAndFlush(product);
         }
         if (metadataChanged || reminderChanged) {
+            // Thay đổi nội dung và thay đổi mốc nhắc hạn có loại lịch sử khác nhau để dễ tra cứu.
             String auditReason = changeReason;
             if (reminderChanged) {
                 auditReason += "; nhắc trước hạn sử dụng " + previousReminderDays
@@ -1450,4 +1446,34 @@ public class ProductServiceImpl implements ProductService {
         form.setNoInitialStock(true);
         return form;
     }
+    private Product getOwnedProductForUpdate(Authentication authentication, Long productId) {
+        Long shopId = shopService.getManagedShopId(authentication);
+        Product product = productRepository.lockOwned(productId, shopId)
+                .orElseThrow(() -> new AccessDeniedException("Sản phẩm không thuộc cửa hàng của bạn."));
+        return inventoryLockHelper.refresh(product);
+    }
+
+    private void validateUniqueName(Long shopId, String name, Long excludedProductId) {
+        if (productRepository.countDuplicateNames(shopId, name.trim(), excludedProductId) > 0) {
+            throw new DuplicateProductNameException();
+        }
+    }
+
+    private void updateProductMetadata(Product product, Long productId, ProductRequest form) {
+        ProductStatus businessStatus = product.getStatus();
+        resetApproval(product);
+        // Tạm ẩn trong giao dịch để thay danh mục rồi khôi phục trạng thái kinh doanh.
+        // Khóa của quản trị viên được giữ nguyên trong toàn bộ quá trình.
+        product.setStatus(ProductStatus.INACTIVE);
+        productRepository.saveAndFlush(product);
+        productCategoryRepository.deleteByIdProductId(productId);
+        productCategoryRepository.flush();
+        productCategoryRepository.save(new ProductCategory(productId, form.getCategoryId()));
+        savePrimaryImage(productId, null, form.getImageUrl());
+        productCategoryRepository.flush();
+        product.setStatus(businessStatus);
+        productRepository.saveAndFlush(product);
+
+    }
+
 }
