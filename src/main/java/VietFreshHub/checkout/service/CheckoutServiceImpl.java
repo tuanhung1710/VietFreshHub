@@ -156,7 +156,8 @@ public class CheckoutServiceImpl implements CheckoutService {
         }
         Map<Long,List<CartItem>> groups=selected.stream().collect(Collectors.groupingBy(
                 item -> item.getVariant().getProduct().getShop().getShopId(),TreeMap::new,Collectors.toList()));
-        BigDecimal subtotal=selected.stream().map(this::lineTotal).reduce(BigDecimal.ZERO,BigDecimal::add);
+        Map<Long,BigDecimal> prices=current.getItems().stream().collect(Collectors.toMap(CartItemDto::getVariantId,CartItemDto::getUnitPriceSnapshot));
+        BigDecimal subtotal=selected.stream().map(item -> lineTotal(item,prices)).reduce(BigDecimal.ZERO,BigDecimal::add);
         BigDecimal shippingTotal=shippingQuotes.validateForConfirmation(draft,address,groups.keySet());
         Order order=new Order(); order.setCustomer(buyer); order.setOrderCode(orderCode);
         if("BANK_TRANSFER".equals(methodCode)) order.setPaymentStatus("PENDING");
@@ -171,7 +172,7 @@ public class CheckoutServiceImpl implements CheckoutService {
             ShopShippingQuote quote=draft.shopQuotes().get(shopOrder.getShopId());
             BigDecimal fee=quote.shippingFee();
             shopOrder.setShippingDistanceMeters(shippingQuotes.distanceSnapshot(quote.distanceMeters()));
-            BigDecimal shopSubtotal=lines.stream().map(this::lineTotal).reduce(BigDecimal.ZERO,BigDecimal::add);
+            BigDecimal shopSubtotal=lines.stream().map(item -> lineTotal(item,prices)).reduce(BigDecimal.ZERO,BigDecimal::add);
             shopOrder.setSubtotal(money(shopSubtotal)); shopOrder.setShippingFee(fee);
             shopOrder.setTotalAmount(money(shopSubtotal.add(fee))); em.persist(shopOrder);
             shopOrderIds.add(shopOrder.getShopOrderId());
@@ -179,7 +180,7 @@ public class CheckoutServiceImpl implements CheckoutService {
                 CatalogVariant variant=line.getVariant(); OrderItem item=new OrderItem(); item.setShopOrder(shopOrder);
                 item.setVariant(variant); item.setProductNameSnapshot(variant.getProduct().getName());
                 item.setVariantNameSnapshot(variant.getVariantName()); item.setSkuSnapshot(variant.getSku());
-                item.setUnitPrice(variant.getPrice()); item.setQuantity(line.getQuantity()); item.setTotalAmount(money(lineTotal(line)));
+                item.setUnitPrice(prices.get(variant.getVariantId())); item.setQuantity(line.getQuantity()); item.setTotalAmount(money(lineTotal(line,prices)));
                 em.persist(item); reservations.add(new InventoryReservationService.Reservation(item.getOrderItemId(),variant.getVariantId(),line.getQuantity()));
             }
             OrderStatusHistory history=new OrderStatusHistory(); history.setShopOrder(shopOrder); history.setStatus("PENDING");
@@ -214,7 +215,7 @@ public class CheckoutServiceImpl implements CheckoutService {
             throw new CheckoutException("Sản phẩm vừa thay đổi cửa hàng. Vui lòng kiểm tra lại giỏ.");
         }
     }
-    private BigDecimal lineTotal(CartItem item) { return item.getVariant().getPrice().multiply(BigDecimal.valueOf(item.getQuantity())); }
+    private BigDecimal lineTotal(CartItem item,Map<Long,BigDecimal> prices) { return prices.get(item.getVariant().getVariantId()).multiply(BigDecimal.valueOf(item.getQuantity())); }
     private CartDto selectCart(CartDto cart,List<Long> itemIds) {
         if(itemIds==null) return cart;
         if(itemIds.isEmpty() || itemIds.stream().anyMatch(id -> id==null || id<=0))

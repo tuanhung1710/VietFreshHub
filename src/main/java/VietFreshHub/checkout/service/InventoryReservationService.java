@@ -18,6 +18,11 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.math.BigDecimal;
+import VietFreshHub.inventory.entity.InventoryBatch;
+import VietFreshHub.inventory.enums.BatchStatus;
+import VietFreshHub.inventory.service.BatchMarkdownLookup;
+import VietFreshHub.inventory.rule.InventoryRules;
 
 @Service @RequiredArgsConstructor
 public class InventoryReservationService {
@@ -25,6 +30,7 @@ public class InventoryReservationService {
     public enum ReservationState { NONE, COMPLETE, INCONSISTENT }
 
     private final EntityManager em;
+    private final BatchMarkdownLookup markdowns;
     @Transactional(propagation=Propagation.MANDATORY)
     public void reserve(List<Reservation> lines,Long customerId) {
         User actor=em.getReference(User.class,customerId);
@@ -38,6 +44,7 @@ public class InventoryReservationService {
                             +"and b.status='ACTIVE' and (b.expiryDate is null or b.expiryDate>=:today) order by b.batchId",CheckoutInventoryBatch.class)
                     .setParameter("variantId",line.variantId()).setParameter("today",today)
                     .setLockMode(LockModeType.PESSIMISTIC_WRITE).getResultList();
+            batches = atOrderPrice(line, batches, today);
             long available=batches.stream().mapToLong(b -> (long)b.getQuantityOnHand()-b.getReservedQuantity()).sum();
             if(available<line.quantity()) throw new CheckoutException("Một sản phẩm không còn đủ hàng. Vui lòng kiểm tra lại giỏ.");
             int remaining=line.quantity();
@@ -68,10 +75,38 @@ public class InventoryReservationService {
                             + "and b.status='ACTIVE' and (b.expiryDate is null or b.expiryDate>=:today) order by b.batchId", CheckoutInventoryBatch.class)
                     .setParameter("variantId", line.variantId()).setParameter("today", today)
                     .setLockMode(LockModeType.PESSIMISTIC_WRITE).getResultList();
+            batches = atOrderPrice(line, batches, today);
             long available = batches.stream().mapToLong(b -> (long) b.getQuantityOnHand() - b.getReservedQuantity()).sum();
             if (available < line.quantity()) return false;
         }
         return true;
+    }
+
+    /** Allocate the exact price quoted by the catalog; a discounted order cannot consume full-price lots. */
+    private List<CheckoutInventoryBatch> atOrderPrice(Reservation line, List<CheckoutInventoryBatch> batches, LocalDate today) {
+        OrderItem item = em.find(OrderItem.class, line.orderItemId());
+        if (item == null || item.getUnitPrice() == null) throw new CheckoutException("Không xác định được giá của dòng đơn hàng.");
+        var snapshots = batches.stream().map(batch -> {
+            var snapshot = new InventoryBatch();
+            snapshot.setBatchId(batch.getBatchId());
+            snapshot.setVariantId(line.variantId());
+            snapshot.setQuantityOnHand(batch.getQuantityOnHand());
+            snapshot.setReservedQuantity(batch.getReservedQuantity());
+            snapshot.setExpiryDate(batch.getExpiryDate());
+            snapshot.setStatus(BatchStatus.valueOf(batch.getStatus()));
+            return snapshot;
+        }).toList();
+        var activeMarkdowns = markdowns.findActive(snapshots);
+        Map<Long,BigDecimal> batchPrices = new HashMap<>();
+        for (int index=0; index<batches.size(); index++) {
+            var batch = batches.get(index);
+            var snapshot = snapshots.get(index);
+            BigDecimal basePrice = batch.getVariant().getPrice();
+            BigDecimal price = activeMarkdowns.stream().filter(markdown -> InventoryRules.isApplicableMarkdown(snapshot,markdown,basePrice,today))
+                    .map(markdown -> markdown.getPrice()).min(BigDecimal::compareTo).orElse(basePrice);
+            batchPrices.put(batch.getBatchId(),price);
+        }
+        return batches.stream().filter(batch -> batchPrices.get(batch.getBatchId()).compareTo(item.getUnitPrice())==0).toList();
     }
 
     @Transactional(propagation=Propagation.MANDATORY)

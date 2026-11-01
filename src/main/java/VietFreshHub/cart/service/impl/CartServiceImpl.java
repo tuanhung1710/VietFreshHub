@@ -6,7 +6,7 @@ import VietFreshHub.cart.dto.*;
 import VietFreshHub.cart.entity.*;
 import VietFreshHub.cart.repository.*;
 import VietFreshHub.cart.service.CartService;
-import VietFreshHub.checkout.repository.CheckoutInventoryBatchRepository;
+import VietFreshHub.catalog.service.CatalogPricingService;
 import VietFreshHub.catalog.dto.StockCheckResponse;
 import VietFreshHub.catalog.entity.CatalogVariant;
 import VietFreshHub.catalog.repository.CatalogVariantRepository;
@@ -26,7 +26,7 @@ public class CartServiceImpl implements CartService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final CatalogVariantRepository productVariantRepository;
-    private final CheckoutInventoryBatchRepository inventoryBatchRepository;
+    private final CatalogPricingService pricing;
     private final UserRepository userRepository;
     private final CatalogService catalogService;
 
@@ -53,14 +53,15 @@ public class CartServiceImpl implements CartService {
                     return created;
                 });
         long quantity = (long) item.getQuantity() + request.getQuantity();
-        int stock = availableStock(variant.getVariantId());
+        var offer = offer(variant.getVariantId());
+        int stock = offer.availableStock();
         if (quantity > stock) throw insufficientStock(stock);
         item.setQuantity((int) quantity);
-        item.setUnitPriceSnapshot(variant.getPrice());
+        item.setUnitPriceSnapshot(offer.price());
         CartItem saved = cartItemRepository.save(item);
         return AddToCartResponse.builder().cartItemId(saved.getCartItemId()).cartId(cart.getCartId())
                 .variantId(variant.getVariantId()).variantName(variant.getVariantName()).quantity(saved.getQuantity())
-                .unitPriceSnapshot(variant.getPrice()).itemSubtotal(variant.getPrice().multiply(BigDecimal.valueOf(quantity)))
+                .unitPriceSnapshot(offer.price()).itemSubtotal(offer.price().multiply(BigDecimal.valueOf(quantity)))
                 .message("Đã thêm sản phẩm vào giỏ hàng.").build();
     }
 
@@ -69,9 +70,9 @@ public class CartServiceImpl implements CartService {
     public CartDto getActiveCart(Long userId) {
         Cart cart = cartRepository.findByUserUserIdAndStatus(userId, "ACTIVE").orElse(null);
         if (cart == null) return CartDto.builder().userId(userId).status("ACTIVE").totalItems(0).totalAmount(BigDecimal.ZERO).build();
-        var stocks = inventoryBatchRepository.getAvailableStocks(cart.getItems().stream()
+        var offers = pricing.offers(cart.getItems().stream()
                 .map(i -> i.getVariant().getVariantId()).distinct().toList());
-        List<CartItemDto> items = cart.getItems().stream().map(i -> toItem(i, stocks.getOrDefault(i.getVariant().getVariantId(), 0)))
+        List<CartItemDto> items = cart.getItems().stream().map(i -> toItem(i, offers.get(i.getVariant().getVariantId())))
                 .sorted(Comparator.comparing(CartItemDto::getShopId).thenComparing(CartItemDto::getCartItemId)).toList();
         return CartDto.builder().cartId(cart.getCartId()).userId(userId).status(cart.getStatus()).items(items)
                 .totalItems(items.stream().mapToLong(CartItemDto::getQuantity).sum())
@@ -80,17 +81,19 @@ public class CartServiceImpl implements CartService {
                 .hasUnavailableItems(items.stream().anyMatch(i -> !i.isPurchasable())).build();
     }
 
-    private CartItemDto toItem(CartItem item, int stock) {
+    private CartItemDto toItem(CartItem item, CatalogPricingService.Offer offer) {
         CatalogVariant variant = item.getVariant();
+        int stock = offer == null ? 0 : offer.availableStock();
+        BigDecimal price = offer == null ? variant.getPrice() : offer.price();
         boolean eligible = catalogService.isPurchasable(variant);
         boolean purchasable = eligible && stock > 0 && item.getQuantity() <= stock;
         String message = !eligible ? "Sản phẩm hoặc cửa hàng hiện không nhận đơn."
                 : stock == 0 ? "Tạm hết hàng. Bạn có thể giữ lại trong giỏ hoặc xóa sản phẩm."
                 : item.getQuantity() > stock ? "Chỉ còn " + stock + " sản phẩm. Vui lòng giảm số lượng." : null;
         return CartItemDto.builder().cartItemId(item.getCartItemId()).variantId(variant.getVariantId())
-                .variantName(variant.getVariantName()).quantity(item.getQuantity()).unitPriceSnapshot(variant.getPrice())
-                .previousPrice(item.getUnitPriceSnapshot()).priceChanged(variant.getPrice().compareTo(item.getUnitPriceSnapshot()) != 0)
-                .itemSubtotal(variant.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .variantName(variant.getVariantName()).quantity(item.getQuantity()).unitPriceSnapshot(price)
+                .previousPrice(item.getUnitPriceSnapshot()).priceChanged(price.compareTo(item.getUnitPriceSnapshot()) != 0)
+                .itemSubtotal(price.multiply(BigDecimal.valueOf(item.getQuantity())))
                 .availableStock(stock).status(variant.getStatus()).purchasable(purchasable).quantityEditable(eligible && stock > 0).availabilityMessage(message)
                 .imageUrl(variant.getDisplayImageUrl()).productName(variant.getProduct().getName())
                 .shopId(variant.getProduct().getShop().getShopId()).shopName(variant.getProduct().getShop().getShopName()).build();
@@ -121,10 +124,11 @@ public class CartServiceImpl implements CartService {
             return;
         }
         CatalogVariant variant = requirePurchasable(variantId);
-        int stock = availableStock(variantId);
+        var offer = offer(variantId);
+        int stock = offer.availableStock();
         if (quantity > stock) throw insufficientStock(stock);
         item.setQuantity(quantity);
-        item.setUnitPriceSnapshot(variant.getPrice());
+        item.setUnitPriceSnapshot(offer.price());
         cartItemRepository.save(item);
     }
 
@@ -161,8 +165,12 @@ public class CartServiceImpl implements CartService {
         return variant;
     }
     private int availableStock(Long variantId) {
-        Integer stock = inventoryBatchRepository.getAvailableStockByVariantId(variantId);
-        return stock == null ? 0 : stock;
+        return offer(variantId).availableStock();
+    }
+    private CatalogPricingService.Offer offer(Long variantId) {
+        var offer = pricing.offers(List.of(variantId)).get(variantId);
+        if (offer == null) throw new ResourceNotFoundException("Sản phẩm không còn được bán.");
+        return offer;
     }
     private OutOfStockException insufficientStock(int stock) {
         return new OutOfStockException("Chỉ còn " + stock + " sản phẩm có thể mua. Vui lòng điều chỉnh số lượng.", stock);
