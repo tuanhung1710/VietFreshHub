@@ -49,6 +49,20 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .card-bottom .price { font-size: 17px; }
 .card-action { font-size: 12px; font-weight: 650; padding: 6px 0; }
 .pagination { display: flex; justify-content: center; align-items: center; gap: 18px; margin-top: 32px; }
+.marketplace-page .catalog-section { scroll-margin-top: 110px; }
+.catalog-pagination { gap: 12px; flex-wrap: wrap; padding: 12px 0; }
+.catalog-pagination .page-number, .catalog-pagination .page-direction { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding: 6px 12px; border-radius: 4px; color: var(--muted); font-size: 18px; }
+.catalog-pagination .page-direction { gap: 10px; font-size: 14px; }
+.catalog-pagination .page-direction > span[aria-hidden] { font-size: 28px; line-height: 1; }
+.catalog-pagination a:hover { background: #e9f2e6; color: var(--green); text-decoration: none; }
+.catalog-pagination .page-number.active { background: var(--green); color: #fff; font-weight: 600; }
+.catalog-pagination .disabled { opacity: .35; cursor: default; }
+.catalog-pagination .page-ellipsis { color: var(--muted); }
+@media(max-width:600px) {
+    .catalog-pagination { gap: 3px; }
+    .catalog-pagination .page-number, .catalog-pagination .page-direction { min-width: 36px; padding: 6px 8px; font-size: 16px; }
+    .catalog-pagination .page-direction-label { display: none; }
+}
 .panel { border-radius: 8px; }
 .cart-page-heading { display: flex; justify-content: space-between; align-items: center; }
 .cart-page-heading h1 { font-size: 30px; margin-bottom: 0; }

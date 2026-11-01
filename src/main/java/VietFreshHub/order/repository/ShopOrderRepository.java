@@ -2,7 +2,7 @@ package VietFreshHub.order.repository;
 
 import VietFreshHub.order.entity.ShopOrder;
 import VietFreshHub.order.dto.CustomerShopOrderStatus;
-import VietFreshHub.order.dto.OrderListRow;
+import VietFreshHub.order.dto.ShopOrderListRow;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,11 +35,11 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, Jpa
             + "and (:fromDate is null or o.placedAt >= :fromDate) "
             + "and (:untilDate is null or o.placedAt < :untilDate) ";
 
-    @Query(value = "select new VietFreshHub.order.dto.OrderListRow(s.shopOrderId,o.orderId,"
+    @Query(value = "select new VietFreshHub.order.dto.ShopOrderListRow(s.shopOrderId,o.orderId,"
             + "s.shop.shopName," + OrderRepository.CUSTOMER_SHOP_STATUS + ",s.paymentStatus,s.totalAmount,o.placedAt) "
             + CUSTOMER_HISTORY_FROM + "order by o.placedAt desc,s.shopOrderId desc",
             countQuery = "select count(s.shopOrderId) " + CUSTOMER_HISTORY_FROM)
-    Page<OrderListRow> findCustomerHistory(@Param("customerId") Long customerId, @Param("status") String status,
+    Page<ShopOrderListRow> findCustomerHistory(@Param("customerId") Long customerId, @Param("status") String status,
             @Param("keyword") String keyword, @Param("keywordPattern") String keywordPattern, @Param("referenceId") Long referenceId,
             @Param("fromDate") LocalDateTime fromDate, @Param("untilDate") LocalDateTime untilDate, Pageable pageable);
 
@@ -63,6 +63,13 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, Jpa
     @EntityGraph(attributePaths = {"shop", "items.variant.product"})
     List<ShopOrder> findByOrderOrderIdOrderByShopOrderIdAsc(Long orderId);
 
+    // Page IDs are already paginated; fetch one collection only, never paginate a collection fetch.
+    @org.springframework.data.jpa.repository.Query("select distinct s from ShopOrder s join fetch s.shop "
+            + "left join fetch s.items i left join fetch i.variant "
+            + "where s.order.customer.userId=:customerId and s.order.orderId in :orderIds order by s.shopOrderId")
+    List<ShopOrder> findCustomerHistoryShops(
+            @org.springframework.data.repository.query.Param("customerId") Long customerId,
+            @org.springframework.data.repository.query.Param("orderIds") List<Long> orderIds);
     @Query("select s from ShopOrder s where s.order.orderId = :orderId order by s.shopOrderId")
     List<ShopOrder> findForOrderNotification(@Param("orderId") Long orderId);
 

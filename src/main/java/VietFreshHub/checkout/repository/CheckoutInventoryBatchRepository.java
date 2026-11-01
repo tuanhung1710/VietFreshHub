@@ -1,6 +1,11 @@
 package VietFreshHub.checkout.repository;
 
 import VietFreshHub.checkout.entity.CheckoutInventoryBatch;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,25 +22,36 @@ public interface CheckoutInventoryBatchRepository extends JpaRepository<Checkout
     @Query("SELECT COALESCE(SUM(CAST(b.quantityOnHand AS long) - b.reservedQuantity), 0) " +
            "FROM CheckoutInventoryBatch b WHERE b.variant.variantId = :variantId " +
            "AND b.status = 'ACTIVE' AND (b.expiryDate IS NULL OR b.expiryDate >= :today)")
-    Long findAvailableStock(@Param("variantId") Long variantId, @Param("today") java.time.LocalDate today);
+    Long findAvailableStock(@Param("variantId") Long variantId, @Param("today") LocalDate today);
 
     default Integer getAvailableStockByVariantId(Long variantId) {
-        Long stock = findAvailableStock(variantId, java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")));
-        return stock == null ? 0 : (int) Math.min(stock, Integer.MAX_VALUE);
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+        Long stock = findAvailableStock(variantId, today);
+        if (stock == null) {
+            return 0;
+        }
+        return (int) Math.min(stock, Integer.MAX_VALUE);
     }
 
     @Query("SELECT b.variant.variantId, SUM(CAST(b.quantityOnHand AS long) - b.reservedQuantity) FROM CheckoutInventoryBatch b "
             + "WHERE b.variant.variantId IN :variantIds AND b.status = 'ACTIVE' AND (b.expiryDate IS NULL OR b.expiryDate >= :today) "
             + "GROUP BY b.variant.variantId")
-    java.util.List<Object[]> findAvailableStockForVariants(@Param("variantIds") java.util.List<Long> variantIds,
-                                                          @Param("today") java.time.LocalDate today);
+    List<Object[]> findAvailableStockForVariants(@Param("variantIds") List<Long> variantIds,
+                                                @Param("today") LocalDate today);
 
-    default java.util.Map<Long, Integer> getAvailableStocks(java.util.List<Long> variantIds) {
-        if (variantIds.isEmpty()) return java.util.Map.of();
-        java.util.Map<Long, Integer> stocks = new java.util.HashMap<>();
-        for (Object[] row : findAvailableStockForVariants(variantIds,
-                java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")))) {
-            stocks.put(((Number) row[0]).longValue(), (int) Math.min(((Number) row[1]).longValue(), Integer.MAX_VALUE));
+    default Map<Long, Integer> getAvailableStocks(List<Long> variantIds) {
+        if (variantIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, Integer> stocks = new HashMap<>();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+        List<Object[]> stockRows = findAvailableStockForVariants(variantIds, today);
+        for (Object[] row : stockRows) {
+            Number variantIdValue = (Number) row[0];
+            Number availableStockValue = (Number) row[1];
+            Long variantId = variantIdValue.longValue();
+            int availableStock = (int) Math.min(availableStockValue.longValue(), Integer.MAX_VALUE);
+            stocks.put(variantId, availableStock);
         }
         return stocks;
     }

@@ -15,7 +15,7 @@ import VietFreshHub.order.entity.Order;
 import VietFreshHub.exception.CustomerOrderException;
 import VietFreshHub.order.service.OrderInventoryReleaseService;
 import VietFreshHub.order.repository.*;
-import VietFreshHub.order.service.CustomerOrderService;
+import VietFreshHub.order.service.ShopCustomerOrderService;
 import VietFreshHub.order.service.OrderLabels;
 import VietFreshHub.payment.entity.Payment;
 import VietFreshHub.payment.repository.PaymentRepository;
@@ -33,7 +33,7 @@ import java.time.*;
 import java.util.*;
 
 @Service @RequiredArgsConstructor
-public class CustomerOrderServiceImpl implements CustomerOrderService {
+public class ShopCustomerOrderServiceImpl implements ShopCustomerOrderService {
     private final ShopOrderRepository shopOrders;
     private final PaymentRepository payments;
     private final PaymentService paymentService;
@@ -53,7 +53,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
     private final EntityManager em;
 
     @Override @Transactional(readOnly=true)
-    public Page<OrderListRow> history(Long customerId,CustomerOrderFilterRequest filter) {
+    public Page<ShopOrderListRow> history(Long customerId,ShopCustomerOrderFilterRequest filter) {
         if(filter==null || filter.getPage()<1 || filter.getPage()>10000 || filter.getKeyword()==null
                 || filter.getKeyword().length()>100 || !filter.isDateRangeValid() || !filter.isDatabaseDateRangeValid())
             throw new CustomerOrderException("Bộ lọc đơn hàng không hợp lệ.");
@@ -80,7 +80,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         return page.map(row -> {
             if(!"CANCELLED".equals(row.status()) || !"UNPAID".equals(row.paymentStatus())) return row;
             boolean cod=codOrders.computeIfAbsent(row.orderId(),paymentService::isCodOrder);
-            return new OrderListRow(row.shopOrderId(),row.orderId(),row.shopName(),row.status(),row.paymentStatus(),
+            return new ShopOrderListRow(row.shopOrderId(),row.orderId(),row.shopName(),row.status(),row.paymentStatus(),
                     row.totalAmount(),row.placedAt(),OrderLabels.customerPayment(row.status(),row.paymentStatus(),cod));
         });
     }

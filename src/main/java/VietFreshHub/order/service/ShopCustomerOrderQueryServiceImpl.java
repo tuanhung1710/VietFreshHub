@@ -3,7 +3,7 @@ package VietFreshHub.order.service;
 import VietFreshHub.order.dto.OrderDetailsResponse;
 import VietFreshHub.order.repository.*;
 import VietFreshHub.payment.service.PaymentService;
-import VietFreshHub.order.service.CustomerOrderQueryService;
+import VietFreshHub.order.service.ShopCustomerOrderQueryService;
 import VietFreshHub.order.service.OrderLabels;
 import VietFreshHub.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +13,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service @RequiredArgsConstructor
-public class CustomerOrderQueryServiceImpl implements CustomerOrderQueryService {
+public class ShopCustomerOrderQueryServiceImpl implements ShopCustomerOrderQueryService {
     private final OrderRepository orders;
     private final OrderAddressRepository addresses;
     private final CustomerOrderReadRepository reads;
@@ -44,7 +44,7 @@ public class CustomerOrderQueryServiceImpl implements CustomerOrderQueryService 
         boolean cod=!payments.isEmpty() && payments.stream().allMatch(payment -> "COD".equals(payment.methodCode()));
         var groups=reads.findShops(customerId,orderId).stream().map(shop -> new OrderDetailsResponse.ShopGroup(
                 shop.getShopOrderId(),shop.getShopName(),statuses.getOrDefault(shop.getShopOrderId(),OrderLabels.shop(shop.getStatus())),shop.getShippingFee(),shop.getTotalAmount(),
-                List.copyOf(items.getOrDefault(shop.getShopOrderId(),List.of())),shop.getSubtotal(),shop.getDiscountTotal(),shop.getPaymentStatus(),
+                List.copyOf(items.getOrDefault(shop.getShopOrderId(),List.of())),shop.getSubtotal(),shop.getDiscountTotal(),shop.getStatus(),null,shop.getPaymentStatus(),
                 OrderLabels.customerPayment(shop.getStatus(),shop.getPaymentStatus(),cod))).toList();
         String addressText=address.getFormattedAddress()!=null && !address.getFormattedAddress().isBlank() ? address.getFormattedAddress()
                 : java.util.stream.Stream.of(address.getAddressLine(),address.getWard(),address.getDistrict(),address.getProvince())
@@ -67,7 +67,7 @@ public class CustomerOrderQueryServiceImpl implements CustomerOrderQueryService 
         boolean cod=paymentService.isCodOrder(order.getOrderId());
         String paymentLabel=OrderLabels.customerPayment(shop.getStatus(),shop.getPaymentStatus(),cod);
         var group=new OrderDetailsResponse.ShopGroup(shop.getShopOrderId(),shop.getShop().getShopName(),status.statusLabel(),
-                shop.getShippingFee(),shop.getTotalAmount(),items,shop.getSubtotal(),shop.getDiscountTotal(),shop.getPaymentStatus(),paymentLabel);
+                shop.getShippingFee(),shop.getTotalAmount(),items,shop.getSubtotal(),shop.getDiscountTotal(),shop.getStatus(),null,shop.getPaymentStatus(),paymentLabel);
         String addressText=address.getFormattedAddress()!=null && !address.getFormattedAddress().isBlank() ? address.getFormattedAddress()
                 : java.util.stream.Stream.of(address.getAddressLine(),address.getWard(),address.getDistrict(),address.getProvince())
                     .filter(part -> part!=null && !part.isBlank()).collect(Collectors.joining(", "));

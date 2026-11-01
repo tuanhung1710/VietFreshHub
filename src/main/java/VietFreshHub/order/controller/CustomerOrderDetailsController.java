@@ -1,63 +1,66 @@
 package VietFreshHub.order.controller;
+
 import VietFreshHub.auth.service.CurrentCustomerService;
-import VietFreshHub.order.service.CustomerOrderQueryService;
 import VietFreshHub.exception.ResourceNotFoundException;
+import VietFreshHub.order.dto.OrderDetailsResponse;
+import VietFreshHub.order.dto.OrderTrackingResponse;
+import VietFreshHub.order.service.CustomerOrderQueryService;
+import VietFreshHub.order.service.CustomerOrderService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.http.HttpStatus;
-import VietFreshHub.payment.vnpay.VnpayPaymentService;
-@Controller @RequiredArgsConstructor
-@RequestMapping("/customer/orders")
+
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Controller
+@RequiredArgsConstructor
+@RequestMapping("/customer/order-receipts")
 public class CustomerOrderDetailsController {
     private final CurrentCustomerService currentCustomer;
     private final CustomerOrderQueryService orders;
-    private final VietFreshHub.order.service.CustomerOrderService lifecycle;
-    private final VnpayPaymentService vnpayPayments;
-    private final VietFreshHub.refund.service.RefundRequestService refunds;
-    @GetMapping(value="/{shopOrderId}",params="!shopOrderId")
-    public String detail(@PathVariable Long shopOrderId,
-                         Authentication authentication,Model model) {
-        Long customerId=currentCustomer.requireCustomerId(authentication);
-        var order=orders.getShopDetails(customerId,shopOrderId);
-        var receipt=orders.getDetails(customerId,order.orderId());
-        model.addAttribute("order",order);
-        model.addAttribute("receipt",receipt);
-        model.addAttribute("cartBadgeTotal",orders.getCartBadgeTotal(customerId));
-        model.addAttribute("shopOrderId",shopOrderId);
-        model.addAttribute("canRetryVnpayPayment",vnpayPayments.canRetry(order.orderId(),customerId));
-        model.addAttribute("actions",lifecycle.shopActions(customerId,shopOrderId));
-        model.addAttribute("refund",refunds.getCustomerShopState(shopOrderId,authentication));
-        model.addAttribute("receiptRefund",refunds.getCustomerState(order.orderId(),authentication));
+    private final CustomerOrderService lifecycle;
+
+    @GetMapping("/{orderId}")
+    public String detail(@PathVariable Long orderId, Authentication authentication, Model model) {
+        return render(orderId, authentication, model, false);
+    }
+
+    @GetMapping("/{orderId}/confirmation")
+    public String confirmation(@PathVariable Long orderId, Authentication authentication, Model model) {
+        return render(orderId, authentication, model, true);
+    }
+
+    private String render(Long orderId, Authentication authentication, Model model, boolean confirmation) {
+        Long customerId = currentCustomer.requireCustomerId(authentication);
+        OrderDetailsResponse order = orders.getDetails(customerId, orderId);
+        model.addAttribute("order", order);
+        Map<Long, OrderTrackingResponse.ShopTracking> trackingShops = Map.of();
+        if (!order.shops().isEmpty()) {
+            OrderTrackingResponse tracking = lifecycle.tracking(customerId, orderId);
+            if (tracking != null) {
+                trackingShops = tracking.shops().stream().collect(Collectors.toMap(
+                        OrderTrackingResponse.ShopTracking::shopOrderId, shop -> shop));
+            }
+        }
+        model.addAttribute("trackingShops", trackingShops);
+        model.addAttribute("cartBadgeTotal", orders.getCartBadgeTotal(customerId));
+        model.addAttribute("confirmation", confirmation);
+        model.addAttribute("actions", new VietFreshHub.order.dto.OrderActionsResponse(false, "Vui lòng mở Đơn mua để hủy theo từng cửa hàng.", ""));
         return "customer/order-detail";
     }
-    @GetMapping(value="/{orderId}",params="shopOrderId")
-    public String legacyDetail(@PathVariable Long orderId,@RequestParam Long shopOrderId,
-                               Authentication authentication) {
-        var receipt=orders.getDetails(currentCustomer.requireCustomerId(authentication),orderId);
-        if(receipt.shops().stream().noneMatch(shop -> shop.shopOrderId().equals(shopOrderId))) {
-            throw new ResourceNotFoundException("Không tìm thấy đơn hàng của bạn.");
-        }
-        return "redirect:/customer/orders/"+shopOrderId;
-    }
-    @GetMapping("/shops/{shopOrderId}")
-    public String shopDetail(@PathVariable Long shopOrderId,Authentication authentication) {
-        Long customerId=currentCustomer.requireCustomerId(authentication);
-        orders.getShopDetails(customerId,shopOrderId);
-        return "redirect:/customer/orders/"+shopOrderId;
-    }
-    @GetMapping("/{orderId}/confirmation")
-    public String confirmation(@PathVariable Long orderId,Authentication authentication,RedirectAttributes flash) {
-        orders.getDetails(currentCustomer.requireCustomerId(authentication),orderId);
-        flash.addFlashAttribute("successMessage","Đặt hàng thành công.");
-        return "redirect:/customer/orders";
-    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ModelAndView notFound() {
-        var view=new ModelAndView("customer/order-not-found"); view.setStatus(HttpStatus.NOT_FOUND); return view;
+        ModelAndView view = new ModelAndView("customer/order-not-found");
+        view.setStatus(HttpStatus.NOT_FOUND);
+        return view;
     }
 }
