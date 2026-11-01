@@ -5,8 +5,13 @@ import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.auth.repository.UserRoleRepository;
 import VietFreshHub.admin.dto.AdminDashboardData;
 import VietFreshHub.admin.service.AdminDashboardService;
+import VietFreshHub.inventory.dto.InventoryAttentionSummary;
+import VietFreshHub.order.dto.ShopReportSummary;
+import VietFreshHub.order.service.OrderService;
+import VietFreshHub.product.service.ProductService;
 import VietFreshHub.review.repository.ReviewRepository;
 import VietFreshHub.review.service.ReviewService;
+import VietFreshHub.shop.service.ShopService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -35,6 +40,9 @@ import static org.hamcrest.Matchers.containsString;
 class VietFreshHubApplicationTests {
 	@Autowired MockMvc mvc;
 	@MockitoBean ReviewService reviewService;
+	@MockitoBean OrderService orderService;
+	@MockitoBean ShopService shopService;
+	@MockitoBean ProductService productService;
 	@MockitoBean UserRepository userRepository;
 	@MockitoBean UserRoleRepository userRoleRepository;
 	@MockitoBean AdminDashboardService adminDashboardService;
@@ -57,6 +65,22 @@ class VietFreshHubApplicationTests {
 				.andExpect(status().isForbidden());
 		mvc.perform(get("/admin/reviews/pending").with(SecurityMockMvcRequestPostProcessors.user("admin@test").roles("ADMIN")))
 				.andExpect(status().isOk()).andExpect(view().name("admin/reviews-pending"));
+	}
+
+	@Test
+	void sellerReportIsAvailableToStoreManagerButNotCustomer() throws Exception {
+		var sales = new ShopReportSummary.Sales(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 0L);
+		LocalDate today = LocalDate.now();
+		when(orderService.getShopReport(any(), isNull(), isNull()))
+				.thenReturn(new ShopReportSummary(today, today, sales, List.of(), 0L, List.of()));
+		when(productService.inventoryAttentionSummary(any())).thenReturn(new InventoryAttentionSummary(0, 0, 0, 1));
+		stubActor("seller@test", 11L, "ROLE_STORE_MANAGER");
+		stubActor("customer@test", 13L, "ROLE_CUSTOMER");
+
+		mvc.perform(get("/seller/reports").with(SecurityMockMvcRequestPostProcessors.user("seller@test").roles("STORE_MANAGER")))
+				.andExpect(status().isOk()).andExpect(view().name("store_manager/reports"));
+		mvc.perform(get("/seller/reports").with(SecurityMockMvcRequestPostProcessors.user("customer@test").roles("CUSTOMER")))
+				.andExpect(status().isForbidden());
 	}
 
 	@Test

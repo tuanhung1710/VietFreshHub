@@ -17,6 +17,11 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     List<OrderItem> findByShopOrder_Order_Customer_UserIdAndShopOrder_StatusAndVariant_Product_ProductId(
             Long userId, String status, Long productId);
 
+    interface BestSellingProduct {
+        String getProductName();
+        Long getUnitsSold();
+    }
+
     interface AdminBestSellingProduct {
         String getProductName();
         String getUnit();
@@ -36,4 +41,27 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     List<AdminBestSellingProduct> findAdminBestSellers(@Param("from") LocalDateTime from,
                                                        @Param("to") LocalDateTime to,
                                                        org.springframework.data.domain.Pageable pageable);
+
+    @Query("""
+            select v.product.name as productName, sum(i.quantity) as unitsSold
+            from OrderItem i join i.shopOrder so join i.variant v
+            where so.shopId = :shopId and so.status = 'COMPLETED'
+            group by v.product.productId, v.product.name
+            order by sum(i.quantity) desc
+            """)
+    List<BestSellingProduct> findTopSellingProducts(@Param("shopId") Long shopId,
+                                                    org.springframework.data.domain.Pageable pageable);
+
+    @Query("""
+            select v.product.name as productName, sum(i.quantity) as unitsSold
+            from OrderItem i join i.shopOrder so join i.variant v
+            where so.shopId = :shopId and so.status = 'COMPLETED'
+              and so.completedAt >= :from and so.completedAt < :to
+            group by v.product.productId, v.product.name
+            order by sum(i.quantity) desc
+            """)
+    List<BestSellingProduct> findTopSellingProductsInPeriod(@Param("shopId") Long shopId,
+                                                             @Param("from") java.time.LocalDateTime from,
+                                                             @Param("to") java.time.LocalDateTime to,
+                                                             org.springframework.data.domain.Pageable pageable);
 }

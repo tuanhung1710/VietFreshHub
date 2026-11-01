@@ -12,6 +12,7 @@
 <button type="button" th:attr="data-vf-copy-code=${shopCode},aria-label=${'Sao chép mã shop '+shopCode}">Sao chép</button></p>
 <p><a th:href="@{/store_manager/chat}">Mở tin nhắn khách hàng</a></p>
 <p><a th:href="@{/seller/pickup-location}">Quản lý địa điểm lấy hàng</a></p>
+<p><a th:href="@{/seller/reports}">Báo cáo cửa hàng</a></p>
 
 <p><a th:href="@{/seller/deliveries}">Giám sát giao hàng</a></p>
 
@@ -26,6 +27,33 @@
         <li><a th:href="@{/seller/processed-orders}" th:text="${'Đơn đã giao thành công (' + orderCounts.completedOrders + ')'}">Đơn đã giao thành công</a></li>
     </ul>
 </nav>
+<section aria-labelledby="today-sales-heading">
+    <h3 id="today-sales-heading">Doanh số đơn hoàn thành hôm nay</h3>
+    <dl>
+        <dt>Subtotal sản phẩm trước giảm giá</dt><dd th:text="${todaySales.productSubtotal}">0</dd>
+        <dt>Giảm giá</dt><dd th:text="${todaySales.discounts}">0</dd>
+        <dt>Phí giao hàng</dt><dd th:text="${todaySales.shippingFees}">0</dd>
+        <dt>Số đơn hoàn thành</dt><dd th:text="${todaySales.completedOrders}">0</dd>
+    </dl>
+</section>
+<section aria-labelledby="today-orders-heading">
+    <h3 id="today-orders-heading">Đơn hàng hôm nay (tối đa 5 đơn mới nhất)</h3>
+    <p th:if="${#lists.isEmpty(todaysOrders)}">Chưa có đơn hàng nào hôm nay.</p>
+    <ul th:unless="${#lists.isEmpty(todaysOrders)}">
+        <li th:each="order : ${todaysOrders}">
+            <a th:href="@{/seller/orders/{id}(id=${order.shopOrderId})}"
+               th:text="${order.orderCode + ' · ' + order.customerName + ' · ' + order.status}">Đơn hàng</a>
+        </li>
+    </ul>
+</section>
+<section aria-labelledby="best-sellers-heading">
+    <h3 id="best-sellers-heading">Sản phẩm bán chạy nhất</h3>
+    <p th:if="${#lists.isEmpty(bestSellingProducts)}">Chưa có đơn hàng hoàn thành để thống kê.</p>
+    <ol th:unless="${#lists.isEmpty(bestSellingProducts)}">
+        <li th:each="product : ${bestSellingProducts}"
+            th:text="${product.productName + ' · ' + product.unitsSold + ' sản phẩm'}">Sản phẩm</li>
+    </ol>
+</section>
 <h2>QUẢN LÝ SẢN PHẨM VÀ KHO</h2>
 <section th:if="${inventoryAttention.hasAlerts()}" aria-label="Kho cần chú ý">
     <h3>Kho cần chú ý</h3>

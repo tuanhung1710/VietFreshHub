@@ -5,10 +5,14 @@ import VietFreshHub.order.dto.OrderCountsResponse;
 import VietFreshHub.order.dto.OrderDetailResponse;
 import VietFreshHub.order.dto.OrderFilterRequest;
 import VietFreshHub.order.dto.ProcessedOrderResponse;
+import VietFreshHub.order.dto.SellerDashboardOrder;
+import VietFreshHub.order.dto.ShopReportSummary;
+import VietFreshHub.order.repository.OrderItemRepository.BestSellingProduct;
 import VietFreshHub.order.entity.OrderAddress;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -29,6 +33,14 @@ public interface OrderService {
     long countFilteredOrders(Authentication authentication, OrderFilterRequest filter, String view);
 
     OrderCountsResponse getOrderCounts(Authentication authentication);
+
+    List<SellerDashboardOrder> getTodaysOrders(Authentication authentication);
+
+    List<BestSellingProduct> getBestSellingProducts(Authentication authentication);
+
+    ShopReportSummary.Sales getShopSalesSummary(Authentication authentication, LocalDate date);
+
+    ShopReportSummary getShopReport(Authentication authentication, LocalDate from, LocalDate to);
 
     OrderDetailResponse getOrderDetail(Long shopOrderId, Authentication authentication);
 

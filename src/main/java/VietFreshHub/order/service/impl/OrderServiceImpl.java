@@ -9,6 +9,8 @@ import VietFreshHub.order.dto.OrderDetailResponse;
 import VietFreshHub.order.dto.OrderFilterRequest;
 import VietFreshHub.order.dto.OrderItemResponse;
 import VietFreshHub.order.dto.ProcessedOrderResponse;
+import VietFreshHub.order.dto.SellerDashboardOrder;
+import VietFreshHub.order.dto.ShopReportSummary;
 import VietFreshHub.order.entity.Order;
 import VietFreshHub.order.entity.OrderAddress;
 import VietFreshHub.order.entity.OrderDeliveryView;
@@ -46,6 +48,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,6 +59,8 @@ import java.util.TreeSet;
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
+
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private final ShopOrderRepository shopOrderRepository;
     private final OrderAddressRepository orderAddressRepository;
@@ -138,6 +143,67 @@ public class OrderServiceImpl implements OrderService {
                 shopOrderRepository.countByShopIdAndStatus(shopId, "READY_FOR_DELIVERY"),
                 shopOrderRepository.countByShopIdAndStatus(shopId, "COMPLETED")
         );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SellerDashboardOrder> getTodaysOrders(Authentication authentication) {
+        Long shopId = shopService.getManagedShopId(authentication);
+        LocalDate day = LocalDate.now(BUSINESS_ZONE);
+        LocalDateTime from = startOfBusinessDayUtc(day);
+        return shopOrderRepository
+                .findTop5ByShopIdAndOrder_PlacedAtGreaterThanEqualAndOrder_PlacedAtLessThanOrderByOrder_PlacedAtDesc(
+                        shopId, from, startOfBusinessDayUtc(day.plusDays(1)))
+                .stream()
+                .map(shopOrder -> new SellerDashboardOrder(
+                        shopOrder.getShopOrderId(), shopOrder.getOrder().getOrderCode(),
+                        shopOrder.getOrder().getCustomer().getFullName(), shopOrder.getOrder().getPlacedAt(),
+                        shopOrder.getTotalAmount(), shopOrder.getStatus()))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderItemRepository.BestSellingProduct> getBestSellingProducts(Authentication authentication) {
+        return orderItemRepository.findTopSellingProducts(shopService.getManagedShopId(authentication),
+                PageRequest.of(0, 5));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ShopReportSummary.Sales getShopSalesSummary(Authentication authentication, LocalDate date) {
+        LocalDate salesDate = date == null ? LocalDate.now(BUSINESS_ZONE) : date;
+        return salesSummary(shopService.getManagedShopId(authentication), salesDate, salesDate);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ShopReportSummary getShopReport(Authentication authentication, LocalDate from, LocalDate to) {
+        LocalDate today = LocalDate.now(BUSINESS_ZONE);
+        from = from == null ? today.minusDays(29) : from;
+        to = to == null ? today : to;
+        if (from.isAfter(to) || to.isAfter(today)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Khoảng ngày báo cáo không hợp lệ.");
+        }
+        Long shopId = shopService.getManagedShopId(authentication);
+        LocalDateTime start = startOfBusinessDayUtc(from);
+        LocalDateTime end = startOfBusinessDayUtc(to.plusDays(1));
+        return new ShopReportSummary(from, to,
+                salesSummary(shopId, from, to),
+                shopOrderRepository.getOrderCountsByStatus(shopId, start, end),
+                shopOrderRepository.countDistinctCustomers(shopId, start, end),
+                orderItemRepository.findTopSellingProductsInPeriod(shopId, start, end, PageRequest.of(0, 10)));
+    }
+
+    private ShopReportSummary.Sales salesSummary(Long shopId, LocalDate from, LocalDate to) {
+        ShopOrderRepository.SalesTotals totals = shopOrderRepository.getCompletedSalesTotals(shopId,
+                startOfBusinessDayUtc(from), startOfBusinessDayUtc(to.plusDays(1)));
+        return new ShopReportSummary.Sales(totals.getSalesAmount(), totals.getDiscounts(),
+                totals.getShippingFees(), totals.getCompletedOrders());
+    }
+
+    private LocalDateTime startOfBusinessDayUtc(LocalDate date) {
+        return date.atStartOfDay(BUSINESS_ZONE).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
     }
 
     @Override

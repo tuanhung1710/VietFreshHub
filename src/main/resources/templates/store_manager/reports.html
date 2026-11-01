@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Báo cáo cửa hàng · VietFresh Hub</title>
+</head>
+<body>
+<h1>Báo cáo cửa hàng</h1>
+<form method="get" th:action="@{/seller/reports}">
+    <label for="from">Từ ngày</label>
+    <input id="from" name="from" type="date" th:value="${report.from}">
+    <label for="to">Đến ngày</label>
+    <input id="to" name="to" type="date" th:value="${report.to}">
+    <button type="submit">Lọc</button>
+</form>
+
+<h2>Doanh số đơn shop hoàn thành</h2>
+<p th:if="${report.sales.completedOrders == 0}">Không có đơn hoàn thành trong khoảng ngày này.</p>
+<dl>
+    <dt>Subtotal sản phẩm trước giảm giá</dt><dd th:text="${report.sales.productSubtotal}">0</dd>
+    <dt>Giảm giá</dt><dd th:text="${report.sales.discounts}">0</dd>
+    <dt>Phí giao hàng</dt><dd th:text="${report.sales.shippingFees}">0</dd>
+    <dt>Số đơn hoàn thành</dt><dd th:text="${report.sales.completedOrders}">0</dd>
+</dl>
+<p>Doanh thu ròng: TBD (chưa có quy tắc về hoàn tiền, phí nền tảng và ghi nhận doanh thu).</p>
+
+<h2>Thống kê đơn hàng theo ngày đặt</h2>
+<p th:if="${#lists.isEmpty(report.ordersByStatus)}">Không có đơn hàng trong khoảng ngày này.</p>
+<ul th:unless="${#lists.isEmpty(report.ordersByStatus)}">
+    <li th:each="row : ${report.ordersByStatus}" th:text="${row.status + ': ' + row.orderCount}">Trạng thái</li>
+</ul>
+
+<h2>Thống kê khách hàng theo ngày đặt đơn</h2>
+<p th:text="${'Khách hàng duy nhất: ' + report.distinctCustomers}">Khách hàng duy nhất: 0</p>
+
+<h2>Sản phẩm bán chạy trong đơn hoàn thành</h2>
+<p th:if="${#lists.isEmpty(report.bestSellingProducts)}">Không có sản phẩm bán ra trong khoảng ngày này.</p>
+<ol th:unless="${#lists.isEmpty(report.bestSellingProducts)}">
+    <li th:each="product : ${report.bestSellingProducts}"
+        th:text="${product.productName + ' · ' + product.unitsSold + ' sản phẩm'}">Sản phẩm</li>
+</ol>
+
+<h2>Tình trạng tồn kho hiện tại</h2>
+<p th:if="${inventoryLoadError}">Không thể tải dữ liệu tồn kho. Vui lòng thử lại sau.</p>
+<th:block th:unless="${inventoryLoadError}">
+    <p th:unless="${inventoryAttention.hasInventoryData()}">Chưa có dữ liệu lô tồn kho.</p>
+    <p th:if="${inventoryAttention.hasInventoryData() and !inventoryAttention.hasAlerts()}">Có dữ liệu tồn kho và hiện không có cảnh báo.</p>
+    <ul th:if="${inventoryAttention.hasAlerts()}">
+        <li th:if="${inventoryAttention.lowVariants > 0}" th:text="${inventoryAttention.lowVariants + ' phân loại sắp hết hàng'}">Sắp hết hàng</li>
+        <li th:if="${inventoryAttention.nearBatches > 0}" th:text="${inventoryAttention.nearBatches + ' lô sắp hết hạn'}">Sắp hết hạn</li>
+        <li th:if="${inventoryAttention.expiredBatches > 0}" th:text="${inventoryAttention.expiredBatches + ' lô đã hết hạn'}">Đã hết hạn</li>
+    </ul>
+</th:block>
+<p><a th:href="@{/seller/inventory/journal(from=${report.from},to=${report.to})}">Xem biến động tồn kho trong khoảng ngày đã chọn</a></p>
+<p><a th:href="@{/seller}">Về trang cửa hàng</a></p>
+</body>
+</html>
