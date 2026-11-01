@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
@@ -38,6 +37,4 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
             @Param("excludedUserId") Long excludedUserId
     );
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    List<User> findByStatusIgnoreCaseAndUserRoles_Role_RoleNameOrderByUserIdAsc(String status, String roleName);
 }

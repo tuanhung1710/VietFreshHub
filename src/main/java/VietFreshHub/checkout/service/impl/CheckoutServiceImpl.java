@@ -26,6 +26,7 @@ import VietFreshHub.order.entity.Order;
 import VietFreshHub.order.repository.OrderRepository;
 import VietFreshHub.order.service.OrderPlacedEvent;
 import VietFreshHub.payment.entity.PaymentMethod;
+import VietFreshHub.payment.entity.Payment;
 import VietFreshHub.payment.repository.PaymentMethodRepository;
 import VietFreshHub.sellerapplication.entity.SellerApplication;
 import VietFreshHub.shop.entity.Shop;
@@ -53,7 +54,7 @@ import static VietFreshHub.checkout.service.CheckoutCartSupport.groupItemsByShop
 import static VietFreshHub.checkout.service.CheckoutCartSupport.selectCartItems;
 
 /**
- * Điều phối checkout COD: kiểm tra dữ liệu, tạo đơn, giữ kho và ghi nhận payment chờ thu.
+ * Điều phối checkout COD/VNPAY: kiểm tra dữ liệu, tạo đơn, giữ kho và ghi nhận payment chờ thu.
  * Các helper ghi dữ liệu dùng chung transaction của confirm().
  */
 @Service
@@ -72,6 +73,8 @@ public class CheckoutServiceImpl implements CheckoutService {
     private final CheckoutOrderService checkoutOrderService;
     private final EntityManager entityManager;
     private final ApplicationEventPublisher eventPublisher;
+    private final VietFreshHub.payment.repository.PaymentRepository paymentRepository;
+    private final VietFreshHub.payment.vnpay.VnpayProperties vnpayProperties;
 
     @Override
     @Transactional(readOnly = true)
@@ -94,7 +97,7 @@ public class CheckoutServiceImpl implements CheckoutService {
         boolean codAvailable = paymentMethodRepository.findByMethodCodeAndStatus("COD", "ACTIVE").isPresent();
         // Phí giao hàng sẽ được bổ sung sau khi khách chọn địa chỉ nhận hàng.
         return new CheckoutPreview(selectedCart, List.copyOf(addressOptions), null, Map.of(), null, null,
-                codAvailable, createCartFingerprint(selectedCart), null, false);
+                codAvailable, vnpayProperties.isReady() && paymentMethodRepository.findByMethodCodeAndStatus("BANK_TRANSFER", "ACTIVE").isPresent(), createCartFingerprint(selectedCart), null, false);
     }
 
     @Override
@@ -110,7 +113,7 @@ public class CheckoutServiceImpl implements CheckoutService {
         }
 
         // 2. Kiểm tra lại địa chỉ, mặt hàng và báo giá ngay trước khi tạo đơn.
-        PaymentMethod paymentMethod = requireCod(request.getPaymentMethodCode());
+        PaymentMethod paymentMethod = requirePaymentMethod(request.getPaymentMethodCode());
         Address deliveryAddress = lockAddress(customerId, request.getAddressId());
         Cart cart = requireActiveCart(customerId, draft.cartId());
         List<CartItem> selectedItems = requireSelectedItems(cart, draft.selectedItemIds());
@@ -120,11 +123,22 @@ public class CheckoutServiceImpl implements CheckoutService {
         BigDecimal shippingFee = shippingQuoteService.validateForConfirmation(
                 draft, deliveryAddress, itemsByShopId.keySet());
 
-        // 3. Tạo đơn tổng, đơn từng shop, giữ kho và ghi nhận COD chưa thu tiền.
+        // 3. Tạo đơn tổng, đơn từng shop, giữ kho và ghi nhận payment theo phương thức đã chọn.
         Order order = checkoutOrderService.createOrder(buyer, orderCode, subtotal, shippingFee, deliveryAddress);
+        if ("BANK_TRANSFER".equals(paymentMethod.getMethodCode())) order.setPaymentStatus("PENDING");
         CheckoutOrderService.CreatedShopOrders createdShopOrders = checkoutOrderService.createShopOrders(order, buyer, itemsByShopId, draft.shopQuotes());
         inventoryReservationService.reserve(createdShopOrders.reservations(), customerId);
-        checkoutOrderService.createPendingPayment(order, paymentMethod);
+        if ("BANK_TRANSFER".equals(paymentMethod.getMethodCode())) {
+            for (Long shopOrderId : createdShopOrders.shopOrderIds()) {
+                entityManager.getReference(VietFreshHub.order.entity.ShopOrder.class, shopOrderId).setPaymentStatus("PENDING");
+            }
+        }
+        var payment = checkoutOrderService.createPendingPayment(order, paymentMethod);
+        if ("BANK_TRANSFER".equals(paymentMethod.getMethodCode())) {
+            payment.setProvider("VNPAY");
+            entityManager.flush();
+            payment.setTransactionReference("VF" + payment.getPaymentId());
+        }
 
         // 4. Giữ lại món chưa chọn; nếu đặt hết giỏ thì đóng giỏ hiện tại.
         if (selectedItems.size() == cart.getItems().size()) {
@@ -136,7 +150,8 @@ public class CheckoutServiceImpl implements CheckoutService {
         entityManager.flush();
         eventPublisher.publishEvent(new OrderPlacedEvent(
                 order.getOrderId(), customerId, List.copyOf(createdShopOrders.shopOrderIds())));
-        return toCheckoutResult(order);
+        return new CheckoutResult(order.getOrderId(), order.getOrderCode(), order.getGrandTotal(),
+                payment.getPaymentId(), paymentMethod.getMethodCode());
     }
 
     // Kiểm tra và khóa dữ liệu trước khi tạo đơn.
@@ -163,17 +178,15 @@ public class CheckoutServiceImpl implements CheckoutService {
         return buyer;
     }
 
-    private PaymentMethod requireCod(String methodCode) {
-        if (!"COD".equals(methodCode)) {
-            throw new CheckoutException("Hiện chỉ hỗ trợ thanh toán khi nhận hàng.");
-        }
-        PaymentMethod paymentMethod = paymentMethodRepository.findByMethodCodeAndStatus("COD", "ACTIVE")
-                .orElseThrow(() -> new CheckoutException("Thanh toán khi nhận hàng hiện chưa khả dụng."));
-        entityManager.refresh(paymentMethod, LockModeType.PESSIMISTIC_READ);
-        if (!"ACTIVE".equals(paymentMethod.getStatus())) {
-            throw new CheckoutException("Thanh toán khi nhận hàng hiện chưa khả dụng.");
-        }
-        return paymentMethod;
+    private PaymentMethod requirePaymentMethod(String methodCode) {
+        if(methodCode==null || !Set.of("COD","BANK_TRANSFER").contains(methodCode)) throw new CheckoutException("Vui lòng chọn phương thức thanh toán hợp lệ.");
+        if("BANK_TRANSFER".equals(methodCode) && !vnpayProperties.isReady())
+            throw new CheckoutException("Chuyển khoản qua VNPAY chưa được cấu hình. Vui lòng chọn COD hoặc thử lại sau.");
+        var method=paymentMethodRepository.findByMethodCodeAndStatus(methodCode,"ACTIVE")
+                .orElseThrow(() -> new CheckoutException("Phương thức thanh toán hiện chưa khả dụng."));
+        entityManager.refresh(method,LockModeType.PESSIMISTIC_READ);
+        if(!"ACTIVE".equals(method.getStatus())) throw new CheckoutException("Phương thức thanh toán hiện chưa khả dụng.");
+        return method;
     }
 
     private Address lockAddress(Long customerId, Long addressId) {
@@ -286,9 +299,16 @@ public class CheckoutServiceImpl implements CheckoutService {
     }
 
     private CheckoutResult toCheckoutResult(Order order) {
-        return new CheckoutResult(order.getOrderId(), order.getOrderCode(), order.getGrandTotal());
+        Payment payment=paymentRepository.findTopByOrderOrderIdAndProviderOrderByPaymentIdDesc(order.getOrderId(),"VNPAY")
+                .or(() -> paymentRepository.findTopByOrderOrderIdAndPaymentMethodMethodCodeOrderByPaymentIdDesc(order.getOrderId(),"VNPAY"))
+                .orElseGet(() -> paymentRepository.findByOrderOrderIdOrderByPaymentIdAsc(order.getOrderId()).stream().findFirst()
+                        .orElseThrow(() -> new CheckoutException("Không tìm thấy bản ghi thanh toán của đơn hàng.")));
+        return result(order,payment);
     }
-
+    private CheckoutResult result(Order order,Payment payment) {
+        return new CheckoutResult(order.getOrderId(),order.getOrderCode(),order.getGrandTotal(),payment.getPaymentId(),
+                payment.getPaymentMethod().getMethodCode());
+    }
     private String formatAddress(Address address) {
         if (address.getFormattedAddress() != null && !address.getFormattedAddress().isBlank()) {
             return address.getFormattedAddress();

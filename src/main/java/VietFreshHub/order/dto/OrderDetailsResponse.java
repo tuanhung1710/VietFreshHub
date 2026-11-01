@@ -1,5 +1,7 @@
 package VietFreshHub.order.dto;
 
+import VietFreshHub.common.BusinessCodes;
+import VietFreshHub.order.service.OrderLabels;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -11,6 +13,7 @@ public record OrderDetailsResponse(Long orderId,String orderCode,String statusLa
     public OrderDetailsResponse {
         shops=List.copyOf(shops); payments=List.copyOf(payments);
     }
+    public boolean cod() { return !payments.isEmpty() && payments.stream().allMatch(p -> "COD".equals(p.methodCode())); }
     public boolean hasItems() { return shops.stream().anyMatch(shop -> !shop.items().isEmpty()); }
     public boolean hasCancelledShops() { return shops.stream().anyMatch(shop -> "CANCELLED".equals(shop.statusCode())); }
     // Preserve checkout/confirmation consumers of the original TV3 DTO contract.
@@ -23,16 +26,26 @@ public record OrderDetailsResponse(Long orderId,String orderCode,String statusLa
     }
     public record ShopGroup(Long shopOrderId,String shopName,String statusLabel,BigDecimal shippingFee,
                             BigDecimal totalAmount,List<Item> items,BigDecimal subtotal,BigDecimal discountTotal,
-                            String statusCode,DeliveryInfo delivery) {
+                            String statusCode,DeliveryInfo delivery,String paymentStatus,String paymentStatusLabel) {
         public ShopGroup { items=List.copyOf(items); }
+        public String orderCode() { return BusinessCodes.format("VFH",shopOrderId); }
         public ShopGroup(Long shopOrderId,String shopName,String statusLabel,BigDecimal shippingFee,
-                         BigDecimal totalAmount,List<Item> items,BigDecimal subtotal,BigDecimal discountTotal) {
-            this(shopOrderId,shopName,statusLabel,shippingFee,totalAmount,items,subtotal,discountTotal,null,null);
+                         BigDecimal totalAmount,List<Item> items,BigDecimal subtotal,BigDecimal discountTotal,
+                         String statusCode,DeliveryInfo delivery) {
+            this(shopOrderId,shopName,statusLabel,shippingFee,totalAmount,items,subtotal,discountTotal,statusCode,delivery,null,null);
         }
         public ShopGroup(Long shopOrderId,String shopName,String statusLabel,BigDecimal shippingFee,
-                         BigDecimal totalAmount,List<Item> items) {
+                         BigDecimal totalAmount,List<Item> items,BigDecimal subtotal,BigDecimal discountTotal) {
+            this(shopOrderId,shopName,statusLabel,shippingFee,totalAmount,items,subtotal,discountTotal,null,(DeliveryInfo)null);
+        }
+        public ShopGroup(Long shopOrderId,String shopName,String statusLabel,BigDecimal shippingFee,
+                         BigDecimal totalAmount,List<Item> items,BigDecimal subtotal,BigDecimal discountTotal,String paymentStatus) {
+            this(shopOrderId,shopName,statusLabel,shippingFee,totalAmount,items,subtotal,discountTotal,null,null,paymentStatus,OrderLabels.payment(paymentStatus));
+        }
+        public ShopGroup(Long shopOrderId,String shopName,String statusLabel,BigDecimal shippingFee,
+                         BigDecimal totalAmount,List<Item> items,String paymentStatus) {
             this(shopOrderId,shopName,statusLabel,shippingFee,totalAmount,items,
-                    items.stream().map(i -> i.unitPrice().multiply(BigDecimal.valueOf(i.quantity()))).reduce(BigDecimal.ZERO,BigDecimal::add),BigDecimal.ZERO);
+                    items.stream().map(i -> i.unitPrice().multiply(BigDecimal.valueOf(i.quantity()))).reduce(BigDecimal.ZERO,BigDecimal::add),BigDecimal.ZERO,paymentStatus);
         }
     }
     public record Item(String productName,String variantName,String sku,String imageUrl,int quantity,

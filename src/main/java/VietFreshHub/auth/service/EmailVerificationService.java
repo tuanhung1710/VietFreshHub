@@ -2,10 +2,9 @@ package VietFreshHub.auth.service;
 
 import VietFreshHub.auth.dto.PendingRegistration;
 import VietFreshHub.auth.dto.RegisterRequest;
+import VietFreshHub.mail.service.MailTemplateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
@@ -20,7 +19,7 @@ public class EmailVerificationService {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final int MAX_ATTEMPTS = 5;
 
-    private final JavaMailSender mailSender;
+    private final MailTemplateService mailTemplateService;
     private final PasswordEncoder passwordEncoder;
 
     @Value("${app.mail.from}")
@@ -95,18 +94,8 @@ public class EmailVerificationService {
                 SECURE_RANDOM.nextInt(1_000_000)
         );
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(mailFrom);
-        message.setTo(pending.getEmail());
-        message.setSubject("Mã xác thực email - VietFresh Hub");
-        message.setText(
-                "Xin chào " + pending.getFullName() + ",\n\n"
-                        + "Mã OTP của bạn là: " + otp + "\n"
-                        + "Mã có hiệu lực trong 10 phút. Vui lòng không chia sẻ mã này."
-        );
-
         // Chỉ cập nhật OTP trong session sau khi gửi mail thành công.
-        mailSender.send(message);
+        mailTemplateService.sendOtp(pending.getEmail(), pending.getFullName(), otp);
 
         LocalDateTime now = utcNow();
         pending.setOtpHash(passwordEncoder.encode(otp));

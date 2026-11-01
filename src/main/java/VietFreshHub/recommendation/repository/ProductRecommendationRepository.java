@@ -17,7 +17,7 @@ public interface ProductRecommendationRepository extends Repository<CatalogProdu
 
     @Query("""
             select p from CatalogProduct p join fetch p.shop s
-            where p.productId <> :sourceId and p.status='ACTIVE' and p.approvalStatus='APPROVED'
+            where p.productId <> :sourceId and p.status='ACTIVE' and p.moderationBlocked=false
               and s.status='ACTIVE' and s.availabilityStatus='OPEN'
               and exists(select c.categoryId from p.categories c where c.categoryId in :activeIds)
               and exists(select v.variantId from CatalogVariant v where v.product=p and v.status='ACTIVE'

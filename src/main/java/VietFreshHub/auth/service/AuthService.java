@@ -11,6 +11,8 @@ import VietFreshHub.auth.exception.RegistrationException;
 import VietFreshHub.auth.repository.RoleRepository;
 import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.auth.repository.UserRoleRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.access.AccessDeniedException;
@@ -20,6 +22,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -35,6 +38,7 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EntityManager entityManager;
 
     public void validateRegistration(RegisterRequest request) {
         String email = request.getEmail().trim();
@@ -52,6 +56,19 @@ public class AuthService {
             throw new IllegalStateException(
                     "Chưa có ROLE_CUSTOMER trong bảng roles"
             );
+        }
+    }
+
+    public void validateSellerApplicantRegistration(RegisterRequest request) {
+        String email = request.getEmail().trim();
+        String phone = request.getPhone().trim();
+
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            throw new RegistrationException("email", "Email này đã được sử dụng. Hãy đăng nhập để nộp hồ sơ bán hàng.");
+        }
+
+        if (userRepository.existsByPhone(phone)) {
+            throw new RegistrationException("phone", "Số điện thoại này đã được sử dụng");
         }
     }
 
@@ -109,6 +126,32 @@ public class AuthService {
     }
 
     @Transactional
+    public void registerSellerApplicant(PendingRegistration pending) {
+        String email = pending.getEmail().trim();
+        String phone = pending.getPhone().trim();
+
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            throw new RegistrationException("email", "Email này đã được sử dụng. Hãy đăng nhập để nộp hồ sơ bán hàng.");
+        }
+
+        if (userRepository.existsByPhone(phone)) {
+            throw new RegistrationException("phone", "Số điện thoại này đã được sử dụng");
+        }
+
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
+        User user = new User();
+        user.setFullName(pending.getFullName());
+        user.setEmail(email);
+        user.setPhone(phone);
+        user.setPasswordHash(pending.getPasswordHash());
+        user.setStatus("ACTIVE");
+        user.setEmailVerifiedAt(now);
+
+        // Tài khoản được tạo để theo dõi hồ sơ; role chỉ được cấp khi admin duyệt.
+        userRepository.save(user);
+    }
+
+    @Transactional
     public Authentication login(String email, String rawPassword) {
         if (email == null || email.isBlank() || rawPassword == null) {
             return null;
@@ -131,9 +174,7 @@ public class AuthService {
         return createAuthentication(user);
     }
 
-    /**
-     * Chỉ gọi sau khi OTP hợp lệ và registerVerified đã tạo user.
-     */
+    /** Creates an authentication after a verified registration flow has saved the user. */
     @Transactional(readOnly = true)
     public Authentication loginAfterEmailVerification(String email) {
         if (email == null || email.isBlank()) {
@@ -214,17 +255,16 @@ public class AuthService {
         return names;
     }
 
-    @Transactional
-    public List<Long> lockActiveDeliveryStaffIdsForAssignment() {
-        List<User> deliveryStaff =
-                userRepository.findByStatusIgnoreCaseAndUserRoles_Role_RoleNameOrderByUserIdAsc(
-                        "ACTIVE", "ROLE_DELIVERY_STAFF");
-        List<Long> deliveryStaffIds = new ArrayList<>();
-
-        for (User user : deliveryStaff) {
-            deliveryStaffIds.add(user.getUserId());
+    @Transactional(propagation = Propagation.MANDATORY)
+    public User lockCurrentDeliveryStaffForAssignment(Authentication authentication) {
+        Long deliveryStaffId = getCurrentDeliveryStaffId(authentication);
+        User deliveryStaff = userRepository.findByUserIdForUpdate(deliveryStaffId)
+                .orElseThrow(() -> new AccessDeniedException("Tài khoản không được phép nhận đơn."));
+        entityManager.refresh(deliveryStaff, LockModeType.PESSIMISTIC_WRITE);
+        if (!"ACTIVE".equalsIgnoreCase(deliveryStaff.getStatus())
+                || !userRoleRepository.findRoleNamesByUserId(deliveryStaffId).contains("ROLE_DELIVERY_STAFF")) {
+            throw new AccessDeniedException("Tài khoản không còn đủ điều kiện nhận đơn.");
         }
-
-        return deliveryStaffIds;
+        return deliveryStaff;
     }
 }

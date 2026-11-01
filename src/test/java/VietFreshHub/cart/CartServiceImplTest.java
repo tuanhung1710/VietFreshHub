@@ -114,13 +114,13 @@ class CartServiceImplTest {
         assertEquals(0,assertThrows(OutOfStockException.class,()->service.addToCart(7L,request(1))).getAvailableStock());
         verify(items,never()).save(any());
     }
-    @ParameterizedTest @ValueSource(strings={"variant","product","approval","shop","closed","category"})
+    @ParameterizedTest @ValueSource(strings={"variant","product","moderation","shop","closed","category"})
     void rejectsIneligibleCatalogOnAddAndUpdate(String reason) {
         active(); catalog();
         switch(reason) {
             case "variant" -> variant.setStatus("INACTIVE");
             case "product" -> variant.getProduct().setStatus("INACTIVE");
-            case "approval" -> variant.getProduct().setApprovalStatus("PENDING");
+            case "moderation" -> variant.getProduct().setModerationBlocked(true);
             case "shop" -> variant.getProduct().getShop().setStatus("INACTIVE");
             case "closed" -> variant.getProduct().getShop().setAvailabilityStatus("CLOSED");
             case "category" -> variant.getProduct().getCategories().iterator().next().setStatus("INACTIVE");

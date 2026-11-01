@@ -63,7 +63,7 @@ class CatalogAvailabilityTest {
     }
 
     @Test void hiddenProductCannotBeReadEvenIfStockRemains() {
-        product.setApprovalStatus("PENDING");
+        product.setModerationBlocked(true);
         assertThrows(ResourceNotFoundException.class, () -> service.getProduct(null, 1L, null));
     }
 
@@ -98,8 +98,18 @@ class CatalogAvailabilityTest {
         }
         product.getShop().setAvailabilityStatus("CLOSED");
         assertFalse(service.purchasableVariants(List.of(variant)).get(11L));
-        product.setApprovalStatus("PENDING");
+        product.setModerationBlocked(true);
         assertFalse(service.purchasableVariants(List.of(variant)).get(11L));
     }
 
+    @Test void pendingPostReviewProductRemainsPurchasableUntilAdminBlocksIt() {
+        product.setApprovalStatus("PENDING");
+        when(stock.getAvailableStocks(anyList())).thenReturn(Map.of(11L,5));
+        assertTrue(service.isVisible(product)); assertTrue(service.isPurchasable(variant));
+        assertTrue(service.purchasableVariants(List.of(variant)).get(11L));
+        product.setModerationBlocked(true);
+        assertFalse(service.isVisible(product)); assertFalse(service.isPurchasable(variant));
+        assertFalse(service.purchasableVariants(List.of(variant)).get(11L));
+        assertThrows(ResourceNotFoundException.class,() -> service.getProduct(null,1L,null));
+    }
 }

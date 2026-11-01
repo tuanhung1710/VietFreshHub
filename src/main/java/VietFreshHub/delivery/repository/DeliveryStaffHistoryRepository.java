@@ -32,7 +32,7 @@ public class DeliveryStaffHistoryRepository {
             with assignment_data as (
                 select a.assignment_id, a.delivery_id, a.delivery_staff_id, a.status as assignment_status, a.accepted_at,
                        d.status as current_status, d.delivered_at, d.picked_up_at, d.failure_reason,
-                       so.total_amount, so.shop_id,
+                       so.total_amount, so.shop_id, so.shop_order_id, so.payment_status as shop_payment_status,
                        o.order_id, o.order_code, s.shop_name, oa.recipient_name, oa.phone,
                        coalesce(nullif(oa.formatted_address, ''), oa.address_line) as delivery_address,
                        failure.created_at as failed_at, failure.history_id as failed_history_id,
@@ -161,7 +161,7 @@ public class DeliveryStaffHistoryRepository {
                 select coalesce(sum(eligible.total_amount), 0), count(*)
                 from (select delivery_id, max(total_amount) as total_amount
                 """ + eligible + """
-                  and attribution_verified = 1 and method_count = 1 group by delivery_id) eligible
+                  and attribution_verified = 1 and method_count = 1 and shop_payment_status = 'PAID' group by delivery_id) eligible
                 """, parameters).getSingleResult();
         long unresolved = ((Number) query(HISTORY + """
                 select count(distinct delivery_id) from history
@@ -170,7 +170,8 @@ public class DeliveryStaffHistoryRepository {
                 """ + endCondition + """
                   and delivered_at >= started_at
                   and (next_started_at is null or delivered_at < next_started_at)
-                  and (outcome is null or outcome <> 'DELIVERED' or attribution_verified = 0 or method_count <> 1)
+                  and (outcome is null or outcome <> 'DELIVERED' or attribution_verified = 0 or method_count <> 1
+                    or shop_payment_status <> 'PAID')
                 """, parameters).getSingleResult()).longValue();
         return new DailyCodSummary(date, decimal(values[0]), ((Number) values[1]).longValue(), unresolved);
     }
@@ -230,13 +231,29 @@ public class DeliveryStaffHistoryRepository {
                            Map<String, Object> parameters) {
         StringBuilder where = new StringBuilder("where outcome is not null");
         if (!filter.getKeyword().isEmpty()) {
+            String keyword = filter.getKeyword().toLowerCase(Locale.ROOT);
+            String codeKeyword = keyword.equals("vhf") || keyword.startsWith("vhf-")
+                    ? "vfh" + keyword.substring(3) : keyword;
+            Long shopOrderId = VietFreshHub.common.BusinessCodes.parse("VFH", codeKeyword);
+            where.append(" and (lower(order_code) like :keyword escape '\\'");
+            if (shopOrderId != null) {
+                where.append(" or shop_order_id = :shopOrderId");
+                parameters.put("shopOrderId", shopOrderId);
+            } else {
+                where.append("""
+                           or concat('vfh-', case when len(cast(shop_order_id as varchar(20))) < 6
+                               then right(concat('000000', cast(shop_order_id as varchar(20))), 6)
+                               else cast(shop_order_id as varchar(20)) end) like :codeKeyword escape '\\'
+                        """);
+                String escapedCode = codeKeyword.replace("\\", "\\\\").replace("%", "\\%")
+                        .replace("_", "\\_").replace("[", "\\[");
+                parameters.put("codeKeyword", "%" + escapedCode + "%");
+            }
             where.append("""
-                     and (lower(order_code) like :keyword escape '\\'
                        or lower(recipient_name) like :keyword escape '\\'
-                       or lower(phone) like :keyword escape '\\'
-                       or lower(shop_name) like :keyword escape '\\')
+                       or lower(phone) like :keyword escape '\\')
                     """);
-            String escaped = filter.getKeyword().toLowerCase(Locale.ROOT).replace("\\", "\\\\")
+            String escaped = keyword.replace("\\", "\\\\")
                     .replace("%", "\\%").replace("_", "\\_").replace("[", "\\[");
             parameters.put("keyword", "%" + escaped + "%");
         }
@@ -299,7 +316,7 @@ public class DeliveryStaffHistoryRepository {
 
     private String selectColumns() {
         return """
-                select assignment_id, delivery_id, order_code, shop_id, shop_name, recipient_name, phone,
+                select assignment_id, delivery_id, shop_order_id, shop_id, shop_name, recipient_name, phone,
                        delivery_address, outcome, total_amount,
                        convert(varchar(19), result_at, 126) as result_time,
                        case when method_count = 1 then method_name
@@ -321,7 +338,9 @@ public class DeliveryStaffHistoryRepository {
                        ), 126) as pickup_time,
                        case when outcome = 'FAILED' and current_status = 'FAILED'
                          and next_started_at is null then failure_reason end as attempt_failure_reason,
-                       case when method_count = 1 and has_cod = 1 then total_amount else 0 end as cash_to_collect
+                       case when outcome = 'DELIVERED' and attribution_verified = 1
+                         and method_count = 1 and has_cod = 1 and shop_payment_status = 'PAID'
+                         then total_amount else 0 end as cash_to_collect
                 from history
                 """;
     }
@@ -342,7 +361,8 @@ public class DeliveryStaffHistoryRepository {
 
     private DeliveryHistoryRow toRow(Object[] row) {
         return new DeliveryHistoryRow(((Number) row[0]).longValue(), ((Number) row[1]).longValue(),
-                (String) row[2], ((Number) row[3]).longValue(), (String) row[4], (String) row[5],
+                VietFreshHub.common.BusinessCodes.format("VFH", ((Number) row[2]).longValue()),
+                ((Number) row[3]).longValue(), (String) row[4], (String) row[5],
                 (String) row[6], (String) row[7], (String) row[8], decimal(row[9]), dateTime(row[10]),
                 (String) row[11], (String) row[12], ((Number) row[13]).intValue() == 1,
                 dateTime(row[14]), dateTime(row[15]), (String) row[16], decimal(row[17]));

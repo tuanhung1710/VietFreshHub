@@ -47,7 +47,7 @@ class CheckoutFailureRecoveryTest {
     final CartService carts=mock(CartService.class);
     final Authentication authentication=mock(Authentication.class);
     final CheckoutController controller=new CheckoutController(current,checkout,shipping,drafts,
-            mock(CheckoutAddressService.class),mock(CustomerAddressService.class),mock(VietMapService.class),carts);
+            mock(CheckoutAddressService.class),mock(CustomerAddressService.class),mock(VietMapService.class),carts,mock(VietFreshHub.payment.vnpay.VnpayPaymentService.class));
 
     static Stream<RuntimeException> infrastructureFailures() {
         return Stream.of(new CannotAcquireLockException("test lock failure"),
@@ -66,7 +66,7 @@ class CheckoutFailureRecoveryTest {
         when(current.requireCustomerId(authentication)).thenReturn(7L);
         when(checkout.confirm(7L,draft,form)).thenThrow(failure);
         var model=new ExtendedModelMap(); var response=new MockHttpServletResponse();
-        String view=controller.confirm(form,new BeanPropertyBindingResult(form,"form"),authentication,session,model,response);
+        String view=controller.confirm(form,new BeanPropertyBindingResult(form,"form"),authentication,session,model,response,new org.springframework.mock.web.MockHttpServletRequest(),new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap());
         assertEquals("customer/checkout-unavailable",view); assertEquals(503,response.getStatus());
         assertEquals("VF-"+draft.token(),model.get("orderCode")); assertEquals(draft.token(),model.get("checkoutToken"));
         assertSame(draft,drafts.find(session,draft.token(),7L)); assertEquals(draft.token(),form.getCheckoutToken());
@@ -78,8 +78,8 @@ class CheckoutFailureRecoveryTest {
         var form=new CheckoutRequest(); form.setAddressId(5L); form.setCheckoutToken(draft.token());
         when(current.requireCustomerId(authentication)).thenReturn(7L);
         when(checkout.confirm(7L,draft,form)).thenReturn(new CheckoutResult(100L,"VF-"+draft.token(),BigDecimal.ONE));
-        assertEquals("redirect:/customer/orders/100/confirmation",controller.confirm(form,new BeanPropertyBindingResult(form,"form"),
-                authentication,session,new ExtendedModelMap(),new MockHttpServletResponse()));
+        assertEquals("redirect:/customer/order-receipts/100/confirmation",controller.confirm(form,new BeanPropertyBindingResult(form,"form"),
+                authentication,session,new ExtendedModelMap(),new MockHttpServletResponse(),new org.springframework.mock.web.MockHttpServletRequest(),new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap()));
         verifyNoInteractions(shipping,carts);
     }
     @Test void actualPostRendersRecoveryLinksWithoutAutoResubmittingOrClaimingOrderFailed() throws Exception {
@@ -101,7 +101,7 @@ class CheckoutFailureRecoveryTest {
             assertEquals(503,response.getStatus());
             String html=response.getContentAsString();
             assertTrue(html.contains("Chưa xác nhận được kết quả đặt hàng"));
-            assertTrue(html.contains("/customer/orders?keyword=VF-"+draft.token()));
+            assertTrue(html.contains("/customer/order-receipts?keyword=VF-"+draft.token()));
             assertTrue(html.contains("/customer/checkout?checkoutToken="+draft.token()));
             assertFalse(html.contains("id=\"checkout-form\"")); assertFalse(html.contains("Đơn hàng chưa được tạo"));
             Path output=Path.of("target","tv3-task03"); Files.createDirectories(output);

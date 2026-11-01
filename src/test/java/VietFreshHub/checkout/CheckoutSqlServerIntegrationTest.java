@@ -134,7 +134,7 @@ class CheckoutSqlServerIntegrationTest {
     }
     CheckoutService checkout(InventoryReservationService reservation) {
         return transactional(new CheckoutServiceImpl(repo(UserRepository.class),repo(CartRepository.class),cart,repo(CheckoutAddressRepository.class),
-                addresses,repo(PaymentMethodRepository.class),repo(OrderRepository.class),catalog,reservation,shipping,new CheckoutOrderService(repo(OrderRepository.class),em,shipping),em,events));
+                addresses,repo(PaymentMethodRepository.class),repo(OrderRepository.class),catalog,reservation,shipping,new CheckoutOrderService(repo(OrderRepository.class),em,shipping),em,events,repo(VietFreshHub.payment.repository.PaymentRepository.class),new VietFreshHub.payment.vnpay.VnpayProperties()));
     }
     long insert(String sql,Object... parameters) {
         var key=new GeneratedKeyHolder();
@@ -450,9 +450,9 @@ class CheckoutSqlServerIntegrationTest {
         var auth = mock(AuthService.class);
         when(shopAccess.getManagedShopId(any())).thenReturn(shopId);
         when(auth.getCurrentUserId(any())).thenReturn(buyer.user());
-        var fulfillment = transactional(new VietFreshHub.order.service.impl.OrderServiceImpl(
+        var fulfillment = transactional(new VietFreshHub.order.service.OrderServiceImpl(
                 repo(VietFreshHub.order.repository.ShopOrderRepository.class), null, null, null,
-                shopAccess, null, auth, em));
+                shopAccess, mock(VietFreshHub.payment.service.PaymentService.class), null, null, mock(VietFreshHub.order.service.OrderNotificationService.class), null, auth, em));
         var service = cancellation();
         var results = concurrent(() -> { service.cancel(buyer.user(), orderId, null); return "CANCELLED"; },
                 () -> { fulfillment.startPreparing(childId, null); return "PREPARING"; });
@@ -633,15 +633,15 @@ class CheckoutSqlServerIntegrationTest {
                     .andExpect(status().is3xxRedirection());
             long orderId = jdbc.queryForObject("select order_id from dbo.orders where customer_id=? and order_code=?", Long.class,
                     buyer.user(), "VF-" + form.getCheckoutToken());
-            for (String path : List.of("/customer/orders", "/customer/orders/" + orderId,
-                    "/customer/orders/" + orderId + "/confirmation", "/customer/orders/" + orderId + "/tracking")) {
+            for (String path : List.of("/customer/order-receipts", "/customer/order-receipts/" + orderId,
+                    "/customer/order-receipts/" + orderId + "/confirmation", "/customer/order-receipts/" + orderId + "/tracking")) {
                 http.mvc.perform(get(path).session(session).with(customer(buyer))).andExpect(status().isOk());
             }
-            http.mvc.perform(post("/customer/orders/" + orderId + "/reorder").session(session).with(customer(buyer)).with(csrf()))
+            http.mvc.perform(post("/customer/order-receipts/" + orderId + "/reorder").session(session).with(customer(buyer)).with(csrf()))
                     .andExpect(redirectedUrl("/cart"));
             assertEquals(2, cart.getActiveCart(buyer.user()).getTotalItems());
-            http.mvc.perform(post("/customer/orders/" + orderId + "/cancel").session(session).with(customer(buyer)).with(csrf())
-                    .param("reason", "Đổi kế hoạch")).andExpect(redirectedUrl("/customer/orders/" + orderId));
+            http.mvc.perform(post("/customer/order-receipts/" + orderId + "/cancel").session(session).with(customer(buyer)).with(csrf())
+                    .param("reason", "Đổi kế hoạch")).andExpect(redirectedUrl("/customer/order-receipts/" + orderId));
             assertEquals(1, count("orders", "customer_id=? and status='CANCELLED'", buyer.user()));
             assertEquals(before, stock());
             assertEquals(1, count("payments", "order_id=? and status='CANCELLED'", orderId));
@@ -656,13 +656,13 @@ class CheckoutSqlServerIntegrationTest {
         var before = stock();
         try (var http = customerHttp()) {
             for (String suffix : List.of("", "/confirmation", "/tracking")) {
-                http.mvc.perform(get("/customer/orders/" + orderId + suffix).with(customer(stranger))).andExpect(status().isNotFound());
+                http.mvc.perform(get("/customer/order-receipts/" + orderId + suffix).with(customer(stranger))).andExpect(status().isNotFound());
             }
             for (String action : List.of("cancel", "reorder")) {
-                http.mvc.perform(post("/customer/orders/" + orderId + "/" + action).with(customer(stranger)).with(csrf())
+                http.mvc.perform(post("/customer/order-receipts/" + orderId + "/" + action).with(customer(stranger)).with(csrf())
                         .param("customerId", Long.toString(owner.user()))).andExpect(status().isNotFound());
             }
-            var history = http.mvc.perform(get("/customer/orders").with(customer(stranger)).param("keyword", "VF-" + draft.token()))
+            var history = http.mvc.perform(get("/customer/order-receipts").with(customer(stranger)).param("keyword", "VF-" + draft.token()))
                     .andExpect(status().isOk()).andReturn();
             assertTrue(((org.springframework.data.domain.Page<?>) history.getModelAndView().getModel().get("orderPage")).isEmpty());
             assertEquals(before, stock()); assertEquals(0, count("carts", "user_id=?", stranger.user()));

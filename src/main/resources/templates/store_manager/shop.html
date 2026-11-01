@@ -23,7 +23,9 @@
         <li><a th:href="@{/seller/confirmed-orders}" th:text="${'Đã xác nhận (' + orderCounts.confirmedOrders + ')'}">Đã xác nhận</a></li>
         <li><a th:href="@{/seller/preparing-orders}" th:text="${'Đang chuẩn bị (' + orderCounts.preparingOrders + ')'}">Đang chuẩn bị</a></li>
         <li><a th:href="@{/seller/ready-orders}" th:text="${'Sẵn sàng giao (' + orderCounts.readyOrders + ')'}">Sẵn sàng giao</a></li>
-        <li><a th:href="@{/seller/processed-orders}" th:text="${'Đơn đã giao thành công (' + orderCounts.completedOrders + ')'}">Đơn đã giao thành công</a></li>
+        <li><a th:href="@{/seller/completed-orders}" th:text="${'Đơn đã hoàn thành (' + orderCounts.completedOrders + ')'}">Đơn đã hoàn thành</a></li>
+        <li><a th:href="@{/seller/failed-orders}" th:text="${'Giao hàng thất bại (' + orderCounts.failedOrders + ')'}">Giao hàng thất bại</a></li>
+        <li><a th:href="@{/seller/cancelled-orders}" th:text="${'Đã hủy (' + orderCounts.cancelledOrders + ')'}">Đã hủy</a></li>
     </ul>
 </nav>
 <h2>QUẢN LÝ SẢN PHẨM VÀ KHO</h2>
@@ -39,7 +41,6 @@
     <ul>
         <li><a th:href="@{/seller/products}">SẢN PHẨM VÀ PHÂN LOẠI</a></li>
         <li><a th:href="@{/seller/inventory}">KHO HÀNG THEO LÔ</a></li>
-        <li><a th:href="@{/seller/inventory/journal}">NHẬT KÝ KHO</a></li>
     </ul>
 </nav>
 <script th:src="@{/js/product/module.js}" defer></script>

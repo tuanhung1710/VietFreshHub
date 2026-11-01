@@ -5,13 +5,13 @@
 <header th:replace="~{fragments/storefront :: header}"></header>
 <main class="container page order-detail-page">
     <div th:replace="~{fragments/storefront :: messages}"></div>
-    <p class="detail-back"><a th:href="@{/customer/orders}">← Đơn hàng của tôi</a></p>
+    <p class="detail-back"><a th:href="@{/customer/order-receipts}">← Đơn hàng của tôi</a></p>
     <section th:if="${confirmation}" class="order-success" role="status"><span class="success-check" aria-hidden="true">✓</span><div><h1>Đặt hàng thành công</h1><p>Đơn hàng đã được ghi nhận. Theo dõi tiến trình từng cửa hàng bên dưới.</p></div></section>
     <div th:unless="${confirmation}" class="page-heading"><p class="eyebrow">Mua sắm của bạn</p><h1 class="checkout-title">Chi tiết đơn hàng</h1></div>
     <section class="panel detail-overview" aria-label="Tổng quan đơn hàng">
         <div class="detail-overview-heading"><div><span class="muted">Mã đơn hàng</span><h2 class="order-code" th:text="${order.orderCode}"></h2>
             <p class="muted" th:text="'Đặt lúc ' + ${#temporals.format(order.placedAt,'HH:mm dd/MM/yyyy')}"></p></div>
-            <a th:if="${!#lists.isEmpty(order.shops)}" class="button secondary" th:href="@{/customer/orders/{id}/tracking(id=${order.orderId})}">Theo dõi đơn hàng ↗</a></div>
+            <a th:if="${!#lists.isEmpty(order.shops)}" class="button secondary" th:href="@{/customer/order-receipts/{id}/tracking(id=${order.orderId})}">Theo dõi đơn hàng ↗</a></div>
         <dl class="detail-overview-grid">
             <div><dt>Tiến trình toàn đơn</dt><dd><span class="order-state detail-primary-stage" th:text="${order.statusLabel}"></span></dd></div>
             <div><dt>Thanh toán tổng hợp đã ghi nhận</dt><dd th:text="${order.paymentStatusLabel}"></dd></div>
@@ -94,10 +94,10 @@
                 <p th:if="${order.hasCancelledShops()}" class="detail-finance-note muted">Đơn có phần đã hủy. Số tiền trên là giá trị được lưu khi đặt hàng; không tự trừ phần đã hủy và không xác nhận đã hoàn tiền.</p>
             </section>
             <section class="panel detail-actions"><h2>Thao tác với đơn hàng</h2>
-                <a th:if="${!#lists.isEmpty(order.shops)}" class="button secondary full" th:href="@{/customer/orders/{id}/tracking(id=${order.orderId})}">Theo dõi</a>
-                <form th:if="${order.hasItems()}" th:action="@{/customer/orders/{id}/reorder(id=${order.orderId})}" method="post"><button type="submit" class="button secondary full">Mua lại</button></form>
+                <a th:if="${!#lists.isEmpty(order.shops)}" class="button secondary full" th:href="@{/customer/order-receipts/{id}/tracking(id=${order.orderId})}">Theo dõi</a>
+                <form th:if="${order.hasItems()}" th:action="@{/customer/order-receipts/{id}/reorder(id=${order.orderId})}" method="post"><button type="submit" class="button secondary full">Mua lại</button></form>
                 <details th:if="${actions != null and actions.cancellable}" class="cancel-order"><summary>Hủy đơn hàng</summary>
-                    <form th:action="@{/customer/orders/{id}/cancel(id=${order.orderId})}" method="post">
+                    <form th:action="@{/customer/order-receipts/{id}/cancel(id=${order.orderId})}" method="post">
                         <p class="muted">Bạn có thể hủy trước khi cửa hàng bắt đầu chuẩn bị. Thao tác hủy không thể hoàn tác.</p>
                         <label for="cancel-reason">Lý do hủy (không bắt buộc)</label><textarea id="cancel-reason" name="reason" maxlength="500" rows="3" th:text="${cancelReason}"></textarea>
                         <button class="button danger full" type="submit">Xác nhận hủy đơn</button>
@@ -108,6 +108,6 @@
             </section>
         </aside>
     </div>
-</main>
+<p class="container"><a class="button secondary" th:href="@{/customer/orders}">Xem đơn từng cửa hàng và thanh toán</a></p></main>
 <footer th:replace="~{fragments/storefront :: footer}"></footer>
 </body></html>

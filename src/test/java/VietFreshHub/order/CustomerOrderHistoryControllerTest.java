@@ -32,7 +32,7 @@ class CustomerOrderHistoryControllerTest {
     }
     @Test void historyOffersDeliveringInsteadOfRemovedFilters() throws Exception {
         when(orders.history(eq(1L), any())).thenReturn(Page.empty());
-        var model = mvc.perform(get("/customer/orders").principal(authentication)).andReturn().getModelAndView().getModel();
+        var model = mvc.perform(get("/customer/order-receipts").principal(authentication)).andReturn().getModelAndView().getModel();
         Map<?, ?> options = (Map<?, ?>) model.get("statusOptions");
         assertEquals("Chờ giao hàng", options.get("AWAITING_DELIVERY"));
         assertEquals(7, options.size());
@@ -42,19 +42,19 @@ class CustomerOrderHistoryControllerTest {
         assertFalse(options.containsKey("PROCESSING")); assertFalse(options.containsKey("PARTIALLY_COMPLETED"));
     }
     @Test void malformedPageDoesNotRunHistoryQuery() throws Exception {
-        var model = mvc.perform(get("/customer/orders").param("page", "abc").principal(authentication))
+        var model = mvc.perform(get("/customer/order-receipts").param("page", "abc").principal(authentication))
                 .andReturn().getModelAndView().getModel();
         assertEquals(true, model.get("invalidFilter")); verifyNoInteractions(orders);
     }
     @Test void reversedDatesDoNotRunHistoryQuery() throws Exception {
-        var model = mvc.perform(get("/customer/orders").param("fromDate", "2026-10-21")
+        var model = mvc.perform(get("/customer/order-receipts").param("fromDate", "2026-10-21")
                 .param("toDate", "2026-10-20").principal(authentication)).andReturn().getModelAndView().getModel();
         assertEquals(true, model.get("invalidFilter")); verifyNoInteractions(orders);
     }
     @Test void reorderRedirectsToCartWithDroppedItemsAndCurrentPriceMessage() throws Exception {
         var skipped = List.of(new ReorderResult.SkippedItem("Món cũ", "Loại cũ", "Hết hàng"));
         when(orders.reorder(1L, 10L)).thenReturn(new ReorderResult(1, 2, skipped));
-        var result = mvc.perform(post("/customer/orders/10/reorder").principal(authentication)).andReturn();
+        var result = mvc.perform(post("/customer/order-receipts/10/reorder").principal(authentication)).andReturn();
         assertEquals("redirect:/cart", result.getModelAndView().getViewName());
         assertEquals(skipped, result.getFlashMap().get("reorderSkipped"));
         assertTrue(result.getFlashMap().get("successMessage").toString().contains("giá hiện tại"));

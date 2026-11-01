@@ -264,6 +264,9 @@ public class AuthController {
         if (hasAuthority(authentication, "ROLE_CUSTOMER")) {
             return "/home";
         }
+        if (authentication.getAuthorities().isEmpty()) {
+            return "/customer/seller-applications";
+        }
 
         log.warn("Không nhận diện được role của user={}", authentication.getName());
         return "/access-denied";

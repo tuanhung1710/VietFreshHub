@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đơn giao được phân công | VIETFRESH HUB</title>
+    <title>Đơn giao hàng của tôi | VIETFRESH HUB</title>
     <style>
         body {
             max-width: 1000px;
@@ -34,12 +34,12 @@
     <p>VIETFRESH HUB</p>
 </header>
 <main id="delivery-dashboard">
-    <h1>ĐƠN GIAO ĐƯỢC PHÂN CÔNG</h1>
+    <h1>ĐƠN GIAO HÀNG CỦA TÔI</h1>
+    <p><a th:href="@{/delivery/available}">Nhận đơn mới</a></p>
     <p><a th:href="@{/delivery/history}">Lịch sử giao hàng</a></p>
     <p><a th:href="@{/delivery/cod-summary}">COD giao thành công hôm nay</a></p>
-    <p>Xem chi tiết đơn giao hàng để chấp nhận phân công và xác nhận nhận hàng.</p>
-    <p th:text="|Sức chứa đang giữ: ${#lists.size(assignedDeliveries)} / 5 đơn. Lời mời đang chờ cũng giữ một suất.|"></p>
-    <p id="delivery-refresh-status" role="status">Danh sách tự cập nhật mỗi 5 giây. Lời mời có thời hạn 30 giây.</p>
+    <p th:text="|Sức chứa đang giữ: ${activeAssignmentCount} / ${maxActiveAssignments} đơn.|"></p>
+    <p id="delivery-refresh-status" role="status" hidden></p>
     <p th:if="${#lists.isEmpty(assignedDeliveries)}">Hiện không có đơn giao hàng nào được phân công cho bạn.</p>
     <div class="table-container" th:unless="${#lists.isEmpty(assignedDeliveries)}">
         <table>
@@ -50,7 +50,6 @@
                 <th scope="col">Trạng thái giao hàng</th>
                 <th scope="col">Thời gian phân công</th>
                 <th scope="col">Thời gian chấp nhận</th>
-                <th scope="col">Thời hạn chấp nhận</th>
                 <th scope="col">Chi tiết</th>
             </tr>
             </thead>
@@ -61,11 +60,6 @@
                 <td><strong th:text="${delivery.deliveryStatusLabel}"></strong></td>
                 <td th:text="${delivery.assignedAt == null ? 'Chưa ghi nhận' : #temporals.format(delivery.assignedAt, 'dd-MM-yyyy HH:mm:ss')}"></td>
                 <td th:text="${delivery.acceptedAt == null ? 'Chưa chấp nhận' : #temporals.format(delivery.acceptedAt, 'dd-MM-yyyy HH:mm:ss')}"></td>
-                <td>
-                    <span th:if="${delivery.assignmentStatus.name() == 'ASSIGNED'}"
-                          th:text="${delivery.remainingOfferSeconds > 0 ? 'Còn ' + delivery.remainingOfferSeconds + ' giây lúc cập nhật' : 'Đã hết hạn'}"></span>
-                    <span th:unless="${delivery.assignmentStatus.name() == 'ASSIGNED'}">Không áp dụng</span>
-                </td>
                 <td>
                     <a th:href="@{/delivery/assignments/{assignmentId}(assignmentId=${delivery.assignmentId})}">Xem chi tiết</a>
                 </td>
@@ -93,6 +87,7 @@
             } catch (error) {
                 document.getElementById('delivery-refresh-status').textContent =
                     'Chưa tải được danh sách mới. Hệ thống sẽ thử lại sau 5 giây.';
+                document.getElementById('delivery-refresh-status').hidden = false;
             }
         }
         window.setTimeout(refreshAssignments, 5000);

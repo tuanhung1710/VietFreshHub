@@ -17,7 +17,7 @@
         <p>Mã tham chiếu: <strong class="recovery-code" th:text="${orderCode}"></strong></p>
         <p class="muted">Vui lòng kiểm tra mã này trong Đơn hàng của tôi trước khi thử lại. Nếu đơn đã xuất hiện, bạn có thể mở để theo dõi.</p>
         <div class="recovery-actions">
-            <a class="button" th:href="@{/customer/orders(keyword=${orderCode})}">Kiểm tra đơn hàng</a>
+            <a class="button" th:href="@{/customer/order-receipts(keyword=${orderCode})}">Kiểm tra đơn hàng</a>
             <a class="button secondary" th:href="@{/customer/checkout(checkoutToken=${checkoutToken})}">Xem lại bước đặt hàng</a>
         </div>
         <p class="muted">Nếu hệ thống vẫn chưa truy cập được, vui lòng thử lại sau.</p>

@@ -1,6 +1,7 @@
 package VietFreshHub.sellerapplication.controller;
 
 import VietFreshHub.sellerapplication.entity.SellerApplicationStatus;
+import VietFreshHub.sellerapplication.dto.SellerApplicationAdminDetail;
 import VietFreshHub.sellerapplication.exception.SellerApplicationDecisionException;
 import VietFreshHub.sellerapplication.service.AdminSellerApplicationService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -37,8 +38,8 @@ public class AdminSellerApplicationController {
     @GetMapping("/{applicationId}")
     public String detail(@PathVariable Long applicationId, Model model) {
         try {
-            model.addAttribute("applicationDetail", service.getDetail(applicationId));
-            System.out.println(service.getDetail(applicationId).toString());
+            SellerApplicationAdminDetail detail = service.getDetail(applicationId);
+            model.addAttribute("applicationDetail", detail);
             return "admin/detail";
         } catch (SellerApplicationDecisionException exception) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, exception.getMessage());

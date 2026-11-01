@@ -104,12 +104,13 @@ public class CheckoutOrderService {
         entityManager.persist(history);
     }
 
-    public void createPendingPayment(Order order, PaymentMethod paymentMethod) {
+    public Payment createPendingPayment(Order order, PaymentMethod paymentMethod) {
         Payment payment = new Payment();
         payment.setOrder(order);
         payment.setPaymentMethod(paymentMethod);
         payment.setAmount(order.getGrandTotal());
         entityManager.persist(payment);
+        return payment;
     }
 
     private OrderAddress snapshotAddress(Order order, Address address) {

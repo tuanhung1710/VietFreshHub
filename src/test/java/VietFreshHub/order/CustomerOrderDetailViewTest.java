@@ -102,7 +102,7 @@ class CustomerOrderDetailViewTest {
         when(orders.tracking(7L,10L)).thenReturn(new OrderTrackingResponse(10L,"VF-10","Parent không dùng","COMPLETED",groups));
     }
     String render(String suffix) throws Exception {
-        var result=mvc.perform(get("/customer/orders/10"+suffix).principal(auth)
+        var result=mvc.perform(get("/customer/order-receipts/10"+suffix).principal(auth)
                 .requestAttr(org.springframework.security.web.csrf.CsrfToken.class.getName(),
                         new org.springframework.security.web.csrf.DefaultCsrfToken("X-CSRF-TOKEN","_csrf","test-token")))
                 .andReturn();
@@ -141,23 +141,24 @@ class CustomerOrderDetailViewTest {
                 "Địa chỉ lúc đặt","Nguyễn An","0900000000","Chưa có ảnh","Chờ thu COD","Đã thanh toán","VN-123","11:00 20/10/2026","Cập nhật đã ghi nhận","Chưa ghi nhận thời gian")) assertTrue(html.contains(value),value);
         assertTrue(html.contains("data-payment-id=\"1\""));assertTrue(html.contains("data-payment-id=\"2\""));
         assertFalse(html.contains("Mốc chỉ suy diễn"));assertFalse(html.contains("INTERNAL-NOTE-SECRET"));
-        assertFalse(html.contains("/customer/orders/10/cancel"));
-        assertTrue(html.contains("/customer/orders/10/reorder"));
+        assertFalse(html.contains("/customer/order-receipts/10/cancel"));
+        assertTrue(html.contains("/customer/order-receipts/10/reorder"));
         assertTrue(html.contains("name=\"_csrf\""));
-        java.nio.file.Files.writeString(java.nio.file.Path.of(".document-analysis/phase5-detail-preview.html"),html);
+        java.nio.file.Files.writeString(java.nio.file.Path.of("target/phase5-detail-preview.html"),html);
     }
     @Test void confirmationRetainsRealActionsAndCancellationDecision() throws Exception {
         show("Chờ xác nhận",List.of(shop(20L,"PENDING",null)));
         when(orders.actions(7L,10L)).thenReturn(new OrderActionsResponse(true,null,"COD"));
         String html=render("/confirmation");
         assertTrue(html.contains("Đặt hàng thành công"));
-        assertTrue(html.contains("/customer/orders/10/cancel"));assertTrue(html.contains("test-token"));
-        assertTrue(html.contains("/customer/orders/10/tracking"));
+        assertFalse(html.contains("/customer/order-receipts/10/cancel"));assertTrue(html.contains("test-token"));
+        assertTrue(html.contains("Xem đơn từng cửa hàng và thanh toán"));
+        assertTrue(html.contains("/customer/order-receipts/10/tracking"));
         assertTrue(html.contains("Chưa có thông tin giao hàng"));
     }
     @Test void noShopsMeansNoTrackingOrReorderButtonsAndNoExtraTrackingQuery() throws Exception {
         show("Chờ xác nhận",List.of());String html=render("");
-        assertFalse(html.contains("/customer/orders/10/tracking"));assertFalse(html.contains("/customer/orders/10/reorder"));
+        assertFalse(html.contains("/customer/order-receipts/10/tracking"));assertFalse(html.contains("/customer/order-receipts/10/reorder"));
         verify(orders,never()).tracking(anyLong(),anyLong());
     }
     @Test void unsafeTextIsEscapedAndMissingOptionalFieldsStayAbsent() throws Exception {
@@ -177,7 +178,7 @@ class CustomerOrderDetailViewTest {
     }
     @Test void otherCustomersOrderReturns404BeforeLoadingActionsOrTracking() throws Exception {
         when(reads.getDetails(7L,10L)).thenThrow(new VietFreshHub.exception.ResourceNotFoundException("Không tìm thấy đơn"));
-        assertEquals(404,mvc.perform(get("/customer/orders/10").principal(auth)).andReturn().getResponse().getStatus());
+        assertEquals(404,mvc.perform(get("/customer/order-receipts/10").principal(auth)).andReturn().getResponse().getStatus());
         verifyNoInteractions(orders);
     }
     @Test void exportTrackingAndConfirmationForIntegratedUiRegression() throws Exception {
@@ -185,17 +186,17 @@ class CustomerOrderDetailViewTest {
         when(orders.actions(7L,10L)).thenReturn(new OrderActionsResponse(true,null,"COD"));
         String confirmation=render("/confirmation");
         assertTrue(confirmation.contains("Đặt hàng thành công"));
-        java.nio.file.Files.writeString(java.nio.file.Path.of(".document-analysis/phase6-confirmation-preview.html"),confirmation);
+        java.nio.file.Files.writeString(java.nio.file.Path.of("target/phase6-confirmation-preview.html"),confirmation);
         var timeline=new OrderTrackingResponse(10L,"VF-10","Vận chuyển","PROCESSING",List.of(
                 new OrderTrackingResponse.ShopTracking(20L,"Vườn Xanh","Hoàn thành","COMPLETED","Đã giao hàng","DELIVERED",null,
                         List.of(new OrderTrackingResponse.Event(time,"Giao hàng thành công",null,"DELIVERY"))),
                 new OrderTrackingResponse.ShopTracking(21L,"Fresh Market","Đang giao","OUT_FOR_DELIVERY","Giao hàng thất bại","FAILED","Không gặp khách",
                         List.of(new OrderTrackingResponse.Event(time,"Giao hàng thất bại",null,"DELIVERY")))));
         when(orders.tracking(7L,10L)).thenReturn(timeline);
-        var response=mvc.perform(get("/customer/orders/10/tracking").principal(auth)).andReturn().getResponse();
+        var response=mvc.perform(get("/customer/order-receipts/10/tracking").principal(auth)).andReturn().getResponse();
         assertEquals(200,response.getStatus());String tracking=response.getContentAsString();
         assertTrue(tracking.contains("Vườn Xanh"));assertTrue(tracking.contains("Fresh Market"));
         assertTrue(tracking.contains("Giao hàng thất bại"));assertFalse(tracking.contains("Trả hàng/Hoàn tiền"));
-        java.nio.file.Files.writeString(java.nio.file.Path.of(".document-analysis/phase6-tracking-preview.html"),tracking);
+        java.nio.file.Files.writeString(java.nio.file.Path.of("target/phase6-tracking-preview.html"),tracking);
     }
 }

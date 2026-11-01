@@ -16,6 +16,8 @@ public interface UserExternalAccountRepository
             String providerUserId
     );
 
+    boolean existsByUser_UserIdAndProvider(Long userId, String provider);
+
     @Query("""
             select externalAccount.user.userId as userId, externalAccount.provider as provider
             from UserExternalAccount externalAccount

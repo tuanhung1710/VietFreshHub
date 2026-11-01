@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 public record ChatConversationView(
         Long conversationId,
+        Long lastMessageId,
         Long shopId,
         String shopName,
         Long customerId,

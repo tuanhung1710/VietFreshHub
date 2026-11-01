@@ -67,6 +67,7 @@ public final class CustomerHttpHarness implements AutoCloseable {
             beans.registerSingleton("checkoutAddresses", mock(CheckoutAddressService.class));
             beans.registerSingleton("customerAddresses", addresses);
             beans.registerSingleton("vietMapService", mock(VietMapService.class));
+            beans.registerSingleton("vnpayPayments", mock(VietFreshHub.payment.vnpay.VnpayPaymentService.class));
             beans.registerSingleton("customerOrders", orders);
             beans.registerSingleton("customerOrderDetails", details);
             beans.registerSingleton("customerPaymentHistory", payments);

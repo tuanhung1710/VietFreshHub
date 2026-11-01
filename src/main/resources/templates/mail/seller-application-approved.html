@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hồ sơ đã được duyệt - VietFresh Hub</title>
+</head>
+<body style="margin:0;padding:24px;background-color:#f3f6f4;font-family:Arial,Helvetica,sans-serif;color:#18352b;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;">
+    <tr>
+        <td style="padding:28px 32px;background:#176b45;color:#ffffff;">
+            <p style="margin:0;font-size:13px;letter-spacing:1.5px;font-weight:bold;">VIETFRESH HUB</p>
+            <h1 style="margin:12px 0 0;font-size:24px;line-height:1.3;">Hồ sơ của bạn đã được duyệt</h1>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding:32px;">
+            <p style="margin:0 0 16px;font-size:16px;line-height:1.6;" th:text="|Xin chào ${recipientName},|">Xin chào bạn,</p>
+            <p style="margin:0 0 18px;font-size:15px;line-height:1.6;">Admin đã phê duyệt hồ sơ đăng ký bán hàng của cơ sở:</p>
+            <div style="margin:0 0 20px;padding:16px 18px;background:#eef7f1;border:1px solid #d6eadc;border-radius:12px;">
+                <strong style="font-size:18px;line-height:1.5;" th:text="${businessName}">Tên cơ sở kinh doanh</strong>
+            </div>
+            <p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Tài khoản của bạn đã được cấp quyền <strong>Store Manager</strong> trên VietFresh Hub.</p>
+            <p style="margin:0;font-size:14px;line-height:1.6;color:#5c6c63;">Bạn có thể đăng nhập bằng tài khoản hiện tại để bắt đầu sử dụng các chức năng dành cho cửa hàng.</p>
+        </td>
+    </tr>
+    <tr>
+        <td style="padding:18px 32px;background:#f7faf8;color:#68776f;font-size:12px;line-height:1.5;">Email tự động từ VietFresh Hub. Vui lòng không trả lời email này.</td>
+    </tr>
+</table>
+</body>
+</html>

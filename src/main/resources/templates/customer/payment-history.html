@@ -7,7 +7,7 @@
     <div class="page-heading payments-heading">
         <div><p class="eyebrow">Thanh toán của bạn</p><h1 class="checkout-title">Lịch sử thanh toán</h1>
             <p class="muted">Theo dõi các khoản thanh toán và trạng thái xử lý thanh toán của đơn hàng.</p></div>
-        <a class="button secondary" th:href="@{/customer/orders}">Đơn hàng của tôi <span aria-hidden="true">↗</span></a>
+        <a class="button secondary" th:href="@{/customer/order-receipts}">Đơn hàng của tôi <span aria-hidden="true">↗</span></a>
     </div>
     <div class="notice info payments-explanation">
         <strong>Mỗi bản ghi có một trạng thái thanh toán riêng.</strong>
@@ -33,7 +33,7 @@
         <h2 th:text="${filter.hasFilters()} ? 'Không tìm thấy thanh toán phù hợp' : 'Bạn chưa có lịch sử thanh toán'"></h2>
         <p class="muted" th:text="${filter.hasFilters()} ? 'Thử đổi mã đơn, trạng thái hoặc khoảng ngày để tìm lại bản ghi.' : 'Các bản ghi thanh toán sẽ xuất hiện sau khi bạn đặt hàng.'"></p>
         <a th:if="${filter.hasFilters()}" class="button secondary" th:href="@{/customer/payments}">Xóa bộ lọc</a>
-        <a th:unless="${filter.hasFilters()}" class="button" th:href="@{/customer/orders}">Xem đơn hàng của tôi</a>
+        <a th:unless="${filter.hasFilters()}" class="button" th:href="@{/customer/order-receipts}">Xem đơn hàng của tôi</a>
     </section>
     <section class="order-list" aria-label="Danh sách bản ghi thanh toán">
         <article th:each="payment : ${paymentPage.content}" class="panel history-order payment-history-record" th:attr="data-payment-id=${payment.paymentId}">
@@ -43,7 +43,7 @@
                 <span class="order-state payment-status" th:attr="data-payment-status=${payment.status}" th:text="${payment.statusLabel()}"></span>
             </div>
             <dl class="payment-record-data">
-                <div><dt>Đơn hàng liên quan</dt><dd><a th:href="@{/customer/orders/{id}(id=${payment.orderId})}" th:text="${payment.orderCode}"></a></dd></div>
+                <div><dt>Đơn hàng liên quan</dt><dd><a th:href="@{/customer/order-receipts/{id}(id=${payment.orderId})}" th:text="${payment.orderCode}"></a></dd></div>
                 <div><dt>Phương thức thanh toán</dt><dd th:text="${payment.methodName}"></dd></div>
                 <div th:if="${payment.paidAt != null}"><dt>Thời điểm ghi nhận thanh toán</dt><dd th:text="${#temporals.format(payment.paidAtLocal(),'HH:mm dd/MM/yyyy')}"></dd></div>
                 <div th:if="${payment.transactionReference != null}" class="payment-reference"><dt>Mã tham chiếu thanh toán</dt><dd th:text="${payment.transactionReference}"></dd></div>
@@ -51,7 +51,7 @@
             <p th:if="${payment.pendingCod()}" class="payment-cod-note">Thanh toán khi nhận hàng. Hệ thống chưa xác nhận đã thu tiền COD cho bản ghi này.</p>
             <div class="history-order-bottom">
                 <div><span class="muted">Số tiền của bản ghi</span><strong class="price" th:text="${#numbers.formatDecimal(payment.amount,1,'POINT',payment.amount.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></strong></div>
-                <a class="button secondary" th:href="@{/customer/orders/{id}(id=${payment.orderId})}">Xem đơn hàng <span aria-hidden="true">↗</span></a>
+                <a class="button secondary" th:href="@{/customer/order-receipts/{id}(id=${payment.orderId})}">Xem đơn hàng <span aria-hidden="true">↗</span></a>
             </div>
         </article>
     </section>

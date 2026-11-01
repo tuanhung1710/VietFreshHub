@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
-/** Read/lock only the stock fields; Order's entity and workflow remain unchanged. */
+/** Ánh xạ các trường dòng đơn cần đọc và khóa khi xử lý kho, dùng chung dữ liệu đơn hàng. */
 @Entity
 @Table(name = "order_items", schema = "dbo")
 @Getter

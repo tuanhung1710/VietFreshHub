@@ -24,6 +24,7 @@ public class ProductCategory {
     @EmbeddedId
     private Key id;
 
+    /** Tạo liên kết sản phẩm và danh mục bằng khóa ghép từ hai ID. */
     public ProductCategory(Long productId, Long categoryId) {
         id = new Key(productId, categoryId);
     }

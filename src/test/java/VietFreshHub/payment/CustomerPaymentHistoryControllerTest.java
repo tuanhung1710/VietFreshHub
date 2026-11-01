@@ -80,7 +80,7 @@ class CustomerPaymentHistoryControllerTest {
         for (String label : List.of("Tất cả", "Chờ thanh toán / Chờ thu COD", "Đang xử lý", "Đã thanh toán", "Thanh toán thất bại", "Đã hủy giao dịch", "Đã hoàn tiền", "Hoàn tiền một phần")) assertTrue(html.contains(label));
         assertTrue(html.contains("Chờ thu COD")); assertTrue(html.contains("10:00 20/10/2026"));
         assertTrue(html.contains("&lt;script&gt;")); assertFalse(html.contains("<script>alert(1)</script>"));
-        assertTrue(html.contains("/customer/orders/10")); assertTrue(html.contains("page=2"));
+        assertTrue(html.contains("/customer/order-receipts/10")); assertTrue(html.contains("page=2"));
         assertTrue(html.contains("fromDate=2026-10-20")); assertTrue(html.contains("keyword=VF-10"));
         assertTrue(html.contains("12.345,50"));
         assertFalse(html.contains("method=\"post\""));
@@ -125,7 +125,7 @@ class CustomerPaymentHistoryControllerTest {
         String html = render(); String failed = card(html,1L); String paid = card(html,2L);
         assertTrue(failed.contains("Bản ghi #1")); assertTrue(paid.contains("Bản ghi #2"));
         assertTrue(failed.contains("Thanh toán thất bại")); assertTrue(paid.contains("Đã thanh toán"));
-        assertTrue(failed.contains("/customer/orders/10")); assertTrue(paid.contains("/customer/orders/10"));
+        assertTrue(failed.contains("/customer/order-receipts/10")); assertTrue(paid.contains("/customer/order-receipts/10"));
         assertFalse(failed.contains("Mã tham chiếu thanh toán")); assertFalse(failed.contains("Thời điểm ghi nhận thanh toán"));
         assertTrue(paid.contains("VN-&lt;script&gt;")); assertFalse(paid.contains("<script>alert(1)</script>"));
         assertTrue(paid.contains("11:30 20/10/2026")); assertTrue(paid.contains("106.000"));

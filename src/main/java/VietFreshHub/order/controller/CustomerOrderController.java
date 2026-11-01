@@ -37,7 +37,7 @@ import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/customer/orders")
+@RequestMapping("/customer/order-receipts")
 public class CustomerOrderController {
     private final CurrentCustomerService currentCustomer;
     private final CustomerOrderService orders;
@@ -111,18 +111,9 @@ public class CustomerOrderController {
     public String cancel(@PathVariable Long orderId, @Valid @ModelAttribute("cancelForm") OrderCancelRequest form,
                           BindingResult errors, Authentication authentication, RedirectAttributes flash) {
         Long customerId = currentCustomer.requireCustomerId(authentication);
-        if (errors.hasErrors()) {
-            flash.addFlashAttribute("errorMessage", "Lý do hủy tối đa 500 ký tự.");
-            flash.addFlashAttribute("cancelReason", form.getReason());
-        } else {
-            try {
-                orders.cancel(customerId, orderId, form.getReason());
-                flash.addFlashAttribute("successMessage", "Đơn hàng đã hủy. Hàng đã giữ được giải phóng.");
-            } catch (CustomerOrderException exception) {
-                flash.addFlashAttribute("errorMessage", exception.getMessage());
-            }
-        }
-        return "redirect:/customer/orders/" + orderId;
+        readOrders.getDetails(customerId, orderId);
+        flash.addFlashAttribute("errorMessage", "Vui lòng chọn đơn cửa hàng để hủy.");
+        return "redirect:/customer/orders";
     }
 
     @PostMapping("/{orderId}/reorder")
@@ -139,7 +130,7 @@ public class CustomerOrderController {
             return "redirect:/cart";
         } catch (CustomerOrderException exception) {
             flash.addFlashAttribute("errorMessage", exception.getMessage());
-            return "redirect:/customer/orders/" + orderId;
+            return "redirect:/customer/order-receipts/" + orderId;
         }
     }
 

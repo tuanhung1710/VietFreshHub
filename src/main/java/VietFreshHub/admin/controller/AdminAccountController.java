@@ -35,10 +35,12 @@ public class AdminAccountController {
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(defaultValue = "ALL") String status,
             @RequestParam(defaultValue = "ALL") String role,
+            @RequestParam(defaultValue = "NEWEST") String sort,
             @RequestParam(defaultValue = "1") int page,
             Model model
     ) {
-        Page<AdminAccountRow> accounts = service.getAccounts(keyword, status, role, page);
+        String selectedSort = normalizeSort(sort);
+        Page<AdminAccountRow> accounts = service.getAccounts(keyword, status, role, page, selectedSort);
         List<Role> availableRoles = service.getRoles();
         model.addAttribute("accountsPage", accounts);
         model.addAttribute("accounts", accounts.getContent());
@@ -48,6 +50,7 @@ public class AdminAccountController {
         model.addAttribute("selectedStatus", normalizeStatusFilter(status));
         model.addAttribute("selectedRole", normalizeRoleFilter(role, availableRoles.stream()
                 .map(Role::getRoleName).collect(java.util.stream.Collectors.toSet())));
+        model.addAttribute("selectedSort", selectedSort);
         model.addAttribute("pageNumber", accounts.getNumber() + 1);
         model.addAttribute("pageCount", Math.max(accounts.getTotalPages(), 1));
         return "admin/accounts";
@@ -109,12 +112,19 @@ public class AdminAccountController {
     private String normalizeStatusFilter(String status) {
         if (status == null || status.isBlank()) return "ALL";
         String normalized = status.trim().toUpperCase(java.util.Locale.ROOT);
-        return Set.of("ALL", "ACTIVE", "INACTIVE", "BLOCKED", "DELETED").contains(normalized)
+        return Set.of("ALL", "ACTIVE", "INACTIVE").contains(normalized)
                 ? normalized : "ALL";
     }
 
     private String normalizeRoleFilter(String role, Set<String> knownRoles) {
         return role == null || role.isBlank() || "ALL".equalsIgnoreCase(role) || !knownRoles.contains(role)
                 ? "ALL" : role;
+    }
+
+    private String normalizeSort(String sort) {
+        if (sort == null || sort.isBlank()) return "NEWEST";
+        String normalized = sort.trim().toUpperCase(java.util.Locale.ROOT);
+        return Set.of("NEWEST", "NAME_ASC", "NAME_DESC").contains(normalized)
+                ? normalized : "NEWEST";
     }
 }

@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/customer/orders")
+@RequestMapping("/customer/order-receipts")
 public class CustomerOrderDetailsController {
     private final CurrentCustomerService currentCustomer;
     private final CustomerOrderQueryService orders;
@@ -53,7 +53,7 @@ public class CustomerOrderDetailsController {
         model.addAttribute("trackingShops", trackingShops);
         model.addAttribute("cartBadgeTotal", orders.getCartBadgeTotal(customerId));
         model.addAttribute("confirmation", confirmation);
-        model.addAttribute("actions", lifecycle.actions(customerId, orderId));
+        model.addAttribute("actions", new VietFreshHub.order.dto.OrderActionsResponse(false, "Vui lòng mở Đơn mua để hủy theo từng cửa hàng.", ""));
         return "customer/order-detail";
     }
 

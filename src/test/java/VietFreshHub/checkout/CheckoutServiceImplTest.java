@@ -45,8 +45,10 @@ class CheckoutServiceImplTest {
     final CheckoutShippingQuoteService shipping=mock(CheckoutShippingQuoteService.class);
     final EntityManager em=mock(EntityManager.class);
     final ApplicationEventPublisher events=mock(ApplicationEventPublisher.class);
+    final VietFreshHub.payment.repository.PaymentRepository payments=mock(VietFreshHub.payment.repository.PaymentRepository.class);
+    final VietFreshHub.payment.vnpay.VnpayProperties vnpay=new VietFreshHub.payment.vnpay.VnpayProperties();
     final CheckoutServiceImpl service=new CheckoutServiceImpl(users,carts,cartService,addresses,customerAddresses,
-            methods,orders,catalog,inventory,shipping,new CheckoutOrderService(orders,em,shipping),em,events);
+            methods,orders,catalog,inventory,shipping,new CheckoutOrderService(orders,em,shipping),em,events,payments,vnpay);
     final User buyer=new User();
     final Address address=new Address();
     final Cart cart=new Cart();
@@ -78,7 +80,8 @@ class CheckoutServiceImplTest {
         when(shipping.distanceSnapshot(any())).thenAnswer(call -> ((BigDecimal)call.getArgument(0)).setScale(1));
         doAnswer(call -> {
             Object entity=call.getArgument(0); persisted.add(entity);
-            if(entity instanceof ShopOrder shop) shop.setShopOrderId(identity++);
+            if(entity instanceof ShopOrder shop) { shop.setShopOrderId(identity++); when(em.getReference(ShopOrder.class,shop.getShopOrderId())).thenReturn(shop); }
+            if(entity instanceof Payment payment) payment.setPaymentId(identity++);
             if(entity instanceof OrderItem item) item.setOrderItemId(identity++);
             return null;
         }).when(em).persist(any());
@@ -169,6 +172,8 @@ class CheckoutServiceImplTest {
     @Test void repeatedConfirmationReturnsExistingOrderWithoutFurtherWrites() {
         var draft=draft(1L); var existing=new Order(); existing.setOrderId(42L); existing.setOrderCode("VF-"+draft.token()); existing.setGrandTotal(new BigDecimal("185000"));
         when(orders.findByOrderCodeAndCustomerUserId(existing.getOrderCode(),7L)).thenReturn(Optional.of(existing));
+        var payment=new Payment(); payment.setOrder(existing); payment.setPaymentMethod(cod);
+        when(payments.findByOrderOrderIdOrderByPaymentIdAsc(42L)).thenReturn(List.of(payment));
         assertEquals(42L,service.confirm(7L,draft,request(draft)).orderId()); assertNoOrderCreated();
     }
     @Test void customerMismatchOrTokenTamperingStopsBeforeLockingBuyer() {
@@ -226,5 +231,22 @@ class CheckoutServiceImplTest {
         var draft=draft(1L); doThrow(new IllegalStateException("Flush failed")).when(em).flush();
         assertThrows(IllegalStateException.class,() -> service.confirm(7L,draft,request(draft)));
         verifyNoInteractions(events); // No claim that mock entities were rolled back.
+    }
+    @Test void onlinePaymentKeepsShopAmountsPendingAndReturnsProviderPaymentForRedirect() {
+        var method=new PaymentMethod(); method.setMethodCode("BANK_TRANSFER"); method.setStatus("ACTIVE");
+        when(methods.findByMethodCodeAndStatus("BANK_TRANSFER","ACTIVE")).thenReturn(Optional.of(method));
+        var draft=draft(1L,2L); var request=request(draft); request.setPaymentMethodCode("BANK_TRANSFER");
+        var result=service.confirm(7L,draft,request);
+        var payment=persisted(Payment.class).getFirst();
+        assertEquals("BANK_TRANSFER",result.paymentMethodCode()); assertEquals(payment.getPaymentId(),result.paymentId());
+        assertEquals("VNPAY",payment.getProvider()); assertEquals("VF"+payment.getPaymentId(),payment.getTransactionReference());
+        assertEquals("PENDING",payment.getOrder().getPaymentStatus());
+        assertTrue(persisted(ShopOrder.class).stream().allMatch(shop -> "PENDING".equals(shop.getPaymentStatus())));
+        assertEquals(result.grandTotal(),payment.getAmount()); verify(inventory).reserve(anyList(),eq(7L));
+    }
+    @Test void onlinePaymentIsRejectedBeforeWritesWhenGatewayIsNotReady() {
+        vnpay.setEnabled(false);
+        var draft=draft(1L); var request=request(draft); request.setPaymentMethodCode("BANK_TRANSFER");
+        assertThrows(CheckoutException.class,() -> service.confirm(7L,draft,request)); assertNoOrderCreated();
     }
 }

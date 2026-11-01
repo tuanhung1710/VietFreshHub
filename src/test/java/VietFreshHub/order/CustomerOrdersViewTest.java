@@ -93,7 +93,7 @@ class CustomerOrdersViewTest {
         when(orders.historySummaries(7L,List.of(10L))).thenReturn(java.util.Map.of(10L,summary));
     }
     String render() throws Exception {
-        return mvc.perform(get("/customer/orders").principal(auth).requestAttr(org.springframework.security.web.csrf.CsrfToken.class.getName(),
+        return mvc.perform(get("/customer/order-receipts").principal(auth).requestAttr(org.springframework.security.web.csrf.CsrfToken.class.getName(),
                 new org.springframework.security.web.csrf.DefaultCsrfToken("X-CSRF-TOKEN","_csrf","test-token")))
                 .andReturn().getResponse().getContentAsString();
     }
@@ -101,9 +101,9 @@ class CustomerOrdersViewTest {
         page("WAITING_CONFIRMATION",card("FAILED",true));
         String html = render();
         for (String text : List.of("Chờ xác nhận","Chờ thu COD","381.000","2 phân loại","3 sản phẩm",
-                "Vườn Xanh","Fresh Market","Giao hàng thất bại","Hộp 1 kg","Chưa có ảnh","Xem chi tiết","Theo dõi","Mua lại","Hủy đơn")) assertTrue(html.contains(text),text);
+                "Vườn Xanh","Fresh Market","Giao hàng thất bại","Hộp 1 kg","Chưa có ảnh","Xem chi tiết","Theo dõi","Mua lại","Hủy theo từng cửa hàng")) assertTrue(html.contains(text),text);
         assertTrue(html.contains("&lt;script&gt;")); assertFalse(html.contains("<script>alert(1)</script>"));
-        assertTrue(html.contains("/customer/orders/10/cancel")); assertTrue(html.contains("/customer/orders/10/reorder"));
+        assertFalse(html.contains("/customer/order-receipts/10/cancel")); assertTrue(html.contains("/customer/order-receipts/10/reorder"));
         assertTrue(html.contains("name=\"_csrf\"")); assertTrue(html.contains("test-token"));
         assertTrue(html.contains("10:00 · 20/10/2026"));
         java.nio.file.Files.createDirectories(java.nio.file.Path.of(".document-analysis"));
@@ -116,7 +116,7 @@ class CustomerOrdersViewTest {
         String html = render();
         assertTrue(html.contains("data-stage=\""+stage.name()+"\""));
         assertTrue(html.contains(stage.label()));
-        assertFalse(html.contains("/customer/orders/10/cancel"));
+        assertFalse(html.contains("/customer/order-receipts/10/cancel"));
         assertFalse(html.contains("RETURN_REFUND"));
     }
     @org.junit.jupiter.params.ParameterizedTest
@@ -131,12 +131,12 @@ class CustomerOrdersViewTest {
     }
     @Test void filtersSurvivePaginationAndEmptySearchCanReset() throws Exception {
         page("PREPARING",card(null,false));
-        String html = mvc.perform(get("/customer/orders").principal(auth).param("keyword","VF-10")
+        String html = mvc.perform(get("/customer/order-receipts").principal(auth).param("keyword","VF-10")
                 .param("status","PREPARING").param("fromDate","2026-10-20").param("toDate","2026-10-21"))
                 .andReturn().getResponse().getContentAsString();
         for (String value : List.of("page=2","keyword=VF-10","status=PREPARING","fromDate=2026-10-20","toDate=2026-10-21")) assertTrue(html.contains(value),value);
         when(orders.history(eq(7L),any())).thenReturn(Page.empty());
-        html = mvc.perform(get("/customer/orders").principal(auth).param("keyword","missing")).andReturn().getResponse().getContentAsString();
+        html = mvc.perform(get("/customer/order-receipts").principal(auth).param("keyword","missing")).andReturn().getResponse().getContentAsString();
         assertTrue(html.contains("Chưa có đơn hàng phù hợp")); assertTrue(html.contains("Xóa bộ lọc"));
         assertFalse(html.contains("/cancel"));
         html = render(); assertTrue(html.contains("Bạn chưa có đơn hàng nào"));

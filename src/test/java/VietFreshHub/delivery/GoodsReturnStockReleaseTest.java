@@ -46,9 +46,10 @@ class GoodsReturnStockReleaseTest {
         CatalogVariant variant = new CatalogVariant(); variant.setVariantId(11L);
         OrderItem item = new OrderItem(); item.setOrderItemId(10L); item.setVariant(variant); item.setQuantity(2);
         shopOrder.setItems(new ArrayList<>(List.of(item))); delivery.setShopOrder(shopOrder);
-        assignment = new DeliveryAssignment(delivery, new User(), LocalDateTime.now()); assignment.accept(LocalDateTime.now());
+        assignment = new DeliveryAssignment(delivery, new User(), LocalDateTime.now());
         when(shops.getManagedShopId(authentication)).thenReturn(3L);
         when(auth.getCurrentUserId(authentication)).thenReturn(7L);
+        when(deliveries.findOrderIdByDeliveryIdAndShopId(1L,3L)).thenReturn(Optional.of(10L));
         when(deliveries.findForUpdateByDeliveryIdAndShopOrder_ShopId(1L, 3L)).thenReturn(Optional.of(delivery));
         when(assignments.findForUpdateByDelivery_DeliveryIdAndStatus(1L, DeliveryAssignmentStatus.ACCEPTED))
                 .thenReturn(Optional.of(assignment));

@@ -18,6 +18,8 @@ import VietFreshHub.exception.CheckoutException;
 import VietFreshHub.vietmap.dto.VietMapPlaceResponse;
 import VietFreshHub.vietmap.service.VietMapService;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import VietFreshHub.payment.vnpay.VnpayPaymentService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import java.util.ArrayList;
@@ -59,6 +61,7 @@ public class CheckoutController {
     private final CustomerAddressService customerAddresses;
     private final VietMapService vietMapService;
     private final CartService carts;
+    private final VnpayPaymentService vnpayPayments;
 
     @InitBinder("addressForm")
     public void bindAddressForm(WebDataBinder binder) {
@@ -136,7 +139,7 @@ public class CheckoutController {
                        Authentication authentication,
                        HttpSession session,
                        Model model,
-                       HttpServletResponse response) {
+                       HttpServletResponse response, HttpServletRequest request, RedirectAttributes flash) {
         Long customerId = currentCustomer.requireCustomerId(authentication);
         CheckoutDraft draft = drafts.find(session, form.getCheckoutToken(), customerId);
         if (draft == null) {
@@ -145,7 +148,13 @@ public class CheckoutController {
         if (!errors.hasErrors()) {
             try {
                 CheckoutResult order = checkout.confirm(customerId, draft, form);
-                return "redirect:/customer/orders/" + order.orderId() + "/confirmation";
+                if ("BANK_TRANSFER".equals(order.paymentMethodCode()) || "VNPAY".equals(order.paymentMethodCode())) {
+                    var start = vnpayPayments.startInitialPayment(order.paymentId(), customerId, request.getRemoteAddr());
+                    if (start.started()) return "redirect:" + start.paymentUrl();
+                    flash.addFlashAttribute("errorMessage", start.message());
+                    return "redirect:/customer/orders";
+                }
+                return "redirect:/customer/order-receipts/" + order.orderId() + "/confirmation";
             } catch (CheckoutException ex) {
                 errors.reject("checkout", ex.getMessage());
             } catch (DataAccessException | TransactionException ex) {
@@ -303,6 +312,7 @@ public class CheckoutController {
     private void populate(Long customerId, CheckoutRequest form, CheckoutPreview preview, HttpSession session, Model model) {
         CheckoutDraft draft = drafts.issue(session, customerId, preview);
         form.setCheckoutToken(draft.token());
+        if (!preview.codAvailable() && preview.vnpayAvailable()) form.setPaymentMethodCode("BANK_TRANSFER");
         form.setAddressId(preview.addressId());
         model.addAttribute("form", form);
         model.addAttribute("checkout", preview);

@@ -194,16 +194,16 @@ class CustomerOrderHistorySummaryTest {
     @Test void samePersistedCodOrderSurvivesNavigationAcrossAllFivePagesWithoutWrites() throws Exception {
         try (var session=factory.openSession();var http=customerHttp(session)) {
             factory.getStatistics().clear();
-            var listModel=visit(http,"/customer/orders").getModelAndView().getModel();
+            var listModel=visit(http,"/customer/order-receipts").getModelAndView().getModel();
             var page=(org.springframework.data.domain.Page<?>)listModel.get("orderPage");
             var row=(OrderListRow)page.stream().filter(r -> ((OrderListRow)r).orderId()==10L).findFirst().orElseThrow();
             var summary=(OrderHistorySummary)((Map<?,?>)listModel.get("orderSummaries")).get(10L);
-            var detailModel=visit(http,"/customer/orders/10").getModelAndView().getModel();
+            var detailModel=visit(http,"/customer/order-receipts/10").getModelAndView().getModel();
             var detail=(OrderDetailsResponse)detailModel.get("order");
-            assertEquals(summary.cancellable(),((OrderActionsResponse)detailModel.get("actions")).cancellable());
+            assertFalse(((OrderActionsResponse)detailModel.get("actions")).cancellable()); // Cancellation now follows main's per-shop flow.
             assertTrue(summary.cancellable());
-            var confirmation=(OrderDetailsResponse)visit(http,"/customer/orders/10/confirmation").getModelAndView().getModel().get("order");
-            var tracking=(OrderTrackingResponse)visit(http,"/customer/orders/10/tracking").getModelAndView().getModel().get("tracking");
+            var confirmation=(OrderDetailsResponse)visit(http,"/customer/order-receipts/10/confirmation").getModelAndView().getModel().get("order");
+            var tracking=(OrderTrackingResponse)visit(http,"/customer/order-receipts/10/tracking").getModelAndView().getModel().get("tracking");
             var paymentPage=(org.springframework.data.domain.Page<?>)visit(http,"/customer/payments?keyword=VF-10&status=PENDING")
                     .getModelAndView().getModel().get("paymentPage");
             var payment=(VietFreshHub.payment.dto.PaymentHistoryRow)paymentPage.getContent().getFirst();
@@ -217,7 +217,7 @@ class CustomerOrderHistorySummaryTest {
             assertEquals(summary.unitCount(),detail.shops().stream().flatMap(shop -> shop.items().stream()).mapToLong(OrderDetailsResponse.Item::quantity).sum());
             assertEquals("Tên lúc mua",detail.shops().getFirst().items().getFirst().productName());
             assertEquals(row.placedAtLocal(),detail.placedAt());
-            var mixedModel=visit(http,"/customer/orders/11").getModelAndView().getModel();
+            var mixedModel=visit(http,"/customer/order-receipts/11").getModelAndView().getModel();
             var mixed=(OrderDetailsResponse)mixedModel.get("order");
             assertEquals("Vận chuyển",mixed.statusLabel());
             assertEquals("COMPLETED",mixed.shops().getFirst().statusCode());
@@ -235,7 +235,7 @@ class CustomerOrderHistorySummaryTest {
     @Test void realHttpOwnershipProtectsDetailsTrackingPaymentsCancelAndReorder() throws Exception {
         try (var session=factory.openSession();var http=customerHttp(session)) {
             var user=org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("buyer@test.invalid").roles("CUSTOMER");
-            for (String path:List.of("/customer/orders/12","/customer/orders/12/tracking","/customer/orders/12/confirmation")) {
+            for (String path:List.of("/customer/order-receipts/12","/customer/order-receipts/12/tracking","/customer/order-receipts/12/confirmation")) {
                 http.mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(path).with(user))
                         .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isNotFound());
             }
@@ -244,10 +244,10 @@ class CustomerOrderHistorySummaryTest {
             var transaction=session.beginTransaction();
             try {
                 for (String suffix:List.of("cancel","reorder")) {
-                    http.mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/customer/orders/12/"+suffix).with(user)
+                    http.mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/customer/order-receipts/12/"+suffix).with(user)
                             .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
                             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isNotFound());
-                    http.mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/customer/orders/10/"+suffix).with(user))
+                    http.mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/customer/order-receipts/10/"+suffix).with(user))
                             .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isForbidden());
                 }
             } finally { transaction.rollback(); }
@@ -255,8 +255,8 @@ class CustomerOrderHistorySummaryTest {
     }
     @Test void measureCustomerReadQueryCountsInColdPersistenceContexts() throws Exception {
         Map<String,Long> counts=new LinkedHashMap<>();
-        for (var entry:Map.of("myOrders","/customer/orders","payments","/customer/payments", "detail","/customer/orders/11",
-                "tracking","/customer/orders/11/tracking").entrySet()) {
+        for (var entry:Map.of("myOrders","/customer/order-receipts","payments","/customer/payments", "detail","/customer/order-receipts/11",
+                "tracking","/customer/order-receipts/11/tracking").entrySet()) {
             try (var session=factory.openSession();var http=customerHttp(session)) {
                 factory.getStatistics().clear();
                 visit(http,entry.getValue());
