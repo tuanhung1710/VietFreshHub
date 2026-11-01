@@ -16,6 +16,7 @@ import java.time.temporal.ChronoUnit;
 public final class InventoryRules {
 
     public static final ZoneId SHOP_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    public static final String EXPIRED_DISPOSAL_REASON = "Hủy toàn bộ hàng hết hạn chưa giữ cho đơn hàng.";
     private static final BigDecimal MINIMUM_PRICE = new BigDecimal("10000");
 
     private InventoryRules() {
@@ -125,6 +126,13 @@ public final class InventoryRules {
                 nextQuantity >= batch.getReservedQuantity() && nextQuantity <= Integer.MAX_VALUE,
                 "Tồn kho sau điều chỉnh không được thấp hơn số lượng đã giữ cho đơn hàng hoặc vượt giới hạn cho phép.");
         return (int) nextQuantity;
+    }
+
+    public static int disposableQuantity(InventoryBatch batch, LocalDate date) {
+        if (!expired(batch, date) || batch.getQuantityOnHand() == null || batch.getReservedQuantity() == null) {
+            return 0;
+        }
+        return Math.max(0, batch.getQuantityOnHand() - batch.getReservedQuantity());
     }
 
     public static int disposedQuantity(InventoryBatch batch, int quantity, LocalDate date) {

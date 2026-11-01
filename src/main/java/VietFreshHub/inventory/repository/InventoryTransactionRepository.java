@@ -10,10 +10,20 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
 public interface InventoryTransactionRepository extends JpaRepository<InventoryTransaction, Long> {
     boolean existsByVariantId(Long id);
+
+    @Query("""
+            select t from InventoryTransaction t
+            where t.batchId=:batchId and t.variantId=:variantId
+            and t.referenceType='ORDER_ITEM' and t.transactionType in :types
+            order by t.createdAt, t.transactionId
+            """)
+    List<InventoryTransaction> findOrderProcessingHistory(
+            Long batchId, Long variantId, List<StockTransactionType> types);
 
     @Query(
             """

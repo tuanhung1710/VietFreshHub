@@ -4,6 +4,7 @@ import VietFreshHub.inventory.dto.BatchRequest;
 import VietFreshHub.inventory.dto.ActivityHistoryFilter;
 import VietFreshHub.inventory.dto.AuditResponse;
 import VietFreshHub.inventory.dto.BatchResponse;
+import VietFreshHub.inventory.dto.DisposalResult;
 import VietFreshHub.inventory.dto.JournalResponse;
 import VietFreshHub.inventory.dto.MarkdownRequest;
 import VietFreshHub.inventory.dto.StockChangeRequest;
@@ -26,6 +27,10 @@ public interface InventoryService {
     void adjust(Authentication authentication, Long batchId, StockChangeRequest form);
 
     void dispose(Authentication authentication, Long batchId, StockChangeRequest form);
+
+    DisposalResult dispose(Authentication authentication, Long batchId);
+
+    DisposalResult disposeExpiredProduct(Authentication authentication, Long productId);
 
     void block(Authentication authentication, Long batchId, boolean blocked, String reason);
 

@@ -4,8 +4,10 @@ import VietFreshHub.inventory.entity.BatchMarkdown;
 import VietFreshHub.inventory.entity.InventoryBatch;
 import VietFreshHub.inventory.entity.StockAllocation;
 import VietFreshHub.inventory.enums.BatchStatus;
+import VietFreshHub.inventory.rule.InventoryRules;
 
 import lombok.Getter;
+import lombok.Builder;
 
 import java.util.List;
 
@@ -29,7 +31,10 @@ public class BatchResponse {
     private String variantName;
     @lombok.Setter
     private java.util.Map<Long, String> allocationOrderCodes = java.util.Map.of();
+    @lombok.Setter
+    private List<AllocationResponse> allocationDetails = List.of();
 
+    @Builder
     public BatchResponse(
             InventoryBatch batch, int available, boolean expired, boolean nearExpiry,
             BatchMarkdown markdown, List<StockAllocation> allocations, String productName,
@@ -118,6 +123,10 @@ public class BatchResponse {
     public boolean isCanEditFromList() {
         return isCanAdjust() && batch.getQuantityOnHand() != null
                 && batch.getQuantityOnHand() > 0 && !isFullyAllocated();
+    }
+
+    public int getDisposableQuantity() {
+        return InventoryRules.disposableQuantity(batch, InventoryRules.today());
     }
 
     public boolean isCanDispose() {

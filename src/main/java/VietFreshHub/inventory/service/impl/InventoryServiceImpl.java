@@ -15,8 +15,10 @@ import VietFreshHub.auth.entity.User;
 import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.inventory.dto.AuditResponse;
 import VietFreshHub.inventory.dto.ActivityHistoryFilter;
+import VietFreshHub.inventory.dto.AllocationResponse;
 import VietFreshHub.inventory.dto.BatchRequest;
 import VietFreshHub.inventory.dto.BatchResponse;
+import VietFreshHub.inventory.dto.DisposalResult;
 import VietFreshHub.inventory.dto.JournalResponse;
 import VietFreshHub.inventory.dto.MarkdownRequest;
 import VietFreshHub.inventory.dto.StockChangeRequest;
@@ -45,6 +47,7 @@ import VietFreshHub.inventory.util.InventoryLockHelper;
 import VietFreshHub.product.entity.Product;
 import VietFreshHub.product.entity.ProductVariant;
 import VietFreshHub.product.service.ProductAvailabilityService;
+import VietFreshHub.product.service.ProductService;
 import VietFreshHub.product.enums.ProductStatus;
 import VietFreshHub.product.enums.VariantStatus;
 import VietFreshHub.product.exception.CatalogException;
@@ -73,6 +76,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Comparator;
 
 @Service
 @RequiredArgsConstructor
@@ -80,6 +84,7 @@ import java.util.HashSet;
 public class InventoryServiceImpl implements InventoryService {
 
     private final ProductAvailabilityService productAvailabilityService;
+    private final ProductService productService;
 
     private final InventoryBatchRepository inventoryBatchRepository;
     private final ProductVariantRepository productVariantRepository;
@@ -253,6 +258,88 @@ public class InventoryServiceImpl implements InventoryService {
                 batchId,
                 StockTransactionType.EXPIRED,
                 -form.getQuantity(),
+                actorId,
+                changeReason,
+                "BATCH",
+                batchId);
+        inventoryJournalService.audit(
+                actorId,
+                "DISPOSE",
+                "BATCH",
+                batchId,
+                changeReason
+                        + "; "
+                        + previousQuantity
+                        + " → "
+                        + nextQuantity
+                        + "; đã giữ cho đơn: "
+                        + batch.getReservedQuantity());
+    }
+
+    @Override
+    @Transactional
+    public DisposalResult dispose(Authentication authentication, Long batchId) {
+        InventoryBatch batch = getOwnedBatch(authentication, batchId, true);
+        LocalDate date = today();
+        require(expired(batch, date), "Chỉ sử dụng thao tác này cho lô đã hết hạn.");
+        validateDisposalBalance(batch);
+        int quantity = InventoryRules.disposableQuantity(batch, date);
+        if (quantity > 0) {
+            disposeBatch(batch, quantity, authService.getCurrentUserId(authentication), date);
+        }
+        return new DisposalResult(quantity > 0 ? 1 : 0, batch.getReservedQuantity() > 0 ? 1 : 0);
+    }
+
+    @Override
+    @Transactional
+    public DisposalResult disposeExpiredProduct(Authentication authentication, Long productId) {
+        List<ProductVariant> variants = productService.lockManagedVariantsForInventory(authentication, productId);
+        if (variants.isEmpty()) {
+            return new DisposalResult(0, 0);
+        }
+        List<InventoryBatch> snapshots = inventoryBatchRepository.findByVariantIdInOrderByExpiryDateAscBatchIdAsc(
+                variants.stream().map(ProductVariant::getVariantId).toList());
+        LocalDate date = today();
+        Long actorId = authService.getCurrentUserId(authentication);
+        int disposedBatches = 0;
+        int reservedBatches = 0;
+        for (InventoryBatch snapshot : snapshots.stream().sorted(Comparator.comparing(InventoryBatch::getBatchId)).toList()) {
+            InventoryBatch batch = inventoryLockHelper.refresh(
+                    inventoryBatchRepository.lockById(snapshot.getBatchId()).orElseThrow());
+            if (!expired(batch, date)) {
+                continue;
+            }
+            validateDisposalBalance(batch);
+            if (batch.getReservedQuantity() > 0) {
+                reservedBatches++;
+            }
+            int quantity = InventoryRules.disposableQuantity(batch, date);
+            if (quantity > 0) {
+                disposeBatch(batch, quantity, actorId, date);
+                disposedBatches++;
+            }
+        }
+        return new DisposalResult(disposedBatches, reservedBatches);
+    }
+
+    private void validateDisposalBalance(InventoryBatch batch) {
+        require(batch.getQuantityOnHand() != null && batch.getReservedQuantity() != null
+                        && batch.getReservedQuantity() >= 0 && batch.getQuantityOnHand() >= batch.getReservedQuantity(),
+                "Dữ liệu tồn kho của lô không hợp lệ. Vui lòng kiểm tra trước khi hủy hàng.");
+    }
+
+    private void disposeBatch(InventoryBatch batch, int quantity, Long actorId, LocalDate date) {
+        String changeReason = InventoryRules.EXPIRED_DISPOSAL_REASON;
+        Long batchId = batch.getBatchId();
+        int previousQuantity = batch.getQuantityOnHand();
+        int nextQuantity = InventoryRules.disposedQuantity(batch, quantity, date);
+        updateQuantity(batch, nextQuantity);
+
+        inventoryJournalService.stock(
+                batch.getVariantId(),
+                batchId,
+                StockTransactionType.EXPIRED,
+                -quantity,
                 actorId,
                 changeReason,
                 "BATCH",
@@ -671,7 +758,70 @@ public class InventoryServiceImpl implements InventoryService {
         List<Long> lineIds = new ArrayList<>();
         for (StockAllocation allocation : response.getAllocations()) lineIds.add(allocation.getOrderItemId());
         response.setAllocationOrderCodes(orderCodesForLines(lineIds, product.getShopId()));
+        response.setAllocationDetails(allocationDetails(
+                batch, variant, response.getAllocations(), response.getAllocationOrderCodes()));
         return response;
+    }
+
+    private List<AllocationResponse> allocationDetails(
+            InventoryBatch batch, ProductVariant variant, List<StockAllocation> allocations,
+            Map<Long, String> orderCodes) {
+        if (allocations.isEmpty() || orderCodes.isEmpty()) {
+            return List.of();
+        }
+        List<Long> lineIds = allocations.stream().map(StockAllocation::getOrderItemId).distinct().toList();
+        Map<Long, InventoryOrderLine> lines = new HashMap<>();
+        for (InventoryOrderLine line : inventoryOrderLineRepository.findAllById(lineIds)) {
+            if (variant.getVariantId().equals(line.getVariantId()) && orderCodes.containsKey(line.getOrderItemId())) {
+                lines.put(line.getOrderItemId(), line);
+            }
+        }
+        if (lines.isEmpty()) {
+            return List.of();
+        }
+        Comparator<InventoryTransaction> chronological = Comparator
+                .comparing(InventoryTransaction::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(InventoryTransaction::getTransactionId, Comparator.nullsLast(Comparator.naturalOrder()));
+        List<InventoryTransaction> events = inventoryTransactionRepository.findOrderProcessingHistory(
+                batch.getBatchId(), variant.getVariantId(), List.of(StockTransactionType.RESERVE,
+                        StockTransactionType.RELEASE, StockTransactionType.SALE, StockTransactionType.RETURN));
+        Map<Long, List<InventoryTransaction>> histories = new HashMap<>();
+        for (InventoryTransaction event : events.stream().sorted(chronological).toList()) {
+            if (lines.containsKey(event.getReferenceId())) {
+                histories.computeIfAbsent(event.getReferenceId(), ignored -> new ArrayList<>()).add(event);
+            }
+        }
+        List<AllocationResponse> details = new ArrayList<>();
+        for (StockAllocation allocation : allocations) {
+            InventoryOrderLine line = lines.get(allocation.getOrderItemId());
+            if (line == null || !batch.getBatchId().equals(allocation.getBatchId())) {
+                continue;
+            }
+            List<InventoryTransaction> history = histories.getOrDefault(line.getOrderItemId(), List.of());
+            LocalDateTime updatedAt = history.stream().map(InventoryTransaction::getCreatedAt)
+                    .filter(Objects::nonNull).max(Comparator.naturalOrder()).orElse(null);
+            List<AllocationResponse.ProcessingEvent> processingEvents = history.stream()
+                    .map(event -> allocationEvent(event, variant.getUnit())).toList();
+            details.add(new AllocationResponse(allocation.getAllocationId(), line.getOrderItemId(),
+                    orderCodes.get(line.getOrderItemId()), line.getQuantity(), variant.getUnit(),
+                    allocation.getStatus(), updatedAt, processingEvents));
+        }
+        return details;
+    }
+
+    private AllocationResponse.ProcessingEvent allocationEvent(InventoryTransaction event, String unit) {
+        String actualUnit = unit == null || unit.isBlank() ? "đơn vị" : unit;
+        String quantity = event.getQuantity() == null ? "hàng "
+                : Math.abs((long) event.getQuantity()) + " " + actualUnit + " ";
+        String description = switch (event.getTransactionType()) {
+            case RESERVE -> "Giữ " + quantity + "cho đơn hàng.";
+            case RELEASE -> "Hủy giữ " + quantity + "cho đơn hàng.";
+            case SALE -> "Xuất kho " + quantity + "để giao hàng.";
+            case RETURN -> "Nhập lại " + quantity + "được trả về.";
+            default -> throw new IllegalArgumentException("Loại giao dịch không thuộc lịch sử xử lý đơn hàng.");
+        };
+        String note = event.getNote() == null || event.getNote().isBlank() ? null : event.getNote().trim();
+        return new AllocationResponse.ProcessingEvent(event.getCreatedAt(), description, note);
     }
 
     private Map<Long, String> orderCodesForLines(List<Long> lineIds, Long shopId) {
