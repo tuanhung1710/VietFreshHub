@@ -10,6 +10,32 @@ import java.util.Optional;
 
 @Repository
 public interface CatalogProductRepository extends JpaRepository<CatalogProduct, Long> {
+    interface ProductStatusCount {
+        String getStatus();
+        Long getProductCount();
+    }
+
+    @org.springframework.data.jpa.repository.Query("select p.status as status, count(p) as productCount from CatalogProduct p where p.status <> 'DELETED' group by p.status")
+    java.util.List<ProductStatusCount> countProductsByStatus();
+
+    interface ProductWithoutOrders {
+        String getProductName();
+        String getShopName();
+    }
+
+    @org.springframework.data.jpa.repository.Query(value = """
+            select p.name as productName, s.shopName as shopName from CatalogProduct p join p.shop s
+            where p.status <> 'DELETED' and not exists
+                (select i.orderItemId from VietFreshHub.order.entity.OrderItem i where i.variant.product = p)
+            order by p.name, p.productId
+            """, countQuery = """
+            select count(p) from CatalogProduct p
+            where p.status <> 'DELETED' and not exists
+                (select i.orderItemId from VietFreshHub.order.entity.OrderItem i where i.variant.product = p)
+            """)
+    org.springframework.data.domain.Page<ProductWithoutOrders> findProductsWithoutOrders(
+            org.springframework.data.domain.Pageable pageable);
+
     @org.springframework.data.jpa.repository.Query(value = "select p from CatalogProduct p join fetch p.shop s "
             + "where p.status = 'ACTIVE' and p.approvalStatus = 'APPROVED' and s.status = 'ACTIVE' "
             + "and exists (select c.categoryId from p.categories c where c.categoryId in :categoryIds) "
