@@ -32,6 +32,7 @@ class CatalogBrowseRepositoryTest {
         jdbc.execute("CREATE TABLE dbo.batch_markdowns(batch_id BIGINT,status VARCHAR,start_date DATE,end_date DATE,price DECIMAL(18,2))");
         jdbc.execute("CREATE TABLE dbo.order_items(variant_id BIGINT, shop_order_id BIGINT, quantity INT)");
         jdbc.execute("CREATE TABLE dbo.shop_orders(shop_order_id BIGINT, status VARCHAR)");
+        jdbc.execute("CREATE TABLE dbo.reviews(product_id BIGINT, rating INT, status VARCHAR)");
         jdbc.update("INSERT INTO dbo.shops VALUES(1,'ACTIVE','OPEN'),(2,'ACTIVE','CLOSED')");
         jdbc.update("INSERT INTO dbo.products VALUES(1,1,'Xoài','ACTIVE',0),(2,2,'Cam','ACTIVE',0),(3,1,'Hidden','ACTIVE',1)");
         jdbc.update("INSERT INTO dbo.product_categories VALUES(1,7),(2,7),(3,7)");
@@ -78,6 +79,13 @@ class CatalogBrowseRepositoryTest {
         jdbc.update("INSERT INTO dbo.shop_orders VALUES(1,'COMPLETED'),(2,'CANCELLED')");
         jdbc.update("INSERT INTO dbo.order_items VALUES(1,1,5),(2,2,999)");
         filter.setSort("best_selling");
+        assertEquals(List.of(1L, 2L), repository.search(filter, Set.of(7L)).getContent());
+    }
+
+    @Test
+    void ratingIgnoresUnapprovedReviewsAndUsesFractionalAverage() {
+        jdbc.update("INSERT INTO dbo.reviews VALUES(1,4,'APPROVED'),(1,5,'APPROVED'),(2,4,'APPROVED'),(2,5,'PENDING')");
+        filter.setSort("rating");
         assertEquals(List.of(1L, 2L), repository.search(filter, Set.of(7L)).getContent());
     }
 }

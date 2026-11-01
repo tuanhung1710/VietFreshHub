@@ -55,6 +55,10 @@ public class CatalogBrowseRepository {
         String order = switch (filter.getSort()) {
             case "price_asc" -> "offer.price ASC, p.product_id DESC";
             case "price_desc" -> "offer.price DESC, p.product_id DESC";
+            case "rating" -> """
+                    (SELECT COALESCE(AVG(CAST(r.rating AS DECIMAL(10,4))),0) FROM dbo.reviews r
+                    WHERE r.product_id=p.product_id AND r.status='APPROVED') DESC, p.product_id DESC
+                    """;
             case "best_selling" -> """
                     (SELECT COALESCE(SUM(CAST(i.quantity AS BIGINT)),0) FROM dbo.order_items i
                     JOIN dbo.product_variants sold ON sold.variant_id=i.variant_id

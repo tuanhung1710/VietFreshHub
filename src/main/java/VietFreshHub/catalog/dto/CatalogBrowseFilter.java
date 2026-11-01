@@ -18,7 +18,7 @@ public class CatalogBrowseFilter {
     private Long categoryId;
     @jakarta.validation.constraints.Pattern(regexp = "all|available|unavailable")
     private String availability = "all";
-    @jakarta.validation.constraints.Pattern(regexp = "newest|price_asc|price_desc|best_selling")
+    @jakarta.validation.constraints.Pattern(regexp = "newest|price_asc|price_desc|best_selling|rating")
     private String sort = "newest";
     @jakarta.validation.constraints.DecimalMin("0")
     @jakarta.validation.constraints.Digits(integer = 16, fraction = 0)
