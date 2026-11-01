@@ -30,18 +30,16 @@ public class CustomerCartViewController {
                 : CartDto.builder().totalItems(0).totalAmount(BigDecimal.ZERO).build();
     }
     @GetMapping({"/home", "/customer/home"})
-    public String showHomePage(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "") String keyword,
+    public String showHomePage(@Valid @ModelAttribute("filter") VietFreshHub.catalog.dto.CatalogBrowseFilter filter, BindingResult errors,
                               Authentication authentication, Model model) {
-        if (page < 1 || page > 10000) return "redirect:/home";
-        if (keyword.length() > 100) {
-            model.addAttribute("errorMessage", "Từ khóa tìm kiếm tối đa 100 ký tự.");
-            keyword = "";
-        }
         model.addAttribute("cart", populateActiveCart(authentication));
-        var products = catalogService.listProducts(page, keyword.trim());
+        var products = errors.hasErrors() ? org.springframework.data.domain.Page.<VietFreshHub.catalog.dto.CatalogProductResponse>empty()
+                : catalogService.listProducts(filter);
+        if (errors.hasErrors()) model.addAttribute("errorMessage", "Bộ lọc không hợp lệ. Vui lòng kiểm tra lại giá trị đã nhập.");
         model.addAttribute("products", products.getContent());
         model.addAttribute("productPage", products);
-        model.addAttribute("keyword", keyword.trim());
+        model.addAttribute("keyword", filter.getKeyword());
+        model.addAttribute("categories", catalogService.categories());
         return "customer/home";
     }
     @GetMapping({"/product-detail", "/product-detail/{variantId}"})

@@ -14,6 +14,7 @@ public class CatalogServiceImpl implements CatalogService {
     private final CatalogProductRepository products;
     private final CatalogVariantRepository variants;
     private final VietFreshHub.catalog.service.CatalogPricingService pricing;
+    private final CatalogBrowseRepository browse;
     public boolean isVisible(CatalogProduct p) {
         if (p == null || !"ACTIVE".equals(p.getStatus()) || p.isModerationBlocked()
                 || p.getShop() == null || !"ACTIVE".equals(p.getShop().getStatus())) return false;
@@ -30,13 +31,27 @@ public class CatalogServiceImpl implements CatalogService {
         return listProducts(page, "");
     }
     public org.springframework.data.domain.Page<CatalogProductResponse> listProducts(int page, String keyword) {
-        if (page < 1 || page > 10000) throw new IllegalArgumentException("Trang không hợp lệ.");
-        if (keyword == null || keyword.length() > 100) throw new IllegalArgumentException("Từ khóa tìm kiếm tối đa 100 ký tự.");
-        var result = products.findVisibleCatalog(keyword.trim(), org.springframework.data.domain.PageRequest.of(page - 1, 12,
-                org.springframework.data.domain.Sort.by("productId").descending()));
-        var offers = pricing.offers(result.getContent().stream().flatMap(p -> p.getVariants().stream())
+        var filter = new VietFreshHub.catalog.dto.CatalogBrowseFilter();
+        filter.setPage(page);
+        filter.setKeyword(keyword);
+        return listProducts(filter);
+    }
+
+    public List<CatalogCategory> categories() {
+        var categories = products.findCatalogCategories();
+        var active = VietFreshHub.catalog.service.CatalogCategoryPolicy.activeIds(categories);
+        return categories.stream().filter(c -> active.contains(c.getCategoryId()))
+                .sorted(Comparator.comparing(CatalogCategory::getName)).toList();
+    }
+
+    public org.springframework.data.domain.Page<CatalogProductResponse> listProducts(VietFreshHub.catalog.dto.CatalogBrowseFilter filter) {
+        if (filter.getPage() < 1 || filter.getPage() > 10000) throw new IllegalArgumentException("Trang không hợp lệ.");
+        if (filter.getKeyword() == null || filter.getKeyword().length() > 100) throw new IllegalArgumentException("Từ khóa tìm kiếm tối đa 100 ký tự.");
+        var ids = browse.search(filter, VietFreshHub.catalog.service.CatalogCategoryPolicy.matchingIds(products.findCatalogCategories(), filter.getCategoryId()));
+        var byId = products.findAllById(ids.getContent()).stream().collect(java.util.stream.Collectors.toMap(CatalogProduct::getProductId, java.util.function.Function.identity()));
+        var offers = pricing.offers(byId.values().stream().flatMap(p -> p.getVariants().stream())
                 .map(CatalogVariant::getVariantId).distinct().toList());
-        return result.map(p -> toResponse(p, null, offers));
+        return ids.map(id -> toResponse(byId.get(id), null, offers));
     }
     public CatalogProductResponse getProduct(Long variantId, Long productId, String slug) {
         CatalogProduct p;
@@ -54,7 +69,8 @@ public class CatalogServiceImpl implements CatalogService {
         var offers = pricing.offers(p.getVariants().stream().map(CatalogVariant::getVariantId).toList());
         return toResponse(p, variantId, offers);
     }
-    private CatalogProductResponse toResponse(CatalogProduct p, Long selectedId, java.util.Map<Long, VietFreshHub.catalog.service.CatalogPricingService.Offer> offers) {
+    private CatalogProductResponse toResponse(CatalogProduct p, Long selectedId,
+            java.util.Map<Long, VietFreshHub.catalog.service.CatalogPricingService.Offer> offers) {
         var options = p.getVariants().stream().filter(v -> "ACTIVE".equals(v.getStatus()) || "OUT_OF_STOCK".equals(v.getStatus())).map(v -> {
             var offer = offers.get(v.getVariantId());
             int available = offer == null ? 0 : offer.availableStock();
