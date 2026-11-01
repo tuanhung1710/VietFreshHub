@@ -14,6 +14,7 @@ public class ProductImageWebConfig implements WebMvcConfigurer {
 
     private final ProductImageStorageService productImageStorageService;
 
+    /** Ánh xạ URL ảnh tải lên tới thư mục lưu ảnh sản phẩm trên máy chủ. */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         String resourceLocation =

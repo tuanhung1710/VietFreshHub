@@ -997,7 +997,7 @@ public class ProductServiceImpl implements ProductService {
                         && form.getVariants().size() <= 20,
                 "Mỗi sản phẩm cần từ 1 đến 20 phân loại.");
         for (VariantRequest variant : form.getVariants()) {
-            // New SKUs are assigned by the server after IDENTITY is available.
+            // Máy chủ cấp SKU sau khi cơ sở dữ liệu sinh ID, không dùng mã gửi từ biểu mẫu.
             variant.setSku(null);
             validateVariantFields(variant, null);
             initialQuantity(variant);
@@ -1005,6 +1005,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     private int initialQuantity(VariantRequest form) {
+        // Tạo SKU chưa nhập hàng không yêu cầu dữ liệu lô, nhưng số lượng phải trống hoặc bằng 0.
         if (form.isNoInitialStock()) {
             require(
                     form.getInitialQuantity() == null || form.getInitialQuantity() == 0,
@@ -1014,8 +1015,7 @@ public class ProductServiceImpl implements ProductService {
         require(
                 form.getInitialQuantity() != null && form.getInitialQuantity() > 0,
                 "Nhập số lượng lớn hơn 0 hoặc chọn Chưa nhập hàng.");
-        form.setExpiryDate(InventoryRules.resolveExpiryDate(
-                form.getReceivedDate(), form.getShelfLifeDays(), form.getExpiryDate()));
+        // Nếu nhập hàng ngay, kiểm tra ngày nhập, hạn sử dụng được nhập trực tiếp và giá vốn.
         InventoryRules.dates(form.getReceivedDate(), form.getExpiryDate(), today());
         require(
                 form.getCostPrice() == null || form.getCostPrice().signum() >= 0,
@@ -1028,7 +1028,7 @@ public class ProductServiceImpl implements ProductService {
         ProductVariant variant = new ProductVariant();
         variant.setProductId(product.getProductId());
         applyVariantFields(variant, form);
-        // Both writes are in this transaction; the temporary SKU is never committed.
+        // Lưu SKU tạm để lấy ID rồi thay bằng mã chính thức trước khi hoàn tất giao dịch.
         variant.setSku("TMP-" + UUID.randomUUID());
         variant.setStatus(VariantStatus.OUT_OF_STOCK);
         if (quantity > 0) {
@@ -1042,6 +1042,7 @@ public class ProductServiceImpl implements ProductService {
         form.setSku(sku);
         savePrimaryImage(product.getProductId(), variant.getVariantId(), form.getThumbnailUrl());
         recordPriceChange(variant, actorId);
+        // Chỉ tạo lô và biến động kho khi người bán thực sự nhập số lượng ban đầu.
         if (quantity > 0) {
             createInitialBatch(variant, form, quantity, actorId);
         }
@@ -1049,6 +1050,7 @@ public class ProductServiceImpl implements ProductService {
 
     private void createInitialBatch(
             ProductVariant variant, VariantRequest form, int quantity, Long actorId) {
+        // Lô đầu tiên chứa lượng vừa nhập; chưa có phần nào được giữ cho đơn.
         InventoryBatch batch = new InventoryBatch();
         batch.setVariantId(variant.getVariantId());
         batch.setQuantityOnHand(quantity);
@@ -1060,6 +1062,7 @@ public class ProductServiceImpl implements ProductService {
         batch.setCreatedAt(now());
         batch.setUpdatedAt(now());
         inventoryBatchRepository.saveAndFlush(batch);
+        // Cần ID lô trước khi ghi biến động nhập kho và lịch sử thao tác tham chiếu tới lô.
         inventoryJournalService.stock(
                 variant.getVariantId(),
                 batch.getBatchId(),
@@ -1231,14 +1234,17 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public void addVariant(Authentication authentication, Long productId, VariantRequest form) {
-        Product product = getOwnedProduct(authentication, productId, true);
+        Product product = getOwnedProductForUpdate(authentication, productId);
         requireWritableProduct(product);
+        require(productVariantRepository.countByProductIdAndStatusNot(productId, VariantStatus.DELETED) < 20,
+                "Mỗi sản phẩm có tối đa 20 phân loại. Xóa phân loại cũ trước khi thêm mới.");
         form.setSku(null);
         validateVariantFields(form, null);
         initialQuantity(form);
         String changeReason = reason(form.getReason());
         Long actorId = authService.getCurrentUserId(authentication);
         requestReapproval(product);
+        // Thông tin SKU mới cần hậu kiểm; việc tạo SKU không tự đổi trạng thái bán của sản phẩm.
         createVariant(product, form, actorId);
         inventoryJournalService.audit(
                 actorId,
@@ -1252,14 +1258,15 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public void updateVariant(
             Authentication authentication, Long productId, Long variantId, VariantRequest form) {
-        Product product = getOwnedProduct(authentication, productId, true);
+        Product product = getOwnedProductForUpdate(authentication, productId);
         requireWritableProduct(product);
         ProductVariant variant = getVariantForUpdate(productId, variantId);
         require(variant.getStatus() != VariantStatus.DELETED, "Phân loại đã ngừng kinh doanh.");
-        // Ignore an altered or empty SKU submitted by the client.
+        // SKU không được sửa; luôn dùng mã đang lưu thay cho giá trị gửi từ trình duyệt.
         form.setSku(variant.getSku());
         validateVariantFields(form, variant);
         String changeReason = reason(form.getReason());
+        // Tách thay đổi cấu trúc, giá và trường khác để quyết định hậu kiểm và loại lịch sử cần ghi.
         boolean structureChanged = variantStructureChanged(variant, form);
         boolean otherFieldsChanged = structureChanged
                 || !Objects.equals(variant.getThumbnailUrl(), form.getThumbnailUrl().trim())
@@ -1276,6 +1283,7 @@ public class ProductServiceImpl implements ProductService {
         savePrimaryImage(productId, variantId, form.getThumbnailUrl());
         Long actorId = authService.getCurrentUserId(authentication);
         if (priceChanged) {
+            // Lịch sử hiệu lực giá chỉ ghi khi giá bán thực sự đổi; giá gạch ngang được ghi trong audit.
             recordPriceChange(variant, actorId);
         }
         if (priceChanged || compareAtPriceChanged || otherFieldsChanged) {

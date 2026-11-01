@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ProductDraftServiceImpl implements ProductDraftService {
+    /** Thêm dòng phân loại vào bản nháp, tối đa 20 dòng; chưa lưu vào cơ sở dữ liệu. */
     @Override
     public void addVariant(ProductRequest form) {
         require(form.getVariants() != null && form.getVariants().size() < 20,
@@ -17,6 +18,7 @@ public class ProductDraftServiceImpl implements ProductDraftService {
         form.getVariants().add(new VariantRequest());
     }
 
+    /** Xóa dòng phân loại hợp lệ trong bản nháp nhưng luôn giữ lại ít nhất một dòng. */
     @Override
     public void removeVariant(ProductRequest form, int index) {
         variantAt(form, index);
@@ -24,6 +26,7 @@ public class ProductDraftServiceImpl implements ProductDraftService {
         form.getVariants().remove(index);
     }
 
+    /** Gán ảnh sản phẩm hiện có làm ảnh của dòng phân loại được chọn trong bản nháp. */
     @Override
     public void useProductImage(ProductRequest form, int index) {
         VariantRequest variant = variantAt(form, index);
@@ -32,6 +35,7 @@ public class ProductDraftServiceImpl implements ProductDraftService {
         variant.setThumbnailUrl(form.getImageUrl());
     }
 
+    /** Lấy dòng phân loại trong bản nháp sau khi kiểm tra danh sách và chỉ số hợp lệ. */
     private VariantRequest variantAt(ProductRequest form, int index) {
         require(form.getVariants() != null && index >= 0 && index < form.getVariants().size(),
                 "Phân loại không hợp lệ.");

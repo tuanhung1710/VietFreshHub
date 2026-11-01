@@ -252,7 +252,8 @@
     white-space: nowrap;
 }
 
-.vf-product-more {
+.vf-product-more,
+.vf-product-icon-action {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -284,7 +285,8 @@
     .vf-product-action-menu .dropdown-item {
         min-height: 44px;
     }
-    .vf-product-more {
+    .vf-product-more,
+    .vf-product-icon-action {
         width: 44px;
         min-height: 44px;
     }
