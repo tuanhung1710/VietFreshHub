@@ -11,6 +11,7 @@ public record NotificationRow(Long notificationId, String type, String title, St
             return false;
         }
         return switch (type) {
+            case "REVIEW_REMINDER" -> "CUSTOMER_ORDER".equals(entityType);
             case "DELIVERY_ASSIGNED", "GOODS_RETURN_CONFIRMED" -> "DELIVERY_ASSIGNMENT".equals(entityType);
             case "DELIVERY_STARTED", "DELIVERY_COMPLETED", "DELIVERY_FAILED" -> "DELIVERY".equals(entityType);
             default -> false;
