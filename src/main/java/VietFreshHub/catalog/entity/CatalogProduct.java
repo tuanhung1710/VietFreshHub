@@ -102,7 +102,10 @@ public class CatalogProduct {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    // Each variant is refreshed under its own lock during checkout.
+    @OneToMany(mappedBy = "product", cascade = {
+            CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE, CascadeType.DETACH
+    }, orphanRemoval = true)
     @org.hibernate.annotations.BatchSize(size = 16)
     private List<CatalogVariant> variants = new ArrayList<>();
 

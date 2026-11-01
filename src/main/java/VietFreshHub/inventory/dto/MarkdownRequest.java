@@ -1,6 +1,7 @@
 package VietFreshHub.inventory.dto;
 
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -20,6 +21,7 @@ public class MarkdownRequest {
     @NotNull(message = "Vui lòng nhập giá giảm.")
     @DecimalMin(value = "1", message = "Giá giảm phải từ 1 đ.")
     @Digits(integer = 16, fraction = 0, message = "Giá giảm phải là số nguyên đồng, tối đa 16 chữ số.")
+    @DecimalMax(value = "9999999999999999", message = "Giá trị vượt giới hạn cho phép.")
     private BigDecimal price;
 
     @NotNull(message = "Vui lòng chọn ngày kết thúc giảm giá.")

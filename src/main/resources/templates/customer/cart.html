@@ -75,6 +75,7 @@
             <div class="summary-line"><span>Tiền sản phẩm</span><strong id="selected-subtotal" th:text="${#numbers.formatInteger(cart.totalAmount,0,'POINT')} + ' ₫'"></strong></div>
             <div class="summary-line summary-total"><span>Tạm tính</span><span id="selected-grand-total" class="price" th:text="${#numbers.formatInteger(cart.totalAmount,0,'POINT')} + ' ₫'"></span></div>
             <p th:if="${cart.hasUnavailableItems}" class="muted">Sản phẩm chưa thể mua không được chọn. Bạn vẫn có thể đặt các sản phẩm khả dụng còn lại.</p>
+            <p class="muted summary-footnote">Thêm vào giỏ chưa giữ hàng. Giá và tồn kho được kiểm tra khi đặt hàng; hàng chỉ được giữ khi cửa hàng xác nhận đơn.</p>
             <button id="checkout-selected-button" class="button full" type="submit" form="checkout-selection" th:disabled="${selectableCount == 0}">Đặt sản phẩm đã chọn</button>
             <noscript><p class="muted">Tổng tiền theo lựa chọn sẽ được kiểm tra lại tại trang đặt hàng.</p></noscript>
         </aside>

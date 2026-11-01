@@ -77,6 +77,10 @@ public class InventoryServiceImpl implements InventoryService {
     private final InventoryOrderLineRepository inventoryOrderLineRepository;
     private final ShopOrderRepository shopOrderRepository;
 
+    /**
+     * Nhập lô mới cho phân loại thuộc cửa hàng và ghi lịch sử kho.
+     * Nếu phân loại đang hết hàng, chuyển lại sang trạng thái hoạt động sau khi nhập.
+     */
     @Override
     @Transactional
     public void restock(Authentication authentication, Long variantId, BatchRequest form) {
@@ -101,6 +105,7 @@ public class InventoryServiceImpl implements InventoryService {
             productVariantRepository.save(variant);
         }
 
+        // Ghi số lượng tăng trong nhật ký kho và lý do thao tác trong lịch sử hoạt động.
         Long actorId = authService.getCurrentUserId(authentication);
         inventoryJournalService.stock(
                 variantId,
@@ -119,6 +124,7 @@ public class InventoryServiceImpl implements InventoryService {
                 changeReason + "; 0 → " + form.getQuantity());
     }
 
+    /** Lưu lô nhập với lượng giữ bằng 0 và chuyển ngày nhập tại Việt Nam sang thời điểm UTC. */
     private InventoryBatch createBatch(Long variantId, BatchRequest form) {
         InventoryBatch batch = new InventoryBatch();
         batch.setVariantId(variantId);
@@ -133,6 +139,9 @@ public class InventoryServiceImpl implements InventoryService {
         return inventoryBatchRepository.saveAndFlush(batch);
     }
 
+    /**
+     * Tạo biểu mẫu sửa lô từ dữ liệu đã kiểm tra quyền, đổi thời điểm nhập về ngày tại Việt Nam.
+     */
     @Override
     public BatchRequest batchForm(Authentication authentication, Long batchId) {
         InventoryBatch batch = getOwnedBatchForRead(authentication, batchId);
@@ -144,6 +153,9 @@ public class InventoryServiceImpl implements InventoryService {
         return form;
     }
 
+    /**
+     * Cập nhật ngày nhập, hạn sử dụng và giá vốn của lô, đồng thời ghi lại thông tin trước và sau sửa.
+     */
     @Override
     @Transactional
     public void updateBatch(Authentication authentication, Long batchId, BatchRequest form) {
@@ -153,6 +165,7 @@ public class InventoryServiceImpl implements InventoryService {
         String changeReason = reason(form.getReason());
         validateBatchDates(batch, form);
 
+        // Chụp mô tả cũ trước khi gán dữ liệu mới để lịch sử thể hiện được thay đổi.
         String before = describeBatchDatesAndCost(batch);
         batch.setExpiryDate(form.getExpiryDate());
         batch.setCostPrice(form.getCostPrice());
@@ -168,6 +181,10 @@ public class InventoryServiceImpl implements InventoryService {
                 changeReason + "; " + before + " → " + describeBatchDatesAndCost(batch));
     }
 
+    /**
+     * Kiểm tra ngày nhập và hạn sử dụng khi sửa lô.
+     * Nếu đổi hạn, lô cũ phải chưa hết hạn và hạn mới phải hợp lệ tại ngày hiện tại.
+     */
     private void validateBatchDates(InventoryBatch batch, BatchRequest form) {
         LocalDate date = today();
         require(
@@ -184,16 +201,22 @@ public class InventoryServiceImpl implements InventoryService {
                 "Hạn sử dụng không được trước ngày nhập kho.");
     }
 
+    /** Tạo mô tả hạn sử dụng và giá vốn để ghi lịch sử trước, sau khi chỉnh sửa lô. */
     private String describeBatchDatesAndCost(InventoryBatch batch) {
         return "Hạn sử dụng: " + batch.getExpiryDate() + " / Giá vốn: " + batch.getCostPrice();
     }
 
+    /** Cho phép bỏ trống giá vốn nhưng từ chối giá trị âm. */
     private void validateCost(BatchRequest form) {
         require(
                 form.getCostPrice() == null || form.getCostPrice().signum() >= 0,
                 "Giá vốn không được âm.");
     }
 
+    /**
+     * Điều chỉnh tồn thực tế của lô sau khi kiểm tra quyền và số lượng giữ cho đơn.
+     * Ghi cả biến động kho và lịch sử thao tác với lý do điều chỉnh.
+     */
     @Override
     @Transactional
     public void adjust(Authentication authentication, Long batchId, StockChangeRequest form) {
@@ -223,6 +246,10 @@ public class InventoryServiceImpl implements InventoryService {
                 changeReason + "; " + previousQuantity + " → " + nextQuantity);
     }
 
+    /**
+     * Hủy toàn bộ phần chưa giữ cho đơn của một lô hết hạn.
+     * Trả về số lô đã hủy và số lô vẫn còn hàng giữ để người bán tiếp tục xử lý đơn.
+     */
     @Override
     @Transactional
     public DisposalResult dispose(Authentication authentication, Long batchId) {
@@ -316,12 +343,14 @@ public class InventoryServiceImpl implements InventoryService {
                         + batch.getReservedQuantity());
     }
 
+    /** Lưu số lượng tồn thực tế mới của lô và cập nhật thời điểm thay đổi. */
     private void updateQuantity(InventoryBatch batch, int quantity) {
         batch.setQuantityOnHand(quantity);
         batch.setUpdatedAt(now());
         inventoryBatchRepository.save(batch);
     }
 
+    /** Khóa hoặc mở khóa lô và ghi lý do, giữ nguyên lượng hàng đã giữ cho đơn. */
     @Override
     @Transactional
     public void block(Authentication authentication, Long batchId, boolean blocked, String value) {
@@ -345,6 +374,10 @@ public class InventoryServiceImpl implements InventoryService {
                 changeReason + "; giữ nguyên số lượng đã giữ cho đơn: " + batch.getReservedQuantity());
     }
 
+    /**
+     * Thiết lập giá giảm cho lô đủ điều kiện và hủy các đợt giảm giá đang bật trước đó.
+     * Kiểm tra giá, hạn áp dụng và quyền quản lý lô trước khi lưu.
+     */
     @Override
     @Transactional
     public void markdown(Authentication authentication, Long batchId, MarkdownRequest form) {
@@ -386,6 +419,7 @@ public class InventoryServiceImpl implements InventoryService {
                         + form.getEndDate());
     }
 
+    /** Dừng giảm giá của lô thuộc cửa hàng và ghi lý do vào lịch sử thao tác. */
     @Override
     @Transactional
     public void cancelMarkdown(Authentication authentication, Long batchId, String value) {
@@ -400,6 +434,7 @@ public class InventoryServiceImpl implements InventoryService {
                 changeReason);
     }
 
+    /** Chuyển tất cả đợt giảm giá đang bật của lô sang trạng thái đã hủy. */
     private void cancelActiveMarkdowns(Long batchId) {
         List<BatchMarkdown> markdowns =
                 batchMarkdownRepository.findByBatchIdAndStatus(batchId, MarkdownStatus.ACTIVE);
@@ -409,12 +444,14 @@ public class InventoryServiceImpl implements InventoryService {
         }
     }
 
+    /** Đọc lịch sử hoạt động theo bộ lọc, gồm nhãn đối tượng và người thao tác. */
     @Override
     public Page<AuditResponse> activityHistory(Authentication authentication,
             ActivityHistoryFilter filters, int page, int size) {
         return activityHistoryService.search(authentication, filters, page, size);
     }
 
+    /** Lấy chi tiết lô thuộc cửa hàng, gồm tồn kho, hạn, giảm giá, phân bổ và mã đơn liên quan. */
     @Override
     public BatchResponse batch(Authentication authentication, Long batchId) {
         InventoryBatch batch = getOwnedBatchForRead(authentication, batchId);
@@ -482,6 +519,10 @@ public class InventoryServiceImpl implements InventoryService {
         return productAvailabilityService.canSellVariant(product.getShopId(), variant);
     }
 
+    /**
+     * Tìm đợt giảm giá đang bật có khoảng ngày bao gồm ngày tra cứu.
+     * Hàm này chỉ xét trạng thái và ngày của đợt giảm, không kiểm tra điều kiện của lô.
+     */
     private BatchMarkdown findCurrentMarkdown(Long batchId, LocalDate date) {
         for (BatchMarkdown markdown :
                 batchMarkdownRepository.findByBatchIdAndStatus(batchId, MarkdownStatus.ACTIVE)) {
