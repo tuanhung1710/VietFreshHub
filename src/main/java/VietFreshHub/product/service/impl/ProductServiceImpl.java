@@ -1138,16 +1138,16 @@ public class ProductServiceImpl implements ProductService {
                 "Chọn từ 1 đến 50 sản phẩm trên trang hiện tại.");
         require(form.getStatus() == ProductStatus.ACTIVE || form.getStatus() == ProductStatus.INACTIVE
                         || form.getStatus() == ProductStatus.DELETED,
-                "Chọn Tạm ẩn, Mở bán hoặc Ngừng kinh doanh.");
+                "Chọn Tạm ẩn, Mở bán hoặc Xóa sản phẩm.");
         reason(form.getReason());
         require(form.getProductIds().stream().allMatch(id -> id != null && id > 0), "Danh sách sản phẩm không hợp lệ.");
         List<Long> ids = form.getProductIds().stream().distinct().sorted().toList();
         require(ids.size() == form.getProductIds().size(),
                 "Danh sách sản phẩm không hợp lệ.");
-        // Lock in ID order and check the entire selection before writing. The outer transaction
-        // also rolls back every status/audit entry if an existing activation rule rejects one item.
+        // Khóa theo ID và kiểm tra toàn bộ lựa chọn trước khi đổi trạng thái.
+        // Nếu một sản phẩm bị từ chối, giao dịch hoàn tác cả trạng thái và lịch sử đã ghi.
         for (Long id : ids) {
-            Product product = getOwnedProduct(authentication, id, true);
+            Product product = getOwnedProductForUpdate(authentication, id);
             requireWritableProduct(product);
             require(form.getStatus() == ProductStatus.DELETED
                             || product.getStatus() == (form.getStatus() == ProductStatus.ACTIVE ? ProductStatus.INACTIVE : ProductStatus.ACTIVE),
@@ -1155,23 +1155,27 @@ public class ProductServiceImpl implements ProductService {
             if (form.getStatus() == ProductStatus.DELETED) {
                 for (ProductVariant variant : productVariantRepository.findByProductIdOrderByVariantId(id)) {
                     require(!hasReservedStock(variant.getVariantId()),
-                            "Không thể ngừng kinh doanh sản phẩm còn số lượng chờ xuất kho. Chưa có sản phẩm nào được thay đổi.");
+                            "Không thể xóa sản phẩm còn số lượng chờ xuất kho. Chưa có sản phẩm nào được thay đổi.");
                 }
             }
         }
-        for (Long id : ids) changeStatus(authentication, id, form);
+        for (Long id : ids) {
+            changeStatus(authentication, id, form);
+        }
     }
 
     @Override
     @Transactional
     public void changeStatus(Authentication authentication, Long productId, ActionRequest form) {
-        Product product = getOwnedProduct(authentication, productId, true);
+        // Giữ nguyên dữ liệu kho và lịch sử; thao tác này chỉ đổi trạng thái kinh doanh.
+        Product product = getOwnedProductForUpdate(authentication, productId);
         requireWritableProduct(product);
         String changeReason = reason(form.getReason());
         require(form.getStatus() != null, "Chọn trạng thái sản phẩm hợp lệ.");
         List<ProductVariant> variants =
                 productVariantRepository.findByProductIdOrderByVariantId(productId);
         if (form.getStatus() == ProductStatus.ACTIVE) {
+            // Mở bán cần danh mục hợp lệ và ít nhất một SKU đang bật; chủ shop không tự gỡ khóa Admin.
             require(
                     !product.isModerationBlocked(),
                     "Sản phẩm đang bị Admin khóa. Chủ shop không thể tự mở khóa.");
@@ -1182,9 +1186,10 @@ public class ProductServiceImpl implements ProductService {
         }
         if (form.getStatus() == ProductStatus.DELETED) {
             for (ProductVariant variant : variants) {
+                // Chưa được ngừng kinh doanh khi còn hàng giữ để thực hiện đơn đã nhận.
                 require(
                         !hasReservedStock(variant.getVariantId()),
-                        "Không thể ngừng kinh doanh sản phẩm còn số lượng chờ xuất kho.");
+                        "Không thể xóa sản phẩm còn số lượng chờ xuất kho.");
             }
         }
         ProductStatus previousStatus = product.getStatus();
@@ -1331,27 +1336,28 @@ public class ProductServiceImpl implements ProductService {
             Long productId,
             Long variantId,
             VariantActionRequest form) {
-        Product product = getOwnedProduct(authentication, productId, true);
+        if (form.getStatus() == VariantStatus.DELETED) {
+            deleteVariant(authentication, productId, variantId, form.getReason());
+            return;
+        }
+        Product product = getOwnedProductForUpdate(authentication, productId);
         requireWritableProduct(product);
         ProductVariant variant = getVariantForUpdate(productId, variantId);
         require(variant.getStatus() != VariantStatus.DELETED, "Phân loại đã ngừng kinh doanh.");
         VariantStatus requestedStatus = form.getStatus();
         require(
                 requestedStatus == VariantStatus.ACTIVE
-                        || requestedStatus == VariantStatus.INACTIVE
-                        || requestedStatus == VariantStatus.DELETED,
-                "Chọn trạng thái phân loại hợp lệ.");
+                        || requestedStatus == VariantStatus.INACTIVE,
+                "Chọn Mở bán, Tạm ẩn hoặc Xóa phân loại.");
         String changeReason = reason(form.getReason());
-        if (requestedStatus == VariantStatus.DELETED) {
-            require(!hasReservedStock(variantId), "Không thể ngừng kinh doanh phân loại còn số lượng chờ xuất kho.");
-        }
         if (requestedStatus != VariantStatus.ACTIVE
                 && product.getStatus() == ProductStatus.ACTIVE) {
+            // Bỏ qua chính SKU đang đổi để kiểm tra sản phẩm vẫn còn SKU khác đang bật.
             List<ProductVariant> variants =
                     productVariantRepository.findByProductIdOrderByVariantId(productId);
             require(
                     hasOpenVariant(variants, variantId),
-                    "Tạm ẩn sản phẩm trước khi tạm dừng hoặc ngừng kinh doanh phân loại cuối cùng.");
+                    "Tạm ẩn sản phẩm trước khi tạm ẩn phân loại mở bán cuối cùng.");
         }
         VariantStatus previousStatus = variant.getStatus();
         variant.setStatus(requestedStatus);
@@ -1377,10 +1383,10 @@ public class ProductServiceImpl implements ProductService {
 
     private String variantStatusLabel(VariantStatus status) {
         return switch (status) {
-            case ACTIVE -> "Bật phân loại";
-            case INACTIVE -> "Tạm dừng phân loại";
-            case OUT_OF_STOCK -> "Hết hàng";
-            case DELETED -> "Ngừng kinh doanh phân loại";
+            case ACTIVE -> "Mở bán";
+            case INACTIVE -> "Tạm ẩn";
+            case OUT_OF_STOCK -> "Mở bán (hết hàng)";
+            case DELETED -> "Xóa phân loại";
         };
     }
 
@@ -1474,6 +1480,36 @@ public class ProductServiceImpl implements ProductService {
         product.setStatus(businessStatus);
         productRepository.saveAndFlush(product);
 
+    }
+
+    @Override
+    @Transactional
+    public void deleteVariant(
+            Authentication authentication, Long productId, Long variantId, String deletionReason) {
+        Product product = getOwnedProductForUpdate(authentication, productId);
+        requireWritableProduct(product);
+        ProductVariant variant = getVariantForUpdate(productId, variantId);
+        require(variant.getStatus() != VariantStatus.DELETED, "Phân loại đã được xóa hoặc ngừng kinh doanh.");
+        String changeReason = reason(deletionReason);
+        require(!hasReservedStock(variantId),
+                "Không thể xóa phân loại còn số lượng chờ xuất kho. Hãy xử lý các đơn liên quan trước.");
+
+        Long actorId = authService.getCurrentUserId(authentication);
+        if (product.getStatus() == ProductStatus.ACTIVE
+                && !hasOpenVariant(productVariantRepository.findByProductIdOrderByVariantId(productId), variantId)) {
+            product.setStatus(ProductStatus.INACTIVE);
+            product.setSellerHidden(true);
+            product.setUpdatedAt(now());
+            productRepository.saveAndFlush(product);
+            inventoryJournalService.audit(actorId, "STATUS", "PRODUCT", productId,
+                    "Mở bán → Tạm ẩn: xóa phân loại đang bật cuối cùng (" + variant.getSku() + "). " + changeReason);
+        }
+
+        variant.setStatus(VariantStatus.DELETED);
+        variant.setUpdatedAt(now());
+        productVariantRepository.save(variant);
+        inventoryJournalService.audit(actorId, "DELETE", "VARIANT", variantId,
+                "Xóa phân loại " + variant.getSku() + ": " + changeReason);
     }
 
 }

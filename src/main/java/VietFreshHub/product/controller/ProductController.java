@@ -1,5 +1,11 @@
 package VietFreshHub.product.controller;
 
+import VietFreshHub.product.enums.VariantStatus;
+
+import VietFreshHub.product.enums.ProductStatus;
+
+import VietFreshHub.product.dto.VariantDeleteRequest;
+
 import org.springframework.dao.DataIntegrityViolationException;
 
 import VietFreshHub.product.exception.DuplicateProductNameException;
@@ -36,6 +42,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 @RequestMapping("/seller/products")
 public class ProductController {
+
+    private static final String VARIANT_DELETED_MESSAGE =
+            "Đã xóa phân loại khỏi danh sách. Lịch sử và tồn kho vẫn được lưu. "
+                    + "Nếu không còn phân loại đang bật, sản phẩm đã tự tạm ẩn.";
 
     private final ProductService productService;
     private final ShopService shopService;
@@ -168,7 +178,7 @@ public class ProductController {
             @RequestParam(defaultValue = "false") boolean returnToList,
             @ModelAttribute("filters") ProductCatalogFilter filters,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "15") int size,
+            @RequestParam(defaultValue = "5") int size,
             RedirectAttributes flash) {
         if (errors.hasErrors()) {
             flash.addFlashAttribute("error", "Chọn trạng thái và nhập lý do thay đổi, tối đa 900 ký tự.");
@@ -176,6 +186,10 @@ public class ProductController {
         }
         try {
             productService.changeStatus(authentication, id, form);
+            if (form.getStatus() == ProductStatus.DELETED) {
+                flash.addFlashAttribute("success", "Đã xóa sản phẩm. Tồn kho và lịch sử vẫn được lưu trong Kho hàng.");
+                return listRedirect(filters, page, size, flash);
+            }
             flash.addFlashAttribute("success", "Đã cập nhật trạng thái sản phẩm.");
         } catch (CatalogException exception) {
             flash.addFlashAttribute("error", exception.getMessage());
@@ -289,18 +303,23 @@ public class ProductController {
             @PathVariable Long variant,
             @Valid @ModelAttribute VariantActionRequest form,
             BindingResult errors,
+            @RequestParam(defaultValue = "false") boolean returnToList,
+            @ModelAttribute("filters") ProductCatalogFilter filters,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "5") int size,
             RedirectAttributes flash) {
         if (errors.hasErrors()) {
-            flash.addFlashAttribute("error", "Chọn trạng thái và nhập lý do thay đổi.");
-            return productRedirect(id);
+            flash.addFlashAttribute("error", "Chọn trạng thái và nhập lý do thay đổi, tối đa 900 ký tự.");
+            return returnToList ? listRedirect(filters, page, size, flash) : productRedirect(id);
         }
         try {
             productService.changeVariantStatus(authentication, id, variant, form);
-            flash.addFlashAttribute("success", "Đã cập nhật trạng thái phân loại.");
+            flash.addFlashAttribute("success", form.getStatus() == VariantStatus.DELETED
+                    ? VARIANT_DELETED_MESSAGE : "Đã cập nhật trạng thái phân loại.");
         } catch (CatalogException exception) {
             flash.addFlashAttribute("error", exception.getMessage());
         }
-        return productRedirect(id);
+        return returnToList ? listRedirect(filters, page, size, flash) : productRedirect(id);
     }
 
     @GetMapping("/{id}/variants/{variant}/prices")
@@ -348,6 +367,31 @@ public class ProductController {
         }
         // Vi phạm ràng buộc khác phải được xử lý theo lỗi dữ liệu chung, không báo nhầm là trùng tên.
         throw exception;
+    }
+
+    @PostMapping("/{id}/variants/{variant}/delete")
+    public String deleteVariant(
+            Authentication authentication,
+            @PathVariable Long id,
+            @PathVariable Long variant,
+            @Valid @ModelAttribute VariantDeleteRequest form,
+            BindingResult errors,
+            @RequestParam(defaultValue = "false") boolean returnToList,
+            @ModelAttribute("filters") ProductCatalogFilter filters,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "5") int size,
+            RedirectAttributes flash) {
+        if (errors.hasErrors()) {
+            flash.addFlashAttribute("error", "Nhập lý do xóa phân loại, tối đa 900 ký tự.");
+            return returnToList ? listRedirect(filters, page, size, flash) : productRedirect(id);
+        }
+        try {
+            productService.deleteVariant(authentication, id, variant, form.getReason());
+            flash.addFlashAttribute("success", VARIANT_DELETED_MESSAGE);
+        } catch (CatalogException exception) {
+            flash.addFlashAttribute("error", exception.getMessage());
+        }
+        return returnToList ? listRedirect(filters, page, size, flash) : productRedirect(id);
     }
 
 }

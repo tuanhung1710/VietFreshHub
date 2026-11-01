@@ -91,4 +91,6 @@ public interface ProductService {
 
     Page<PriceHistory> priceHistory(
             Authentication authentication, Long productId, Long variantId, int page);
+    void deleteVariant(Authentication authentication, Long productId, Long variantId, String reason);
+
 }
