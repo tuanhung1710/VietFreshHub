@@ -24,6 +24,13 @@ public class CustomerCartViewController {
     private final CurrentCustomerService currentCustomer;
     private final VietFreshHub.shop.service.ShopBrowseService shops;
 
+    @ExceptionHandler(ResourceNotFoundException.class)
+    @ResponseStatus(org.springframework.http.HttpStatus.NOT_FOUND)
+    public String productUnavailable(ResourceNotFoundException exception, Model model) {
+        model.addAttribute("message", exception.getMessage());
+        return "customer/catalog-error";
+    }
+
     private CartDto populateActiveCart(Authentication authentication) {
         boolean customer = authentication != null && authentication.isAuthenticated()
                 && authentication.getAuthorities().stream().anyMatch(a -> "ROLE_CUSTOMER".equals(a.getAuthority()));

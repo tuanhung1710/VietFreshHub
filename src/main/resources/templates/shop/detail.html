@@ -1,26 +1,31 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title th:text="${shop.shopName}">Cửa hàng</title></head>
-<body>
-<nav><a th:href="@{/home}">Sản phẩm</a> · <a th:href="@{/shops}">Danh sách cửa hàng</a></nav>
-<h1 th:text="${shop.shopName}"></h1>
-<p th:if="${successMessage}" role="status" th:text="${successMessage}"></p>
-<form th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" method="post" th:action="@{/shops/{id}/favorite(id=${shop.shopId})}">
-    <input type="hidden" name="favorite" th:value="${!favorite}"><button th:text="${favorite ? 'Bỏ yêu thích' : 'Yêu thích cửa hàng'}"></button>
-</form>
-<p th:if="${#authorization.expression('!isAuthenticated()')}"><a th:href="@{/login}">Đăng nhập để yêu thích cửa hàng</a></p>
-<p><a th:href="@{/shops/{id}/products(id=${shop.shopId})}">Xem sản phẩm của cửa hàng</a></p>
-<p><a th:href="@{/shops/{id}/offers(id=${shop.shopId})}">Khuyến mãi và mã giảm giá</a></p>
-<p th:text="${shop.description}"></p>
-<dl>
-    <dt>Điện thoại</dt><dd th:text="${shop.phone}"></dd>
-    <dt>Email</dt><dd th:text="${shop.email}"></dd>
-    <dt>Nhận đơn</dt><dd th:text="${shop.availabilityStatus == 'OPEN' ? 'Đang nhận đơn' : 'Tạm ngừng nhận đơn'}"></dd>
-    <dt th:if="${location != null}">Địa chỉ</dt>
-    <dd th:if="${location != null}" th:text="${location.formattedAddress != null ? location.formattedAddress : location.addressLine + ', ' + location.ward + ', ' + location.province}"></dd>
-</dl>
-<p><a th:href="@{/shops/{id}/reviews(id=${shop.shopId})}">Đánh giá cửa hàng</a>:
-    <span th:text="${#numbers.formatDecimal(reviewSummary.average,1,1)} + ' / 5 (' + ${reviewSummary.count} + ' đánh giá)'"></span>
-</p>
+<head th:replace="~{fragments/customer-shop :: head(${shop.shopName})}"></head>
+<body class="shopfront">
+<header th:replace="~{fragments/customer-shop :: header}"></header>
+<main class="sf-wrap sf-main">
+    <p class="sf-muted"><a th:href="@{/shops}">← Tất cả cửa hàng</a></p>
+    <div th:replace="~{fragments/customer-shop :: messages}"></div>
+    <section th:replace="~{fragments/customer-shop :: shopHeader(${shop},'profile')}"></section>
+    <div class="sf-heading">
+        <p class="sf-rating" th:text="${reviewSummary.count > 0 ? #numbers.formatDecimal(reviewSummary.average,1,1) + ' / 5 · ' + reviewSummary.count + ' đánh giá' : 'Chưa có đánh giá'}"></p>
+        <form th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" method="post" th:action="@{/shops/{id}/favorite(id=${shop.shopId})}">
+            <input type="hidden" name="favorite" th:value="${!favorite}"><button class="sf-button secondary" th:text="${favorite ? 'Đã lưu · Bỏ lưu' : 'Lưu cửa hàng'}"></button>
+        </form>
+        <a th:if="${#authorization.expression('!isAuthenticated()')}" class="sf-button secondary" th:href="@{/login}">Đăng nhập để lưu cửa hàng</a>
+    </div>
+    <p class="sf-description" th:if="${shop.description != null}" th:text="${shop.description}"></p>
+    <dl class="sf-contact">
+        <div th:if="${shop.phone != null}"><dt>Điện thoại</dt><dd th:text="${shop.phone}"></dd></div>
+        <div th:if="${shop.email != null}"><dt>Email</dt><dd th:text="${shop.email}"></dd></div>
+        <div th:if="${location != null}"><dt>Địa chỉ</dt><dd th:text="${location.formattedAddress != null ? location.formattedAddress : location.addressLine + ', ' + location.ward + ', ' + location.province}"></dd></div>
+    </dl>
+    <section aria-label="Sản phẩm của cửa hàng">
+        <div class="sf-heading"><h2>Sản phẩm đang bán</h2><a th:href="@{/shops/{id}/products(id=${shop.shopId})}">Xem tất cả →</a></div>
+        <div class="sf-grid"><th:block th:each="product : ${featuredProducts}"><article th:replace="~{fragments/customer-shop :: productCard(${product})}"></article></th:block></div>
+        <p th:if="${#lists.isEmpty(featuredProducts)}" class="sf-muted">Khám phá thêm sản phẩm từ <a th:href="@{/home}">các cửa hàng khác</a>.</p>
+    </section>
+</main>
+<footer th:replace="~{fragments/customer-shop :: footer}"></footer>
 </body>
 </html>

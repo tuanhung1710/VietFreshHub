@@ -1,24 +1,27 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title>Đánh giá cửa hàng</title></head>
-<body>
-<a th:href="@{/shops/{id}(id=${shop.shopId})}" th:text="${shop.shopName}"></a>
-<h1>Đánh giá cửa hàng</h1>
-<p th:text="${#numbers.formatDecimal(summary.average,1,1)} + ' / 5 · ' + ${summary.count} + ' đánh giá'"></p>
-<form method="get" th:action="@{/shops/{id}/reviews(id=${shop.shopId})}">
-    <label>Số sao <select name="rating"><option value="">Tất cả</option>
-        <option th:each="star : ${#numbers.sequence(1,5)}" th:value="${star}" th:selected="${rating == star}" th:text="${star} + ' sao'"></option>
-    </select></label><button>Lọc</button>
-</form>
-<p th:if="${reviewsPage.empty}">Chưa có đánh giá phù hợp.</p>
-<article th:each="review : ${reviewsPage.content}">
-    <h2 th:text="${review.customerName}"></h2><p th:text="${review.rating} + ' / 5'"></p>
-    <p th:text="${review.content}"></p><time th:text="${#temporals.format(review.createdAt,'dd/MM/yyyy HH:mm')}"></time>
-</article>
-<nav th:if="${reviewsPage.totalPages > 1}">
-    <a th:if="${reviewsPage.hasPrevious()}" th:href="@{/shops/{id}/reviews(id=${shop.shopId},page=${reviewsPage.number},rating=${rating})}">Trang trước</a>
-    <span th:text="${reviewsPage.number + 1} + ' / ' + ${reviewsPage.totalPages}"></span>
-    <a th:if="${reviewsPage.hasNext()}" th:href="@{/shops/{id}/reviews(id=${shop.shopId},page=${reviewsPage.number + 2},rating=${rating})}">Trang tiếp</a>
-</nav>
+<head th:replace="~{fragments/customer-shop :: head('Đánh giá cửa hàng')}"></head>
+<body class="shopfront">
+<header th:replace="~{fragments/customer-shop :: header}"></header>
+<main class="sf-wrap sf-main">
+    <section th:replace="~{fragments/customer-shop :: shopHeader(${shop},'reviews')}"></section>
+    <div class="sf-heading"><div><h2>Khách hàng đánh giá</h2><p class="sf-rating" th:text="${summary.count > 0 ? #numbers.formatDecimal(summary.average,1,1) + ' / 5 · ' + summary.count + ' đánh giá' : 'Chưa có đánh giá'}"></p></div></div>
+    <form class="sf-filters" method="get" th:action="@{/shops/{id}/reviews(id=${shop.shopId})}">
+        <label>Số sao <select name="rating"><option value="">Tất cả đánh giá</option>
+            <option th:each="star : ${#numbers.sequence(1,5)}" th:value="${star}" th:selected="${rating == star}" th:text="${star} + ' sao'"></option>
+        </select></label><button class="sf-button">Áp dụng</button>
+    </form>
+    <p class="sf-empty" th:if="${reviewsPage.empty}">Chưa có đánh giá phù hợp.</p>
+    <div class="sf-reviews"><article class="sf-panel" th:each="review : ${reviewsPage.content}">
+        <div class="sf-review-head"><h2 th:text="${review.customerName}"></h2><span class="sf-rating" th:text="${review.rating} + ' / 5'"></span></div>
+        <p class="sf-description" th:text="${review.content}"></p><time class="sf-muted" th:text="${#temporals.format(review.createdAt,'dd/MM/yyyy HH:mm')}"></time>
+    </article></div>
+    <nav class="sf-pagination" th:if="${reviewsPage.totalPages > 1}" aria-label="Phân trang đánh giá">
+        <a th:if="${reviewsPage.hasPrevious()}" th:href="@{/shops/{id}/reviews(id=${shop.shopId},page=${reviewsPage.number},rating=${rating})}">← Trang trước</a>
+        <span class="sf-muted" th:text="${reviewsPage.number + 1} + ' / ' + ${reviewsPage.totalPages}"></span>
+        <a th:if="${reviewsPage.hasNext()}" th:href="@{/shops/{id}/reviews(id=${shop.shopId},page=${reviewsPage.number + 2},rating=${rating})}">Trang tiếp →</a>
+    </nav>
+</main>
+<footer th:replace="~{fragments/customer-shop :: footer}"></footer>
 </body>
 </html>

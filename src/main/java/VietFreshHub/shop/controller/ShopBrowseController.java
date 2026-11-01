@@ -17,6 +17,7 @@ public class ShopBrowseController {
     private final VietFreshHub.shop.service.ShopReviewService reviews;
     private final VietFreshHub.shop.service.ShopOfferService offers;
     private final VietFreshHub.shop.service.ShopFavoriteService favorites;
+    private final VietFreshHub.catalog.service.CatalogService catalog;
 
     @GetMapping
     public String list(@RequestParam(defaultValue = "1") int page,
@@ -33,6 +34,9 @@ public class ShopBrowseController {
         model.addAttribute("reviewSummary", reviews.summary(shopId));
         boolean customer = authentication != null && authentication.getAuthorities().stream().anyMatch(a -> "ROLE_CUSTOMER".equals(a.getAuthority()));
         model.addAttribute("favorite", customer && favorites.isFavorite(authentication, shopId));
+        var filter = new VietFreshHub.catalog.dto.CatalogBrowseFilter();
+        filter.setShopId(shopId);
+        model.addAttribute("featuredProducts", catalog.listProducts(filter).getContent());
         return "shop/detail";
     }
 

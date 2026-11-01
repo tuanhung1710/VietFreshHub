@@ -30,7 +30,7 @@ public class ShopFavoriteRepository {
     public Page<Long> list(Long userId, int page) {
         var pageable = PageRequest.of(page - 1, 12);
         var parameters = new MapSqlParameterSource("user", userId).addValue("offset", pageable.getOffset());
-        String from = " FROM dbo.favorite_shops f JOIN dbo.shops s ON s.shop_id=f.shop_id WHERE f.user_id=:user AND s.status='ACTIVE'";
+        String from = " FROM dbo.favorite_shops f JOIN dbo.shops s ON s.shop_id=f.shop_id WHERE f.user_id=:user AND s.status='ACTIVE' AND s.availability_status='OPEN'";
         Long count = jdbc.queryForObject("SELECT COUNT(*)" + from, parameters, Long.class);
         var ids = jdbc.query("SELECT f.shop_id" + from + " ORDER BY f.created_at DESC,f.shop_id DESC OFFSET :offset ROWS FETCH NEXT 12 ROWS ONLY",
                 parameters, (row, index) -> row.getLong(1));

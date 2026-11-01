@@ -1,23 +1,28 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title>Ưu đãi cửa hàng</title></head>
-<body>
-<a th:href="@{/shops/{id}(id=${shop.shopId})}" th:text="${shop.shopName}"></a>
-<h1>Khuyến mãi và mã giảm giá</h1>
-<p th:if="${offersPage.empty}">Cửa hàng chưa có ưu đãi đang áp dụng.</p>
-<article th:each="offer : ${offersPage.content}">
-    <h2 th:text="${offer.name}"></h2><p th:text="${offer.description}"></p>
-    <p th:if="${offer.code != null}">Mã: <strong th:text="${offer.code}"></strong></p>
-    <p>Giảm <span th:text="${#numbers.formatDecimal(offer.discountValue,1,0)} + ${offer.discountType == 'PERCENT' ? '%' : ' ₫'}"></span></p>
-    <p th:if="${offer.maxDiscount != null}" th:text="'Giảm tối đa ' + ${#numbers.formatDecimal(offer.maxDiscount,1,0)} + ' ₫'"></p>
-    <p th:text="'Đơn tối thiểu ' + ${#numbers.formatDecimal(offer.minimumOrderValue,1,0)} + ' ₫'"></p>
-    <p th:if="${offer.perUserLimit != null}" th:text="'Mỗi khách tối đa ' + ${offer.perUserLimit} + ' lượt'"></p>
-    <p>Hết hạn: <time th:text="${#temporals.format(offer.endAt,'dd/MM/yyyy HH:mm')}"></time></p>
-</article>
-<nav th:if="${offersPage.totalPages > 1}">
-    <a th:if="${offersPage.hasPrevious()}" th:href="@{/shops/{id}/offers(id=${shop.shopId},page=${offersPage.number})}">Trang trước</a>
-    <span th:text="${offersPage.number + 1} + ' / ' + ${offersPage.totalPages}"></span>
-    <a th:if="${offersPage.hasNext()}" th:href="@{/shops/{id}/offers(id=${shop.shopId},page=${offersPage.number + 2})}">Trang tiếp</a>
-</nav>
+<head th:replace="~{fragments/customer-shop :: head('Ưu đãi cửa hàng')}"></head>
+<body class="shopfront">
+<header th:replace="~{fragments/customer-shop :: header}"></header>
+<main class="sf-wrap sf-main">
+    <section th:replace="~{fragments/customer-shop :: shopHeader(${shop},'offers')}"></section>
+    <div class="sf-heading"><div><h2>Ưu đãi dành cho bạn</h2><p class="sf-muted">Các khuyến mãi và mã giảm giá đang áp dụng tại cửa hàng.</p></div></div>
+    <p th:if="${offersPage.empty}" class="sf-empty">Hiện chưa có ưu đãi.</p>
+    <div class="sf-offers"><article class="sf-panel" th:each="offer : ${offersPage.content}">
+        <p class="sf-kicker" th:text="${offer.code != null ? 'MÃ GIẢM GIÁ' : 'KHUYẾN MÃI'}"></p><h2 th:text="${offer.name}"></h2>
+        <p class="sf-description sf-muted" th:text="${offer.description}"></p>
+        <p class="sf-price" th:text="'Giảm ' + ${#numbers.formatDecimal(offer.discountValue,1,0)} + ${offer.discountType == 'PERCENT' ? '%' : ' ₫'}"></p>
+        <p th:if="${offer.code != null}"><span class="sf-code" th:text="${offer.code}"></span></p>
+        <p class="sf-muted" th:if="${offer.maxDiscount != null}" th:text="'Giảm tối đa ' + ${#numbers.formatDecimal(offer.maxDiscount,1,0)} + ' ₫'"></p>
+        <p class="sf-muted" th:text="'Đơn tối thiểu ' + ${#numbers.formatDecimal(offer.minimumOrderValue,1,0)} + ' ₫'"></p>
+        <p class="sf-muted" th:if="${offer.perUserLimit != null}" th:text="'Mỗi khách tối đa ' + ${offer.perUserLimit} + ' lượt'"></p>
+        <p class="sf-muted">Đến <time th:text="${#temporals.format(offer.endAt,'dd/MM/yyyy HH:mm')}"></time></p>
+    </article></div>
+    <nav class="sf-pagination" th:if="${offersPage.totalPages > 1}" aria-label="Phân trang ưu đãi">
+        <a th:if="${offersPage.hasPrevious()}" th:href="@{/shops/{id}/offers(id=${shop.shopId},page=${offersPage.number})}">← Trang trước</a>
+        <span class="sf-muted" th:text="${offersPage.number + 1} + ' / ' + ${offersPage.totalPages}"></span>
+        <a th:if="${offersPage.hasNext()}" th:href="@{/shops/{id}/offers(id=${shop.shopId},page=${offersPage.number + 2})}">Trang tiếp →</a>
+    </nav>
+</main>
+<footer th:replace="~{fragments/customer-shop :: footer}"></footer>
 </body>
 </html>

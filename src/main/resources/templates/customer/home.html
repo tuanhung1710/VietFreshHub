@@ -1,86 +1,46 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/head :: head('Trang chủ | VietFresh Hub')}"></head>
-<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col">
-<div th:replace="~{fragments/header :: header}"></div>
-<main class="w-full pt-24 bg-surface flex-1">
-    <style>@import url('/css/storefront.css');</style>
-    <section th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" class="max-w-[1280px] mx-auto px-margin py-space-md" aria-label="Tiện ích khách hàng">
-        <div class="flex flex-wrap items-center gap-3">
-            <a th:href="@{/customer/chat}" class="rounded-lg bg-green-700 px-5 py-3 font-semibold text-white">Tin nhắn với cửa hàng</a>
-            <a th:href="@{/cart}" class="rounded-lg bg-green-600 px-5 py-3 font-semibold text-white">Giỏ hàng</a>
-            <a th:href="@{/customer/orders}" class="rounded-lg bg-green-600 px-5 py-3 font-semibold text-white">Đơn hàng của tôi</a>
-            <a th:href="@{/customer/profile}" class="rounded-lg bg-green-600 px-5 py-3 font-semibold text-white">Hồ sơ của tôi</a>
-            <form th:action="@{/logout}" method="post">
-                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                <button type="submit" class="rounded-lg border px-5 py-3 font-semibold">Đăng xuất</button>
-            </form>
+<head th:replace="~{fragments/customer-shop :: head('Sản phẩm')}"></head>
+<body class="shopfront">
+<header th:replace="~{fragments/customer-shop :: header}"></header>
+<main class="sf-wrap sf-main">
+    <div th:replace="~{fragments/customer-shop :: messages}"></div>
+    <div class="sf-heading">
+        <div><p class="sf-kicker">CHỌN TRÁI CÂY CỦA BẠN</p>
+            <h1 th:text="${catalogShop != null ? catalogShop.shopName : 'Sản phẩm đang bán'}"></h1>
+            <p class="sf-muted" th:if="${catalogShop != null}"><a th:href="@{/shops/{id}(id=${catalogShop.shopId})}">Xem thông tin cửa hàng →</a></p>
+            <p class="sf-muted" th:unless="${catalogShop != null}">Tìm sản phẩm, chọn phân loại và cửa hàng phù hợp.</p>
         </div>
-    </section>
-    <div class="container page marketplace-page">
-        <div th:replace="~{fragments/storefront :: messages}"></div>
-    <section th:if="${#strings.isEmpty(keyword)}" class="market-hero" aria-label="Khám phá trái cây">
-        <div class="hero-copy"><span class="hero-kicker">VIETFRESH HUB · TRÁI CÂY THEO MÙA</span>
-            <h1>Trái cây tươi<br>cho mỗi ngày.</h1>
-            <p>Khám phá các cửa hàng, chọn phân loại và gom sản phẩm vào một giỏ hàng.</p>
-            <a class="button hero-cta" href="#catalog">Khám phá sản phẩm <span aria-hidden="true">↗</span></a>
-        </div>
-        <div class="hero-photo"><img th:src="@{/images/buoi-da-xanh.jpg}" alt="Bưởi da xanh" width="460" height="300"></div>
-    </section>
-    <section id="catalog" class="catalog-section">
-        <p th:if="${catalogShop != null}">Sản phẩm của <a th:href="@{/shops/{id}(id=${catalogShop.shopId})}" th:text="${catalogShop.shopName}"></a></p>
-        <div class="catalog-heading"><div><p class="eyebrow">Khám phá cửa hàng</p>
-            <h1 class="catalog-title" th:if="${not #strings.isEmpty(keyword)}" th:text="'Kết quả cho “' + ${keyword} + '”'"></h1>
-            <h2 class="catalog-title" th:if="${#strings.isEmpty(keyword)}">Danh sách sản phẩm</h2></div>
-            <p class="muted" th:text="${productPage.totalElements} + ' sản phẩm'"></p>
-        </div>
-        <div class="category-chips" aria-label="Tìm theo loại trái cây">
-            <a th:href="${filter.urlForCategory(null)}" th:classappend="${filter.categoryId == null} ? 'active'">Tất cả</a>
-            <a th:each="category : ${categories}" th:href="${filter.urlForCategory(category.categoryId)}"
-               th:classappend="${filter.categoryId == category.categoryId} ? 'active'" th:text="${category.name}"></a>
-        </div>
-        <form method="get" th:action="@{/home}" th:object="${filter}">
-            <input type="hidden" th:field="*{categoryId}">
-            <input type="hidden" th:field="*{shopId}">
-            <label>Tìm tên <input type="search" th:field="*{keyword}" maxlength="100"></label>
-            <label>Giá từ <input type="number" th:field="*{minPrice}" min="0" step="1"></label>
-            <label>Đến <input type="number" th:field="*{maxPrice}" min="0" step="1"></label>
-            <button>Lọc sản phẩm</button> <a th:href="@{/home}">Xóa bộ lọc</a>
-            <label>Sắp xếp <select th:field="*{sort}">
-                <option value="newest">Mới nhất</option><option value="price_asc">Giá tăng dần</option>
-                <option value="price_desc">Giá giảm dần</option>
-                <option value="best_selling">Bán chạy nhất</option>
-                <option value="rating">Đánh giá cao nhất</option>
-            </select></label>
-            <ul th:if="${#fields.hasAnyErrors()}"><li th:each="error : ${#fields.allErrors()}" th:text="${error}"></li></ul>
-        </form>
-        <section th:if="${#lists.isEmpty(products)}" class="panel empty">
-            <h2 th:text="${#strings.isEmpty(keyword)} ? 'Chưa có sản phẩm để hiển thị' : 'Không tìm thấy sản phẩm phù hợp'"></h2>
-            <p class="muted">Bạn có thể thử từ khóa khác hoặc xem tất cả sản phẩm.</p><a class="button secondary" th:href="@{/home}">Xem tất cả sản phẩm</a>
-        </section>
-        <div class="product-grid" aria-label="Danh sách sản phẩm">
-            <article th:each="product : ${products}" class="panel product-card">
-                <a class="card-image" th:href="@{/product-detail(productId=${product.productId})}">
-                    <img th:src="${product.imageUrl}" th:alt="${product.name}" loading="lazy" width="280" height="240">
-                    <span th:if="${product.selectedVariant != null and product.selectedVariant.purchasable}" class="stock-label">Có sẵn</span>
-                </a>
-                <div class="card-content"><p class="shop-label"><a th:href="@{/shops/{id}(id=${product.shopId})}" th:text="${product.shopName}"></a></p>
-                    <h3><a th:href="@{/product-detail(productId=${product.productId})}" th:text="${product.name}"></a></h3>
-                    <p th:if="${product.selectedVariant != null}" class="card-variant" th:text="${product.selectedVariant.variantName}"></p>
-                    <div class="card-bottom"><span th:if="${product.selectedVariant != null}" class="price" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'POINT')} + ' ₫'"></span>
-                        <a class="card-action" th:href="@{/product-detail(productId=${product.productId})}" th:aria-label="'Xem phân loại ' + ${product.name}">Chọn <span aria-hidden="true">→</span></a>
-                    </div>
-                </div>
-            </article>
-        </div>
-        <nav th:if="${productPage.totalPages > 1}" class="pagination" aria-label="Phân trang sản phẩm">
-            <a th:if="${productPage.hasPrevious()}" class="button secondary" th:href="${filter.urlForPage(productPage.number)}">← Trang trước</a>
-            <span class="muted" th:text="'Trang ' + ${productPage.number + 1} + ' / ' + ${productPage.totalPages}"></span>
-            <a th:if="${productPage.hasNext()}" class="button secondary" th:href="${filter.urlForPage(productPage.number + 2)}">Trang tiếp →</a>
-        </nav>
-    </section>
+        <span class="sf-muted" th:text="${productPage.totalElements} + ' sản phẩm'"></span>
     </div>
+    <form class="sf-filters" method="get" th:action="@{/home}" th:object="${filter}">
+        <input type="hidden" th:field="*{categoryId}"><input type="hidden" th:field="*{shopId}">
+        <label class="sf-search">Tên sản phẩm <input type="search" th:field="*{keyword}" placeholder="Bạn muốn tìm trái cây gì?" maxlength="100"></label>
+        <label>Giá từ <input class="sf-price-input" type="number" th:field="*{minPrice}" min="0" step="1" placeholder="₫"></label>
+        <label>Đến <input class="sf-price-input" type="number" th:field="*{maxPrice}" min="0" step="1" placeholder="₫"></label>
+        <label>Sắp xếp <select th:field="*{sort}">
+            <option value="newest">Mới nhất</option><option value="price_asc">Giá tăng dần</option><option value="price_desc">Giá giảm dần</option>
+            <option value="best_selling">Bán chạy nhất</option><option value="rating">Đánh giá cao nhất</option>
+        </select></label>
+        <button class="sf-button">Áp dụng</button>
+        <a class="sf-muted" th:href="@{/home(shopId=${filter.shopId})}">Xóa bộ lọc</a>
+        <ul th:if="${#fields.hasAnyErrors()}" class="sf-notice error"><li th:each="error : ${#fields.allErrors()}" th:text="${error}"></li></ul>
+    </form>
+    <nav class="sf-chips" aria-label="Danh mục sản phẩm">
+        <a th:href="${filter.urlForCategory(null)}" th:classappend="${filter.categoryId == null} ? 'active'">Tất cả</a>
+        <a th:each="category : ${categories}" th:href="${filter.urlForCategory(category.categoryId)}" th:classappend="${filter.categoryId == category.categoryId} ? 'active'" th:text="${category.name}"></a>
+    </nav>
+    <section th:if="${#lists.isEmpty(products)}" class="sf-empty">
+        <h2>Không tìm thấy sản phẩm phù hợp</h2><p class="sf-muted">Thử tên sản phẩm hoặc khoảng giá khác.</p>
+        <a class="sf-button secondary" th:href="@{/home(shopId=${filter.shopId})}">Xem tất cả sản phẩm</a>
+    </section>
+    <div class="sf-grid" aria-label="Sản phẩm đang bán"><th:block th:each="product : ${products}"><article th:replace="~{fragments/customer-shop :: productCard(${product})}"></article></th:block></div>
+    <nav th:if="${productPage.totalPages > 1}" class="sf-pagination" aria-label="Phân trang sản phẩm">
+        <a th:if="${productPage.hasPrevious()}" th:href="${filter.urlForPage(productPage.number)}">← Trang trước</a>
+        <span class="sf-muted" th:text="${productPage.number + 1} + ' / ' + ${productPage.totalPages}"></span>
+        <a th:if="${productPage.hasNext()}" th:href="${filter.urlForPage(productPage.number + 2)}">Trang tiếp →</a>
+    </nav>
 </main>
-<div th:replace="~{fragments/footer :: footer}"></div>
+<footer th:replace="~{fragments/customer-shop :: footer}"></footer>
 </body>
 </html>
