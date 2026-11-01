@@ -14,11 +14,13 @@ import java.util.List;
 import org.springframework.web.util.UriComponentsBuilder;
 import lombok.Getter;
 import lombok.Setter;
+import VietFreshHub.common.PageSizes;
+import VietFreshHub.common.Pagination;
 
 @Getter
 @Setter
 public class CatalogBrowseFilter {
-    @Min(1) @Max(10000)
+    @Min(1) @Max(Pagination.MAX_PAGE)
     private int page = 1;
     @Size(max = 100, message = "Từ khóa tối đa 100 ký tự.")
     private String keyword = "";
@@ -32,7 +34,7 @@ public class CatalogBrowseFilter {
     private List<@NotBlank @Size(max = 100) String> places = List.of();
     @Min(0) @Max(5)
     private int minRating;
-    private int pageSize = 10;
+    private int pageSize = PageSizes.DEFAULT;
     @Pattern(regexp = "popular|latest|sales|asc|desc|newest|price_asc|price_desc|best_selling|rating")
     private String sort = "popular";
     @DecimalMin("0") @Digits(integer = 16, fraction = 0)
@@ -45,9 +47,9 @@ public class CatalogBrowseFilter {
         return minPrice == null || maxPrice == null || minPrice.compareTo(maxPrice) <= 0;
     }
 
-    @AssertTrue(message = "Số sản phẩm mỗi trang phải là 5, 10, 20 hoặc 50.")
+    @AssertTrue(message = "Số sản phẩm mỗi trang không hợp lệ.")
     public boolean isPageSizeAllowed() {
-        return List.of(5, 10, 20, 50).contains(pageSize);
+        return PageSizes.isAllowed(pageSize);
     }
 
     public String urlForPage(int targetPage) {

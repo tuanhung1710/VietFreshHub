@@ -15,6 +15,7 @@ import java.util.List;
 import java.math.BigDecimal;
 import VietFreshHub.inventory.rule.InventoryRules;
 import org.springframework.jdbc.core.RowCallbackHandler;
+import VietFreshHub.common.Pagination;
 
 @Repository
 @RequiredArgsConstructor
@@ -45,7 +46,7 @@ public class CatalogBrowseRepository {
     public record ProductMetrics(BigDecimal rating, long sales, String place) { }
 
     public Page<Long> search(CatalogBrowseFilter filter, Set<Long> categoryIds) {
-        var page = PageRequest.of(filter.getPage() - 1, filter.getPageSize());
+        var page = Pagination.request(filter.getPage(), filter.getPageSize());
         if (categoryIds.isEmpty()) return Page.empty(page);
         var today = InventoryRules.today();
         var parameters = new MapSqlParameterSource("categories", categoryIds)
@@ -86,8 +87,7 @@ public class CatalogBrowseRepository {
         }
         Long count = jdbc.queryForObject(OFFERS + "SELECT COUNT(*) " + from, parameters, Long.class);
         long total = count == null ? 0 : count;
-        int lastPage = (int) Math.max(1, (total + filter.getPageSize() - 1) / filter.getPageSize());
-        page = PageRequest.of(Math.min(filter.getPage(), lastPage) - 1, filter.getPageSize());
+        page = Pagination.clamp(filter.getPage(), filter.getPageSize(), total);
         parameters.addValue("offset", page.getOffset());
         String order = switch (filter.getSort()) {
             case "asc", "price_asc" -> "offer.price ASC, p.product_id ASC";
