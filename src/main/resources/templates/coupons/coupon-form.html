@@ -114,7 +114,7 @@
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
                                 <label for="usageLimit" class="form-label">
-                                    Tổng lượt sử dụng tối đa
+                                    Tổng lượt sử dụng tối đa *
                                 </label>
 
                                 <input id="usageLimit"
@@ -124,7 +124,8 @@
                                        class="form-control"
                                        min="1"
                                        max="2147483647"
-                                       step="1">
+                                       step="1"
+                                       required>
 
                                 <div class="invalid-feedback"
                                      th:errors="*{usageLimit}">
@@ -133,7 +134,7 @@
 
                             <div class="col-md-6">
                                 <label for="perUserLimit" class="form-label">
-                                    Lượt tối đa mỗi khách
+                                    Lượt tối đa mỗi khách *
                                 </label>
 
                                 <input id="perUserLimit"
@@ -143,7 +144,8 @@
                                        class="form-control"
                                        min="1"
                                        max="2147483647"
-                                       step="1">
+                                       step="1"
+                                       required>
 
                                 <div class="invalid-feedback"
                                      th:errors="*{perUserLimit}">

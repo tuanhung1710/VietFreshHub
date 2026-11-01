@@ -22,9 +22,11 @@ public class CouponForm {
     @Pattern(regexp = "[A-Za-z0-9_-]+", message = "Mã chỉ gồm chữ không dấu, số, dấu gạch ngang hoặc gạch dưới")
     private String code;
 
+    @NotNull(message = "Vui lòng nhập tổng lượt sử dụng tối đa")
     @Positive(message = "Tổng lượt sử dụng phải lớn hơn 0")
     private Integer usageLimit;
 
+    @NotNull(message = "Vui lòng nhập số lượt tối đa mỗi khách")
     @Positive(message = "Số lượt mỗi khách phải lớn hơn 0")
     private Integer perUserLimit;
 
