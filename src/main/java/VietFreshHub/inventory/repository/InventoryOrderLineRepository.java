@@ -13,6 +13,7 @@ import java.util.Optional;
 
 @Repository
 public interface InventoryOrderLineRepository extends JpaRepository<InventoryOrderLine, Long> {
+    /** Khóa ghi dòng đơn trước khi giữ hàng, giải phóng hoặc xuất bán. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select l from InventoryOrderLine l where l.orderItemId=:id")
     Optional<InventoryOrderLine> lockById(Long id);

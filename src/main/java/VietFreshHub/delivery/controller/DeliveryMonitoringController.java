@@ -1,6 +1,7 @@
 package VietFreshHub.delivery.controller;
 
 import VietFreshHub.delivery.dto.DeliveryMonitoringDetail;
+import VietFreshHub.delivery.dto.AdminDeliveryMonitoringDetail;
 import VietFreshHub.delivery.dto.DeliveryMonitoringRow;
 import VietFreshHub.delivery.entity.DeliveryStatus;
 import VietFreshHub.delivery.service.DeliveryMonitoringService;
@@ -30,12 +31,13 @@ public class DeliveryMonitoringController {
     @GetMapping("/seller/deliveries")
     public String managedShopDeliveries(@RequestParam(required = false) DeliveryStatus status,
                                          @RequestParam(defaultValue = "") String orderCode,
+                                         @RequestParam(defaultValue = "placedAt") String sortBy,
                                          @RequestParam(defaultValue = "desc") String direction,
                                          @RequestParam(defaultValue = "0") int page,
                                          Authentication authentication, Model model) {
         return showList(deliveryMonitoringService.getManagedShopDeliveries(
-                        authentication, status, orderCode, direction, page),
-                status, orderCode, direction, "/seller/deliveries", "/seller",
+                        authentication, status, orderCode, sortBy, direction, page),
+                status, orderCode, sortBy, direction, "/seller/deliveries", "/seller",
                 "Giao hàng của cửa hàng bạn quản lý", model);
     }
 
@@ -48,19 +50,24 @@ public class DeliveryMonitoringController {
     @GetMapping("/admin/deliveries")
     public String adminDeliveries(@RequestParam(required = false) DeliveryStatus status,
                                    @RequestParam(defaultValue = "") String orderCode,
+                                   @RequestParam(required = false) Long shopId,
+                                   @RequestParam(defaultValue = "placedAt") String sortBy,
                                    @RequestParam(defaultValue = "desc") String direction,
                                    @RequestParam(defaultValue = "0") int page,
                                    Authentication authentication, Model model) {
+        model.addAttribute("shops", deliveryMonitoringService.getAdminShopOptions(authentication));
+        model.addAttribute("selectedShopId", shopId);
         return showList(deliveryMonitoringService.getAdminDeliveries(
-                        authentication, status, orderCode, direction, page),
-                status, orderCode, direction, "/admin/deliveries", "/admin/accounts",
+                        authentication, status, orderCode, shopId, sortBy, direction, page),
+                status, orderCode, sortBy, direction, "/admin/deliveries", "/admin/accounts",
                 "Giao hàng toàn hệ thống", model);
     }
 
     @GetMapping("/admin/deliveries/{deliveryId}")
     public String adminDeliveryDetail(@PathVariable Long deliveryId, Authentication authentication, Model model) {
-        return showDetail(deliveryMonitoringService.getAdminDeliveryDetail(deliveryId, authentication),
-                "/admin/deliveries", model);
+        AdminDeliveryMonitoringDetail detail = deliveryMonitoringService.getAdminDeliveryDetail(deliveryId, authentication);
+        model.addAttribute("adminDetail", detail);
+        return showDetail(detail.deliveryDetail(), "/admin/deliveries", model);
     }
 
     @PostMapping("/seller/deliveries/{deliveryId}/confirm-return")
@@ -72,7 +79,7 @@ public class DeliveryMonitoringController {
     }
 
     private String showList(Page<DeliveryMonitoringRow> deliveries, DeliveryStatus status,
-                             String orderCode, String direction, String basePath,
+                             String orderCode, String sortBy, String direction, String basePath,
                              String homePath, String scopeLabel, Model model) {
         if (status == DeliveryStatus.ASSIGNED) {
             status = DeliveryStatus.UNASSIGNED;
@@ -88,6 +95,7 @@ public class DeliveryMonitoringController {
         model.addAttribute("statusOptions", statusOptions);
         model.addAttribute("selectedStatus", status);
         model.addAttribute("orderCode", orderCode.strip());
+        model.addAttribute("sortBy", sortBy);
         model.addAttribute("direction", direction);
         model.addAttribute("basePath", basePath);
         model.addAttribute("homePath", homePath);

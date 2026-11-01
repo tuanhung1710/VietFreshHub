@@ -1,11 +1,9 @@
 package VietFreshHub.delivery.service;
 
 import VietFreshHub.delivery.entity.Delivery;
-import VietFreshHub.delivery.entity.DeliveryStatus;
 import VietFreshHub.delivery.repository.DeliveryRepository;
 import VietFreshHub.order.entity.ShopOrder;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,7 +14,6 @@ import org.springframework.web.server.ResponseStatusException;
 public class DeliveryCreationService {
 
     private final DeliveryRepository deliveryRepository;
-    private final ApplicationEventPublisher events;
     private final DeliveryStatusHistoryWriter deliveryStatusHistoryWriter;
 
     @Transactional
@@ -41,10 +38,6 @@ public class DeliveryCreationService {
             delivery.setShopOrder(shopOrder);
             delivery = deliveryRepository.save(delivery);
             deliveryStatusHistoryWriter.record(delivery, null, null);
-        }
-
-        if (delivery.getStatus() == DeliveryStatus.UNASSIGNED) {
-            events.publishEvent(new DeliveryAssignmentRetryEvent());
         }
 
         return delivery;

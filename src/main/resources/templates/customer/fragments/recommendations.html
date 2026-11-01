@@ -1,0 +1,21 @@
+<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org"><body>
+<section th:fragment="section" th:if="${recommendations != null and !#lists.isEmpty(recommendations)}"
+         class="recommendations" aria-labelledby="recommendation-heading">
+    <div class="page-heading"><h2 id="recommendation-heading">Khám phá thêm sản phẩm</h2>
+        <p class="muted">Ưu tiên sản phẩm cùng danh mục, sau đó cùng cửa hàng và các lựa chọn còn hàng.</p></div>
+    <div class="product-grid">
+        <article th:each="item : ${recommendations}" class="panel product-card">
+            <a class="card-image" th:href="@{/product-detail/{id}(id=${item.variantId})}">
+                <img th:if="${item.imageUrl != null and !#strings.isEmpty(item.imageUrl)}" th:src="${item.imageUrl}"
+                     th:alt="${item.productName}" loading="lazy" width="280" height="240">
+                <span th:unless="${item.imageUrl != null and !#strings.isEmpty(item.imageUrl)}" class="muted">Chưa có ảnh</span>
+            </a>
+            <div class="card-content"><p class="shop-label" th:text="${item.shopName}"></p>
+                <h3><a th:href="@{/product-detail/{id}(id=${item.variantId})}" th:text="${item.productName}"></a></h3>
+                <p class="card-variant" th:text="${item.variantName}"></p>
+                <div class="card-bottom"><span class="price" th:text="${#numbers.formatDecimal(item.price,1,'POINT',item.price.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></span>
+                    <a class="card-action" th:href="@{/product-detail/{id}(id=${item.variantId})}" th:aria-label="'Xem ' + ${item.productName}">Xem →</a></div>
+            </div>
+        </article>
+    </div>
+</section></body></html>

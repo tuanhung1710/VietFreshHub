@@ -1,5 +1,28 @@
 // Native POST forms remain usable without JavaScript; successful mutations use PRG.
 document.addEventListener('DOMContentLoaded', () => {
+    // Product detail updates the local quantity; only the add-to-cart button submits.
+    document.querySelectorAll('[data-quantity-picker]').forEach(picker => {
+        const input = picker.querySelector('[name="quantity"]');
+        const buttons = picker.querySelectorAll('[data-step]');
+        const min = Number(input.min || 1);
+        const max = input.max ? Number(input.max) : Number.MAX_SAFE_INTEGER;
+        const sync = () => {
+            const value = Number(input.value);
+            buttons.forEach(button => {
+                button.disabled = Number(button.dataset.step) < 0 ? value <= min : value >= max;
+            });
+        };
+        buttons.forEach(button => button.addEventListener('click', () => {
+            const value = Number(input.value);
+            const current = Number.isSafeInteger(value) ? value : min;
+            input.value = String(Math.max(min, Math.min(max, current + Number(button.dataset.step))));
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        }));
+        input.addEventListener('input', sync);
+        input.addEventListener('change', sync);
+        sync();
+    });
     const selections = [...document.querySelectorAll('.cart-selection-checkbox:not(:disabled)')];
     const selectAll = document.getElementById('select-all-items');
     const selectedButton = document.getElementById('checkout-selected-button');

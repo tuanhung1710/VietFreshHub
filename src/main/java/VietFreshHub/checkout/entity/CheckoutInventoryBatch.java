@@ -1,15 +1,24 @@
 package VietFreshHub.checkout.entity;
 
 import VietFreshHub.catalog.entity.CatalogVariant;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -54,10 +63,16 @@ public class CheckoutInventoryBatch {
 
     @PrePersist
     void initializeUtcTimestamps() {
-        var now = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
-        if (receivedAt == null) receivedAt = now;
-        if (createdAt == null) createdAt = now;
-        if (updatedAt == null) updatedAt = now;
+        LocalDateTime now = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+        if (receivedAt == null) {
+            receivedAt = now;
+        }
+        if (createdAt == null) {
+            createdAt = now;
+        }
+        if (updatedAt == null) {
+            updatedAt = now;
+        }
     }
 
     @PreUpdate

@@ -3,7 +3,7 @@ package VietFreshHub.product.dto;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-/** Shop-wide counts, independent of the current search and page. */
+/** Thống kê toàn cửa hàng, không phụ thuộc từ khóa tìm kiếm hay trang đang xem. */
 @Getter
 @AllArgsConstructor
 public class ProductTabSummary {

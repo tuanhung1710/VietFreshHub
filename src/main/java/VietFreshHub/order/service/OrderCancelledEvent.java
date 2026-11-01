@@ -1,2 +1,3 @@
 package VietFreshHub.order.service;
-public record OrderCancelledEvent(Long orderId,Long customerId) {}
+
+public record OrderCancelledEvent(Long orderId, Long customerId) {}

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="fields(prefix, variant, showInitialStock, productImageUrl, draftIndex)">
+    <div class="row g-3">
+        <label class="col-12 form-label">
+            Tên phân loại
+            <span class="text-danger">
+                *
+            </span>
+            <input
+                class="form-control mt-1"
+                th:field="*{__${prefix}__variantName}"
+                maxlength="200"
+                placeholder="Ví dụ: Hộp 500 g"
+                required
+            >
+        </label>
+        <div class="col-12 image-picker">
+            <div class="vf-variant-image-controls">
+                <label class="form-label">
+                    Ảnh phân loại
+                    <span class="text-danger">
+                        *
+                    </span>
+                    <input
+                        class="form-control image-url"
+                        th:field="*{__${prefix}__thumbnailUrl}"
+                        maxlength="1000"
+                        placeholder="Dán liên kết ảnh hoặc tải ảnh lên"
+                        required
+                    >
+                </label>
+                <label class="form-label small text-body-secondary vf-image-upload-label">
+                    Tải ảnh JPG hoặc PNG, tối đa 1 MB
+                    <input
+                        class="form-control image-upload"
+                        type="file"
+                        accept="image/jpeg,image/png"
+                    >
+                </label>
+                <button
+                    th:if="${draftIndex!=null}"
+                    type="submit"
+                    th:formaction="@{/seller/products/draft}" formnovalidate
+                    name="useProductImage" th:value="${draftIndex}"
+                    class="copy-image btn btn-outline-secondary btn-sm"
+                >
+                    Dùng ảnh sản phẩm
+                </button>
+                <button th:if="${draftIndex==null}" type="button"
+                        class="copy-image btn btn-outline-secondary btn-sm"
+                        th:attr="data-product-image=${productImageUrl}"
+                        th:disabled="${#strings.isEmpty(productImageUrl)}">
+                    Dùng ảnh sản phẩm
+                </button>
+            </div>
+            <img
+                class="image-preview rounded border mt-2"
+                th:src="${variant.thumbnailUrl}"
+                alt="Xem trước ảnh phân loại"
+                th:style="${variant.thumbnailUrl==null?'display:none':''}"
+            >
+        </div>
+        <label class="col-md-6 form-label">
+            Giá bán (₫)
+            <span class="text-danger">
+                *
+            </span>
+            <input
+                class="form-control mt-1"
+                type="number"
+                min="10000"
+                step="1"
+                th:field="*{__${prefix}__price}"
+                required
+            >
+        </label>
+        <label class="col-md-6 form-label">
+            Giá trước giảm (đ)
+            <input
+                class="form-control mt-1"
+                type="number"
+                min="0"
+                step="1"
+                th:field="*{__${prefix}__compareAtPrice}"
+            >
+        </label>
+        <label class="col-md-5 form-label">
+            Định lượng bán
+            <input
+                    class="form-control mt-1"
+                    type="number"
+                    min="0.001"
+                    step="0.001"
+                    th:field="*{__${prefix}__weight}"
+            >
+            <small class="text-body-secondary">Khối lượng của một đơn vị bán, tính bằng kg.</small>
+        </label>
+        <label class="col-md-2 form-label">
+            Đơn vị bán
+            <span class="text-danger">
+                *
+            </span>
+            <select
+                class="form-select mt-1"
+                required
+                th:field="*{__${prefix}__unit}"
+            >
+                <option
+                    th:each="unit : ${units}"
+                    th:value="${unit}"
+                    th:text="${unit}"
+                >
+                </option>
+                <option th:if="${!#strings.isEmpty(variant.unit) && !units.contains(variant.unit)}"
+                        th:value="${variant.unit}" th:text="${variant.unit}"></option>
+            </select>
+        </label>
+        <label class="col-md-5 form-label">
+            Mức tồn kho cảnh báo
+            <input
+                class="form-control mt-1"
+                type="number"
+                min="0"
+                step="1"
+                th:field="*{__${prefix}__lowStockThreshold}"
+                required
+            >
+        </label>
+        <div class="col-12" th:if="${showInitialStock}">
+            <label class="form-check-label d-flex align-items-center gap-2">
+                <input
+                    class="form-check-input no-stock m-0"
+                    type="checkbox"
+                    th:field="*{__${prefix}__noInitialStock}"
+                >
+                Chưa nhập hàng
+            </label>
+        </div>
+    </div>
+    <div class="initial-stock batch-dates row g-3 mt-2 border-top pt-2" th:if="${showInitialStock}">
+        <div class="col-12">
+            <h4 class="h6 mb-0">
+                Lô hàng ban đầu
+            </h4>
+        </div>
+        <label class="col-md-6 form-label">
+            Số lượng nhập ban đầu
+            <span class="text-danger">
+                *
+            </span>
+            <input
+                class="form-control mt-1 initial-quantity"
+                type="number"
+                min="1"
+                step="1"
+                th:field="*{__${prefix}__initialQuantity}"
+            >
+        </label>
+        <label class="col-md-6 form-label">
+            Giá vốn mỗi đơn vị (₫)
+            <input
+                class="form-control mt-1"
+                type="number"
+                min="0"
+                step="0.01"
+                th:field="*{__${prefix}__costPrice}"
+            >
+        </label>
+        <label class="col-md-6 form-label">
+            Ngày nhập kho
+            <span class="text-danger">
+                *
+            </span>
+            <input
+                class="form-control mt-1 batch-received-date"
+                type="date"
+                th:field="*{__${prefix}__receivedDate}"
+                th:max="${today}"
+            >
+        </label>
+        <label class="col-md-6 form-label">
+            Hạn sử dụng
+            <span class="text-danger">
+                *
+            </span>
+            <input
+                class="form-control mt-1 batch-expiry-date"
+                type="date"
+                th:field="*{__${prefix}__expiryDate}"
+                th:min="${today}"
+                required
+            >
+        </label>
+    </div>
+
+</th:block>
+</body>
+</html>

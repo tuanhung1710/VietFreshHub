@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
+    <th:block th:if="${chatMode == 'customer'}"><th:block th:replace="~{fragments/head :: assets}"></th:block></th:block>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="_csrf" th:content="${_csrf.token}">
@@ -11,6 +12,8 @@
     <script defer th:src="@{/js/chat.js}"></script>
 </head>
 <body>
+<th:block th:if="${chatMode == 'customer'}"><header th:replace="~{fragments/header :: header}"></header></th:block>
+<style>body:has(> header) .chat-app { margin-top: 112px; height: calc(100dvh - 132px); } body:has(> header) { font-family: 'Be Vietnam Pro', sans-serif; background: #f8f9ff; }</style>
 <main class="chat-app" id="chatApp"
       th:attr="data-mode=${chatMode},data-user-id=${currentUserId}">
     <aside class="chat-sidebar">

@@ -22,6 +22,7 @@ public class ActivityHistoryFilter {
         actions.put("UPDATE", "Chỉnh sửa sản phẩm / phân loại");
         actions.put("STATUS", "Thay đổi trạng thái");
         actions.put("ADD_SKU", "Thêm phân loại");
+        actions.put("DELETE", "Xóa phân loại");
         actions.put("PRICE", "Thay đổi giá");
         actions.put("REMINDER", "Thay đổi mốc nhắc hạn sử dụng");
         actions.put("RESTOCK", "Nhập kho");
@@ -46,6 +47,9 @@ public class ActivityHistoryFilter {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate to;
 
+    /**
+     * Chuẩn hóa chuỗi lọc rồi kiểm tra độ dài từ khóa, hành động, đối tượng và thứ tự khoảng ngày.
+     */
     public void normalize() {
         q = q == null ? "" : q.trim();
         action = action == null ? "" : action.trim();
@@ -57,6 +61,7 @@ public class ActivityHistoryFilter {
                 "Ngày bắt đầu không được sau ngày kết thúc.");
     }
 
+    /** Cho biết có ít nhất một điều kiện lọc lịch sử đang được sử dụng. */
     public boolean isActive() {
         return !q.isBlank() || !action.isBlank() || !entity.isBlank() || from != null || to != null;
     }

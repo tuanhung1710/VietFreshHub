@@ -1,6 +1,7 @@
 package VietFreshHub.shop.service;
 
 import VietFreshHub.shop.entity.ShopLocation;
+import VietFreshHub.shop.dto.ShopOption;
 import VietFreshHub.shop.repository.ShopLocationRepository;
 import VietFreshHub.shop.repository.ShopRepository;
 import VietFreshHub.vietmap.dto.VietMapPlaceResponse;
@@ -11,6 +12,8 @@ import VietFreshHub.shop.entity.ShopMember;
 import VietFreshHub.shop.repository.ShopMemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -31,6 +34,15 @@ public class ShopService {
 
     private final AuthService authService;
     private final ShopMemberRepository shopMemberRepository;
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional(readOnly = true)
+    public List<ShopOption> getAdminShopOptions(Authentication authentication) {
+        authService.getCurrentUserId(authentication);
+        return shopRepository.findAll(Sort.by("shopName", "shopId")).stream()
+                .map(shop -> new ShopOption(shop.getShopId(), shop.getShopName()))
+                .toList();
+    }
 
     @Transactional(readOnly = true)
     public Long getManagedShopId(Authentication authentication) {

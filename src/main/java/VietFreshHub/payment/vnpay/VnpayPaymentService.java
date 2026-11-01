@@ -7,6 +7,8 @@ import VietFreshHub.order.entity.Order;
 import VietFreshHub.order.entity.OrderItem;
 import VietFreshHub.order.repository.OrderRepository;
 import VietFreshHub.order.service.OrderInventoryReleaseService;
+import VietFreshHub.order.service.OrderNotificationService;
+import VietFreshHub.order.service.OrderService;
 import VietFreshHub.payment.entity.Payment;
 import VietFreshHub.payment.entity.PaymentMethod;
 import VietFreshHub.payment.entity.PaymentTransaction;
@@ -32,7 +34,8 @@ import java.util.*;
 public class VnpayPaymentService {
     private static final ZoneId VIETNAM = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final DateTimeFormatter VNPAY_DATE = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-    private static final List<Payment.Status> OPEN_STATUSES = List.of(Payment.Status.PENDING, Payment.Status.PROCESSING);
+    private static final List<Payment.Status> BLOCKING_ATTEMPT_STATUSES = List.of(
+            Payment.Status.PENDING, Payment.Status.PROCESSING, Payment.Status.PAID);
 
     private final VnpayProperties properties;
     private final VnpayGateway gateway;
@@ -43,6 +46,8 @@ public class VnpayPaymentService {
     private final PaymentTransactionRepository transactions;
     private final InventoryReservationService reservations;
     private final OrderInventoryReleaseService releases;
+    private final OrderService orderService;
+    private final OrderNotificationService orderNotificationService;
     private final VnpayQueryClient queryClient;
     private final EntityManager em;
 
@@ -61,14 +66,18 @@ public class VnpayPaymentService {
         if (!Objects.equals(customerId, order.getCustomer().getUserId())) throw notFound();
         Payment payment = lockPayment(paymentId);
         requireVnpay(payment);
-        if (order.getStatus() != Order.Status.PENDING || "PAID".equals(order.getPaymentStatus())) {
-            return new StartResult(null, "Đơn hàng đã được xử lý. Vui lòng xem trạng thái trong chi tiết đơn.");
+        if ("PAID".equals(order.getPaymentStatus())
+                || payments.existsOtherVnpayPaymentWithStatus(orderId, paymentId, BLOCKING_ATTEMPT_STATUSES)) {
+            return new StartResult(null, "Lượt đặt hàng đã có giao dịch đang xử lý hoặc đã thanh toán. Vui lòng xem biên nhận.");
         }
         if (payment.getStatus() != Payment.Status.PENDING) {
             return new StartResult(null, "Lượt thanh toán này đã kết thúc. Bạn có thể tạo lượt thanh toán mới trong chi tiết đơn hàng.");
         }
         if (isExpired(payment, nowUtc())) {
             return new StartResult(null, "Lượt thanh toán đã hết 15 phút. Hệ thống đang xác minh trạng thái với VNPAY; vui lòng thử lại sau.");
+        }
+        if (!orderService.isCheckoutPaymentEligible(orderId, payment.getAmount())) {
+            return new StartResult(null, "Các đơn cửa hàng không còn đủ điều kiện thanh toán chung. Vui lòng liên hệ hỗ trợ.");
         }
         return new StartResult(gateway.createPaymentUrl(payment, remoteAddress), null);
     }
@@ -77,12 +86,13 @@ public class VnpayPaymentService {
     public boolean canRetry(Long orderId, Long customerId) {
         if (!properties.isReady() || paymentMethods.findByMethodCodeAndStatus("BANK_TRANSFER", "ACTIVE").isEmpty()) return false;
         Order order = orders.findByOrderIdAndCustomerUserId(orderId, customerId).orElse(null);
-        if (order == null || order.getStatus() != Order.Status.PENDING || "PAID".equals(order.getPaymentStatus())) return false;
+        if (order == null || "PAID".equals(order.getPaymentStatus())) return false;
         Payment latest = latestVnpayPayment(orderId);
         if (latest == null || latest.getStatus() == Payment.Status.PROCESSING || latest.getStatus() == Payment.Status.PAID
                 || latest.getStatus() == Payment.Status.CANCELLED) return false;
-        if (payments.existsOtherVnpayPaymentWithStatus(orderId, latest.getPaymentId(), OPEN_STATUSES)) return false;
-        return latest.getStatus() == Payment.Status.FAILED;
+        if (payments.existsOtherVnpayPaymentWithStatus(orderId, latest.getPaymentId(), BLOCKING_ATTEMPT_STATUSES)) return false;
+        return latest.getStatus() == Payment.Status.FAILED
+                && orderService.isCheckoutPaymentEligible(orderId, latest.getAmount());
     }
 
     @Transactional
@@ -91,7 +101,7 @@ public class VnpayPaymentService {
         Order order = orders.findByOrderIdAndCustomerUserId(orderId, customerId).orElseThrow(this::notFound);
         order = lockOrder(orderId);
         if (!Objects.equals(customerId, order.getCustomer().getUserId())) throw notFound();
-        if (order.getStatus() != Order.Status.PENDING || "PAID".equals(order.getPaymentStatus())) {
+        if ("PAID".equals(order.getPaymentStatus())) {
             return new StartResult(null, "Đơn hàng không còn ở trạng thái có thể thanh toán lại.");
         }
         Payment latest = Optional.ofNullable(latestVnpayPayment(orderId))
@@ -106,12 +116,15 @@ public class VnpayPaymentService {
         } else if (latest.getStatus() != Payment.Status.FAILED) {
             return new StartResult(null, "Lượt thanh toán đang được xử lý hoặc đã hoàn tất.");
         }
-        if (payments.existsOtherVnpayPaymentWithStatus(orderId, latest.getPaymentId(), OPEN_STATUSES)) {
+        if (payments.existsOtherVnpayPaymentWithStatus(orderId, latest.getPaymentId(), BLOCKING_ATTEMPT_STATUSES)) {
             return new StartResult(null, "Đơn hàng đang có một lượt thanh toán cần được xác nhận trước.");
         }
         PaymentMethod method = paymentMethods.findByMethodCodeAndStatus("BANK_TRANSFER", "ACTIVE").orElse(null);
         if (method == null) return new StartResult(null, "Thanh toán VNPAY hiện chưa khả dụng.");
 
+        if (!orderService.isCheckoutPaymentEligible(orderId, latest.getAmount())) {
+            return new StartResult(null, "Các đơn cửa hàng không còn đủ điều kiện thanh toán chung. Vui lòng liên hệ hỗ trợ.");
+        }
         List<OrderItem> items = orderItems(orderId);
         List<InventoryReservationService.Reservation> lines = reservationsFor(items);
         InventoryReservationService.ReservationState state = reservations.reservationState(lines);
@@ -122,7 +135,7 @@ public class VnpayPaymentService {
             releases.release(releaseLines(items), customerId);
         }
         if (!reservations.canReserve(lines)) {
-            order.setPaymentStatus("FAILED");
+            updatePaymentStatus(order, "FAILED");
             return new StartResult(null, "Sản phẩm không còn đủ hàng để giữ cho lượt thanh toán mới. Vui lòng liên hệ hỗ trợ.");
         }
         reservations.reserve(lines, customerId);
@@ -136,7 +149,7 @@ public class VnpayPaymentService {
         em.persist(next);
         em.flush();
         next.setTransactionReference(transactionReference(next.getPaymentId()));
-        order.setPaymentStatus("PENDING");
+        updatePaymentStatus(order, "PENDING");
         em.flush();
         return new StartResult(gateway.createPaymentUrl(next, remoteAddress), null);
     }
@@ -190,12 +203,13 @@ public class VnpayPaymentService {
         if (payment.getStatus() == Payment.Status.PAID) {
             return returnResult(orderId, true, "Thanh toán VNPAY đã được xác nhận.");
         }
-        if ("PAID".equals(order.getPaymentStatus())) {
+        if ("PAID".equals(order.getPaymentStatus())
+                || payments.existsOtherVnpayPaymentWithStatus(orderId, payment.getPaymentId(), List.of(Payment.Status.PAID))) {
             payment.setStatus(Payment.Status.PROCESSING);
             record(payment, "DUPLICATE_SUCCESS_REVIEW", fields.get("vnp_TransactionNo"), "PROCESSING", fields);
             return returnResult(orderId, false, "Đơn hàng đã được thanh toán; lượt giao dịch này đang cần kiểm tra thêm.");
         }
-        if (order.getStatus() != Order.Status.PENDING || order.getStatus() == Order.Status.CANCELLED) {
+        if (!orderService.isCheckoutPaymentEligible(orderId, payment.getAmount())) {
             payment.setStatus(Payment.Status.PROCESSING);
             record(payment, "SUCCESS_ORDER_REVIEW", fields.get("vnp_TransactionNo"), "PROCESSING", fields);
             return returnResult(orderId, false, "VNPAY báo thanh toán thành công nhưng đơn hàng cần được kiểm tra thêm.");
@@ -206,26 +220,27 @@ public class VnpayPaymentService {
         if (reservationState == InventoryReservationService.ReservationState.NONE) {
             if (!reservations.canReserve(lines)) {
                 payment.setStatus(Payment.Status.PROCESSING);
-                order.setPaymentStatus("PENDING");
+                updatePaymentStatus(order, "PENDING");
                 record(payment, "LATE_SUCCESS_STOCK_UNAVAILABLE", fields.get("vnp_TransactionNo"), "PROCESSING", fields);
                 return returnResult(orderId, false, "VNPAY báo thanh toán thành công nhưng sản phẩm cần được kiểm tra tồn kho.");
             }
             reservations.reserve(lines, order.getCustomer().getUserId());
         } else if (reservationState == InventoryReservationService.ReservationState.INCONSISTENT) {
             payment.setStatus(Payment.Status.PROCESSING);
-            order.setPaymentStatus("PENDING");
+            updatePaymentStatus(order, "PENDING");
             record(payment, "SUCCESS_STOCK_REVIEW", fields.get("vnp_TransactionNo"), "PROCESSING", fields);
             return returnResult(orderId, false, "VNPAY báo thanh toán thành công nhưng tồn kho cần được kiểm tra thêm.");
         }
         payment.setStatus(Payment.Status.PAID);
         payment.setPaidAt(paidAt);
-        order.setPaymentStatus("PAID");
+        updatePaymentStatus(order, "PAID");
         sellerPayoutService.recordOnlinePayment(orderId, paidAt);
         record(payment, "PAYMENT_SUCCESS", fields.get("vnp_TransactionNo"), "PAID", fields);
         for (Payment other : payments.findOtherPendingVnpayPayments(orderId, payment.getPaymentId(), Payment.Status.PENDING)) {
             other.setStatus(Payment.Status.CANCELLED);
             record(other, "SUPERSEDED_BY_SUCCESS", fields.get("vnp_TransactionNo"), "CANCELLED", Map.of("event", "another VNPAY attempt paid the order"));
         }
+        orderNotificationService.notifyPaidOrder(orderId);
         return returnResult(orderId, true, "Thanh toán VNPAY thành công.");
     }
 
@@ -285,13 +300,19 @@ public class VnpayPaymentService {
 
     private void failLocked(Order order, Payment payment, String event, Map<String, String> fields) {
         payment.setStatus(Payment.Status.FAILED);
-        boolean anotherOpenAttempt = payments.existsOtherVnpayPaymentWithStatus(order.getOrderId(), payment.getPaymentId(), OPEN_STATUSES);
-        if (!anotherOpenAttempt && !"PAID".equals(order.getPaymentStatus()) && order.getStatus() == Order.Status.PENDING) {
-            order.setPaymentStatus("FAILED");
+        boolean anotherBlockingAttempt = payments.existsOtherVnpayPaymentWithStatus(order.getOrderId(), payment.getPaymentId(), BLOCKING_ATTEMPT_STATUSES);
+        if (!anotherBlockingAttempt && !"PAID".equals(order.getPaymentStatus())
+                && orderService.isCheckoutPaymentEligible(order.getOrderId(), payment.getAmount())) {
+            updatePaymentStatus(order, "FAILED");
             List<OrderItem> items = orderItems(order.getOrderId());
             releases.release(releaseLines(items), order.getCustomer().getUserId());
         }
         record(payment, event, fields.get("vnp_TransactionNo"), "FAILED", fields);
+    }
+
+    private void updatePaymentStatus(Order order, String paymentStatus) {
+        order.setPaymentStatus(paymentStatus);
+        orderService.updateShopPaymentStatusesForVnpay(order.getOrderId(), paymentStatus);
     }
 
     private void record(Payment payment, String event, String providerTransactionId, String status, Map<String, String> fields) {
