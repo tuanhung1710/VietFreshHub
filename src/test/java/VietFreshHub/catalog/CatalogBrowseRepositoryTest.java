@@ -62,4 +62,12 @@ class CatalogBrowseRepositoryTest {
         filter.setKeyword("");
         assertTrue(repository.search(filter, Set.of()).isEmpty());
     }
+
+    @Test
+    void priceSortingUsesTheDisplayedPriceAndStableProductIdTieBreak() {
+        filter.setSort("price_asc");
+        assertEquals(List.of(1L, 2L), repository.search(filter, Set.of(7L)).getContent());
+        filter.setSort("price_desc");
+        assertEquals(List.of(2L, 1L), repository.search(filter, Set.of(7L)).getContent());
+    }
 }

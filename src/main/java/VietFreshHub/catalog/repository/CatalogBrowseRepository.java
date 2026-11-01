@@ -52,7 +52,12 @@ public class CatalogBrowseRepository {
         if ("available".equals(filter.getAvailability())) from += " AND offer.available = 1";
         if ("unavailable".equals(filter.getAvailability())) from += " AND offer.available = 0";
         Long count = jdbc.queryForObject(OFFERS + "SELECT COUNT(*) " + from, parameters, Long.class);
-        var ids = jdbc.query(OFFERS + "SELECT p.product_id " + from + " ORDER BY p.product_id DESC OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY",
+        String order = switch (filter.getSort()) {
+            case "price_asc" -> "offer.price ASC, p.product_id DESC";
+            case "price_desc" -> "offer.price DESC, p.product_id DESC";
+            default -> "p.product_id DESC";
+        };
+        var ids = jdbc.query(OFFERS + "SELECT p.product_id " + from + " ORDER BY " + order + " OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY",
                 parameters, (row, index) -> row.getLong(1));
         return new PageImpl<>(ids, page, count == null ? 0 : count);
     }

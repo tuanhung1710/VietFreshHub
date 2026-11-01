@@ -48,6 +48,10 @@
                 <option value="all">Tất cả</option><option value="available">Đang nhận đơn, còn hàng</option>
                 <option value="unavailable">Chưa thể đặt mua</option>
             </select></label>
+            <label>Sắp xếp <select th:field="*{sort}">
+                <option value="newest">Mới nhất</option><option value="price_asc">Giá tăng dần</option>
+                <option value="price_desc">Giá giảm dần</option>
+            </select></label>
             <ul th:if="${#fields.hasAnyErrors()}"><li th:each="error : ${#fields.allErrors()}" th:text="${error}"></li></ul>
         </form>
         <section th:if="${#lists.isEmpty(products)}" class="panel empty">
