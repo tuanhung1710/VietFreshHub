@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 public class ShopBrowseController {
     private final ShopBrowseService shops;
     private final VietFreshHub.shop.service.ShopReviewService reviews;
+    private final VietFreshHub.shop.service.ShopOfferService offers;
 
     @GetMapping
     public String list(@RequestParam(defaultValue = "1") int page,
@@ -46,5 +47,12 @@ public class ShopBrowseController {
     public String products(@PathVariable Long shopId) {
         shops.profile(shopId);
         return "redirect:/home?shopId=" + shopId;
+    }
+
+    @GetMapping("/{shopId}/offers")
+    public String offers(@PathVariable Long shopId, @RequestParam(defaultValue = "1") int page, Model model) {
+        model.addAttribute("shop", shops.profile(shopId));
+        model.addAttribute("offersPage", offers.list(shopId, page));
+        return "shop/offers";
     }
 }

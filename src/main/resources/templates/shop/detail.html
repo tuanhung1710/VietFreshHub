@@ -5,6 +5,7 @@
 <nav><a th:href="@{/home}">Sản phẩm</a> · <a th:href="@{/shops}">Danh sách cửa hàng</a></nav>
 <h1 th:text="${shop.shopName}"></h1>
 <p><a th:href="@{/shops/{id}/products(id=${shop.shopId})}">Xem sản phẩm của cửa hàng</a></p>
+<p><a th:href="@{/shops/{id}/offers(id=${shop.shopId})}">Khuyến mãi và mã giảm giá</a></p>
 <p th:text="${shop.description}"></p>
 <dl>
     <dt>Điện thoại</dt><dd th:text="${shop.phone}"></dd>

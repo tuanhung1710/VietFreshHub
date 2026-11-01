@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Ưu đãi cửa hàng</title></head>
+<body>
+<a th:href="@{/shops/{id}(id=${shop.shopId})}" th:text="${shop.shopName}"></a>
+<h1>Khuyến mãi và mã giảm giá</h1>
+<p th:if="${offersPage.empty}">Cửa hàng chưa có ưu đãi đang áp dụng.</p>
+<article th:each="offer : ${offersPage.content}">
+    <h2 th:text="${offer.name}"></h2><p th:text="${offer.description}"></p>
+    <p th:if="${offer.code != null}">Mã: <strong th:text="${offer.code}"></strong></p>
+    <p>Giảm <span th:text="${#numbers.formatDecimal(offer.discountValue,1,0)} + ${offer.discountType == 'PERCENT' ? '%' : ' ₫'}"></span></p>
+    <p th:if="${offer.maxDiscount != null}" th:text="'Giảm tối đa ' + ${#numbers.formatDecimal(offer.maxDiscount,1,0)} + ' ₫'"></p>
+    <p th:text="'Đơn tối thiểu ' + ${#numbers.formatDecimal(offer.minimumOrderValue,1,0)} + ' ₫'"></p>
+    <p th:if="${offer.perUserLimit != null}" th:text="'Mỗi khách tối đa ' + ${offer.perUserLimit} + ' lượt'"></p>
+    <p>Hết hạn: <time th:text="${#temporals.format(offer.endAt,'dd/MM/yyyy HH:mm')}"></time></p>
+</article>
+<nav th:if="${offersPage.totalPages > 1}">
+    <a th:if="${offersPage.hasPrevious()}" th:href="@{/shops/{id}/offers(id=${shop.shopId},page=${offersPage.number})}">Trang trước</a>
+    <span th:text="${offersPage.number + 1} + ' / ' + ${offersPage.totalPages}"></span>
+    <a th:if="${offersPage.hasNext()}" th:href="@{/shops/{id}/offers(id=${shop.shopId},page=${offersPage.number + 2})}">Trang tiếp</a>
+</nav>
+</body>
+</html>
