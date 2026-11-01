@@ -87,18 +87,22 @@ public class AdminPayoutController {
     @PostMapping("/batches/{batchId}/shops/{shopId}/result")
     public String recordTransferResult(@PathVariable Long batchId,
                                        @PathVariable Long shopId,
-                                       @RequestParam String result,
                                        @RequestParam(required = false) String reference,
                                        @RequestParam(required = false) String failureReason,
                                        Authentication authentication,
                                        RedirectAttributes redirectAttributes) {
         try {
-            boolean successful;
-            if ("PAID".equals(result)) successful = true;
-            else if ("FAILED".equals(result)) successful = false;
-            else throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
-                    "Kết quả chuyển khoản không hợp lệ.");
-            sellerPayoutService.recordTransferResult(batchId, shopId, successful, reference, failureReason,
+            String normalizedReference = reference == null ? "" : reference.strip();
+            String normalizedFailureReason = failureReason == null ? "" : failureReason.strip();
+            boolean hasReference = !normalizedReference.isBlank();
+            boolean hasFailureReason = !normalizedFailureReason.isBlank();
+            if (hasReference == hasFailureReason) {
+                throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
+                        "Chỉ nhập mã giao dịch nếu thành công hoặc lý do nếu thất bại.");
+            }
+            sellerPayoutService.recordTransferResult(batchId, shopId, hasReference,
+                    hasReference ? normalizedReference : null,
+                    hasFailureReason ? normalizedFailureReason : null,
                     authService.getCurrentUserId(authentication));
             redirectAttributes.addFlashAttribute("successMessage", "Đã lưu kết quả chuyển khoản.");
         } catch (ResponseStatusException exception) {
