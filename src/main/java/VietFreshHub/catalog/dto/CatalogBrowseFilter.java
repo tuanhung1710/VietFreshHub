@@ -8,7 +8,9 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.NotBlank;
 import java.math.BigDecimal;
+import java.util.List;
 import org.springframework.web.util.UriComponentsBuilder;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,8 +26,15 @@ public class CatalogBrowseFilter {
     private Long categoryId;
     @Positive
     private Long shopId;
-    @Pattern(regexp = "newest|price_asc|price_desc|best_selling|rating")
-    private String sort = "newest";
+    @Size(max = 100)
+    private List<@Positive Long> shopIds = List.of();
+    @Size(max = 100)
+    private List<@NotBlank @Size(max = 100) String> places = List.of();
+    @Min(0) @Max(5)
+    private int minRating;
+    private int pageSize = 10;
+    @Pattern(regexp = "popular|latest|sales|asc|desc|newest|price_asc|price_desc|best_selling|rating")
+    private String sort = "popular";
     @DecimalMin("0") @Digits(integer = 16, fraction = 0)
     private BigDecimal minPrice;
     @DecimalMin("0") @Digits(integer = 16, fraction = 0)
@@ -34,6 +43,11 @@ public class CatalogBrowseFilter {
     @AssertTrue(message = "Giá tối thiểu không được lớn hơn giá tối đa.")
     public boolean isPriceRangeValid() {
         return minPrice == null || maxPrice == null || minPrice.compareTo(maxPrice) <= 0;
+    }
+
+    @AssertTrue(message = "Số sản phẩm mỗi trang phải là 5, 10, 20 hoặc 50.")
+    public boolean isPageSizeAllowed() {
+        return List.of(5, 10, 20, 50).contains(pageSize);
     }
 
     public String urlForPage(int targetPage) {
@@ -50,9 +64,13 @@ public class CatalogBrowseFilter {
         var builder = UriComponentsBuilder.fromPath("/home").queryParam("keyword", keyword);
         if (categoryId != null) builder.queryParam("categoryId", categoryId);
         if (shopId != null) builder.queryParam("shopId", shopId);
+        if (shopIds != null && !shopIds.isEmpty()) builder.queryParam("shopIds", shopIds);
+        if (places != null && !places.isEmpty()) builder.queryParam("places", places);
+        if (minRating > 0) builder.queryParam("minRating", minRating);
+        builder.queryParam("pageSize", pageSize);
         if (minPrice != null) builder.queryParam("minPrice", minPrice);
         if (maxPrice != null) builder.queryParam("maxPrice", maxPrice);
-        if (!"newest".equals(sort)) builder.queryParam("sort", sort);
+        if (!"popular".equals(sort)) builder.queryParam("sort", sort);
         return builder;
     }
 }
