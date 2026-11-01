@@ -1,5 +1,6 @@
 package VietFreshHub.inventory.entity;
 
+import VietFreshHub.common.BusinessCodes;
 import VietFreshHub.inventory.enums.BatchStatus;
 
 import jakarta.persistence.Column;
@@ -10,6 +11,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -57,8 +59,9 @@ public class InventoryBatch {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    @jakarta.persistence.Transient
+    /** Tạo mã LOT từ ID lô để hiển thị, không lưu thành một cột dữ liệu riêng. */
+    @Transient
     public String getBatchCode() {
-        return VietFreshHub.common.BusinessCodes.format("LOT", batchId);
+        return BusinessCodes.format("LOT", batchId);
     }
 }

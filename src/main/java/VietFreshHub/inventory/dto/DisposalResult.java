@@ -1,7 +1,8 @@
 package VietFreshHub.inventory.dto;
 
-/** Counts lots rather than adding quantities that can have different sale units. */
+/** Thống kê số lô, tránh cộng số lượng hàng có thể dùng các đơn vị bán khác nhau. */
 public record DisposalResult(int disposedBatchCount, int reservedBatchCount) {
+    /** Tạo thông báo số lô đã hủy và nhắc xử lý các lô còn hàng giữ cho đơn. */
     public String getMessage() {
         String message = disposedBatchCount > 0
                 ? "Đã hủy toàn bộ hàng hết hạn chưa giữ cho đơn trong " + disposedBatchCount + " lô."
