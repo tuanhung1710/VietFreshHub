@@ -278,8 +278,4 @@ public class AuthController {
                         authority.getAuthority().equals(role));
     }
 
-    @GetMapping("/home")
-    public String customerHome() {
-        return "redirect:/customer/home";
-    }
 }

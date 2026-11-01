@@ -5,7 +5,7 @@
 <div th:replace="~{fragments/header :: header}"></div>
 <main class="w-full pt-24 bg-surface flex-1">
     <style>@import url('/css/storefront.css');</style>
-    <section class="max-w-[1280px] mx-auto px-margin py-space-md" aria-label="Tiện ích khách hàng">
+    <section th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" class="max-w-[1280px] mx-auto px-margin py-space-md" aria-label="Tiện ích khách hàng">
         <div class="flex flex-wrap items-center gap-3">
             <a th:href="@{/customer/chat}" class="rounded-lg bg-green-700 px-5 py-3 font-semibold text-white">Tin nhắn với cửa hàng</a>
             <a th:href="@{/cart}" class="rounded-lg bg-green-600 px-5 py-3 font-semibold text-white">Giỏ hàng</a>

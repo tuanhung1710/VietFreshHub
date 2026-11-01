@@ -29,7 +29,7 @@ public class CustomerCartViewController {
         return customer ? cartService.getActiveCart(currentCustomer.requireCustomerId(authentication))
                 : CartDto.builder().totalItems(0).totalAmount(BigDecimal.ZERO).build();
     }
-    @GetMapping("/customer/home")
+    @GetMapping({"/home", "/customer/home"})
     public String showHomePage(@RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "") String keyword,
                               Authentication authentication, Model model) {
         if (page < 1 || page > 10000) return "redirect:/home";
