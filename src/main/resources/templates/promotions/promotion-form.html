@@ -97,7 +97,7 @@
                              th:errors="*{discountType}"></div>
                     </div>
 
-                    <div class="col-md-6 mb-3">
+                    <div id="discountValueCol" class="col-md-6 mb-3">
                         <label for="discountValue" class="form-label">
                             Giá trị giảm *
                         </label>
@@ -116,7 +116,7 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-md-6 mb-3">
+                    <div id="maxDiscountCol" class="col-md-6 mb-3">
                         <label for="maxDiscount" class="form-label">
                             Giảm tối đa (VND)
                         </label>
@@ -132,7 +132,7 @@
                         </div>
                     </div>
 
-                    <div class="col-md-6 mb-3">
+                    <div id="minimumOrderCol" class="col-md-6 mb-3">
                         <label for="minimumOrderValue" class="form-label">
                             Giá trị đơn tối thiểu (VND) *
                         </label>
@@ -195,5 +195,32 @@
         </div>
     </div>
 </main>
+    <script>
+        (function () {
+            var typeSelect = document.getElementById('discountType');
+            var valueCol = document.getElementById('discountValueCol');
+            var minOrderCol = document.getElementById('minimumOrderCol');
+            var maxCol = document.getElementById('maxDiscountCol');
+            var valueInput = document.getElementById('discountValue');
+            var minOrderInput = document.getElementById('minimumOrderValue');
+
+            function sync() {
+                var type = typeSelect.value;
+
+                // Giá trị giảm và giá trị đơn tối thiểu chỉ hiện sau khi đã chọn kiểu giảm.
+                var hasType = type !== '';
+                valueCol.classList.toggle('d-none', !hasType);
+                minOrderCol.classList.toggle('d-none', !hasType);
+                valueInput.required = hasType;
+                minOrderInput.required = hasType;
+
+                // Giảm tối đa chỉ áp dụng cho kiểu giảm theo phần trăm.
+                maxCol.classList.toggle('d-none', type !== 'PERCENT');
+            }
+
+            typeSelect.addEventListener('change', sync);
+            sync();
+        })();
+    </script>
 </body>
 </html>
