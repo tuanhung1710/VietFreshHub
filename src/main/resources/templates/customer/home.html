@@ -34,10 +34,18 @@
             <p class="muted" th:text="${productPage.totalElements} + ' sản phẩm'"></p>
         </div>
         <div class="category-chips" aria-label="Tìm theo loại trái cây">
-            <a th:href="@{/home(keyword=${keyword})}" th:classappend="${filter.categoryId == null} ? 'active'">Tất cả</a>
-            <a th:each="category : ${categories}" th:href="@{/home(categoryId=${category.categoryId},keyword=${keyword})}"
+            <a th:href="${filter.urlForCategory(null)}" th:classappend="${filter.categoryId == null} ? 'active'">Tất cả</a>
+            <a th:each="category : ${categories}" th:href="${filter.urlForCategory(category.categoryId)}"
                th:classappend="${filter.categoryId == category.categoryId} ? 'active'" th:text="${category.name}"></a>
         </div>
+        <form method="get" th:action="@{/home}" th:object="${filter}">
+            <input type="hidden" th:field="*{categoryId}">
+            <label>Tìm tên <input type="search" th:field="*{keyword}" maxlength="100"></label>
+            <label>Giá từ <input type="number" th:field="*{minPrice}" min="0" step="1"></label>
+            <label>Đến <input type="number" th:field="*{maxPrice}" min="0" step="1"></label>
+            <button>Lọc sản phẩm</button> <a th:href="@{/home}">Xóa bộ lọc</a>
+            <ul th:if="${#fields.hasAnyErrors()}"><li th:each="error : ${#fields.allErrors()}" th:text="${error}"></li></ul>
+        </form>
         <section th:if="${#lists.isEmpty(products)}" class="panel empty">
             <h2 th:text="${#strings.isEmpty(keyword)} ? 'Chưa có sản phẩm để hiển thị' : 'Không tìm thấy sản phẩm phù hợp'"></h2>
             <p class="muted">Bạn có thể thử từ khóa khác hoặc xem tất cả sản phẩm.</p><a class="button secondary" th:href="@{/home}">Xem tất cả sản phẩm</a>
@@ -59,9 +67,9 @@
             </article>
         </div>
         <nav th:if="${productPage.totalPages > 1}" class="pagination" aria-label="Phân trang sản phẩm">
-            <a th:if="${productPage.hasPrevious()}" class="button secondary" th:href="@{/home(page=${productPage.number},keyword=${keyword},categoryId=${filter.categoryId})}">← Trang trước</a>
+            <a th:if="${productPage.hasPrevious()}" class="button secondary" th:href="${filter.urlForPage(productPage.number)}">← Trang trước</a>
             <span class="muted" th:text="'Trang ' + ${productPage.number + 1} + ' / ' + ${productPage.totalPages}"></span>
-            <a th:if="${productPage.hasNext()}" class="button secondary" th:href="@{/home(page=${productPage.number + 2},keyword=${keyword},categoryId=${filter.categoryId})}">Trang tiếp →</a>
+            <a th:if="${productPage.hasNext()}" class="button secondary" th:href="${filter.urlForPage(productPage.number + 2)}">Trang tiếp →</a>
         </nav>
     </section>
     </div>
