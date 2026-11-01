@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Nationalized;
+import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -36,6 +38,7 @@ public class Payment {
     private String transactionReference;
     @Column(name="created_at", nullable=false, updatable=false)
     private LocalDateTime createdAt;
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     @Column(name="paid_at") private LocalDateTime paidAt;
     @PrePersist
     void timestamp() {

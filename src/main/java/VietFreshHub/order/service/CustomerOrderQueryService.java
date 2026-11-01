@@ -3,4 +3,5 @@ import VietFreshHub.order.dto.OrderDetailsResponse;
 public interface CustomerOrderQueryService {
     Long getCartBadgeTotal(Long customerId);
     OrderDetailsResponse getDetails(Long customerId,Long orderId);
+    OrderDetailsResponse getShopDetails(Long customerId,Long shopOrderId);
 }

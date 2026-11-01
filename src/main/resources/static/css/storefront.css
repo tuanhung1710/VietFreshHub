@@ -180,12 +180,12 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .cancel-order label { font-size:12px; }.cancel-order textarea { width:100%;border:1px solid var(--line);border-radius:5px;padding:10px;margin:8px 0 12px;font:inherit; }
 .button.danger { background:var(--danger);border-color:var(--danger); }.account-dropdown a { display:block;margin-top:12px;font-size:13px; }
 .tracking-shops { display:flex;flex-direction:column;gap:22px;margin-top:25px; }.tracking-shop h2 { font-size:18px; }
-.tracking-page .order-state { color:#495057;background:#eceff1; }
-.tracking-page .order-state:is([data-status="PENDING"],[data-status="UNASSIGNED"],[data-status="ASSIGNED"],[data-status="PARTIALLY_COMPLETED"]) { color:#805600;background:#fff3cd; }
-.tracking-page .order-state:is([data-status="CONFIRMED"],[data-status="ACCEPTED"],[data-status="PICKED_UP"]) { color:#155a86;background:#e5f2fc; }
-.tracking-page .order-state:is([data-status="PROCESSING"],[data-status="PREPARING"],[data-status="READY_FOR_DELIVERY"],[data-status="OUT_FOR_DELIVERY"]) { color:#594197;background:#eee8fa; }
-.tracking-page .order-state:is([data-status="COMPLETED"],[data-status="DELIVERED"]) { color:#14633c;background:#edf5ec; }
-.tracking-page .order-state:is([data-status="FAILED"],[data-status="CANCELLED"]) { color:#9d3030;background:#fff0ef; }
+:is(.tracking-page,.order-history-page) .order-state { color:#495057;background:#eceff1; }
+:is(.tracking-page,.order-history-page) .order-state:is([data-status="PENDING"],[data-status="UNASSIGNED"],[data-status="ASSIGNED"],[data-status="PARTIALLY_COMPLETED"]) { color:#805600;background:#fff3cd; }
+:is(.tracking-page,.order-history-page) .order-state:is([data-status="CONFIRMED"],[data-status="ACCEPTED"],[data-status="PICKED_UP"]) { color:#155a86;background:#e5f2fc; }
+:is(.tracking-page,.order-history-page) .order-state:is([data-status="PROCESSING"],[data-status="PREPARING"],[data-status="READY_FOR_DELIVERY"],[data-status="OUT_FOR_DELIVERY"]) { color:#594197;background:#eee8fa; }
+:is(.tracking-page,.order-history-page) .order-state:is([data-status="COMPLETED"],[data-status="DELIVERED"]) { color:#14633c;background:#edf5ec; }
+:is(.tracking-page,.order-history-page) .order-state:is([data-status="FAILED"],[data-status="CANCELLED"]) { color:#9d3030;background:#fff0ef; }
 .order-timeline { list-style:none;padding:0;margin:20px 0 0; }.order-timeline li { display:grid;grid-template-columns:155px 1fr;gap:20px;position:relative;border-left:2px solid #d9e7da;padding:0 0 22px 20px; }
 .order-timeline li:before { content:'';position:absolute;width:10px;height:10px;border-radius:50%;background:var(--green);left:-6px;top:6px; }
 .order-timeline time { font-size:12px;color:var(--muted); }.order-timeline strong { font-size:14px; }.order-timeline p { margin:4px 0 0; }

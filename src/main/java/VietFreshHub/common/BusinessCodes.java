@@ -11,7 +11,7 @@ public final class BusinessCodes {
         if (id <= 0) throw new IllegalArgumentException("Business reference requires a persisted ID");
         int width = switch (prefix) {
             case "SHP", "PRM" -> 4;
-            case "PRD", "SKU", "LOT", "ORD", "SOR", "PAY", "DLV", "INV" -> 6;
+            case "PRD", "SKU", "LOT", "ORD", "SOR", "VFH", "PAY", "DLV", "INV" -> 6;
             default -> throw new IllegalArgumentException("Unknown business code prefix: " + prefix);
         };
         return prefix + "-" + String.format(Locale.ROOT, "%0" + width + "d", id);

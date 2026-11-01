@@ -19,6 +19,7 @@ public interface CustomerOrderReadRepository extends Repository<Order, Long> {
         Long getShopOrderId();
         String getShopName();
         String getStatus();
+        String getPaymentStatus();
         BigDecimal getSubtotal();
         BigDecimal getDiscountTotal();
         BigDecimal getShippingFee();
@@ -43,7 +44,7 @@ public interface CustomerOrderReadRepository extends Repository<Order, Long> {
         BigDecimal getAmount();
         LocalDateTime getPaidAt();
     }
-    @Query("select s.shopOrderId as shopOrderId, s.shop.shopName as shopName, s.status as status, "
+    @Query("select s.shopOrderId as shopOrderId, s.shop.shopName as shopName, s.status as status, s.paymentStatus as paymentStatus, "
             + "s.subtotal as subtotal, s.discountTotal as discountTotal, s.shippingFee as shippingFee, s.totalAmount as totalAmount "
             + "from ShopOrder s where s.order.orderId=:orderId and s.order.customer.userId=:customerId order by s.shopOrderId")
     List<ShopSummary> findShops(@Param("customerId") Long customerId, @Param("orderId") Long orderId);
@@ -54,6 +55,13 @@ public interface CustomerOrderReadRepository extends Repository<Order, Long> {
             + "from OrderItem i where i.shopOrder.order.orderId=:orderId and i.shopOrder.order.customer.userId=:customerId "
             + "order by i.shopOrder.shopOrderId, i.orderItemId")
     List<ItemSnapshot> findItems(@Param("customerId") Long customerId, @Param("orderId") Long orderId);
+
+    @Query("select i.shopOrder.shopOrderId as shopOrderId, i.productNameSnapshot as productName, "
+            + "i.variantNameSnapshot as variantName, i.skuSnapshot as sku, i.variant.thumbnailUrl as imageUrl, "
+            + "i.quantity as quantity, i.unitPrice as unitPrice, i.discountAmount as discountAmount, i.totalAmount as totalAmount "
+            + "from OrderItem i where i.shopOrder.shopOrderId=:shopOrderId and i.shopOrder.order.customer.userId=:customerId "
+            + "order by i.orderItemId")
+    List<ItemSnapshot> findShopItems(@Param("customerId") Long customerId, @Param("shopOrderId") Long shopOrderId);
 
     @Query("select p.paymentId as paymentId, p.paymentMethod.name as methodName, p.paymentMethod.methodCode as methodCode, "
             + "p.status as status, p.amount as amount, p.paidAt as paidAt from Payment p "

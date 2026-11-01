@@ -5,7 +5,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Nationalized;
+import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
@@ -17,6 +19,7 @@ public class OrderStatusHistory {
     @Column(nullable=false, length=30) private String status;
     @ManyToOne(fetch=FetchType.LAZY) @JoinColumn(name="changed_by") private User changedBy;
     @Nationalized @Column(length=1000) private String note;
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     @Column(name="created_at", nullable=false, updatable=false) private LocalDateTime createdAt;
     @PrePersist void timestamp() { if(createdAt==null) createdAt=LocalDateTime.now(ZoneOffset.UTC).withNano(0); }
 }

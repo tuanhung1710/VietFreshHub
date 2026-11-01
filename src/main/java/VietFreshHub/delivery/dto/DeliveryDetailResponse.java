@@ -26,7 +26,6 @@ public class DeliveryDetailResponse {
     private LocalDateTime deliveredAt;
     private String failureReason;
     private String returnStatusLabel;
-    private long remainingOfferSeconds;
     private String assignmentStatusLabel;
     private String deliveryStatusLabel;
     private String recipientName;
@@ -35,4 +34,6 @@ public class DeliveryDetailResponse {
     private DeliveryLocationResponse deliveryLocation;
     private String shopName;
     private BigDecimal cashToCollect;
+    private BigDecimal totalAmount;
+    private String paymentStatusLabel;
 }

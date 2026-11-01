@@ -18,11 +18,13 @@ import VietFreshHub.inventory.dto.MarkdownRequest;
 import VietFreshHub.inventory.dto.StockChangeRequest;
 import VietFreshHub.inventory.entity.BatchMarkdown;
 import VietFreshHub.inventory.entity.InventoryBatch;
+import VietFreshHub.inventory.entity.InventoryOrderLine;
 import VietFreshHub.inventory.enums.BatchStatus;
 import VietFreshHub.inventory.enums.MarkdownStatus;
 import VietFreshHub.inventory.enums.StockTransactionType;
 import VietFreshHub.inventory.repository.BatchMarkdownRepository;
 import VietFreshHub.inventory.repository.InventoryBatchRepository;
+import VietFreshHub.inventory.repository.InventoryOrderLineRepository;
 import VietFreshHub.inventory.repository.StockAllocationRepository;
 import VietFreshHub.inventory.rule.InventoryRules;
 import VietFreshHub.inventory.service.BatchAllocationHistoryService;
@@ -38,6 +40,8 @@ import VietFreshHub.product.repository.ProductRepository;
 import VietFreshHub.product.repository.ProductVariantRepository;
 import VietFreshHub.product.service.ProductAvailabilityService;
 import VietFreshHub.shop.service.ShopService;
+import VietFreshHub.order.entity.ShopOrder;
+import VietFreshHub.order.repository.ShopOrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.AccessDeniedException;
@@ -46,6 +50,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +74,8 @@ public class InventoryServiceImpl implements InventoryService {
     private final InventoryJournalService inventoryJournalService;
     private final InventoryLockHelper inventoryLockHelper;
     private final BatchAllocationHistoryService batchAllocationHistoryService;
+    private final InventoryOrderLineRepository inventoryOrderLineRepository;
+    private final ShopOrderRepository shopOrderRepository;
 
     /**
      * Nhập lô mới cho phân loại thuộc cửa hàng và ghi lịch sử kho.
@@ -77,21 +84,21 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     @Transactional
     public void restock(Authentication authentication, Long variantId, BatchRequest form) {
-        // Khóa SKU cùng sản phẩm cha, kiểm tra quyền và chặn nhập vào dữ liệu đã ngừng kinh doanh.
+
         ProductVariant variant = getOwnedVariantForUpdate(authentication, variantId);
         Product product = productRepository.findById(variant.getProductId()).orElseThrow();
         require(
                 product.getStatus() != ProductStatus.DELETED
                         && variant.getStatus() != VariantStatus.DELETED,
                 "Không thể nhập kho cho sản phẩm hoặc phân loại đã ngừng kinh doanh.");
-        // Kiểm tra ngày nhập và hạn sử dụng được nhập trực tiếp, cùng lượng nhập và giá vốn.
+
         InventoryRules.dates(form.getReceivedDate(), form.getExpiryDate(), today());
         require(form.getQuantity() != null && form.getQuantity() > 0, "Số lượng nhập phải lớn hơn 0.");
         String changeReason = reason(form.getReason());
         validateCost(form);
 
         InventoryBatch batch = createBatch(variantId, form);
-        // Nhập hàng tự bật lại SKU hết hàng; SKU do người bán tạm dừng vẫn giữ trạng thái tạm dừng.
+
         if (variant.getStatus() == VariantStatus.OUT_OF_STOCK) {
             variant.setStatus(VariantStatus.ACTIVE);
             variant.setUpdatedAt(now());
@@ -152,7 +159,7 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     @Transactional
     public void updateBatch(Authentication authentication, Long batchId, BatchRequest form) {
-        // Khóa lô trước khi kiểm tra; sửa thông tin lô không điều chỉnh số lượng tồn.
+
         InventoryBatch batch = getOwnedBatchForUpdate(authentication, batchId);
         validateCost(form);
         String changeReason = reason(form.getReason());
@@ -184,7 +191,7 @@ public class InventoryServiceImpl implements InventoryService {
                 form.getReceivedDate() != null && !form.getReceivedDate().isAfter(date),
                 "Ngày nhập kho không được sau hôm nay.");
         if (!Objects.equals(form.getExpiryDate(), batch.getExpiryDate())) {
-            // Lô đã hết hạn không được sửa hạn để trở thành hàng còn hạn.
+
             require(!expired(batch, date), "Không thể đổi hạn sử dụng của lô đã hết hạn.");
             InventoryRules.dates(form.getReceivedDate(), form.getExpiryDate(), date);
         }
@@ -217,7 +224,7 @@ public class InventoryServiceImpl implements InventoryService {
         String changeReason = reason(form.getReason());
         require(form.getQuantity() != null, "Vui lòng nhập số lượng điều chỉnh.");
         int previousQuantity = batch.getQuantityOnHand();
-        // quantity là mức tăng/giảm, không phải tồn mới; tồn sau điều chỉnh phải đủ cho hàng đã giữ.
+
         int nextQuantity = InventoryRules.adjustedQuantity(batch, form.getQuantity(), today());
         updateQuantity(batch, nextQuantity);
 
@@ -250,7 +257,7 @@ public class InventoryServiceImpl implements InventoryService {
         LocalDate date = today();
         require(expired(batch, date), "Chỉ sử dụng thao tác này cho lô đã hết hạn.");
         validateDisposalBalance(batch);
-        // Chỉ hủy phần chưa giữ cho đơn; phần đang giữ được trả về để người quản lý tiếp tục xử lý.
+
         int quantity = InventoryRules.disposableQuantity(batch, date);
         if (quantity > 0) {
             disposeBatch(batch, quantity, authService.getCurrentUserId(authentication), date);
@@ -258,10 +265,6 @@ public class InventoryServiceImpl implements InventoryService {
         return new DisposalResult(quantity > 0 ? 1 : 0, batch.getReservedQuantity() > 0 ? 1 : 0);
     }
 
-    /**
-     * Hủy phần hàng hết hạn chưa giữ cho đơn trên mọi phân loại của sản phẩm.
-     * Khóa sản phẩm, phân loại và lô theo thứ tự thống nhất để tránh xung đột cập nhật.
-     */
     @Override
     @Transactional
     public DisposalResult disposeExpiredProduct(Authentication authentication, Long productId) {
@@ -270,7 +273,7 @@ public class InventoryServiceImpl implements InventoryService {
                 .orElseThrow(() -> new AccessDeniedException("Sản phẩm không thuộc cửa hàng của bạn."));
         inventoryLockHelper.refresh(product);
         List<ProductVariant> variants = productVariantRepository.findByProductIdOrderByVariantId(productId);
-        // Dùng cùng thứ tự với xác nhận đơn và nhập kho: sản phẩm, phân loại theo ID, rồi lô theo ID.
+
         for (ProductVariant snapshot : variants) {
             inventoryLockHelper.refresh(productVariantRepository.lockById(snapshot.getVariantId()).orElseThrow());
         }
@@ -283,7 +286,7 @@ public class InventoryServiceImpl implements InventoryService {
         Long actorId = authService.getCurrentUserId(authentication);
         int disposedBatches = 0;
         int reservedBatches = 0;
-        // Đọc lại từng lô sau khi khóa, vì tồn hoặc lượng giữ có thể đã đổi từ lúc tải danh sách.
+
         for (InventoryBatch snapshot : snapshots.stream().sorted(Comparator.comparing(InventoryBatch::getBatchId)).toList()) {
             InventoryBatch batch = inventoryLockHelper.refresh(
                     inventoryBatchRepository.lockById(snapshot.getBatchId()).orElseThrow());
@@ -291,7 +294,7 @@ public class InventoryServiceImpl implements InventoryService {
                 continue;
             }
             validateDisposalBalance(batch);
-            // Một lô có thể vừa hủy được phần hàng dư, vừa còn phần đang giữ cho đơn.
+
             if (batch.getReservedQuantity() > 0) {
                 reservedBatches++;
             }
@@ -304,14 +307,12 @@ public class InventoryServiceImpl implements InventoryService {
         return new DisposalResult(disposedBatches, reservedBatches);
     }
 
-    /** Kiểm tra tồn và lượng giữ hợp lệ, bảo đảm lượng giữ không âm và không vượt tồn thực tế. */
     private void validateDisposalBalance(InventoryBatch batch) {
         require(batch.getQuantityOnHand() != null && batch.getReservedQuantity() != null
                         && batch.getReservedQuantity() >= 0 && batch.getQuantityOnHand() >= batch.getReservedQuantity(),
                 "Dữ liệu tồn kho của lô không hợp lệ. Vui lòng kiểm tra trước khi hủy hàng.");
     }
 
-    /** Trừ lượng hủy hợp lệ khỏi tồn thực tế, sau đó ghi biến động hết hạn và lịch sử hủy hàng. */
     private void disposeBatch(InventoryBatch batch, int quantity, Long actorId, LocalDate date) {
         String changeReason = InventoryRules.EXPIRED_DISPOSAL_REASON;
         Long batchId = batch.getBatchId();
@@ -319,7 +320,6 @@ public class InventoryServiceImpl implements InventoryService {
         int nextQuantity = InventoryRules.disposedQuantity(batch, quantity, date);
         updateQuantity(batch, nextQuantity);
 
-        // Ghi lượng âm vì hủy hàng làm giảm tồn thực tế; lượng giữ cho đơn không bị trừ.
         inventoryJournalService.stock(
                 batch.getVariantId(),
                 batchId,
@@ -354,7 +354,7 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     @Transactional
     public void block(Authentication authentication, Long batchId, boolean blocked, String value) {
-        // Khóa lô làm lượng khả dụng bằng 0 theo quy tắc kho, không xóa tồn hay phân bổ đang giữ.
+
         InventoryBatch batch = getOwnedBatchForUpdate(authentication, batchId);
         String changeReason = reason(value);
         BatchStatus status = BatchStatus.ACTIVE;
@@ -381,7 +381,7 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     @Transactional
     public void markdown(Authentication authentication, Long batchId, MarkdownRequest form) {
-        // Kiểm tra điều kiện bán của shop, sản phẩm và SKU trước khi xét điều kiện riêng của lô.
+
         InventoryBatch batch = getOwnedBatchForUpdate(authentication, batchId);
         ProductVariant variant =
                 productVariantRepository.findById(batch.getVariantId()).orElseThrow();
@@ -393,7 +393,7 @@ public class InventoryServiceImpl implements InventoryService {
                 batch, variant.getPrice(), form.getPrice(), form.getEndDate(), date);
         String changeReason = reason(form.getReason());
         Long actorId = authService.getCurrentUserId(authentication);
-        // Đóng các đợt giảm giá cũ để lô chỉ còn đợt giảm đang bật mới nhất.
+
         cancelActiveMarkdowns(batchId);
         BatchMarkdown markdown = new BatchMarkdown();
         markdown.setBatchId(batchId);
@@ -478,16 +478,43 @@ public class InventoryServiceImpl implements InventoryService {
         response.setVariantName(variant.getVariantName());
         List<AllocationResponse> details = batchAllocationHistoryService.load(
                 batchId, variant.getVariantId(), product.getShopId(), variant.getUnit(), response.getAllocations());
-        response.setAllocationDetails(details);
-        Map<Long, String> orderCodes = new HashMap<>();
+        List<Long> lineIds = details.stream().map(AllocationResponse::getOrderItemId).toList();
+        Map<Long, String> orderCodes = orderCodesForLines(lineIds, product.getShopId());
+        List<AllocationResponse> allocationDetails = new ArrayList<>();
         for (AllocationResponse detail : details) {
-            orderCodes.put(detail.getOrderItemId(), detail.getOrderCode());
+            String orderCode = orderCodes.get(detail.getOrderItemId());
+            if (orderCode != null) {
+                allocationDetails.add(new AllocationResponse(
+                        detail.getAllocationId(), detail.getOrderItemId(), orderCode,
+                        detail.getQuantity(), detail.getUnit(), detail.getStatus(),
+                        detail.getUpdatedAt(), detail.getHistory()));
+            }
         }
+        response.setAllocationDetails(allocationDetails);
         response.setAllocationOrderCodes(orderCodes);
         return response;
     }
 
-    /** Kiểm tra điều kiện kinh doanh cho phép giảm giá; hạn và tồn của từng lô được xét riêng. */
+    private Map<Long, String> orderCodesForLines(List<Long> lineIds, Long shopId) {
+        Map<Long, String> orderCodes = new HashMap<>();
+        if (lineIds.isEmpty()) return orderCodes;
+        Map<Long, Long> shopOrderIds = new HashMap<>();
+        for (InventoryOrderLine line : inventoryOrderLineRepository.findAllById(lineIds)) {
+            shopOrderIds.put(line.getOrderItemId(), line.getShopOrderId());
+        }
+        Map<Long, String> references = new HashMap<>();
+        for (ShopOrder order : shopOrderRepository.findAllById(shopOrderIds.values())) {
+            if (shopId.equals(order.getShopId())) {
+                references.put(order.getShopOrderId(), order.getShopOrderCode());
+            }
+        }
+        for (Map.Entry<Long, Long> line : shopOrderIds.entrySet()) {
+            String code = references.get(line.getValue());
+            if (code != null) orderCodes.put(line.getKey(), code);
+        }
+        return orderCodes;
+    }
+
     private boolean markdownAllowed(Product product, ProductVariant variant) {
         return productAvailabilityService.canSellVariant(product.getShopId(), variant);
     }
@@ -522,7 +549,6 @@ public class InventoryServiceImpl implements InventoryService {
         return variant;
     }
 
-    /** Thứ tự khóa luôn là sản phẩm rồi phân loại. */
     private ProductVariant getOwnedVariantForUpdate(Authentication authentication, Long variantId) {
         Long shopId = shopService.getManagedShopId(authentication);
         ProductVariant snapshot = findVariantSnapshot(variantId);
@@ -544,7 +570,6 @@ public class InventoryServiceImpl implements InventoryService {
         return batch;
     }
 
-    /** Khóa sản phẩm, phân loại rồi lô; tải lại sau khi đã có khóa. */
     private InventoryBatch getOwnedBatchForUpdate(Authentication authentication, Long batchId) {
         InventoryBatch snapshot = findBatchSnapshot(batchId);
         getOwnedVariantForUpdate(authentication, snapshot.getVariantId());
