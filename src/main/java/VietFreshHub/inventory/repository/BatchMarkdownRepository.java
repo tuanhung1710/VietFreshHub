@@ -10,8 +10,10 @@ import java.util.List;
 
 @Repository
 public interface BatchMarkdownRepository extends JpaRepository<BatchMarkdown, Long> {
+    /** Tải giảm giá của nhiều lô theo trạng thái, ưu tiên bản ghi mới nhất. */
     List<BatchMarkdown> findByBatchIdInAndStatusOrderByMarkdownIdDesc(
             List<Long> ids, MarkdownStatus status);
 
+    /** Lấy các đợt giảm giá của một lô theo trạng thái chỉ định. */
     List<BatchMarkdown> findByBatchIdAndStatus(Long id, MarkdownStatus status);
 }
