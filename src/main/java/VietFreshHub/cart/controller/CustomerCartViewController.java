@@ -2,7 +2,6 @@ package VietFreshHub.cart.controller;
 import VietFreshHub.auth.service.CurrentCustomerService;
 import VietFreshHub.cart.dto.*;
 import VietFreshHub.cart.service.CartService;
-import VietFreshHub.catalog.service.CatalogService;
 import VietFreshHub.exception.OutOfStockException;
 import VietFreshHub.exception.ResourceNotFoundException;
 import jakarta.validation.Valid;
@@ -20,50 +19,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CustomerCartViewController {
     private final CartService cartService;
-    private final CatalogService catalogService;
     private final CurrentCustomerService currentCustomer;
-    private final VietFreshHub.shop.service.ShopBrowseService shops;
-
-    @ExceptionHandler(ResourceNotFoundException.class)
-    @ResponseStatus(org.springframework.http.HttpStatus.NOT_FOUND)
-    public String productUnavailable(ResourceNotFoundException exception, Model model) {
-        model.addAttribute("message", exception.getMessage());
-        return "customer/catalog-error";
-    }
 
     private CartDto populateActiveCart(Authentication authentication) {
         boolean customer = authentication != null && authentication.isAuthenticated()
                 && authentication.getAuthorities().stream().anyMatch(a -> "ROLE_CUSTOMER".equals(a.getAuthority()));
         return customer ? cartService.getActiveCart(currentCustomer.requireCustomerId(authentication))
                 : CartDto.builder().totalItems(0).totalAmount(BigDecimal.ZERO).build();
-    }
-    @GetMapping({"/home", "/customer/home"})
-    public String showHomePage(@Valid @ModelAttribute("filter") VietFreshHub.catalog.dto.CatalogBrowseFilter filter, BindingResult errors,
-                              Authentication authentication, Model model) {
-        model.addAttribute("cart", populateActiveCart(authentication));
-        var products = errors.hasErrors() ? org.springframework.data.domain.Page.<VietFreshHub.catalog.dto.CatalogProductResponse>empty()
-                : catalogService.listProducts(filter);
-        if (errors.hasErrors()) model.addAttribute("errorMessage", "Bộ lọc không hợp lệ. Vui lòng kiểm tra lại giá trị đã nhập.");
-        model.addAttribute("products", products.getContent());
-        model.addAttribute("productPage", products);
-        model.addAttribute("keyword", filter.getKeyword());
-        model.addAttribute("categories", catalogService.categories());
-        if (!errors.hasErrors() && filter.getShopId() != null) model.addAttribute("catalogShop", shops.profile(filter.getShopId()));
-        return "customer/home";
-    }
-    @GetMapping({"/product-detail", "/product-detail/{variantId}"})
-    public String showProductDetail(@PathVariable(required = false) Long variantId,
-            @RequestParam(required = false) Long productId, @RequestParam(required = false) String slug, Authentication authentication, Model model) {
-        model.addAttribute("cart", populateActiveCart(authentication));
-        var product = catalogService.getProduct(variantId, productId, slug);
-        var selected = product.getSelectedVariant();
-        model.addAttribute("product", product);
-        model.addAttribute("variants", product.getVariants());
-        model.addAttribute("selectedVariant", selected);
-        model.addAttribute("variantId", selected == null ? null : selected.getVariantId());
-        model.addAttribute("availableStock", selected == null ? 0 : selected.getAvailableStock());
-        model.addAttribute("purchasable", selected != null && selected.isPurchasable());
-        return "customer/product-detail";
     }
     @GetMapping("/cart")
     public String showCartPage(Authentication authentication, Model model) {

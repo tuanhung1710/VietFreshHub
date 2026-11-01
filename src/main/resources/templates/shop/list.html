@@ -1,43 +1,27 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/customer-shop :: head('Cửa hàng')}"></head>
-<body class="shopfront">
+<head th:replace="~{fragments/customer-shop :: head('Cửa hàng đã lưu')}"></head>
+<body>
 <header th:replace="~{fragments/customer-shop :: header}"></header>
-<main class="sf-wrap sf-main">
+<main class="container">
+    <div class="bread"><a th:href="@{/home}">Trang chủ</a> / <a th:href="@{/shops}">Gian hàng</a> / Đã lưu</div>
+    <h1>Cửa hàng đã lưu</h1>
     <div th:replace="~{fragments/customer-shop :: messages}"></div>
-    <div class="sf-heading"><div><p class="sf-kicker">KHÁM PHÁ CỬA HÀNG</p>
-        <h1 th:text="${favoritesOnly == true ? 'Cửa hàng đã lưu' : 'Tìm cửa hàng của bạn'}"></h1>
-        <p class="sf-muted">Chọn cửa hàng, xem sản phẩm và ưu đãi dành cho bạn.</p></div>
-        <span class="sf-muted" th:text="${shopsPage.totalElements} + ' cửa hàng'"></span>
-    </div>
-    <nav class="sf-chips" th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" aria-label="Danh sách cửa hàng">
-        <a th:classappend="${favoritesOnly != true} ? 'active'" th:href="@{/shops}">Tất cả cửa hàng</a>
-        <a th:classappend="${favoritesOnly == true} ? 'active'" th:href="@{/customer/favorite-shops}">Đã lưu</a>
-    </nav>
-    <form th:unless="${favoritesOnly == true}" class="sf-filters" method="get" th:action="@{/shops}">
-        <label class="sf-search">Tên cửa hàng <input name="keyword" th:value="${keyword}" maxlength="100" type="search" placeholder="Tìm cửa hàng..."></label>
-        <button class="sf-button">Tìm cửa hàng</button>
-    </form>
-    <section th:if="${shopsPage.empty}" class="sf-empty"><h2 th:text="${favoritesOnly == true ? 'Bạn chưa lưu cửa hàng nào' : 'Không tìm thấy cửa hàng phù hợp'}"></h2>
-        <a class="sf-button secondary" th:href="@{/shops}">Khám phá cửa hàng</a></section>
-    <div class="sf-shop-grid">
-        <article class="sf-panel" th:each="shop : ${shopsPage.content}">
-            <div class="sf-shop-title">
-                <img th:if="${shop.logoUrl != null and !#strings.isEmpty(shop.logoUrl)}" class="sf-avatar" th:src="${shop.logoUrl}" th:alt="${shop.shopName}" loading="lazy">
-                <span th:unless="${shop.logoUrl != null and !#strings.isEmpty(shop.logoUrl)}" class="sf-avatar sf-avatar-letter" aria-hidden="true" th:text="${#strings.substring(shop.shopName,0,1)}"></span>
-                <div><h2><a th:href="@{/shops/{id}(id=${shop.shopId})}" th:text="${shop.shopName}"></a></h2><span class="sf-muted" th:text="${shop.shopCode}"></span></div>
-            </div>
-            <p class="sf-muted" th:if="${shop.description != null}" th:text="${#strings.abbreviate(shop.description,150)}"></p>
-            <a class="sf-button secondary" th:href="@{/shops/{id}(id=${shop.shopId})}">Xem cửa hàng →</a>
-            <form th:if="${favoritesOnly == true}" method="post" th:action="@{/shops/{id}/favorite(id=${shop.shopId})}"><input type="hidden" name="favorite" value="false"><button class="sf-button secondary">Bỏ lưu</button></form>
+    <p th:if="${shopsPage.empty}">Bạn chưa lưu cửa hàng nào.</p>
+    <div class="shopgrid">
+        <article class="shop" th:each="shop : ${shopsPage.content}">
+            <h3><a th:href="@{/shops/{id}(id=${shop.shopId})}" th:text="${shop.shopName}"></a></h3>
+            <p th:text="${shop.description}"></p>
+            <p><a th:href="@{/shops/{id}(id=${shop.shopId})}">Xem gian hàng</a></p>
+            <form method="post" th:action="@{/shops/{id}/favorite(id=${shop.shopId})}">
+                <input type="hidden" name="favorite" value="false"><button>Bỏ lưu</button>
+            </form>
         </article>
     </div>
-    <nav th:if="${shopsPage.totalPages > 1}" class="sf-pagination" aria-label="Phân trang cửa hàng">
-        <a th:if="${shopsPage.hasPrevious() and favoritesOnly != true}" th:href="@{/shops(page=${shopsPage.number},keyword=${keyword})}">← Trang trước</a>
-        <a th:if="${shopsPage.hasPrevious() and favoritesOnly == true}" th:href="@{/customer/favorite-shops(page=${shopsPage.number})}">← Trang trước</a>
-        <span class="sf-muted" th:text="${shopsPage.number + 1} + ' / ' + ${shopsPage.totalPages}"></span>
-        <a th:if="${shopsPage.hasNext() and favoritesOnly != true}" th:href="@{/shops(page=${shopsPage.number + 2},keyword=${keyword})}">Trang tiếp →</a>
-        <a th:if="${shopsPage.hasNext() and favoritesOnly == true}" th:href="@{/customer/favorite-shops(page=${shopsPage.number + 2})}">Trang tiếp →</a>
+    <nav class="pagination" th:if="${shopsPage.totalPages > 1}" aria-label="Phân trang cửa hàng đã lưu">
+        <a th:if="${shopsPage.hasPrevious()}" th:href="@{/customer/favorite-shops(page=${shopsPage.number})}">Trang trước</a>
+        <span th:text="${shopsPage.number + 1} + ' / ' + ${shopsPage.totalPages}"></span>
+        <a th:if="${shopsPage.hasNext()}" th:href="@{/customer/favorite-shops(page=${shopsPage.number + 2})}">Trang tiếp</a>
     </nav>
 </main>
 <footer th:replace="~{fragments/customer-shop :: footer}"></footer>

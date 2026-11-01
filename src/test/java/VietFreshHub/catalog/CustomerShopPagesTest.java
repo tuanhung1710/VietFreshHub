@@ -48,6 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class CustomerShopPagesTest {
     @Autowired MockMvc mvc;
     @MockitoBean CatalogService catalog;
+    @MockitoBean VietFreshHub.catalog.service.StorefrontService storefront;
     @MockitoBean CartService carts;
     @MockitoBean ShopBrowseService shops;
     @MockitoBean ShopReviewService reviews;
@@ -95,7 +96,7 @@ class CustomerShopPagesTest {
     }
 
     @Test
-    void guestsCanBrowseAllPublicPagesWithTheNewLayout() throws Exception {
+    void guestsCanBrowseAllPublicPagesWithTheTemplateLayout() throws Exception {
         String[][] paths = {{"/home", "catalog"}, {"/product-detail/3", "product"}, {"/shops", "shops"},
                 {"/shops/1", "shop"}, {"/shops/1/reviews", "reviews"}, {"/shops/1/offers", "offers"}};
         for (String[] entry : paths) {
@@ -112,9 +113,20 @@ class CustomerShopPagesTest {
 
     @Test
     void invalidFilterDoesNotInvokeCatalogQuery() throws Exception {
-        mvc.perform(get("/home").param("minPrice", "90000").param("maxPrice", "10000"))
-                .andExpect(status().isOk()).andExpect(content().string(containsString("Giá tối thiểu không được lớn hơn")));
-        verify(catalog, never()).listProducts(any(VietFreshHub.catalog.dto.CatalogBrowseFilter.class));
+        mvc.perform(get("/storefront/api/products").param("minPrice", "90000").param("maxPrice", "10000"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/storefront/api/products").param("pageSize", "13")).andExpect(status().isBadRequest());
+        verify(storefront, never()).products(any());
+    }
+
+    @Test
+    void publicApiReturnsLivePageMetadataAndGuestCartStartsAtZero() throws Exception {
+        when(storefront.products(any())).thenReturn(new VietFreshHub.common.PageResponse<>(List.of(),1,10,0,1));
+        mvc.perform(get("/storefront/api/products")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.pages").value(1));
+        mvc.perform(get("/storefront/api/cart")).andExpect(status().isOk()).andExpect(jsonPath("$.totalItems").value(0));
+        mvc.perform(post("/storefront/api/cart").with(csrf()).contentType("application/json").content("{\"variantId\":3,\"quantity\":1}"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

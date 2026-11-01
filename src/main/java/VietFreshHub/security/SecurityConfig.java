@@ -48,7 +48,8 @@ public class SecurityConfig {
         http.authorizeHttpRequests(authorize -> {
             authorize.requestMatchers(org.springframework.http.HttpMethod.GET,
                     "/home", "/customer/home", "/product-detail", "/product-detail/**", "/shops", "/shops/**",
-                    "/storefront/api/options", "/storefront/api/home", "/storefront/api/products", "/storefront/api/products/**").permitAll();
+                    "/storefront/api/options", "/storefront/api/home", "/storefront/api/products", "/storefront/api/products/**", "/storefront/api/cart").permitAll();
+            authorize.requestMatchers(org.springframework.http.HttpMethod.POST, "/storefront/api/cart").hasRole("CUSTOMER");
             authorize.requestMatchers(
                     "/", "/login", "/register", "/verify-email", "/payment/vnpay/return",
                             "/seller-onboarding/register",
@@ -96,7 +97,13 @@ public class SecurityConfig {
         // Chuyển người chưa đăng nhập về trang login
         http.exceptionHandling(exception -> {
             exception.authenticationEntryPoint(
-                    new LoginUrlAuthenticationEntryPoint("/login")
+                    (request, response, authenticationException) -> {
+                        if (request.getRequestURI().startsWith(request.getContextPath() + "/storefront/api/")) {
+                            response.sendError(401);
+                        } else {
+                            new LoginUrlAuthenticationEntryPoint("/login").commence(request, response, authenticationException);
+                        }
+                    }
             );
         });
 
