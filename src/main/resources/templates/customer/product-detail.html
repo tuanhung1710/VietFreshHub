@@ -17,6 +17,7 @@
                 </a>
             </div>
             <div th:if="${selectedVariant != null}">
+                <p th:if="${selectedVariant.basePrice > selectedVariant.price}">Giá gốc: <del th:text="${#numbers.formatInteger(selectedVariant.basePrice,0,'POINT')} + ' ₫'"></del> · Ưu đãi theo lô cận hạn</p>
                 <p class="price detail-price" th:text="${#numbers.formatInteger(selectedVariant.price,0,'POINT')} + ' ₫'"></p>
                 <p th:if="${purchasable}" class="muted" th:text="'Còn ' + ${availableStock} + ' sản phẩm có thể mua.'"></p>
                 <p th:unless="${purchasable}" class="item-error">Phân loại này hiện chưa thể đặt mua. Bạn có thể chọn phân loại khác hoặc quay lại sau.</p>

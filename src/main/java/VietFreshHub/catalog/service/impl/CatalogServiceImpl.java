@@ -1,6 +1,5 @@
 package VietFreshHub.catalog.service.impl;
 import VietFreshHub.catalog.service.CatalogService;
-import VietFreshHub.checkout.repository.CheckoutInventoryBatchRepository;
 import VietFreshHub.catalog.dto.CatalogProductResponse;
 import VietFreshHub.catalog.entity.*;
 import VietFreshHub.catalog.repository.*;
@@ -14,7 +13,7 @@ import java.util.List;
 public class CatalogServiceImpl implements CatalogService {
     private final CatalogProductRepository products;
     private final CatalogVariantRepository variants;
-    private final CheckoutInventoryBatchRepository inventory;
+    private final VietFreshHub.catalog.service.CatalogPricingService pricing;
     public boolean isVisible(CatalogProduct p) {
         if (p == null || !"ACTIVE".equals(p.getStatus()) || p.isModerationBlocked()
                 || p.getShop() == null || !"ACTIVE".equals(p.getShop().getStatus())) return false;
@@ -35,9 +34,9 @@ public class CatalogServiceImpl implements CatalogService {
         if (keyword == null || keyword.length() > 100) throw new IllegalArgumentException("Từ khóa tìm kiếm tối đa 100 ký tự.");
         var result = products.findVisibleCatalog(keyword.trim(), org.springframework.data.domain.PageRequest.of(page - 1, 12,
                 org.springframework.data.domain.Sort.by("productId").descending()));
-        var stocks = inventory.getAvailableStocks(result.getContent().stream().flatMap(p -> p.getVariants().stream())
+        var offers = pricing.offers(result.getContent().stream().flatMap(p -> p.getVariants().stream())
                 .map(CatalogVariant::getVariantId).distinct().toList());
-        return result.map(p -> toResponse(p, null, stocks));
+        return result.map(p -> toResponse(p, null, offers));
     }
     public CatalogProductResponse getProduct(Long variantId, Long productId, String slug) {
         CatalogProduct p;
@@ -52,14 +51,15 @@ public class CatalogServiceImpl implements CatalogService {
             p = matches.getFirst();
         } else throw notFound();
         if (!isVisible(p)) throw notFound();
-        var stocks = inventory.getAvailableStocks(p.getVariants().stream().map(CatalogVariant::getVariantId).toList());
-        return toResponse(p, variantId, stocks);
+        var offers = pricing.offers(p.getVariants().stream().map(CatalogVariant::getVariantId).toList());
+        return toResponse(p, variantId, offers);
     }
-    private CatalogProductResponse toResponse(CatalogProduct p, Long selectedId, java.util.Map<Long, Integer> stocks) {
+    private CatalogProductResponse toResponse(CatalogProduct p, Long selectedId, java.util.Map<Long, VietFreshHub.catalog.service.CatalogPricingService.Offer> offers) {
         var options = p.getVariants().stream().filter(v -> "ACTIVE".equals(v.getStatus()) || "OUT_OF_STOCK".equals(v.getStatus())).map(v -> {
-            int available = stocks.getOrDefault(v.getVariantId(), 0);
+            var offer = offers.get(v.getVariantId());
+            int available = offer == null ? 0 : offer.availableStock();
             return CatalogProductResponse.VariantResponse.builder().variantId(v.getVariantId()).variantName(v.getVariantName())
-                    .sku(v.getSku()).price(v.getPrice()).status(v.getStatus()).availableStock(available)
+                    .sku(v.getSku()).price(offer == null ? v.getPrice() : offer.price()).basePrice(v.getPrice()).status(v.getStatus()).availableStock(available)
                     .purchasable("ACTIVE".equals(v.getStatus()) && available > 0 && "OPEN".equals(p.getShop().getAvailabilityStatus())).build();
         }).sorted(Comparator.comparing(CatalogProductResponse.VariantResponse::getPrice)).toList();
         var selected = selectedId == null ? options.stream().filter(CatalogProductResponse.VariantResponse::isPurchasable)
