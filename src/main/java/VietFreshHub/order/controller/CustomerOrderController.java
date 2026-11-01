@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.http.HttpStatus;
+import VietFreshHub.payment.vnpay.VnpayPaymentService;
+import jakarta.servlet.http.HttpServletRequest;
+import VietFreshHub.exception.CheckoutException;
 
 @Controller @RequiredArgsConstructor @RequestMapping("/customer/orders")
 public class CustomerOrderController {
@@ -24,6 +27,7 @@ public class CustomerOrderController {
     private final CustomerOrderService orders;
     private final CartService carts;
     private final VietFreshHub.order.service.CustomerOrderQueryService readOrders;
+    private final VnpayPaymentService vnpayPayments;
     @GetMapping
     public String history(@Valid @ModelAttribute("filter") CustomerOrderFilterRequest filter,BindingResult errors,Authentication authentication,Model model) {
         Long customerId=currentCustomer.requireCustomerId(authentication);
@@ -72,6 +76,19 @@ public class CustomerOrderController {
             else flash.addFlashAttribute("errorMessage","Chưa thêm được sản phẩm nào từ đơn này. Xem các sản phẩm không khả dụng bên dưới.");
             flash.addFlashAttribute("reorderSkipped",result.skipped()); return "redirect:/cart";
         } catch(CustomerOrderException ex) { flash.addFlashAttribute("errorMessage",ex.getMessage()); return "redirect:/customer/orders/"+orderId; }
+    }
+    @PostMapping("/{orderId}/retry-payment")
+    public String retryPayment(@PathVariable Long orderId,Authentication authentication,
+                               HttpServletRequest request,RedirectAttributes flash) {
+        Long customerId=currentCustomer.requireCustomerId(authentication);
+        try {
+            var result=vnpayPayments.retryPayment(orderId,customerId,request.getRemoteAddr());
+            if(result.started()) return "redirect:"+result.paymentUrl();
+            flash.addFlashAttribute("errorMessage",result.message());
+        } catch(CustomerOrderException | VietFreshHub.exception.ResourceNotFoundException | CheckoutException ex) {
+            flash.addFlashAttribute("errorMessage",ex.getMessage());
+        }
+        return "redirect:/customer/orders/"+orderId;
     }
     @ExceptionHandler(ResourceNotFoundException.class)
     public ModelAndView notFound() { var view=new ModelAndView("customer/order-not-found"); view.setStatus(HttpStatus.NOT_FOUND); return view; }

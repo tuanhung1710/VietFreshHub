@@ -293,8 +293,11 @@ public class StockAllocationServiceImpl implements StockAllocationService {
     public void sell(Authentication authentication, Long orderItemId) {
         InventoryOrderLine line = getOwnedOrderLineForUpdate(authentication, orderItemId);
         Long actorId = authService.getCurrentUserId(authentication);
+        // Các lượt thanh toán trước có thể đã giải phóng hàng; chỉ xuất phân bổ còn hiệu lực.
         List<StockAllocation> allocations =
-                stockAllocationRepository.findByOrderItemIdOrderByAllocationId(orderItemId);
+                stockAllocationRepository.findByOrderItemIdOrderByAllocationId(orderItemId).stream()
+                        .filter(allocation -> allocation.getStatus() != AllocationStatus.RELEASED)
+                        .toList();
         ShopOrder order = shopOrderRepository.findById(line.getShopOrderId()).orElseThrow();
         require(
                 List.of("READY_FOR_DELIVERY", "OUT_FOR_DELIVERY", "COMPLETED")

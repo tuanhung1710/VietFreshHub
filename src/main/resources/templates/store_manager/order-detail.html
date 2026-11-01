@@ -337,7 +337,7 @@
              th:if="${orderDetail.orderStatus == 'PENDING' or orderDetail.orderStatus == 'CONFIRMED'
                  or orderDetail.orderStatus == 'PREPARING' or orderDetail.orderStatus == 'READY_FOR_DELIVERY'}">
         <h2 id="order-actions-heading">THAO TÁC</h2>
-        <form method="post" th:if="${orderDetail.orderStatus == 'PENDING'}"
+        <form method="post" th:if="${orderDetail.orderStatus == 'PENDING' and (orderDetail.paymentStatus != 'PENDING' and orderDetail.paymentStatus != 'FAILED')}"
               th:action="@{/seller/orders/{shopOrderId}/confirm(shopOrderId=${shopOrderId})}">
             <button type="submit">XÁC NHẬN ĐƠN HÀNG</button>
         </form>

@@ -72,7 +72,9 @@
         <td th:text="${order.orderStatusLabel}"></td>
         <td th:switch="${order.paymentStatus}">
             <span th:case="'UNPAID'">Chưa thanh toán</span>
+            <span th:case="'PENDING'">Đang chờ thanh toán</span>
             <span th:case="'PAID'">Đã thanh toán</span>
+            <span th:case="'FAILED'">Thanh toán thất bại</span>
             <span th:case="*" th:text="${order.paymentStatus}"></span>
         </td>
         <td>

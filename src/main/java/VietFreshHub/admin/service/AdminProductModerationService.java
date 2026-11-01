@@ -7,7 +7,9 @@ import VietFreshHub.auth.entity.User;
 import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.inventory.service.InventoryJournalService;
 import VietFreshHub.notification.service.NotificationService;
+import VietFreshHub.product.entity.ProductImage;
 import VietFreshHub.product.entity.Product;
+import VietFreshHub.product.entity.ProductVariant;
 import VietFreshHub.product.enums.ApprovalStatus;
 import VietFreshHub.product.enums.ProductStatus;
 import VietFreshHub.product.repository.ProductImageRepository;
@@ -25,7 +27,11 @@ import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -91,11 +97,24 @@ public class AdminProductModerationService {
         String shopName = shopRepository.findById(product.getShopId())
                 .map(shop -> shop.getShopName())
                 .orElse("Cửa hàng không còn tồn tại");
+        List<ProductVariant> variants = productVariantRepository.findByProductIdOrderByVariantId(productId);
+        List<ProductImage> images = productImageRepository.findByProductIdOrderBySortOrderAscImageIdAsc(productId);
+        List<ProductImage> productImages = images.stream()
+                .filter(image -> image.getVariantId() == null)
+                .toList();
+        Map<Long, List<ProductImage>> variantImages = new HashMap<>();
+        variants.forEach(variant -> variantImages.put(variant.getVariantId(), new ArrayList<>()));
+        images.stream()
+                .filter(image -> image.getVariantId() != null)
+                .forEach(image -> variantImages
+                        .computeIfAbsent(image.getVariantId(), ignored -> new ArrayList<>())
+                        .add(image));
         return new AdminProductModerationDetail(
                 product,
                 shopName,
-                productVariantRepository.findByProductIdOrderByVariantId(productId),
-                productImageRepository.findByProductIdOrderBySortOrderAscImageIdAsc(productId));
+                variants,
+                productImages,
+                variantImages);
     }
 
     @Transactional

@@ -13,6 +13,8 @@
         .card { margin: 18px 0; padding: 20px; background: white; border: 1px solid #dce8df; border-radius: 12px; }
         .gallery { display: flex; flex-wrap: wrap; gap: 12px; }
         .gallery img { width: 150px; height: 150px; border-radius: 9px; object-fit: cover; background: #eef3ef; }
+        .variant-gallery { display: flex; flex-wrap: wrap; gap: 8px; min-width: 120px; }
+        .variant-gallery img { width: 64px; height: 64px; border-radius: 7px; object-fit: cover; background: #eef3ef; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 10px; border-bottom: 1px solid #edf1ee; text-align: left; }
         textarea { display: block; width: 100%; min-height: 80px; margin: 8px 0; padding: 10px; font: inherit; }
@@ -25,10 +27,14 @@
 <main>
     <h1 th:text="${detail.product.name}">Tên sản phẩm</h1>
     <p><strong>Cửa hàng:</strong> <span th:text="${detail.shopName}">Tên cửa hàng</span></p>
-    <p><strong>Slug:</strong> <span th:text="${detail.product.slug}">slug</span></p>
-    <p><strong>Trạng thái:</strong> <span th:text="${detail.product.status}">ACTIVE</span>
-        · <span th:text="${detail.product.approvalStatus}">PENDING</span>
-        · <span th:if="${detail.product.moderationBlocked}" th:text="${'Đang khóa: ' + detail.product.moderationReason}">Lý do khóa</span></p>
+    <p><strong>Trạng thái hậu kiểm:</strong>
+        <span th:if="${detail.product.moderationBlocked}">Đang bị khóa</span>
+        <span th:if="${!detail.product.moderationBlocked and detail.product.approvalStatus == T(VietFreshHub.product.enums.ApprovalStatus).PENDING}">Chờ hậu kiểm</span>
+        <span th:if="${!detail.product.moderationBlocked and detail.product.approvalStatus == T(VietFreshHub.product.enums.ApprovalStatus).APPROVED}">Đã duyệt</span>
+        <span th:if="${!detail.product.moderationBlocked and detail.product.approvalStatus == T(VietFreshHub.product.enums.ApprovalStatus).REJECTED}">Đã từ chối</span>
+        <span th:if="${detail.product.moderationBlocked and detail.product.moderationReason != null}"
+              th:text="${'— Lý do: ' + detail.product.moderationReason}">Lý do khóa</span>
+    </p>
     <section class="card">
         <h2>Mô tả</h2>
         <p th:text="${detail.product.description}">Mô tả sản phẩm</p>
@@ -36,19 +42,25 @@
     <section class="card">
         <h2>Hình ảnh</h2>
         <div class="gallery">
-            <img th:each="image : ${detail.images}" th:src="${image.imageUrl}" th:alt="${detail.product.name}">
-            <p th:if="${#lists.isEmpty(detail.images)}">Chưa có hình ảnh.</p>
+            <img th:each="image : ${detail.productImages}" th:src="${image.imageUrl}" th:alt="${detail.product.name}">
+            <p th:if="${#lists.isEmpty(detail.productImages)}">Chưa có hình ảnh sản phẩm chung.</p>
         </div>
     </section>
     <section class="card">
         <h2>Phân loại và giá</h2>
         <div style="overflow-x:auto">
             <table>
-                <thead><tr><th>Tên phân loại</th><th>SKU</th><th>Đơn vị</th><th>Giá</th><th>Trạng thái</th></tr></thead>
+                <thead><tr><th>Tên phân loại</th><th>Ảnh biến thể</th><th>Đơn vị</th><th>Giá</th><th>Trạng thái biến thể</th></tr></thead>
                 <tbody>
                 <tr th:each="variant : ${detail.variants}">
                     <td th:text="${variant.variantName}">Phân loại</td>
-                    <td th:text="${variant.sku}">SKU</td>
+                    <td>
+                        <div class="variant-gallery">
+                            <img th:each="image : ${detail.variantImages[variant.variantId]}"
+                                 th:src="${image.imageUrl}" th:alt="${variant.variantName}">
+                        </div>
+                        <span th:if="${#lists.isEmpty(detail.variantImages[variant.variantId])}">Chưa có ảnh</span>
+                    </td>
                     <td th:text="${variant.unit}">kg</td>
                     <td th:text="${#numbers.formatDecimal(variant.price, 0, 'COMMA', 0, 'POINT') + ' đ'}">55.000 đ</td>
                     <td th:text="${variant.status}">ACTIVE</td>

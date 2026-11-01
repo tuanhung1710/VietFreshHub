@@ -9,12 +9,14 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.http.HttpStatus;
+import VietFreshHub.payment.vnpay.VnpayPaymentService;
 @Controller @RequiredArgsConstructor
 @RequestMapping("/customer/orders")
 public class CustomerOrderDetailsController {
     private final CurrentCustomerService currentCustomer;
     private final CustomerOrderQueryService orders;
     private final VietFreshHub.order.service.CustomerOrderService lifecycle;
+    private final VnpayPaymentService vnpayPayments;
     @GetMapping("/{orderId}")
     public String detail(@PathVariable Long orderId,Authentication authentication,Model model) {
         return render(orderId,authentication,model,false);
@@ -29,6 +31,7 @@ public class CustomerOrderDetailsController {
         model.addAttribute("cartBadgeTotal",orders.getCartBadgeTotal(customerId));
         model.addAttribute("confirmation",confirmation);
         model.addAttribute("actions",lifecycle.actions(customerId,orderId));
+        model.addAttribute("canRetryVnpayPayment",vnpayPayments.canRetry(orderId,customerId));
         return "customer/order-detail";
     }
     @ExceptionHandler(ResourceNotFoundException.class)
