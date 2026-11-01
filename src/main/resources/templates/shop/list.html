@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Danh sách cửa hàng</title></head>
+<body>
+<nav><a th:href="@{/home}">Sản phẩm</a></nav>
+<h1>Danh sách cửa hàng</h1>
+<form method="get" th:action="@{/shops}">
+    <label>Tên cửa hàng <input name="keyword" th:value="${keyword}" maxlength="100" type="search"></label><button>Tìm</button>
+</form>
+<p th:if="${shopsPage.empty}">Không tìm thấy cửa hàng phù hợp.</p>
+<ul><li th:each="shop : ${shopsPage.content}">
+    <a th:href="@{/shops/{id}(id=${shop.shopId})}" th:text="${shop.shopName}"></a>
+    <span th:text="${shop.availabilityStatus == 'OPEN' ? 'Đang nhận đơn' : 'Tạm ngừng nhận đơn'}"></span>
+    <p th:text="${shop.description}"></p>
+</li></ul>
+<nav th:if="${shopsPage.totalPages > 1}" aria-label="Phân trang cửa hàng">
+    <a th:if="${shopsPage.hasPrevious()}" th:href="@{/shops(page=${shopsPage.number},keyword=${keyword})}">Trang trước</a>
+    <span th:text="${shopsPage.number + 1} + ' / ' + ${shopsPage.totalPages}"></span>
+    <a th:if="${shopsPage.hasNext()}" th:href="@{/shops(page=${shopsPage.number + 2},keyword=${keyword})}">Trang tiếp</a>
+</nav>
+</body>
+</html>
