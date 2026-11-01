@@ -4,6 +4,11 @@
 <body>
 <nav><a th:href="@{/home}">Sản phẩm</a> · <a th:href="@{/shops}">Danh sách cửa hàng</a></nav>
 <h1 th:text="${shop.shopName}"></h1>
+<p th:if="${successMessage}" role="status" th:text="${successMessage}"></p>
+<form th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" method="post" th:action="@{/shops/{id}/favorite(id=${shop.shopId})}">
+    <input type="hidden" name="favorite" th:value="${!favorite}"><button th:text="${favorite ? 'Bỏ yêu thích' : 'Yêu thích cửa hàng'}"></button>
+</form>
+<p th:if="${#authorization.expression('!isAuthenticated()')}"><a th:href="@{/login}">Đăng nhập để yêu thích cửa hàng</a></p>
 <p><a th:href="@{/shops/{id}/products(id=${shop.shopId})}">Xem sản phẩm của cửa hàng</a></p>
 <p><a th:href="@{/shops/{id}/offers(id=${shop.shopId})}">Khuyến mãi và mã giảm giá</a></p>
 <p th:text="${shop.description}"></p>

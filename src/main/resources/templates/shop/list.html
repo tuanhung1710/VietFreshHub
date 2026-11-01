@@ -3,8 +3,10 @@
 <head><meta charset="UTF-8"><title>Danh sách cửa hàng</title></head>
 <body>
 <nav><a th:href="@{/home}">Sản phẩm</a></nav>
-<h1>Danh sách cửa hàng</h1>
-<form method="get" th:action="@{/shops}">
+<h1 th:text="${favoritesOnly == true ? 'Cửa hàng yêu thích' : 'Danh sách cửa hàng'}"></h1>
+<p th:if="${successMessage}" role="status" th:text="${successMessage}"></p>
+<p th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}"><a th:href="@{/customer/favorite-shops}">Cửa hàng yêu thích của tôi</a> · <a th:href="@{/shops}">Tất cả cửa hàng</a></p>
+<form th:unless="${favoritesOnly == true}" method="get" th:action="@{/shops}">
     <label>Tên cửa hàng <input name="keyword" th:value="${keyword}" maxlength="100" type="search"></label><button>Tìm</button>
 </form>
 <p th:if="${shopsPage.empty}">Không tìm thấy cửa hàng phù hợp.</p>
@@ -12,11 +14,14 @@
     <a th:href="@{/shops/{id}(id=${shop.shopId})}" th:text="${shop.shopName}"></a>
     <span th:text="${shop.availabilityStatus == 'OPEN' ? 'Đang nhận đơn' : 'Tạm ngừng nhận đơn'}"></span>
     <p th:text="${shop.description}"></p>
+    <form th:if="${favoritesOnly == true}" method="post" th:action="@{/shops/{id}/favorite(id=${shop.shopId})}"><input type="hidden" name="favorite" value="false"><button>Bỏ yêu thích</button></form>
 </li></ul>
 <nav th:if="${shopsPage.totalPages > 1}" aria-label="Phân trang cửa hàng">
-    <a th:if="${shopsPage.hasPrevious()}" th:href="@{/shops(page=${shopsPage.number},keyword=${keyword})}">Trang trước</a>
+    <a th:if="${shopsPage.hasPrevious() and favoritesOnly != true}" th:href="@{/shops(page=${shopsPage.number},keyword=${keyword})}">Trang trước</a>
+    <a th:if="${shopsPage.hasPrevious() and favoritesOnly == true}" th:href="@{/customer/favorite-shops(page=${shopsPage.number})}">Trang trước</a>
     <span th:text="${shopsPage.number + 1} + ' / ' + ${shopsPage.totalPages}"></span>
-    <a th:if="${shopsPage.hasNext()}" th:href="@{/shops(page=${shopsPage.number + 2},keyword=${keyword})}">Trang tiếp</a>
+    <a th:if="${shopsPage.hasNext() and favoritesOnly != true}" th:href="@{/shops(page=${shopsPage.number + 2},keyword=${keyword})}">Trang tiếp</a>
+    <a th:if="${shopsPage.hasNext() and favoritesOnly == true}" th:href="@{/customer/favorite-shops(page=${shopsPage.number + 2})}">Trang tiếp</a>
 </nav>
 </body>
 </html>

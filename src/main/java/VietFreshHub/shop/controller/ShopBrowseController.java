@@ -16,6 +16,7 @@ public class ShopBrowseController {
     private final ShopBrowseService shops;
     private final VietFreshHub.shop.service.ShopReviewService reviews;
     private final VietFreshHub.shop.service.ShopOfferService offers;
+    private final VietFreshHub.shop.service.ShopFavoriteService favorites;
 
     @GetMapping
     public String list(@RequestParam(defaultValue = "1") int page,
@@ -26,10 +27,12 @@ public class ShopBrowseController {
     }
 
     @GetMapping("/{shopId}")
-    public String profile(@PathVariable Long shopId, Model model) {
+    public String profile(@PathVariable Long shopId, org.springframework.security.core.Authentication authentication, Model model) {
         model.addAttribute("shop", shops.profile(shopId));
         model.addAttribute("location", shops.location(shopId).orElse(null));
         model.addAttribute("reviewSummary", reviews.summary(shopId));
+        boolean customer = authentication != null && authentication.getAuthorities().stream().anyMatch(a -> "ROLE_CUSTOMER".equals(a.getAuthority()));
+        model.addAttribute("favorite", customer && favorites.isFavorite(authentication, shopId));
         return "shop/detail";
     }
 
