@@ -22,13 +22,7 @@
                     </p>
                 </div>
                 <div class="d-flex flex-wrap gap-2 vf-inventory-toolbar">
-                    <a class="btn btn-outline-secondary" th:href="@{/seller/inventory/journal}">
-                        <svg class="vf-icon me-1">
-                            <use href="#vf-history"/>
-                        </svg>
-                        Biến động kho
-                    </a>
-                    <a class="btn btn-light" th:href="@{/seller/inventory/audit}">
+                    <a class="btn btn-light" data-vf-inventory-link th:href="@{/seller/inventory/audit(returnTo=${inventoryCurrentUrl})}">
                         Nhật ký hoạt động
                     </a>
                 </div>
@@ -43,63 +37,51 @@
                 <!-- Bộ lọc gọn trên mobile; danh sách vẫn cuộn theo trang. -->
                 
                 <div class="vf-list-controls">
-                    <div class="vf-filter-toggle-bar">
-                        <span class="small text-secondary" data-vf-live-summary="compact-count" aria-live="polite" th:text="${rows.totalElements+' sản phẩm'}">
-                        </span>
-                        <button
-                            class="btn btn-sm btn-outline-secondary"
-                            type="button"
-                            data-vf-filter-toggle
-                            aria-controls="inventoryListFilters"
-                            aria-expanded="true"
-                        >
-                            Bộ lọc
-                        </button>
-                    </div>
                     <div class="vf-filter-panel" id="inventoryListFilters">
 
 
                         <!-- Biểu mẫu -->
-                        <form class="vf-inventory-filters vf-shared-filters" th:action="@{/seller/inventory}" method="get" data-vf-live-filter>
+                        <form class="vf-inventory-filters vf-shared-filters vf-filter-layout" th:action="@{/seller/inventory}" method="get" data-vf-live-filter>
                             <input type="hidden" name="size" th:value="${rows.size}">
                             <input type="hidden" name="variantId" th:value="${inventoryFilters.variantId}">
-                            <div class="vf-catalog-basic-filters">
+                            <div class="vf-filter-search-row">
                                 <div class="vf-catalog-search">
-                                    <label class="form-label" for="inventoryQuery">Tìm kiếm</label>
+                                    <label class="visually-hidden" for="inventoryQuery">Tìm kiếm</label>
                                     <div class="input-group">
                                         <span class="input-group-text"><svg class="vf-icon" aria-hidden="true"><use href="#vf-search"/></svg></span>
-                                        <input class="form-control" id="inventoryQuery" name="q" th:value="${q}" maxlength="200" placeholder="Tên sản phẩm, mã sản phẩm hoặc SKU…" aria-label="Tìm sản phẩm trong kho">
+                                        <input class="form-control" id="inventoryQuery" name="q" th:value="${q}" maxlength="200" placeholder="Tìm theo tên sản phẩm, mã sản phẩm hoặc SKU…" aria-label="Tìm sản phẩm trong kho">
                                     </div>
                                 </div>
-                                <div>
-                                    <label class="form-label" for="inventoryCategory">Danh mục</label>
-                                    <select class="form-select" id="inventoryCategory" name="category" data-vf-fit-select="220">
-                                        <option value="">Tất cả danh mục</option>
-                                        <option th:each="c : ${categories}" th:value="${c.categoryId}" th:selected="${category == c.categoryId}" th:text="${c.name}"></option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="form-label" for="inventoryStock">Trạng thái</label>
-                                    <select class="form-select" id="inventoryStock" name="stock" data-vf-fit-select="160">
-                                        <option value="" th:selected="${stock == ''}">Tất cả</option>
-                                        <option value="available" th:selected="${stock == 'available'}">Còn hàng</option>
-                                        <option value="low" th:selected="${stock == 'low'}">Sắp hết hàng</option>
-                                        <option value="empty" th:selected="${stock == 'empty'}">Hết hàng</option>
-                                    </select>
-                                </div>
-                                <div class="vf-catalog-filter-buttons">
-                                    <button class="btn btn-outline-success" type="button" data-bs-toggle="collapse" data-bs-target="#inventoryAdvancedFilters" aria-controls="inventoryAdvancedFilters" th:classappend="${!#strings.isEmpty(expiry) ? 'vf-filter-used' : 'collapsed'}" th:attr="aria-expanded=${!#strings.isEmpty(expiry)}">Bộ lọc nâng cao</button>
-                                    <div class="vf-filter-actions">
-                                        <button class="btn btn-success" type="submit" data-vf-filter-submit data-vf-keep-submit="true">Áp dụng</button>
-                                        <a class="btn btn-light" th:href="@{/seller/inventory}" data-vf-clear-filters>Xóa bộ lọc</a>
-                                    </div>
-                                </div>
+                                    <button class="btn btn-outline-secondary vf-advanced-filter-toggle collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#inventoryAdvancedFilters" aria-controls="inventoryAdvancedFilters" th:classappend="${inventoryFilters.advanced ? 'vf-filter-used' : ''}" aria-expanded="false">
+                                        <svg class="vf-icon" aria-hidden="true"><use href="#vf-filter"/></svg>
+                                        Bộ lọc
+                                        <svg class="vf-icon vf-advanced-filter-chevron" aria-hidden="true"><use href="#vf-chevron"/></svg>
+                                    </button>
+                                    <button class="btn btn-success" type="submit" data-vf-filter-submit data-vf-keep-submit="true">Áp dụng</button>
                             </div>
-                            <div class="collapse" id="inventoryAdvancedFilters" th:classappend="${!#strings.isEmpty(expiry) ? 'show' : ''}">
+                            <div class="collapse" id="inventoryAdvancedFilters">
+                            <section class="vf-advanced-filter-card" aria-label="Bộ lọc nâng cao">
+                                <div class="vf-advanced-filter-body">
                                 <div class="vf-catalog-advanced-grid">
                                     <div>
+                                        <label class="form-label" for="inventoryCategory">Danh mục</label>
+                                        <select class="form-select" id="inventoryCategory" name="category">
+                                            <option value="">Tất cả danh mục</option>
+                                            <option th:each="c : ${categories}" th:value="${c.categoryId}" th:selected="${category == c.categoryId}" th:text="${c.name}"></option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="form-label" for="inventoryStock">Trạng thái tồn kho</label>
+                                        <select class="form-select" id="inventoryStock" name="stock" aria-describedby="inventoryStockHelp">
+                                            <option value="" th:selected="${stock == ''}">Tất cả</option>
+                                            <option value="available" th:selected="${stock == 'available'}">Còn hàng</option>
+                                            <option value="low" th:selected="${stock == 'low'}">Sắp hết hàng</option>
+                                            <option value="empty" th:selected="${stock == 'empty'}">Hết hàng</option>
+                                        </select>
+                                    </div>
+                                    <div>
                                         <label class="form-label" for="inventoryExpiry">Hạn sử dụng</label>
-                                        <select class="form-select" id="inventoryExpiry" name="expiry" data-vf-fit-select="180">
+                                        <select class="form-select" id="inventoryExpiry" name="expiry">
                                             <option value="" th:selected="${expiry == ''}">Tất cả</option>
                                             <option value="valid" th:selected="${expiry == 'valid'}">Còn hạn</option>
                                             <option value="near" th:selected="${expiry == 'near'}">Sắp hết hạn</option>
@@ -107,10 +89,21 @@
                                             <option value="attention" th:if="${expiry == 'attention'}" selected>Sắp hoặc đã hết hạn</option>
                                         </select>
                                     </div>
-                                    
+                                    <div class="vf-catalog-advanced-options">
+                                        <p class="small text-secondary mb-2" id="inventoryStockHelp">Tồn kho được lọc theo lượng khả dụng của từng phân loại, không theo trạng thái bán hàng của sản phẩm.</p>
+                                        <label class="vf-inventory-archive" title="Hiển thị thêm sản phẩm và phân loại ngừng kinh doanh, kể cả khi đã hết tồn kho. Các bộ lọc khác vẫn áp dụng."><input class="form-check-input me-1" type="checkbox" name="archived" value="true" th:checked="${inventoryFilters.archived}"> Bao gồm sản phẩm và phân loại ngừng kinh doanh</label>
+                                    </div>
                                 </div>
+                                <div class="vf-advanced-filter-actions">
+                                    <a class="vf-filter-reset" th:href="@{/seller/inventory}" data-vf-clear-filters>
+                                        <svg class="vf-icon" aria-hidden="true"><use href="#vf-reset"/></svg>
+                                        Xóa bộ lọc
+                                    </a>
+                                </div>
+                                </div>
+                            </section>
                             </div>
-                            <div class="vf-catalog-filter-footer vf-inventory-filter-footer"><label class="vf-inventory-archive" title="Hiển thị thêm sản phẩm và phân loại ngừng kinh doanh, kể cả khi đã hết tồn kho. Các bộ lọc khác vẫn áp dụng."><input class="form-check-input me-1" type="checkbox" name="archived" value="true" th:checked="${inventoryFilters.archived}"> Bao gồm cả sản phẩm đã ngừng kinh doanh</label><span class="small text-secondary" data-vf-live-summary="count" aria-live="polite" th:text="${rows.totalElements + ' sản phẩm phù hợp'}"></span></div>
+                            <div class="vf-catalog-filter-footer vf-inventory-filter-footer"><span class="small text-secondary" data-vf-live-summary="count" aria-live="polite" th:text="${rows.totalElements + ' sản phẩm phù hợp'}"></span></div>
                             <p class="small text-secondary mb-0 mt-1" data-vf-live-summary="stock-note" th:hidden="${#strings.isEmpty(expiry)}">Chỉ hiển thị lô khớp hạn sử dụng. Các số lượng vẫn tính từ toàn bộ lô của từng phân loại.</p>
                             <p class="small text-secondary mb-0 mt-1" data-vf-live-summary="focus-note" th:hidden="${inventoryFilters.variantId == null}">Đang xem phân loại được chọn từ Sản phẩm. <a th:href="@{/seller/inventory}">Xem toàn bộ kho</a></p>
                         </form>
@@ -159,7 +152,7 @@
                                     Tổng tồn kho
                                 </th>
                                 <th title="Số lượng đã giữ cho đơn hàng, chưa xuất kho.">
-                                    Đơn đã đặt
+                                    Chờ xuất kho
                                 </th>
                                 <th title="Số lượng còn hạn, không bị khóa và chưa giữ cho đơn hàng.">
                                     Khả dụng
@@ -205,7 +198,7 @@
                                                     class="badge vf-badge-gray"
                                                     th:if="${r.product.status.name()=='DELETED'}"
                                                 >
-                                                    Ngừng kinh doanh
+                                                    Sản phẩm đã xóa
                                                 </span>
                                             </div>
                                         </div>
@@ -243,8 +236,9 @@
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end">
                                                 <li>
-                                                    <form class="m-0" method="post"
+                                                    <form class="m-0" method="post" data-vf-inventory-origin
                                                           th:action="@{/seller/inventory/products/{id}/dispose-expired(id=${r.product.productId})}">
+                                                        <input type="hidden" name="returnTo" th:value="${inventoryCurrentUrl}">
                                                         <button type="submit" class="dropdown-item text-danger"
                                                                 title="Hủy phần hết hạn chưa giữ cho đơn trên tất cả phân loại của sản phẩm, kể cả lô không hiển thị theo bộ lọc.">
                                                             <svg class="vf-icon" aria-hidden="true"><use href="#vf-trash"/></svg>
@@ -284,7 +278,7 @@
                                                             Tổng tồn kho
                                                         </th>
                                                         <th title="Số lượng đã giữ cho đơn hàng, chưa xuất kho.">
-                                                            Đã lên đơn
+                                                            Chờ xuất kho
                                                         </th>
                                                         <th title="Số lượng còn hạn, không bị khóa và chưa giữ cho đơn hàng.">
                                                             Khả dụng
@@ -320,7 +314,7 @@
                                                                         <small
                                                                             th:if="${v.variant.status.name()=='DELETED'}"
                                                                         >
-                                                                            Ngừng kinh doanh
+                                                                            Phân loại đã xóa
                                                                         </small>
                                                                     </div>
                                                                 </div>
@@ -337,7 +331,7 @@
                                                                 </strong>
                                                                 <div th:if="${v.lowStock or v.available==0}">
                                                                     <span
-                                                                        class="badge vf-badge-yellow" title="Nhãn được tính theo số lượng khả dụng của phân loại."
+                                                                        class="badge" th:classappend="${v.available==0?'vf-badge-gray':'vf-badge-yellow'}" title="Nhãn được tính theo số lượng khả dụng của phân loại."
                                                                         th:text="${v.available==0?'Hết hàng':'Sắp hết hàng'}"
                                                                     >
                                                                     </span>
@@ -361,8 +355,9 @@
                                                                     </button>
                                                                     <a
                                                                         class="btn btn-sm btn-light"
+                                                                        data-vf-inventory-link
                                                                         th:if="${r.product.status.name()!='DELETED'&&v.variant.status.name()!='DELETED'}"
-                                                                        th:href="@{/seller/inventory/products/{p}/variants/{v}/restock(p=${r.product.productId},v=${v.variant.variantId})}"
+                                                                        th:href="@{/seller/inventory/products/{p}/variants/{v}/restock(p=${r.product.productId},v=${v.variant.variantId},returnTo=${inventoryCurrentUrl})}"
                                                                     >
                                                                         Nhập kho
                                                                     </a>
@@ -398,12 +393,6 @@
                                                                                     Số lượng khả dụng không bao gồm hàng hết hạn, lô bị khóa và hàng đã giữ cho đơn.
                                                                                 </p>
                                                                             </div>
-                                                                            <a
-                                                                                class="btn btn-sm btn-outline-secondary text-nowrap"
-                                                                                th:href="@{/seller/inventory/journal(variant=${v.variant.variantId})}"
-                                                                            >
-                                                                                Lịch sử tồn kho
-                                                                            </a>
                                                                         </div>
                                                                         <p
                                                                             class="alert alert-success py-2 small"
@@ -443,10 +432,10 @@
                                                                                             Tổng tồn kho
                                                                                         </th>
                                                                                         <th title="Số lượng đã giữ cho đơn hàng, chưa xuất kho.">
-                                                                                            Đã lên đơn
+                                                                                            Chờ xuất kho
                                                                                         </th>
                                                                                         <th title="Số lượng còn hạn, không bị khóa và chưa giữ cho đơn hàng.">
-                                                                                            Có thể bán
+                                                                                            Khả dụng
                                                                                         </th>
                                                                                         <th>
                                                                                             Lô hàng

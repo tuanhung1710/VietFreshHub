@@ -5,12 +5,13 @@
         <header th:replace="~{fragments/product-inventory :: nav('inventory')}"></header>
         <div class="vf-workspace">
         <main class="container vf-main vf-inventory-main">
-            <a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{/seller/inventory}">
-                ← Quản lý tồn kho
+            <a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{${inventoryReturnUrl}}">
+                ← Quay lại
             </a>
             <h1>Nhật ký hoạt động</h1>
             <p class="text-body-secondary mb-4">Theo dõi các thay đổi về sản phẩm và tồn kho của cửa hàng. Thời gian hiển thị theo giờ Việt Nam.</p>
             <form class="card p-3 mb-4 vf-inventory-filter-form" th:action="@{/seller/inventory/audit}" method="get">
+                <input type="hidden" name="returnTo" th:value="${inventoryReturnUrl}">
                 <input type="hidden" name="size" th:value="${events.size}">
                 <div class="vf-activity-filter-grid">
                     <div class="vf-activity-search">
@@ -49,7 +50,7 @@
                     <span class="small text-secondary" th:text="${events.totalElements + ' bản ghi phù hợp'}"></span>
                     <div class="d-flex flex-wrap gap-2">
                         <button type="submit" class="btn btn-success">Áp dụng</button>
-                        <a class="btn btn-light" th:href="@{/seller/inventory/audit(size=${events.size})}">Xóa bộ lọc</a>
+                        <a class="btn btn-light" th:href="@{/seller/inventory/audit(size=${events.size},returnTo=${inventoryReturnUrl})}">Xóa bộ lọc</a>
                     </div>
                 </div>
             </form>
@@ -100,8 +101,9 @@
                 </div>
             </div>
             <div class="vf-pagination-panel">
-                <nav th:replace="~{fragments/product-inventory :: pagination(${events}, @{/seller/inventory/audit(page=${events.number},size=${events.size},q=${activityFilters.q},action=${activityFilters.action},entity=${activityFilters.entity},from=${activityFilters.from},to=${activityFilters.to})}, @{/seller/inventory/audit(page=${events.number+2},size=${events.size},q=${activityFilters.q},action=${activityFilters.action},entity=${activityFilters.entity},from=${activityFilters.from},to=${activityFilters.to})}, 'Phân trang lịch sử hoạt động', 'bản ghi')}"></nav>
+                <nav th:replace="~{fragments/product-inventory :: pagination(${events}, @{/seller/inventory/audit(page=${events.number},size=${events.size},q=${activityFilters.q},action=${activityFilters.action},entity=${activityFilters.entity},from=${activityFilters.from},to=${activityFilters.to},returnTo=${inventoryReturnUrl})}, @{/seller/inventory/audit(page=${events.number+2},size=${events.size},q=${activityFilters.q},action=${activityFilters.action},entity=${activityFilters.entity},from=${activityFilters.from},to=${activityFilters.to},returnTo=${inventoryReturnUrl})}, 'Phân trang lịch sử hoạt động', 'bản ghi')}"></nav>
                 <form class="vf-page-size" th:action="@{/seller/inventory/audit}" method="get">
+                    <input type="hidden" name="returnTo" th:value="${inventoryReturnUrl}">
                     <input type="hidden" name="q" th:value="${activityFilters.q}">
                     <input type="hidden" name="action" th:value="${activityFilters.action}">
                     <input type="hidden" name="entity" th:value="${activityFilters.entity}">

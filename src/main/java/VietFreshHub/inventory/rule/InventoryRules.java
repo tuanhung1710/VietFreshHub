@@ -1,7 +1,5 @@
 package VietFreshHub.inventory.rule;
 
-import java.time.DateTimeException;
-
 import VietFreshHub.inventory.entity.BatchMarkdown;
 import VietFreshHub.inventory.entity.InventoryBatch;
 import VietFreshHub.inventory.enums.BatchStatus;
@@ -218,22 +216,4 @@ public final class InventoryRules {
                         && !endDate.isAfter(batch.getExpiryDate()),
                 "Ngày kết thúc giảm giá phải từ hôm nay đến hạn sử dụng của lô.");
     }
-    public static LocalDate resolveExpiryDate(LocalDate receivedDate, Integer shelfLifeDays, LocalDate expiryDate) {
-        if (shelfLifeDays == null) return expiryDate;
-        require(receivedDate != null, "Chọn ngày nhập kho để tính hạn sử dụng.");
-        require(shelfLifeDays >= 0, "Số ngày bảo quản phải lớn hơn hoặc bằng 0.");
-        try {
-            LocalDate calculated = receivedDate.plusDays(shelfLifeDays);
-            require(calculated.getYear() >= 1 && calculated.getYear() <= 9999,
-                    "Hạn sử dụng vượt giới hạn cho phép.");
-            return calculated;
-        } catch (DateTimeException exception) {
-            throw new CatalogException("Hạn sử dụng vượt giới hạn cho phép.");
-        }
-    }
-
-    public static boolean nearExpiry(InventoryBatch batch, LocalDate date) {
-        return nearExpiry(batch, date, 3);
-    }
-
 }

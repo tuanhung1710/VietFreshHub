@@ -15,8 +15,8 @@
         <div class="vf-workspace">
         <main class="container vf-main narrow vf-inventory-main">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4 no-print">
-                <a class="text-success text-decoration-none" th:href="@{/seller/inventory}">
-                    ← Quản lý tồn kho
+                <a class="text-success text-decoration-none" th:href="@{${inventoryReturnUrl}}">
+                    ← Quay lại
                 </a>
                 <button class="btn btn-success" type="button" onclick="window.print()">
                     In thông tin lô
@@ -24,16 +24,21 @@
             </div>
 
             <section class="card p-4 batch-summary mb-4">
-                <p class="text-success fw-semibold">
-                    VietFresh Hub
-                </p>
-                <h1 class="h4" th:text="${row.productName}">
-                </h1>
-                <div class="d-flex flex-wrap align-items-center gap-1 mb-3">
-                    <h2 class="h5 mb-0" th:text="${'Lô hàng ' + row.batch.batchCode}">
-                    </h2>
-                    <button type="button" class="vf-copy-sku no-print"
-                            th:attr="data-vf-copy-code=${row.batch.batchCode},aria-label=${'Sao chép mã lô '+row.batch.batchCode}">Sao chép</button>
+                <div class="vf-batch-summary-heading">
+                    <div class="vf-batch-summary-title">
+                        <p class="text-success fw-semibold">VietFresh Hub</p>
+                        <h1 class="h4" th:text="${row.productName}"></h1>
+                        <div class="d-flex flex-wrap align-items-center gap-1">
+                            <h2 class="h5 mb-0" th:text="${'Lô hàng ' + row.batch.batchCode}"></h2>
+                            <button type="button" class="vf-copy-sku no-print"
+                                    th:attr="data-vf-copy-code=${row.batch.batchCode},aria-label=${'Sao chép mã lô '+row.batch.batchCode}">Sao chép</button>
+                        </div>
+                    </div>
+                    <a class="btn btn-outline-success vf-batch-edit-link no-print" th:if="${row.canEdit}" data-vf-inventory-link
+                       th:href="@{/seller/inventory/batches/{id}/edit(id=${row.batch.batchId},returnTo=${inventoryCurrentUrl})}">
+                        <svg class="vf-icon" aria-hidden="true"><use href="#vf-edit"/></svg>
+                        <span>Chỉnh sửa lô</span>
+                    </a>
                 </div>
                 <dl class="row mb-0">
                     <dt class="col-5">Phân loại</dt>
@@ -86,67 +91,73 @@
                 </div>
             </section>
 
-            <section class="card p-4 no-print">
+            <section class="card p-4 no-print vf-allocation-section">
                 <h2 class="h5 mb-3">
-                    Hàng phân bổ cho đơn hàng
+                    Phân bổ hàng theo đơn hàng
                 </h2>
-                <p class="text-body-secondary mb-0" th:if="${row.allocations.empty}">
+                <p class="text-body-secondary mb-0" th:if="${row.allocationDetails.empty}">
                     Chưa có hàng phân bổ cho đơn hàng.
                 </p>
-                <div class="table-responsive" th:if="${!row.allocations.empty}">
-
-                    <!-- Bảng dữ liệu -->
-                    <table class="table table-hover align-middle mb-0 vf-inventory-allocation-table" aria-label="Hàng phân bổ cho đơn hàng">
+                <div class="table-responsive" th:if="${!row.allocationDetails.empty}">
+                    <table class="table align-middle mb-0 vf-inventory-allocation-table" aria-label="Phân bổ hàng theo đơn hàng">
                         <colgroup>
                             <col class="vf-allocation-col-id">
                             <col class="vf-allocation-col-quantity">
+                            <col class="vf-allocation-col-unit">
                             <col class="vf-allocation-col-status">
+                            <col class="vf-allocation-col-updated">
+                            <col class="vf-allocation-col-actions">
                         </colgroup>
                         <thead class="table-light">
                             <tr>
-                                <th scope="col">
-                                    Mã đơn hàng
-                                </th>
-                                <th scope="col">
-                                    Số lượng
-                                </th>
-                                <th scope="col">
-                                    Trạng thái
-                                </th>
+                                <th scope="col">Mã đơn hàng</th>
+                                <th scope="col">Số lượng</th>
+                                <th scope="col">Đơn vị tính</th>
+                                <th scope="col">Trạng thái</th>
+                                <th scope="col">Cập nhật lần cuối</th>
+                                <th scope="col">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr th:each="allocation : ${row.allocations}">
-                                <td th:text="${row.allocationOrderCodes[allocation.orderItemId] ?: 'Đơn hàng'}" data-label="Mã đơn hàng">
-                                </td>
-                                <td th:text="${allocation.quantity}" data-label="Số lượng" class="vf-table-number">
-                                </td>
-                                <td data-label="Trạng thái phân bổ">
-                                    <span
-                                        class="badge bg-secondary-subtle text-secondary-emphasis"
-                                        th:if="${allocation.status.name() == 'RESERVED'}"
-                                        title="Số lượng đã giữ cho đơn hàng, chưa xuất kho."
-                                    >
-                                        Chờ xuất kho
-                                    </span>
-                                    <span
-                                        class="badge bg-secondary-subtle text-secondary-emphasis"
-                                        th:if="${allocation.status.name() == 'SOLD'}"
-                                    >
-                                        Đã xuất bán
-                                    </span>
-                                    <span
-                                        class="badge bg-secondary-subtle text-secondary-emphasis"
-                                        th:if="${allocation.status.name() == 'RELEASED'}"
-                                    >
-                                        Đã giải phóng
-                                    </span>
-                                </td>
-                            </tr>
+                            <th:block th:each="allocation : ${row.allocationDetails}">
+                                <tr>
+                                    <td data-label="Mã đơn hàng"><span class="vf-allocation-order-code" th:text="${allocation.orderCode}"></span></td>
+                                    <td data-label="Số lượng" class="vf-table-number"><span th:text="${allocation.quantity == null ? '—' : allocation.quantity}"></span></td>
+                                    <td data-label="Đơn vị tính"><span th:text="${#strings.isEmpty(allocation.unit) ? '—' : allocation.unit}"></span></td>
+                                    <td data-label="Trạng thái"><span class="badge" th:classappend="${allocation.statusTone}" th:text="${allocation.statusLabel}"></span></td>
+                                    <td data-label="Cập nhật lần cuối" class="vf-allocation-updated-cell">
+                                        <span class="vf-allocation-updated" th:text="${allocation.updatedAt == null ? 'Chưa có dữ liệu' : #temporals.format(allocation.updatedAt.plusHours(7), 'dd/MM/yyyy · HH:mm')}"></span>
+                                    </td>
+                                    <td data-label="Thao tác" class="vf-table-actions">
+                                        <button type="button" class="vf-allocation-toggle vf-collapse-toggle collapsed" data-vf-allocation-toggle aria-expanded="false"
+                                                th:attr="aria-controls=${'allocation-history-'+allocation.allocationId},aria-label=${'Xem chi tiết '+allocation.orderCode},data-vf-order-code=${allocation.orderCode}">
+                                            <span data-vf-allocation-toggle-label>Xem chi tiết</span>
+                                            <svg class="vf-icon" aria-hidden="true"><use href="#vf-chevron"/></svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr class="vf-collapse-row vf-allocation-history-row" data-vf-allocation-history th:id="${'allocation-history-'+allocation.allocationId}" hidden>
+                                    <td colspan="6">
+                                        <section class="vf-allocation-history" th:attr="aria-label=${'Lịch sử xử lý đơn hàng '+allocation.orderCode}">
+                                            <h3 class="h6 mb-3">Lịch sử xử lý đơn hàng</h3>
+                                            <p class="text-body-secondary mb-0" th:if="${allocation.history.empty}">Chưa có lịch sử xử lý đơn hàng.</p>
+                                            <ol class="vf-allocation-timeline" th:if="${!allocation.history.empty}">
+                                                <li th:each="event : ${allocation.history}">
+                                                    <span class="vf-allocation-event-time" th:text="${event.occurredAt == null ? 'Chưa rõ thời gian' : #temporals.format(event.occurredAt.plusHours(7), 'dd/MM/yyyy · HH:mm')}"></span>
+                                                    <div>
+                                                        <strong th:text="${event.description}"></strong>
+                                                        <p class="vf-allocation-event-note" th:if="${event.note != null}" th:text="${event.note}"></p>
+                                                    </div>
+                                                </li>
+                                            </ol>
+                                        </section>
+                                    </td>
+                                </tr>
+                            </th:block>
                         </tbody>
                     </table>
-
                 </div>
+                <p class="small text-body-secondary mt-3 mb-0" th:if="${!row.allocationDetails.empty}">Số lượng của phân loại trong đơn hàng · Giờ Việt Nam (UTC+7)</p>
             </section>
 
         </main>

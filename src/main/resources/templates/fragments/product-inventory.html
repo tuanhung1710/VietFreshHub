@@ -61,6 +61,12 @@
                 <symbol id="vf-adjust" viewBox="0 0 24 24">
                     <path d="M3 6h5m4 0h9M3 12h11m4 0h3M3 18h2m4 0h12M8 3v6M14 9v6M5 15v6"/>
                 </symbol>
+                <symbol id="vf-filter" viewBox="0 0 24 24">
+                    <path d="M3 5h7m4 0h7M3 12h2m4 0h12M3 19h7m4 0h7M12 2v6M7 9v6M12 16v6"/>
+                </symbol>
+                <symbol id="vf-reset" viewBox="0 0 24 24">
+                    <path d="M3 11a9 9 0 1 1 2.64 6.36M3 4v7h7"/>
+                </symbol>
                 <symbol id="vf-lock" viewBox="0 0 24 24">
                     <rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/>
                 </symbol>
@@ -222,7 +228,7 @@
             </header>
 
         </div>
-        <!-- Cùng một cách trình bày thời gian cho biến động kho và nhật ký hoạt động. -->
+        <!-- Trình bày thời gian trong nhật ký hoạt động. -->
         <time th:fragment="historyTime(timestamp)" class="vf-history-time-content"
               th:datetime="${timestamp.plusHours(7)} + '+07:00'">
             <span th:text="${#temporals.format(timestamp.plusHours(7),'dd/MM/yyyy')}"></span>
@@ -271,8 +277,11 @@
         <th:block th:fragment="pageSize(pageData, selectId, label)">
             <label th:for="${selectId}" th:text="${label}"></label>
             <select class="form-select form-select-sm" name="size" th:id="${selectId}">
-                <option th:each="n : ${ {15,20,50} }" th:value="${n}"
-                        th:selected="${pageData.size == n}" th:text="${n}"></option>
+                <option th:each="pageSize : ${T(VietFreshHub.common.PageSizes).OPTIONS}"
+                        th:value="${pageSize}"
+                        th:selected="${pageData.size == pageSize}"
+                        th:text="${pageSize}">
+                </option>
             </select>
             <button class="btn btn-sm btn-light" type="submit" data-vf-filter-submit>Áp dụng</button>
         </th:block>
@@ -280,19 +289,84 @@
         <div th:fragment="messages" aria-live="polite">
             <div class="alert alert-success" th:if="${success}" th:text="${success}">
             </div>
-            <div class="alert alert-danger" th:if="${error}" th:text="${error}">
+            <div class="alert alert-danger" th:if="${error}" th:text="${error}" role="alert" tabindex="-1" data-vf-error>
             </div>
         </div>
         <div th:fragment="errors" class="alert alert-danger" th:if="${#fields.hasAnyErrors()}" role="alert">
             <p class="mb-1" th:each="err : ${#fields.allErrors()}" th:text="${err}">
             </p>
         </div>
-        <!-- Hiển thị bán hàng; kết quả kiểm duyệt được trình bày riêng. -->
+        <div th:fragment="variantActionModal(returnToList)" class="modal fade" id="variantActionModal" tabindex="-1"
+             aria-labelledby="variantActionTitle" aria-describedby="variantActionDescription" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form id="variantActionForm" th:action="@{/seller/products}" method="post" data-vf-catalog-action>
+                        <input type="hidden" name="returnToList" th:value="${returnToList}">
+                        <input type="hidden" name="status" id="variantActionStatus">
+                        <th:block th:if="${returnToList}">
+                            <th:block th:replace="~{fragments/product-catalog :: filters}"></th:block>
+                            <input type="hidden" name="page" th:value="${rows.number + 1}">
+                            <input type="hidden" name="size" th:value="${rows.size}">
+                        </th:block>
+                        <div class="modal-header">
+                            <h2 class="modal-title fs-5" id="variantActionTitle">Cấu hình phân loại</h2>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="fw-semibold text-break" id="variantActionName"></p>
+                            <p class="small text-secondary" id="variantActionDescription"></p>
+                            <label class="form-label" for="variantActionReason">Lý do thay đổi *</label>
+                            <textarea class="form-control" id="variantActionReason" name="reason" rows="3"
+                                      maxlength="900" required></textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-success" id="variantActionSubmit">Xác nhận</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div th:fragment="variantDeleteModal(returnToList)" class="modal fade" id="variantDeleteModal" tabindex="-1"
+             aria-labelledby="variantDeleteTitle" aria-describedby="variantDeleteDescription" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form id="variantDeleteForm" th:action="@{/seller/products}" method="post" data-vf-catalog-action>
+                        <input type="hidden" name="returnToList" th:value="${returnToList}">
+                        <th:block th:if="${returnToList}">
+                            <th:block th:replace="~{fragments/product-catalog :: filters}"></th:block>
+                            <input type="hidden" name="page" th:value="${rows.number + 1}">
+                            <input type="hidden" name="size" th:value="${rows.size}">
+                        </th:block>
+                        <div class="modal-header">
+                            <h2 class="modal-title fs-5" id="variantDeleteTitle">Xóa phân loại</h2>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="fw-semibold text-break" id="variantDeleteName"></p>
+                            <p class="small text-secondary" id="variantDeleteDescription">
+                                Phân loại sẽ được xóa khỏi danh sách. Tồn kho và lịch sử vẫn được giữ lại trong Kho hàng.
+                                Nếu không còn phân loại mở bán, sản phẩm sẽ tự tạm ẩn.
+                            </p>
+                            <label class="form-label" for="variantDeleteReason">Lý do xóa *</label>
+                            <textarea class="form-control" id="variantDeleteReason" name="reason" rows="3"
+                                      maxlength="900" required></textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                            <button type="submit" class="btn btn-danger">Xóa phân loại</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hiển thị trạng thái bán hàng và vi phạm trên màn hình Sản phẩm. -->
         <th:block th:fragment="productStatus(row)">
             <span class="badge"
                   th:classappend="${row.managementState.code=='active'?'vf-badge-green':(row.managementState.code=='violation'?'vf-badge-red':'vf-badge-gray')}"
                   th:text="${row.managementState.label}"
-                  th:title="${row.managementState.reason}"></span>
+                  th:title="${row.managementState.code=='archived'?'Sản phẩm đã xóa; tồn kho và lịch sử được lưu trong Kho hàng.':row.managementState.reason}"></span>
         </th:block>
         <span
             th:fragment="approval(status)"
