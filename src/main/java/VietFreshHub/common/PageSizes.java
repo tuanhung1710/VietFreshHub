@@ -4,7 +4,7 @@ import java.util.List;
 
 public final class PageSizes {
     public static final int DEFAULT = 10;
-    public static final List<Integer> OPTIONS = List.of(5, DEFAULT, 20, 50);
+    public static final List<Integer> OPTIONS = List.of(5, 10, 20, 50);
 
     private PageSizes() {}
 
