@@ -30,6 +30,8 @@ class CatalogBrowseRepositoryTest {
         jdbc.execute("CREATE TABLE dbo.product_variants(variant_id BIGINT,product_id BIGINT,status VARCHAR,price DECIMAL(18,2))");
         jdbc.execute("CREATE TABLE dbo.inventory_batches(batch_id BIGINT,variant_id BIGINT,status VARCHAR,expiry_date DATE,quantity_on_hand INT,reserved_quantity INT)");
         jdbc.execute("CREATE TABLE dbo.batch_markdowns(batch_id BIGINT,status VARCHAR,start_date DATE,end_date DATE,price DECIMAL(18,2))");
+        jdbc.execute("CREATE TABLE dbo.order_items(variant_id BIGINT, shop_order_id BIGINT, quantity INT)");
+        jdbc.execute("CREATE TABLE dbo.shop_orders(shop_order_id BIGINT, status VARCHAR)");
         jdbc.update("INSERT INTO dbo.shops VALUES(1,'ACTIVE','OPEN'),(2,'ACTIVE','CLOSED')");
         jdbc.update("INSERT INTO dbo.products VALUES(1,1,'Xoài','ACTIVE',0),(2,2,'Cam','ACTIVE',0),(3,1,'Hidden','ACTIVE',1)");
         jdbc.update("INSERT INTO dbo.product_categories VALUES(1,7),(2,7),(3,7)");
@@ -69,5 +71,13 @@ class CatalogBrowseRepositoryTest {
         assertEquals(List.of(1L, 2L), repository.search(filter, Set.of(7L)).getContent());
         filter.setSort("price_desc");
         assertEquals(List.of(2L, 1L), repository.search(filter, Set.of(7L)).getContent());
+    }
+
+    @Test
+    void salesOnlyCountCompletedOrders() {
+        jdbc.update("INSERT INTO dbo.shop_orders VALUES(1,'COMPLETED'),(2,'CANCELLED')");
+        jdbc.update("INSERT INTO dbo.order_items VALUES(1,1,5),(2,2,999)");
+        filter.setSort("best_selling");
+        assertEquals(List.of(1L, 2L), repository.search(filter, Set.of(7L)).getContent());
     }
 }

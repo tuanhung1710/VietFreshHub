@@ -55,6 +55,12 @@ public class CatalogBrowseRepository {
         String order = switch (filter.getSort()) {
             case "price_asc" -> "offer.price ASC, p.product_id DESC";
             case "price_desc" -> "offer.price DESC, p.product_id DESC";
+            case "best_selling" -> """
+                    (SELECT COALESCE(SUM(CAST(i.quantity AS BIGINT)),0) FROM dbo.order_items i
+                    JOIN dbo.product_variants sold ON sold.variant_id=i.variant_id
+                    JOIN dbo.shop_orders so ON so.shop_order_id=i.shop_order_id
+                    WHERE sold.product_id=p.product_id AND so.status='COMPLETED') DESC, p.product_id DESC
+                    """;
             default -> "p.product_id DESC";
         };
         var ids = jdbc.query(OFFERS + "SELECT p.product_id " + from + " ORDER BY " + order + " OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY",
