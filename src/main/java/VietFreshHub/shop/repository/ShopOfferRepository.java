@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import VietFreshHub.common.PageSizes;
 
 @Repository
 @RequiredArgsConstructor
@@ -37,11 +38,11 @@ public class ShopOfferRepository {
         """;
 
     public Page<Offer> list(Long shopId, int page) {
-        var pageable = PageRequest.of(page - 1, 12);
+        var pageable = PageRequest.of(page - 1, PageSizes.DEFAULT);
         var parameters = new MapSqlParameterSource("shop", shopId)
-                .addValue("now", VietFreshHub.inventory.rule.InventoryRules.now()).addValue("offset", pageable.getOffset());
+                .addValue("now", VietFreshHub.inventory.rule.InventoryRules.now()).addValue("offset", pageable.getOffset()).addValue("size", pageable.getPageSize());
         Long count = jdbc.queryForObject(OFFERS + "SELECT COUNT(*) FROM offers", parameters, Long.class);
-        var rows = jdbc.query(OFFERS + "SELECT * FROM offers ORDER BY end_at,kind,id OFFSET :offset ROWS FETCH NEXT 12 ROWS ONLY",
+        var rows = jdbc.query(OFFERS + "SELECT * FROM offers ORDER BY end_at,kind,id OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY",
                 parameters, (row, index) -> new Offer(row.getString("name"), row.getString("description"), row.getString("code"),
                         row.getString("discount_type"), row.getBigDecimal("discount_value"), row.getBigDecimal("max_discount"),
                         row.getBigDecimal("minimum_order_value"), (Integer) row.getObject("per_user_limit"),

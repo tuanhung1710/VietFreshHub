@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import VietFreshHub.common.PageSizes;
 
 @Service
 @RequiredArgsConstructor
@@ -48,7 +49,7 @@ public class ShopAnnouncementService {
         shops.getManagedShopId(authentication);
         if (page < 1 || page > 10000) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Trang không hợp lệ.");
         return inbox.findAnnouncements(authenticationService.getCurrentUserId(authentication),
-                PageRequest.of(page - 1, 15, Sort.by(Sort.Direction.DESC, "createdAt", "notificationId")))
+                PageRequest.of(page - 1, PageSizes.DEFAULT, Sort.by(Sort.Direction.DESC, "createdAt", "notificationId")))
                 .map(notice -> new Announcement(notice.getNotificationId(), notice.getTitle(), notice.getContent(),
                         localTime(notice.getCreatedAt()), localTime(notice.getReadAt())));
     }

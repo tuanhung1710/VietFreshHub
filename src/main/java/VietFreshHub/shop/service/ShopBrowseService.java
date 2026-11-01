@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
+import VietFreshHub.common.PageSizes;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +34,6 @@ public class ShopBrowseService {
         if (page < 1 || page > 10000 || keyword == null || keyword.length() > 100) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Trang hoặc từ khóa không hợp lệ.");
         }
-        return shops.findPublicShops(keyword.strip(), PageRequest.of(page - 1, 12, Sort.by("shopName", "shopId")));
+        return shops.findPublicShops(keyword.strip(), PageRequest.of(page - 1, PageSizes.DEFAULT, Sort.by("shopName", "shopId")));
     }
 }

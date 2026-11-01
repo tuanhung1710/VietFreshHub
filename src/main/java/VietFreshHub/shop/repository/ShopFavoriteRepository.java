@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
+import VietFreshHub.common.PageSizes;
 
 @Repository
 @RequiredArgsConstructor
@@ -28,11 +29,11 @@ public class ShopFavoriteRepository {
     }
 
     public Page<Long> list(Long userId, int page) {
-        var pageable = PageRequest.of(page - 1, 12);
-        var parameters = new MapSqlParameterSource("user", userId).addValue("offset", pageable.getOffset());
+        var pageable = PageRequest.of(page - 1, PageSizes.DEFAULT);
+        var parameters = new MapSqlParameterSource("user", userId).addValue("offset", pageable.getOffset()).addValue("size", pageable.getPageSize());
         String from = " FROM dbo.favorite_shops f JOIN dbo.shops s ON s.shop_id=f.shop_id WHERE f.user_id=:user AND s.status='ACTIVE' AND s.availability_status='OPEN'";
         Long count = jdbc.queryForObject("SELECT COUNT(*)" + from, parameters, Long.class);
-        var ids = jdbc.query("SELECT f.shop_id" + from + " ORDER BY f.created_at DESC,f.shop_id DESC OFFSET :offset ROWS FETCH NEXT 12 ROWS ONLY",
+        var ids = jdbc.query("SELECT f.shop_id" + from + " ORDER BY f.created_at DESC,f.shop_id DESC OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY",
                 parameters, (row, index) -> row.getLong(1));
         return new PageImpl<>(ids, pageable, count == null ? 0 : count);
     }
