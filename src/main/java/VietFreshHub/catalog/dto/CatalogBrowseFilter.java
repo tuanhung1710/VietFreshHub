@@ -16,6 +16,8 @@ public class CatalogBrowseFilter {
     private String keyword = "";
     @Positive
     private Long categoryId;
+    @jakarta.validation.constraints.Pattern(regexp = "all|available|unavailable")
+    private String availability = "all";
     @jakarta.validation.constraints.DecimalMin("0")
     @jakarta.validation.constraints.Digits(integer = 16, fraction = 0)
     private java.math.BigDecimal minPrice;
@@ -43,6 +45,7 @@ public class CatalogBrowseFilter {
         if (categoryId != null) builder.queryParam("categoryId", categoryId);
         if (minPrice != null) builder.queryParam("minPrice", minPrice);
         if (maxPrice != null) builder.queryParam("maxPrice", maxPrice);
+        if (!"all".equals(availability)) builder.queryParam("availability", availability);
         return builder;
     }
 }

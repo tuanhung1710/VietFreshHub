@@ -49,6 +49,8 @@ public class CatalogBrowseRepository {
             from += " AND offer.price <= :maxPrice";
             parameters.addValue("maxPrice", filter.getMaxPrice());
         }
+        if ("available".equals(filter.getAvailability())) from += " AND offer.available = 1";
+        if ("unavailable".equals(filter.getAvailability())) from += " AND offer.available = 0";
         Long count = jdbc.queryForObject(OFFERS + "SELECT COUNT(*) " + from, parameters, Long.class);
         var ids = jdbc.query(OFFERS + "SELECT p.product_id " + from + " ORDER BY p.product_id DESC OFFSET :offset ROWS FETCH NEXT :size ROWS ONLY",
                 parameters, (row, index) -> row.getLong(1));

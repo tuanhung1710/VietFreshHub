@@ -44,6 +44,10 @@
             <label>Giá từ <input type="number" th:field="*{minPrice}" min="0" step="1"></label>
             <label>Đến <input type="number" th:field="*{maxPrice}" min="0" step="1"></label>
             <button>Lọc sản phẩm</button> <a th:href="@{/home}">Xóa bộ lọc</a>
+            <label>Khả dụng <select th:field="*{availability}">
+                <option value="all">Tất cả</option><option value="available">Đang nhận đơn, còn hàng</option>
+                <option value="unavailable">Chưa thể đặt mua</option>
+            </select></label>
             <ul th:if="${#fields.hasAnyErrors()}"><li th:each="error : ${#fields.allErrors()}" th:text="${error}"></li></ul>
         </form>
         <section th:if="${#lists.isEmpty(products)}" class="panel empty">
