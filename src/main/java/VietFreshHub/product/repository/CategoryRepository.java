@@ -10,4 +10,8 @@ import java.util.List;
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, Long> {
     List<Category> findAllByOrderByNameAsc();
+
+    boolean existsBySlugIgnoreCase(String slug);
+
+    boolean existsBySlugIgnoreCaseAndCategoryIdNot(String slug, Long categoryId);
 }
