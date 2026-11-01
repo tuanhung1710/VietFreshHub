@@ -1,5 +1,6 @@
 package VietFreshHub.product.entity;
 
+import VietFreshHub.common.BusinessCodes;
 import VietFreshHub.product.enums.ApprovalStatus;
 import VietFreshHub.product.enums.ProductStatus;
 
@@ -11,6 +12,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -62,7 +64,7 @@ public class Product {
     @Column(name = "moderation_reason", length = 1000)
     private String moderationReason;
 
-    // Null preserves ambiguous legacy INACTIVE records instead of inventing seller intent.
+    // Giữ null cho dữ liệu INACTIVE cũ chưa rõ nguyên nhân, tránh suy diễn là người bán đã ẩn.
     @Column(name = "seller_hidden")
     private Boolean sellerHidden;
 
@@ -83,6 +85,7 @@ public class Product {
     @ColumnDefault("3")
     private Integer expiryWarningDays = 3;
 
+    /** Dùng mốc nhắc hạn mặc định 3 ngày nếu dữ liệu sản phẩm cũ chưa có cấu hình. */
     public Integer getExpiryWarningDays() {
         return expiryWarningDays == null ? 3 : expiryWarningDays;
     }
@@ -92,8 +95,9 @@ public class Product {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    @jakarta.persistence.Transient
+    /** Tạo mã PRD từ ID để hiển thị; mã này không phải cột được lưu riêng. */
+    @Transient
     public String getProductCode() {
-        return VietFreshHub.common.BusinessCodes.format("PRD", productId);
+        return BusinessCodes.format("PRD", productId);
     }
 }

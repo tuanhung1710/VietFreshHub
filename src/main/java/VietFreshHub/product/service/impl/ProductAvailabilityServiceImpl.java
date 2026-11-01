@@ -27,6 +27,7 @@ public class ProductAvailabilityServiceImpl implements ProductAvailabilityServic
     private final CategoryRepository categoryRepository;
     private final CategoryValidator categoryValidator;
 
+    /** Lấy ID các danh mục có toàn bộ chuỗi danh mục cha còn hoạt động. */
     @Override
     public List<Long> activeCategoryIds() {
         List<Long> ids = new ArrayList<>();
@@ -38,12 +39,17 @@ public class ProductAvailabilityServiceImpl implements ProductAvailabilityServic
         return ids;
     }
 
+    /** Tính trạng thái quản lý nhiều sản phẩm theo cùng danh mục hợp lệ và ngày tại cửa hàng. */
     @Override
     public Map<Long, ProductManagementState> states(Long shopId, List<Long> productIds) {
         return productRepository.managementStates(
                 shopId, productIds, activeCategoryIds(), InventoryRules.today());
     }
 
+    /**
+     * Kiểm tra điều kiện kinh doanh của shop, sản phẩm, danh mục, phân loại và giá.
+     * Số lượng tồn khả dụng được kiểm tra riêng khi giữ hàng cho đơn.
+     */
     @Override
     public boolean canSellVariant(Long shopId, ProductVariant variant) {
         return productRepository.canSellVariant(

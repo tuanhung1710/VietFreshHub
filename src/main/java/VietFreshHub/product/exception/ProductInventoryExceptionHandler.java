@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ControllerAdvice(assignableTypes = {ProductController.class, InventoryController.class})
 public class ProductInventoryExceptionHandler {
 
+    /** Hiển thị lỗi không có quyền truy cập sản phẩm hoặc kho với mã HTTP 403. */
     @ExceptionHandler(AccessDeniedException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public String denied(AccessDeniedException exception, Model model) {
@@ -21,6 +22,7 @@ public class ProductInventoryExceptionHandler {
         return "product/error";
     }
 
+    /** Hiển thị lỗi vi phạm quy tắc nghiệp vụ sản phẩm hoặc kho với mã HTTP 400. */
     @ExceptionHandler(CatalogException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public String rule(CatalogException exception, Model model) {
@@ -28,6 +30,7 @@ public class ProductInventoryExceptionHandler {
         return "product/error";
     }
 
+    /** Thông báo xung đột dữ liệu hoặc trùng mã với HTTP 409 để người dùng kiểm tra và thử lại. */
     @ExceptionHandler(DataIntegrityViolationException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public String conflict(Model model) {
