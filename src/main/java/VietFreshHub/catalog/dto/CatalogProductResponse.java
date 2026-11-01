@@ -6,6 +6,7 @@ import lombok.Getter;
 @Getter @Builder
 public class CatalogProductResponse {
     private Long productId;
+    private Long shopId;
     private String name, slug, description, imageUrl, shopName;
     private List<VariantResponse> variants;
     private VariantResponse selectedVariant;

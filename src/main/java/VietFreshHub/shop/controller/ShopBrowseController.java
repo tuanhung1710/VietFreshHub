@@ -7,6 +7,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PathVariable;
 
 @Controller
 @RequiredArgsConstructor
@@ -20,5 +21,12 @@ public class ShopBrowseController {
         model.addAttribute("shopsPage", shops.list(page, keyword));
         model.addAttribute("keyword", keyword);
         return "shop/list";
+    }
+
+    @GetMapping("/{shopId}")
+    public String profile(@PathVariable Long shopId, Model model) {
+        model.addAttribute("shop", shops.profile(shopId));
+        model.addAttribute("location", shops.location(shopId).orElse(null));
+        return "shop/detail";
     }
 }

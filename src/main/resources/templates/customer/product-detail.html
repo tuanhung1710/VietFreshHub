@@ -6,7 +6,7 @@
     <p><a th:href="@{/home}">← Tiếp tục mua sắm</a></p>
     <div th:replace="~{fragments/storefront :: messages}"></div>
     <article class="detail-grid"><img class="detail-image" th:src="${product.imageUrl}" th:alt="${product.name}">
-        <section class="panel"><p class="eyebrow" th:text="${product.shopName}"></p><h1 th:text="${product.name}"></h1>
+        <section class="panel"><p class="eyebrow"><a th:href="@{/shops/{id}(id=${product.shopId})}" th:text="${product.shopName}"></a></p><h1 th:text="${product.name}"></h1>
             <p class="description muted" th:text="${product.description}"></p>
             <h2>Chọn phân loại</h2>
             <div class="variant-list" aria-label="Phân loại sản phẩm">

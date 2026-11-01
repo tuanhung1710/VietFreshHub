@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title th:text="${shop.shopName}">Cửa hàng</title></head>
+<body>
+<nav><a th:href="@{/home}">Sản phẩm</a> · <a th:href="@{/shops}">Danh sách cửa hàng</a></nav>
+<h1 th:text="${shop.shopName}"></h1>
+<p th:text="${shop.description}"></p>
+<dl>
+    <dt>Điện thoại</dt><dd th:text="${shop.phone}"></dd>
+    <dt>Email</dt><dd th:text="${shop.email}"></dd>
+    <dt>Nhận đơn</dt><dd th:text="${shop.availabilityStatus == 'OPEN' ? 'Đang nhận đơn' : 'Tạm ngừng nhận đơn'}"></dd>
+    <dt th:if="${location != null}">Địa chỉ</dt>
+    <dd th:if="${location != null}" th:text="${location.formattedAddress != null ? location.formattedAddress : location.addressLine + ', ' + location.ward + ', ' + location.province}"></dd>
+</dl>
+</body>
+</html>

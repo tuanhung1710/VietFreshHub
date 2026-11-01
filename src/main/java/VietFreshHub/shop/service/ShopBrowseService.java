@@ -16,6 +16,17 @@ import org.springframework.http.HttpStatus;
 @Transactional(readOnly = true)
 public class ShopBrowseService {
     private final ShopRepository shops;
+    private final VietFreshHub.shop.repository.ShopLocationRepository locations;
+
+    public Shop profile(Long shopId) {
+        return shops.findByShopIdAndStatus(shopId, "ACTIVE")
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy cửa hàng đang hoạt động."));
+    }
+
+    public java.util.Optional<VietFreshHub.shop.entity.ShopLocation> location(Long shopId) {
+        profile(shopId);
+        return locations.findById(shopId);
+    }
 
     public Page<Shop> list(int page, String keyword) {
         if (page < 1 || page > 10000 || keyword == null || keyword.length() > 100) {

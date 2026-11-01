@@ -67,7 +67,7 @@
                     <span th:if="${product.selectedVariant != null and product.selectedVariant.purchasable}" class="stock-label">Có sẵn</span>
                     <span th:if="${product.selectedVariant == null or !product.selectedVariant.purchasable}" class="stock-label unavailable">Chưa nhận đơn</span>
                 </a>
-                <div class="card-content"><p class="shop-label" th:text="${product.shopName}"></p>
+                <div class="card-content"><p class="shop-label"><a th:href="@{/shops/{id}(id=${product.shopId})}" th:text="${product.shopName}"></a></p>
                     <h3><a th:href="@{/product-detail(productId=${product.productId})}" th:text="${product.name}"></a></h3>
                     <p th:if="${product.selectedVariant != null}" class="card-variant" th:text="${product.selectedVariant.variantName}"></p>
                     <div class="card-bottom"><span th:if="${product.selectedVariant != null}" class="price" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'POINT')} + ' ₫'"></span>
