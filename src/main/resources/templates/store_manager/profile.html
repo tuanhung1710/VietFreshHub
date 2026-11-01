@@ -4,6 +4,7 @@
 <body>
 <nav><a th:href="@{/seller}">Cửa hàng của tôi</a> · <a th:href="@{/seller/pickup-location}">Địa điểm lấy hàng</a></nav>
 <h1 th:text="${shop.shopName}"></h1>
+<p><a th:href="@{/seller/profile/edit}">Sửa hồ sơ</a></p>
 <p th:if="${successMessage}" th:text="${successMessage}" role="status"></p>
 <dl>
     <dt>Mã cửa hàng</dt><dd th:text="${shop.shopCode}"></dd>

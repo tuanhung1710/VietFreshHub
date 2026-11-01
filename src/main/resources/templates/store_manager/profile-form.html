@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Sửa hồ sơ cửa hàng</title></head>
+<body>
+<h1>Sửa hồ sơ cửa hàng</h1>
+<form method="post" th:action="@{/seller/profile}" th:object="${profileForm}">
+    <ul th:if="${#fields.hasAnyErrors()}"><li th:each="error : ${#fields.allErrors()}" th:text="${error}"></li></ul>
+    <p><label>Tên cửa hàng <input th:field="*{shopName}" required maxlength="200"></label></p>
+    <p><label>Mô tả <textarea th:field="*{description}" maxlength="5000"></textarea></label></p>
+    <p><label>Điện thoại <input th:field="*{phone}" maxlength="30"></label></p>
+    <p><label>Email <input type="email" th:field="*{email}" maxlength="255"></label></p>
+    <p><label>Đường dẫn logo <input type="url" th:field="*{logoUrl}" maxlength="1000"></label></p>
+    <p><label>Đường dẫn ảnh bìa <input type="url" th:field="*{bannerUrl}" maxlength="1000"></label></p>
+    <button>Lưu hồ sơ</button> <a th:href="@{/seller/profile}">Hủy</a>
+</form>
+</body>
+</html>
