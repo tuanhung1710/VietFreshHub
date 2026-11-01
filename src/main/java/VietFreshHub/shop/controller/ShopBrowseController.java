@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 @RequestMapping("/shops")
 public class ShopBrowseController {
     private final ShopBrowseService shops;
+    private final VietFreshHub.shop.service.ShopReviewService reviews;
 
     @GetMapping
     public String list(@RequestParam(defaultValue = "1") int page,
@@ -27,6 +28,17 @@ public class ShopBrowseController {
     public String profile(@PathVariable Long shopId, Model model) {
         model.addAttribute("shop", shops.profile(shopId));
         model.addAttribute("location", shops.location(shopId).orElse(null));
+        model.addAttribute("reviewSummary", reviews.summary(shopId));
         return "shop/detail";
+    }
+
+    @GetMapping("/{shopId}/reviews")
+    public String reviews(@PathVariable Long shopId, @RequestParam(defaultValue = "1") int page,
+                          @RequestParam(required = false) Integer rating, Model model) {
+        model.addAttribute("shop", shops.profile(shopId));
+        model.addAttribute("reviewsPage", reviews.list(shopId, rating, page));
+        model.addAttribute("summary", reviews.summary(shopId));
+        model.addAttribute("rating", rating);
+        return "shop/reviews";
     }
 }

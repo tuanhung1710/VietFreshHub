@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Đánh giá cửa hàng</title></head>
+<body>
+<a th:href="@{/shops/{id}(id=${shop.shopId})}" th:text="${shop.shopName}"></a>
+<h1>Đánh giá cửa hàng</h1>
+<p th:text="${#numbers.formatDecimal(summary.average,1,1)} + ' / 5 · ' + ${summary.count} + ' đánh giá'"></p>
+<form method="get" th:action="@{/shops/{id}/reviews(id=${shop.shopId})}">
+    <label>Số sao <select name="rating"><option value="">Tất cả</option>
+        <option th:each="star : ${#numbers.sequence(1,5)}" th:value="${star}" th:selected="${rating == star}" th:text="${star} + ' sao'"></option>
+    </select></label><button>Lọc</button>
+</form>
+<p th:if="${reviewsPage.empty}">Chưa có đánh giá phù hợp.</p>
+<article th:each="review : ${reviewsPage.content}">
+    <h2 th:text="${review.customerName}"></h2><p th:text="${review.rating} + ' / 5'"></p>
+    <p th:text="${review.content}"></p><time th:text="${#temporals.format(review.createdAt,'dd/MM/yyyy HH:mm')}"></time>
+</article>
+<nav th:if="${reviewsPage.totalPages > 1}">
+    <a th:if="${reviewsPage.hasPrevious()}" th:href="@{/shops/{id}/reviews(id=${shop.shopId},page=${reviewsPage.number},rating=${rating})}">Trang trước</a>
+    <span th:text="${reviewsPage.number + 1} + ' / ' + ${reviewsPage.totalPages}"></span>
+    <a th:if="${reviewsPage.hasNext()}" th:href="@{/shops/{id}/reviews(id=${shop.shopId},page=${reviewsPage.number + 2},rating=${rating})}">Trang tiếp</a>
+</nav>
+</body>
+</html>

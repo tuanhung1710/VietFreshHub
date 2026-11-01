@@ -12,5 +12,8 @@
     <dt th:if="${location != null}">Địa chỉ</dt>
     <dd th:if="${location != null}" th:text="${location.formattedAddress != null ? location.formattedAddress : location.addressLine + ', ' + location.ward + ', ' + location.province}"></dd>
 </dl>
+<p><a th:href="@{/shops/{id}/reviews(id=${shop.shopId})}">Đánh giá cửa hàng</a>:
+    <span th:text="${#numbers.formatDecimal(reviewSummary.average,1,1)} + ' / 5 (' + ${reviewSummary.count} + ' đánh giá)'"></span>
+</p>
 </body>
 </html>
