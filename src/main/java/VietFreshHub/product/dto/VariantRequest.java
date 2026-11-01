@@ -1,6 +1,7 @@
 package VietFreshHub.product.dto;
 
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -34,14 +35,17 @@ public class VariantRequest {
     @NotNull(message = "Nhập giá bán.")
     @DecimalMin(value = "10000", message = "Giá bán phải từ 10.000 đ.")
     @Digits(integer = 16, fraction = 0, message = "Giá bán phải là số nguyên đồng, tối đa 16 chữ số.")
+    @DecimalMax(value = "9999999999999999", message = "Giá trị vượt giới hạn cho phép.")
     private BigDecimal price;
 
     @DecimalMin(value = "0", message = "Giá trước giảm không được âm.")
     @Digits(integer = 16, fraction = 0, message = "Giá trước giảm phải là số nguyên đồng, tối đa 16 chữ số.")
+    @DecimalMax(value = "9999999999999999", message = "Giá trị vượt giới hạn cho phép.")
     private BigDecimal compareAtPrice;
 
     @DecimalMin(value = "0.001", message = "Giá trị phải từ 0,001 kg.")
     @Digits(integer = 15, fraction = 3, message = "Giá trị tính bằng kg, tối đa 15 chữ số phần nguyên và 3 chữ số thập phân.")
+    @DecimalMax(value = "999999999999999.999", message = "Giá trị vượt giới hạn cho phép.")
     private BigDecimal weight;
 
     @NotBlank(message = "Chọn đơn vị bán.")
@@ -51,7 +55,7 @@ public class VariantRequest {
     @Min(value = 0, message = "Mức tồn kho cảnh báo phải lớn hơn hoặc bằng 0.")
     private Integer lowStockThreshold = 5;
 
-    // The checkbox is explicit; an empty quantity is never interpreted as zero.
+    // Phải chọn rõ chưa nhập hàng; số lượng để trống không được tự hiểu là 0.
     private boolean noInitialStock;
 
     @Min(value = 0, message = "Số lượng nhập ban đầu phải lớn hơn hoặc bằng 0.")
@@ -68,25 +72,33 @@ public class VariantRequest {
 
     @DecimalMin(value = "0", message = "Giá vốn không được âm.")
     @Digits(integer = 16, fraction = 2, message = "Giá vốn không được vượt quá 16 chữ số phần nguyên và 2 chữ số thập phân.")
+    @DecimalMax(value = "9999999999999999.99", message = "Giá trị vượt giới hạn cho phép.")
     private BigDecimal costPrice;
 
     @Size(max = 900, message = "Lý do không được vượt quá 900 ký tự.")
     private String reason;
 
-    // SQL DECIMAL supplies .00 on edit; accept whole dong without rounding actual fractions.
+    /** Chuẩn hóa giá bán đọc từ biểu mẫu hoặc SQL DECIMAL, giữ nguyên phần lẻ để kiểm tra lỗi. */
     public void setPrice(BigDecimal value) {
         price = normalizedAmount(value);
     }
 
+    /** Chuẩn hóa giá trước giảm mà không làm tròn phần lẻ đồng. */
     public void setCompareAtPrice(BigDecimal value) {
         compareAtPrice = normalizedAmount(value);
     }
 
+    /**
+     * Bỏ các số 0 thập phân không cần thiết, giữ số nguyên hợp lệ dễ đọc trên biểu mẫu.
+     * Giá trị có phần lẻ hoặc vượt giới hạn vẫn được chuyển đến bước kiểm tra, không làm tròn.
+     */
     private BigDecimal normalizedAmount(BigDecimal value) {
-        if (value == null) return null;
+        if (value == null) {
+            return null;
+        }
         BigDecimal amount = value.stripTrailingZeros();
-        // Keep valid whole amounts readable in number inputs; invalid fractions/oversized
-        // exponents still reach validation unchanged, without rounding or huge allocations.
+        // Chỉ chuyển dạng số mũ sang số nguyên khi trong giới hạn 16 chữ số;
+        // giá trị lớn hoặc có phần lẻ vẫn đi đến bước kiểm tra mà không bị làm tròn.
         return amount.scale() < 0 && (long) amount.precision() - amount.scale() <= 16
                 ? amount.setScale(0) : amount;
     }
