@@ -41,4 +41,10 @@ public class ShopBrowseController {
         model.addAttribute("rating", rating);
         return "shop/reviews";
     }
+
+    @GetMapping("/{shopId}/products")
+    public String products(@PathVariable Long shopId) {
+        shops.profile(shopId);
+        return "redirect:/home?shopId=" + shopId;
+    }
 }

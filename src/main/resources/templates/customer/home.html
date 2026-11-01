@@ -28,6 +28,7 @@
         <div class="hero-photo"><img th:src="@{/images/buoi-da-xanh.jpg}" alt="Bưởi da xanh" width="460" height="300"></div>
     </section>
     <section id="catalog" class="catalog-section">
+        <p th:if="${catalogShop != null}">Sản phẩm của <a th:href="@{/shops/{id}(id=${catalogShop.shopId})}" th:text="${catalogShop.shopName}"></a></p>
         <div class="catalog-heading"><div><p class="eyebrow">Khám phá cửa hàng</p>
             <h1 class="catalog-title" th:if="${not #strings.isEmpty(keyword)}" th:text="'Kết quả cho “' + ${keyword} + '”'"></h1>
             <h2 class="catalog-title" th:if="${#strings.isEmpty(keyword)}">Danh sách sản phẩm</h2></div>
@@ -40,6 +41,7 @@
         </div>
         <form method="get" th:action="@{/home}" th:object="${filter}">
             <input type="hidden" th:field="*{categoryId}">
+            <input type="hidden" th:field="*{shopId}">
             <label>Tìm tên <input type="search" th:field="*{keyword}" maxlength="100"></label>
             <label>Giá từ <input type="number" th:field="*{minPrice}" min="0" step="1"></label>
             <label>Đến <input type="number" th:field="*{maxPrice}" min="0" step="1"></label>

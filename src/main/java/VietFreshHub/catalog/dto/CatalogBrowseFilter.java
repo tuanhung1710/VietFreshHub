@@ -16,6 +16,8 @@ public class CatalogBrowseFilter {
     private String keyword = "";
     @Positive
     private Long categoryId;
+    @Positive
+    private Long shopId;
     @jakarta.validation.constraints.Pattern(regexp = "all|available|unavailable")
     private String availability = "all";
     @jakarta.validation.constraints.Pattern(regexp = "newest|price_asc|price_desc|best_selling|rating")
@@ -45,6 +47,7 @@ public class CatalogBrowseFilter {
     private org.springframework.web.util.UriComponentsBuilder url() {
         var builder = org.springframework.web.util.UriComponentsBuilder.fromPath("/home").queryParam("keyword", keyword);
         if (categoryId != null) builder.queryParam("categoryId", categoryId);
+        if (shopId != null) builder.queryParam("shopId", shopId);
         if (minPrice != null) builder.queryParam("minPrice", minPrice);
         if (maxPrice != null) builder.queryParam("maxPrice", maxPrice);
         if (!"all".equals(availability)) builder.queryParam("availability", availability);

@@ -88,4 +88,12 @@ class CatalogBrowseRepositoryTest {
         filter.setSort("rating");
         assertEquals(List.of(1L, 2L), repository.search(filter, Set.of(7L)).getContent());
     }
+
+    @Test
+    void shopFilterCombinesWithOtherFilters() {
+        filter.setShopId(2L);
+        assertEquals(List.of(2L), repository.search(filter, Set.of(7L)).getContent());
+        filter.setAvailability("available");
+        assertTrue(repository.search(filter, Set.of(7L)).isEmpty());
+    }
 }

@@ -45,6 +45,10 @@ public class CatalogBrowseRepository {
             from += " AND offer.price >= :minPrice";
             parameters.addValue("minPrice", filter.getMinPrice());
         }
+        if (filter.getShopId() != null) {
+            from += " AND p.shop_id=:shopId";
+            parameters.addValue("shopId", filter.getShopId());
+        }
         if (filter.getMaxPrice() != null) {
             from += " AND offer.price <= :maxPrice";
             parameters.addValue("maxPrice", filter.getMaxPrice());

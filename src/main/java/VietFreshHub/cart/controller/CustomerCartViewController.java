@@ -22,6 +22,7 @@ public class CustomerCartViewController {
     private final CartService cartService;
     private final CatalogService catalogService;
     private final CurrentCustomerService currentCustomer;
+    private final VietFreshHub.shop.service.ShopBrowseService shops;
 
     private CartDto populateActiveCart(Authentication authentication) {
         boolean customer = authentication != null && authentication.isAuthenticated()
@@ -40,6 +41,7 @@ public class CustomerCartViewController {
         model.addAttribute("productPage", products);
         model.addAttribute("keyword", filter.getKeyword());
         model.addAttribute("categories", catalogService.categories());
+        if (!errors.hasErrors() && filter.getShopId() != null) model.addAttribute("catalogShop", shops.profile(filter.getShopId()));
         return "customer/home";
     }
     @GetMapping({"/product-detail", "/product-detail/{variantId}"})
