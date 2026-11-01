@@ -64,9 +64,6 @@ public class VariantRequest {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate receivedDate;
 
-    @Min(value = 0, message = "Số ngày bảo quản phải lớn hơn hoặc bằng 0.")
-    private Integer shelfLifeDays;
-
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate expiryDate;
 

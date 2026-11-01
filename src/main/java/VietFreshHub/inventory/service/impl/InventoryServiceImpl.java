@@ -102,26 +102,28 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     @Transactional
     public void restock(Authentication authentication, Long variantId, BatchRequest form) {
-        ProductVariant variant = getOwnedVariant(authentication, variantId, true);
+        // Khóa SKU cùng sản phẩm cha, kiểm tra quyền và chặn nhập vào dữ liệu đã ngừng kinh doanh.
+        ProductVariant variant = getOwnedVariantForUpdate(authentication, variantId);
         Product product = productRepository.findById(variant.getProductId()).orElseThrow();
         require(
                 product.getStatus() != ProductStatus.DELETED
                         && variant.getStatus() != VariantStatus.DELETED,
                 "Không thể nhập kho cho sản phẩm hoặc phân loại đã ngừng kinh doanh.");
-        form.setExpiryDate(InventoryRules.resolveExpiryDate(
-                form.getReceivedDate(), form.getShelfLifeDays(), form.getExpiryDate()));
+        // Kiểm tra ngày nhập và hạn sử dụng được nhập trực tiếp, cùng lượng nhập và giá vốn.
         InventoryRules.dates(form.getReceivedDate(), form.getExpiryDate(), today());
         require(form.getQuantity() != null && form.getQuantity() > 0, "Số lượng nhập phải lớn hơn 0.");
         String changeReason = reason(form.getReason());
         validateCost(form);
 
         InventoryBatch batch = createBatch(variantId, form);
+        // Nhập hàng tự bật lại SKU hết hàng; SKU do người bán tạm dừng vẫn giữ trạng thái tạm dừng.
         if (variant.getStatus() == VariantStatus.OUT_OF_STOCK) {
             variant.setStatus(VariantStatus.ACTIVE);
             variant.setUpdatedAt(now());
             productVariantRepository.save(variant);
         }
 
+        // Ghi số lượng tăng trong nhật ký kho và lý do thao tác trong lịch sử hoạt động.
         Long actorId = authService.getCurrentUserId(authentication);
         inventoryJournalService.stock(
                 variantId,
@@ -156,7 +158,7 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     public BatchRequest batchForm(Authentication authentication, Long batchId) {
-        InventoryBatch batch = getOwnedBatch(authentication, batchId, false);
+        InventoryBatch batch = getOwnedBatchForRead(authentication, batchId);
         BatchRequest form = new BatchRequest();
         form.setQuantity(1);
         form.setCostPrice(batch.getCostPrice());
@@ -168,13 +170,13 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     @Transactional
     public void updateBatch(Authentication authentication, Long batchId, BatchRequest form) {
-        InventoryBatch batch = getOwnedBatch(authentication, batchId, true);
+        // Khóa lô trước khi kiểm tra; sửa thông tin lô không điều chỉnh số lượng tồn.
+        InventoryBatch batch = getOwnedBatchForUpdate(authentication, batchId);
         validateCost(form);
         String changeReason = reason(form.getReason());
-        form.setExpiryDate(InventoryRules.resolveExpiryDate(
-                form.getReceivedDate(), form.getShelfLifeDays(), form.getExpiryDate()));
         validateBatchDates(batch, form);
 
+        // Chụp mô tả cũ trước khi gán dữ liệu mới để lịch sử thể hiện được thay đổi.
         String before = describeBatchDatesAndCost(batch);
         batch.setExpiryDate(form.getExpiryDate());
         batch.setCostPrice(form.getCostPrice());
@@ -196,6 +198,7 @@ public class InventoryServiceImpl implements InventoryService {
                 form.getReceivedDate() != null && !form.getReceivedDate().isAfter(date),
                 "Ngày nhập kho không được sau hôm nay.");
         if (!Objects.equals(form.getExpiryDate(), batch.getExpiryDate())) {
+            // Lô đã hết hạn không được sửa hạn để trở thành hàng còn hạn.
             require(!expired(batch, date), "Không thể đổi hạn sử dụng của lô đã hết hạn.");
             InventoryRules.dates(form.getReceivedDate(), form.getExpiryDate(), date);
         }
