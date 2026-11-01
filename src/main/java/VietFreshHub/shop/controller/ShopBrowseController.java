@@ -1,6 +1,12 @@
 package VietFreshHub.shop.controller;
 
 import VietFreshHub.shop.service.ShopBrowseService;
+import VietFreshHub.shop.service.ShopReviewService;
+import VietFreshHub.shop.service.ShopOfferService;
+import VietFreshHub.shop.service.ShopFavoriteService;
+import VietFreshHub.catalog.service.CatalogService;
+import VietFreshHub.catalog.dto.CatalogBrowseFilter;
+import org.springframework.security.core.Authentication;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -14,10 +20,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 @RequestMapping("/shops")
 public class ShopBrowseController {
     private final ShopBrowseService shops;
-    private final VietFreshHub.shop.service.ShopReviewService reviews;
-    private final VietFreshHub.shop.service.ShopOfferService offers;
-    private final VietFreshHub.shop.service.ShopFavoriteService favorites;
-    private final VietFreshHub.catalog.service.CatalogService catalog;
+    private final ShopReviewService reviews;
+    private final ShopOfferService offers;
+    private final ShopFavoriteService favorites;
+    private final CatalogService catalog;
 
     @GetMapping
     public String list(@RequestParam(defaultValue = "1") int page,
@@ -28,13 +34,13 @@ public class ShopBrowseController {
     }
 
     @GetMapping("/{shopId}")
-    public String profile(@PathVariable Long shopId, org.springframework.security.core.Authentication authentication, Model model) {
+    public String profile(@PathVariable Long shopId, Authentication authentication, Model model) {
         model.addAttribute("shop", shops.profile(shopId));
         model.addAttribute("location", shops.location(shopId).orElse(null));
         model.addAttribute("reviewSummary", reviews.summary(shopId));
         boolean customer = authentication != null && authentication.getAuthorities().stream().anyMatch(a -> "ROLE_CUSTOMER".equals(a.getAuthority()));
         model.addAttribute("favorite", customer && favorites.isFavorite(authentication, shopId));
-        var filter = new VietFreshHub.catalog.dto.CatalogBrowseFilter();
+        var filter = new CatalogBrowseFilter();
         filter.setShopId(shopId);
         model.addAttribute("featuredProducts", catalog.listProducts(filter).getContent());
         return "shop/detail";

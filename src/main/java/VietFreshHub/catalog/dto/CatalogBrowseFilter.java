@@ -4,6 +4,12 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Pattern;
+import java.math.BigDecimal;
+import org.springframework.web.util.UriComponentsBuilder;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -18,16 +24,14 @@ public class CatalogBrowseFilter {
     private Long categoryId;
     @Positive
     private Long shopId;
-    @jakarta.validation.constraints.Pattern(regexp = "newest|price_asc|price_desc|best_selling|rating")
+    @Pattern(regexp = "newest|price_asc|price_desc|best_selling|rating")
     private String sort = "newest";
-    @jakarta.validation.constraints.DecimalMin("0")
-    @jakarta.validation.constraints.Digits(integer = 16, fraction = 0)
-    private java.math.BigDecimal minPrice;
-    @jakarta.validation.constraints.DecimalMin("0")
-    @jakarta.validation.constraints.Digits(integer = 16, fraction = 0)
-    private java.math.BigDecimal maxPrice;
+    @DecimalMin("0") @Digits(integer = 16, fraction = 0)
+    private BigDecimal minPrice;
+    @DecimalMin("0") @Digits(integer = 16, fraction = 0)
+    private BigDecimal maxPrice;
 
-    @jakarta.validation.constraints.AssertTrue(message = "Giá tối thiểu không được lớn hơn giá tối đa.")
+    @AssertTrue(message = "Giá tối thiểu không được lớn hơn giá tối đa.")
     public boolean isPriceRangeValid() {
         return minPrice == null || maxPrice == null || minPrice.compareTo(maxPrice) <= 0;
     }
@@ -42,8 +46,8 @@ public class CatalogBrowseFilter {
         return builder.build().encode().toUriString();
     }
 
-    private org.springframework.web.util.UriComponentsBuilder url() {
-        var builder = org.springframework.web.util.UriComponentsBuilder.fromPath("/home").queryParam("keyword", keyword);
+    private UriComponentsBuilder url() {
+        var builder = UriComponentsBuilder.fromPath("/home").queryParam("keyword", keyword);
         if (categoryId != null) builder.queryParam("categoryId", categoryId);
         if (shopId != null) builder.queryParam("shopId", shopId);
         if (minPrice != null) builder.queryParam("minPrice", minPrice);
