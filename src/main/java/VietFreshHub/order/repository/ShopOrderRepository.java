@@ -44,6 +44,8 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, Jpa
     @EntityGraph(attributePaths = {"order", "order.customer"})
     List<ShopOrder> findByShopIdAndStatus(Long shopId, String status);
 
+    List<ShopOrder> findByOrder_Customer_UserIdAndShopIdAndStatus(Long userId, Long shopId, String status);
+
     @EntityGraph(attributePaths = {"order", "order.customer"})
     List<ShopOrder> findByShopIdAndStatusInOrderByOrderPlacedAtDesc(Long shopId, Collection<String> statuses);
 

@@ -65,7 +65,7 @@ public class CatalogServiceImpl implements CatalogService {
         var selected = selectedId == null ? options.stream().filter(CatalogProductResponse.VariantResponse::isPurchasable)
                 .findFirst().orElse(options.isEmpty() ? null : options.getFirst())
                 : options.stream().filter(v -> selectedId.equals(v.getVariantId())).findFirst().orElseThrow(this::notFound);
-        return CatalogProductResponse.builder().productId(p.getProductId()).name(p.getName()).slug(p.getSlug())
+        return CatalogProductResponse.builder().productId(p.getProductId()).shopId(p.getShop().getShopId()).name(p.getName()).slug(p.getSlug())
                 .description(p.getDescription()).imageUrl(selected == null ? p.getImageUrl() : p.getVariants().stream()
                         .filter(v -> v.getVariantId().equals(selected.getVariantId())).findFirst().map(CatalogVariant::getDisplayImageUrl).orElse(p.getImageUrl())).shopName(p.getShop().getShopName())
                 .variants(options).selectedVariant(selected).build();

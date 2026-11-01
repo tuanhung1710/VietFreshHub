@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Báo cáo đánh giá</title></head>
+<body><main>
+    <h1>Báo cáo đánh giá đang chờ</h1>
+    <p th:if="${reports.empty}">Không có báo cáo đang chờ xử lý.</p>
+    <article th:each="report : ${reports.content}">
+        <h2 th:text="${report.targetName + ' · ' + report.rating + '/5'}">Đánh giá</h2>
+        <p th:text="${report.content}"></p><p th:text="${'Người báo cáo: ' + report.reporterName + ' · Lý do: ' + report.reason}"></p>
+        <p th:text="${report.description}"></p>
+        <form method="post" th:action="@{/admin/review-reports/{id}/moderate(id=${report.reportId})}">
+            <button name="action" value="APPROVE">Duyệt</button><button name="action" value="REJECT">Từ chối</button>
+            <button name="action" value="REMOVE">Gỡ đánh giá</button><button name="action" value="DISMISS">Bỏ qua báo cáo</button>
+        </form>
+    </article>
+    <nav th:if="${reports.totalPages > 1}" aria-label="Trang báo cáo">
+        <a th:if="${reports.hasPrevious()}" th:href="@{/admin/review-reports(page=${reports.number - 1})}">Trước</a>
+        <span th:text="${reports.number + 1 + ' / ' + reports.totalPages}"></span>
+        <a th:if="${reports.hasNext()}" th:href="@{/admin/review-reports(page=${reports.number + 1})}">Sau</a>
+    </nav>
+    <a th:href="@{/admin/reviews/pending}">Đánh giá chờ duyệt</a>
+</main></body></html>

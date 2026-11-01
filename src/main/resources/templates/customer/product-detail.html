@@ -7,6 +7,8 @@
     <div th:replace="~{fragments/storefront :: messages}"></div>
     <article class="detail-grid"><img class="detail-image" th:src="${product.imageUrl}" th:alt="${product.name}">
         <section class="panel"><p class="eyebrow" th:text="${product.shopName}"></p><h1 th:text="${product.name}"></h1>
+            <p><a th:href="@{/reviews/product/{id}(id=${product.productId})}">Xem đánh giá và xếp hạng</a></p>
+            <p><a th:href="@{/reviews/shop/{id}(id=${product.shopId})}">Xem đánh giá cửa hàng</a></p>
             <p class="description muted" th:text="${product.description}"></p>
             <h2>Chọn phân loại</h2>
             <div class="variant-list" aria-label="Phân loại sản phẩm">

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Đánh giá chờ duyệt</title></head>
+<body><main>
+    <h1>Đánh giá chờ duyệt</h1>
+    <p th:if="${reviews.empty}">Không có đánh giá chờ duyệt.</p>
+    <article th:each="review : ${reviews.content}">
+        <h2 th:text="${review.targetName + ' · ' + review.rating + '/5'}">Đánh giá</h2>
+        <p th:text="${review.reviewerName}"></p><p th:text="${review.content}"></p>
+        <form method="post" th:action="@{/admin/reviews/{id}/moderate(id=${review.reviewId})}">
+            <button name="action" value="APPROVE">Duyệt</button><button name="action" value="REJECT">Từ chối</button>
+            <button name="action" value="REMOVE">Gỡ đánh giá</button>
+        </form>
+    </article>
+    <nav th:if="${reviews.totalPages > 1}" aria-label="Trang đánh giá chờ duyệt">
+        <a th:if="${reviews.hasPrevious()}" th:href="@{/admin/reviews/pending(page=${reviews.number - 1})}">Trước</a>
+        <span th:text="${reviews.number + 1 + ' / ' + reviews.totalPages}"></span>
+        <a th:if="${reviews.hasNext()}" th:href="@{/admin/reviews/pending(page=${reviews.number + 1})}">Sau</a>
+    </nav>
+    <a th:href="@{/admin/review-reports}">Báo cáo</a>
+</main></body></html>

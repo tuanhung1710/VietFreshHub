@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Đánh giá của tôi · VietFresh Hub</title></head>
+<body><main>
+    <h1>Đánh giá của tôi</h1>
+    <p th:if="${#lists.isEmpty(reviews.content)}">Bạn chưa gửi đánh giá nào.</p>
+    <article th:each="review : ${reviews.content}">
+        <h2 th:text="${review.targetName}">Sản phẩm hoặc cửa hàng</h2>
+        <p th:text="${'Trạng thái: ' + review.status + ' · ' + review.rating + '/5'}"></p>
+        <form method="post" th:action="@{/reviews/{id}/edit(id=${review.reviewId})}"
+              th:if="${review.status == T(VietFreshHub.review.entity.ReviewStatus).PENDING}">
+            <label th:for="${'rating-' + review.reviewId}">Điểm từ 1 đến 5</label>
+            <input th:id="${'rating-' + review.reviewId}" type="number" min="1" max="5" name="rating" th:value="${review.rating}" required>
+            <label th:for="${'content-' + review.reviewId}">Nội dung</label>
+            <textarea th:id="${'content-' + review.reviewId}" name="content" maxlength="3000" th:text="${review.content}"></textarea>
+            <button type="submit">Cập nhật</button>
+        </form>
+        <p th:if="${review.status != T(VietFreshHub.review.entity.ReviewStatus).PENDING}">Chỉnh sửa sau khi kiểm duyệt: TBD.</p>
+        <form method="post" th:action="@{/reviews/{id}/delete(id=${review.reviewId})}"><button type="submit">Xóa đánh giá</button></form>
+    </article>
+    <nav th:if="${reviews.totalPages > 1}" aria-label="Trang đánh giá của tôi">
+        <a th:if="${reviews.hasPrevious()}" th:href="@{/reviews/mine(page=${reviews.number - 1})}">Trước</a>
+        <span th:text="${reviews.number + 1 + ' / ' + reviews.totalPages}"></span>
+        <a th:if="${reviews.hasNext()}" th:href="@{/reviews/mine(page=${reviews.number + 1})}">Sau</a>
+    </nav>
+    <a th:href="@{/home}">Về trang chủ</a>
+</main></body></html>

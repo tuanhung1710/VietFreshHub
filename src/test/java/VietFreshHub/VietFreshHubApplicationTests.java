@@ -5,10 +5,13 @@ import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.auth.repository.UserRoleRepository;
 import VietFreshHub.admin.dto.AdminDashboardData;
 import VietFreshHub.admin.service.AdminDashboardService;
+import VietFreshHub.review.repository.ReviewRepository;
+import VietFreshHub.review.service.ReviewService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.data.domain.Page;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -31,12 +34,29 @@ import static org.hamcrest.Matchers.containsString;
 @AutoConfigureMockMvc
 class VietFreshHubApplicationTests {
 	@Autowired MockMvc mvc;
+	@MockitoBean ReviewService reviewService;
 	@MockitoBean UserRepository userRepository;
 	@MockitoBean UserRoleRepository userRoleRepository;
 	@MockitoBean AdminDashboardService adminDashboardService;
 
 	@Test
 	void contextLoads() {
+	}
+
+	@Test
+	void approvedReviewsArePubliclyViewableAndAdminModerationIsRoleRestricted() throws Exception {
+		when(reviewService.productReviews(1L, 0)).thenReturn(Page.empty());
+		when(reviewService.productRating(1L)).thenReturn(org.mockito.Mockito.mock(ReviewRepository.RatingSummary.class));
+		when(reviewService.pendingReviews(0)).thenReturn(Page.empty());
+		stubActor("seller@test", 11L, "ROLE_STORE_MANAGER");
+		stubActor("admin@test", 12L, "ROLE_ADMIN");
+
+		mvc.perform(get("/reviews/product/1"))
+				.andExpect(status().isOk()).andExpect(view().name("review/list"));
+		mvc.perform(get("/admin/reviews/pending").with(SecurityMockMvcRequestPostProcessors.user("seller@test").roles("STORE_MANAGER")))
+				.andExpect(status().isForbidden());
+		mvc.perform(get("/admin/reviews/pending").with(SecurityMockMvcRequestPostProcessors.user("admin@test").roles("ADMIN")))
+				.andExpect(status().isOk()).andExpect(view().name("admin/reviews-pending"));
 	}
 
 	@Test

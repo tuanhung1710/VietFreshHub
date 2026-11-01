@@ -14,6 +14,9 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 
     List<OrderItem> findByShopOrderId(Long shopOrderId);
 
+    List<OrderItem> findByShopOrder_Order_Customer_UserIdAndShopOrder_StatusAndVariant_Product_ProductId(
+            Long userId, String status, Long productId);
+
     interface AdminBestSellingProduct {
         String getProductName();
         String getUnit();

@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 @Getter @Builder
 public class CatalogProductResponse {
-    private Long productId;
+    private Long productId, shopId;
     private String name, slug, description, imageUrl, shopName;
     private List<VariantResponse> variants;
     private VariantResponse selectedVariant;
