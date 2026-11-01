@@ -1,9 +1,14 @@
 package VietFreshHub.common;
 
+import java.util.List;
+
 public final class PageSizes {
-    public static final int DEFAULT = 15;
+    public static final int DEFAULT = 10;
+    public static final List<Integer> OPTIONS = List.of(DEFAULT, 20, 50);
+
     private PageSizes() {}
+
     public static int normalize(int requested) {
-        return requested == 20 || requested == 50 ? requested : DEFAULT;
+        return OPTIONS.contains(requested) ? requested : DEFAULT;
     }
 }

@@ -3,7 +3,7 @@ package VietFreshHub.inventory.dto;
 import lombok.Getter;
 import lombok.Setter;
 
-/** Separate, combinable dimensions. Pagination counts products, matching children are SKUs/lots. */
+/** Các điều kiện kho có thể kết hợp; phân trang theo sản phẩm, lọc chi tiết theo SKU và lô. */
 @Getter @Setter
 public class InventoryCatalogFilter {
     private String q = "";
@@ -11,6 +11,11 @@ public class InventoryCatalogFilter {
     private String stock = "";
     private String expiry = "";
     private Long variantId;
-    /** Includes soft-deleted products/SKUs, even with no stock. False shows current SKUs only. */
+    /** Gồm cả sản phẩm, SKU đã xóa dù đã hết tồn; tắt thì chỉ hiện SKU đang kinh doanh. */
     private boolean archived;
+
+    public boolean isAdvanced() {
+        return category != null || (stock != null && !stock.isBlank())
+                || (expiry != null && !expiry.isBlank()) || archived;
+    }
 }

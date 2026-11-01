@@ -24,6 +24,9 @@ public class ProductImageController {
     private final ShopService shopService;
     private final ProductImageStorageService productImageStorageService;
 
+    /**
+     * Kiểm tra quyền quản lý shop rồi tải ảnh lên; trả URL khi thành công hoặc thông báo lỗi với HTTP 400.
+     */
     @PostMapping("/seller/products/images")
     @ResponseBody
     public ResponseEntity<Map<String, String>> upload(

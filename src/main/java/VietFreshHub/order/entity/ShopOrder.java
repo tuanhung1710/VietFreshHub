@@ -32,9 +32,9 @@ public class ShopOrder {
     @Column(name="cancelled_at") private LocalDateTime cancelledAt;
     @Column(name="shipping_distance_meters", precision=12, scale=1) private BigDecimal shippingDistanceMeters;
     @OneToMany(mappedBy="shopOrder") private List<OrderItem> items=new ArrayList<>();
-    public void confirm() { status="CONFIRMED"; }
+    public void confirm() { status="CONFIRMED"; confirmedAt=VietFreshHub.inventory.rule.InventoryRules.now(); }
     public void startPreparing() { status="PREPARING"; }
-    public void markReady() { status="READY_FOR_DELIVERY"; }
+    public void markReady() { status="READY_FOR_DELIVERY"; readyAt=VietFreshHub.inventory.rule.InventoryRules.now(); }
     public void markOutForDelivery() { status="OUT_FOR_DELIVERY"; }
     public void markCompleted() { status="COMPLETED"; }
 

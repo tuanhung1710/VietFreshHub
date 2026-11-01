@@ -20,6 +20,10 @@ public class InventoryJournalServiceImpl implements InventoryJournalService {
     private final InventoryTransactionRepository inventoryTransactionRepository;
     private final AuditEventRepository auditEventRepository;
 
+    /**
+     * Ghi một biến động kho với số lượng có dấu, người thực hiện và đối tượng tham chiếu.
+     * Hàm chỉ ghi lịch sử; nơi gọi chịu trách nhiệm cập nhật tồn và lượng giữ.
+     */
     @Override
     @Transactional
     public void stock(
@@ -34,6 +38,7 @@ public class InventoryJournalServiceImpl implements InventoryJournalService {
         InventoryRules.require(type != null, "Vui lòng chọn loại biến động kho.");
         InventoryRules.require(quantity != 0, "Số lượng thay đổi phải khác 0.");
 
+        // quantity giữ nguyên dấu do nơi gọi truyền: dấu và loại giao dịch quyết định biến động tồn hay lượng giữ.
         InventoryTransaction transaction = new InventoryTransaction();
         transaction.setVariantId(variantId);
         transaction.setBatchId(batchId);
@@ -47,12 +52,14 @@ public class InventoryJournalServiceImpl implements InventoryJournalService {
         inventoryTransactionRepository.save(transaction);
     }
 
+    /** Ghi hành động vào lịch sử thao tác; rút gọn lý do quá dài để phù hợp giới hạn lưu trữ. */
     @Override
     @Transactional
     public void audit(
             Long actorId, String action, String entityType, Long entityId, String reason) {
         String auditReason = reason;
         if (auditReason.length() > 1000) {
+            // Chừa ba ký tự cho dấu ba chấm để tổng độ dài không vượt cột lưu trữ.
             auditReason = auditReason.substring(0, 997) + "...";
         }
 

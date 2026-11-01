@@ -1,156 +1,84 @@
 "use strict";
 
+// Xử lý hiển thị và gửi dữ liệu; service Java kiểm tra ngày, giá, SKU và quy tắc bản nháp.
+/** Hiển thị ảnh xem trước khi URL dùng HTTP, HTTPS hoặc đường dẫn ảnh nội bộ. */
 function preview(picker) {
     const input = picker.querySelector(".image-url");
     const img = picker.querySelector(".image-preview");
-    if (!input || !img) {
-        return;
-    }
-    const value = input.value.trim();
-    if (/^(https?:\/\/|\/images\/)/.test(value)) {
-        img.src = value;
-        img.style.display = "block";
-    } else {
-        img.removeAttribute("src");
-        img.style.display = "none";
-    }
+    if (!input || !img) return;
+    const visible = /^(https?:\/\/|\/images\/)/.test(input.value.trim());
+    if (visible) img.src = input.value.trim();
+    else img.removeAttribute("src");
+    img.hidden = !visible;
+    img.style.display = visible ? "block" : "none";
 }
 
+/** Ẩn và vô hiệu hóa dữ liệu nhập kho khi người bán chọn chưa nhập hàng. */
 function stock(row) {
     const box = row.querySelector(".no-stock");
     const section = row.querySelector(".initial-stock");
-    if (!box || !section) {
-        return;
-    }
+    if (!box || !section) return;
     section.hidden = box.checked;
-    for (const input of section.querySelectorAll("input")) {
-        input.disabled = box.checked;
-        input.required = !box.checked && !input.readOnly
-            && !input.matches(".batch-shelf-life-days")
-            && !input.name.endsWith(".costPrice") && input.name !== "costPrice";
-    }
+    // Input bị disabled sẽ không gửi lên máy chủ, tránh gửi dữ liệu lô cũ khi chọn chưa nhập hàng.
+    section.querySelectorAll("input").forEach(input => { input.disabled = box.checked; });
+    section.querySelectorAll(".initial-quantity, .batch-received-date, .batch-expiry-date").forEach(input => {
+        input.required = !box.checked;
+    });
 }
 
+/** Lấy tên header và token CSRF từ trang để gửi yêu cầu tải ảnh hợp lệ. */
+function csrfHeaders() {
+    return {[document.querySelector('meta[name="csrf-header"]').content]:
+        document.querySelector('meta[name="csrf-token"]').content};
+}
+
+// Đồng bộ ảnh, trạng thái nhập kho và tải ảnh lên; khóa ô tải tệp trong lúc chờ phản hồi.
 document.addEventListener("change", async event => {
     const input = event.target;
-    if (input.matches(".image-url")) {
-        preview(input.closest(".image-picker"));
-    }
-    if (input.matches(".no-stock")) {
-        stock(input.closest(".variant-row"));
-    }
-    if (!input.matches(".image-upload") || !input.files.length) {
-        return;
-    }
+    if (input.matches(".image-url")) preview(input.closest(".image-picker"));
+    if (input.matches(".no-stock")) stock(input.closest(".variant-row"));
+    if (!input.matches(".image-upload") || !input.files.length) return;
     const picker = input.closest(".image-picker");
-    const file = input.files[0];
-    if (file.size > 1024 * 1024) {
-        alert("Chọn ảnh JPG hoặc PNG có dung lượng tối đa 1 MB.");
-        input.value = "";
-        return;
-    }
     const data = new FormData();
-    data.append("file", file);
+    data.append("file", input.files[0]);
     input.disabled = true;
     try {
-        const token = document.querySelector('meta[name="csrf-token"]').content;
-        const header = document.querySelector('meta[name="csrf-header"]').content;
         const response = await fetch(document.querySelector('meta[name="image-upload-url"]').content, {
-            method: "POST", headers: {[header]: token}, body: data
+            method: "POST", headers: csrfHeaders(), body: data
         });
-        if (!response.ok) {
-            const text = await response.text();
-            let message = "Không thể tải ảnh lên. Kiểm tra trạng thái đăng nhập và dung lượng ảnh rồi thử lại.";
-            try {
-                message = JSON.parse(text).message || message;
-            } catch (_) {
-                // Keep the default message when the response is not JSON.
-            }
-            throw new Error(message);
-        }
         const result = await response.json();
+        if (!response.ok) throw new Error(result.message || "Không thể tải ảnh lên.");
+        // Sau upload, form lưu URL do máy chủ trả về; ảnh xem trước dùng cùng URL đó.
         picker.querySelector(".image-url").value = result.url;
         preview(picker);
     } catch (error) {
-        alert(error.message);
+        alert(error instanceof SyntaxError ? "Không thể tải ảnh lên. Vui lòng thử lại." : error.message);
     } finally {
+        // Luôn mở lại ô tải và xóa lựa chọn để có thể chọn lại cùng tệp sau một lần thất bại.
         input.disabled = false;
         input.value = "";
     }
 });
 
+// Khởi tạo trạng thái đúng cho các dòng đã có dữ liệu khi trang vừa tải.
+document.querySelectorAll(".variant-row").forEach(stock);
+document.querySelectorAll(".image-picker").forEach(preview);
+
+// Dùng ảnh sản phẩm được chọn làm ảnh cho phân loại và cập nhật phần xem trước.
 document.addEventListener("click", event => {
-    if (event.target.matches(".copy-image")) {
-        const image = document.querySelector(".product-image");
-        const picker = event.target.closest(".image-picker");
-        if (image && image.value) {
-            picker.querySelector(".image-url").value = image.value;
-            preview(picker);
-        } else {
-            alert("Chọn ảnh sản phẩm trước khi dùng cho phân loại.");
-        }
-    }
-    if (event.target.matches(".remove-variant")) {
-        const rows = document.querySelector("#variant-rows");
-        if (rows.children.length === 1) {
-            alert("Sản phẩm cần ít nhất một phân loại.");
-            return;
-        }
-        event.target.closest(".variant-row").remove();
-        renumber();
-    }
-});
-
-function renumber() {
-    let index = 0;
-    for (const row of document.querySelectorAll("#variant-rows > .variant-row")) {
-        row.dataset.index = index;
-        row.querySelector("h3").textContent = "Phân loại " + (index + 1);
-        for (const input of row.querySelectorAll("[name]")) {
-            input.name = input.name.replace(/variants\[\d+\]/g, "variants[" + index + "]");
-        }
-        for (const element of row.querySelectorAll("[id]")) {
-            element.id = element.id.replace(/variants\d+/g, "variants" + index);
-        }
-        index++;
-    }
-}
-
-document.querySelector("#add-variant")?.addEventListener("click", () => {
-    const rows = document.querySelector("#variant-rows");
-    if (rows.children.length >= 20) {
-        alert("Mỗi sản phẩm có tối đa 20 phân loại.");
-        return;
-    }
-    const row = rows.firstElementChild.cloneNode(true);
-    for (const input of row.querySelectorAll("input")) {
-        if (input.type === "checkbox") {
-            input.checked = false;
-        } else if (input.type !== "hidden") {
-            input.value = "";
-        }
-        input.disabled = false;
-    }
-    for (const img of row.querySelectorAll("img")) {
-        img.removeAttribute("src");
-        img.style.display = "none";
-    }
-    row.querySelector("input[name$='.variantName']").value = "";
-    row.querySelector("input[name$='.lowStockThreshold']").value = "5";
-    rows.appendChild(row);
-    renumber();
-    stock(row);
-});
-
-for (const row of document.querySelectorAll(".variant-row")) {
-    stock(row);
-}
-for (const picker of document.querySelectorAll(".image-picker")) {
+    const button = event.target.closest("button[data-product-image]");
+    if (!button) return;
+    const picker = button.closest(".image-picker");
+    picker.querySelector(".image-url").value = button.dataset.productImage;
     preview(picker);
-}
+});
+// Ưu tiên xác nhận riêng của nút (ví dụ xóa), sau đó mới dùng xác nhận chung của biểu mẫu.
 document.addEventListener("submit", event => {
     const form = event.target.closest("form[data-confirm]");
-    if (form?.dataset.confirm && !confirm(form.dataset.confirm)) {
-        event.preventDefault();
-    }
+    const deletesVariant = form?.hasAttribute("data-variant-status")
+        && form.elements.namedItem("status")?.value === "DELETED";
+    const message = deletesVariant
+        ? "Xóa phân loại này? Nếu không còn phân loại mở bán, sản phẩm sẽ tự tạm ẩn."
+        : event.submitter?.dataset.confirm || form?.dataset.confirm;
+    if (message && !confirm(message)) event.preventDefault();
 });

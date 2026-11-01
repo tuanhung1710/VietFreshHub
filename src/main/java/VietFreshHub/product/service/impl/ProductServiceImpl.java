@@ -1,36 +1,28 @@
 package VietFreshHub.product.service.impl;
 
-import static VietFreshHub.inventory.rule.InventoryRules.available;
-import static VietFreshHub.inventory.rule.InventoryRules.expired;
-import static VietFreshHub.inventory.rule.InventoryRules.nearExpiry;
 import static VietFreshHub.inventory.rule.InventoryRules.now;
 import static VietFreshHub.inventory.rule.InventoryRules.reason;
 import static VietFreshHub.inventory.rule.InventoryRules.require;
 import static VietFreshHub.inventory.rule.InventoryRules.today;
-
-import VietFreshHub.auth.entity.User;
-import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.auth.service.AuthService;
-import VietFreshHub.inventory.dto.BatchResponse;
-import VietFreshHub.inventory.entity.BatchMarkdown;
+import VietFreshHub.common.BusinessCodes;
+import VietFreshHub.common.PageSizes;
+import VietFreshHub.inventory.dto.InventoryAttentionSummary;
+import VietFreshHub.inventory.dto.InventoryCatalogFilter;
 import VietFreshHub.inventory.entity.InventoryBatch;
 import VietFreshHub.inventory.enums.BatchStatus;
-import VietFreshHub.inventory.enums.MarkdownStatus;
 import VietFreshHub.inventory.enums.StockTransactionType;
-import VietFreshHub.inventory.repository.BatchMarkdownRepository;
 import VietFreshHub.inventory.repository.InventoryBatchRepository;
 import VietFreshHub.inventory.repository.InventoryTransactionRepository;
-import VietFreshHub.inventory.repository.StockAllocationRepository;
 import VietFreshHub.inventory.rule.InventoryRules;
 import VietFreshHub.inventory.service.InventoryJournalService;
 import VietFreshHub.inventory.util.InventoryLockHelper;
 import VietFreshHub.product.dto.ActionRequest;
 import VietFreshHub.product.dto.BulkProductActionRequest;
-import VietFreshHub.product.dto.ProductCatalogFilter;
 import VietFreshHub.product.dto.CatalogSummary;
+import VietFreshHub.product.dto.ProductCatalogFilter;
 import VietFreshHub.product.dto.ProductRequest;
 import VietFreshHub.product.dto.ProductResponse;
-import VietFreshHub.product.dto.ProductManagementState;
 import VietFreshHub.product.dto.ProductTabSummary;
 import VietFreshHub.product.dto.VariantActionRequest;
 import VietFreshHub.product.dto.VariantRequest;
@@ -44,41 +36,36 @@ import VietFreshHub.product.entity.ProductVariant;
 import VietFreshHub.product.enums.ApprovalStatus;
 import VietFreshHub.product.enums.ProductStatus;
 import VietFreshHub.product.enums.VariantStatus;
+import VietFreshHub.product.exception.DuplicateProductNameException;
 import VietFreshHub.product.repository.CategoryRepository;
 import VietFreshHub.product.repository.PriceHistoryRepository;
 import VietFreshHub.product.repository.ProductCategoryRepository;
 import VietFreshHub.product.repository.ProductImageRepository;
 import VietFreshHub.product.repository.ProductRepository;
 import VietFreshHub.product.repository.ProductVariantRepository;
-import VietFreshHub.product.service.ProductService;
 import VietFreshHub.product.service.ProductAvailabilityService;
+import VietFreshHub.product.service.ProductCatalogQueries;
+import VietFreshHub.product.service.ProductCatalogReader;
+import VietFreshHub.product.service.ProductService;
+import VietFreshHub.product.util.CatalogPagination;
 import VietFreshHub.product.validator.CategoryValidator;
 import VietFreshHub.shop.service.ShopService;
-
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
-import VietFreshHub.common.BusinessCodes;
-import VietFreshHub.common.PageSizes;
 
 @Service
 @RequiredArgsConstructor
@@ -87,6 +74,8 @@ public class ProductServiceImpl implements ProductService {
 
     private static final List<String> SALE_UNITS = List.of("kg", "hộp", "túi", "quả", "chùm");
 
+    private final ProductCatalogQueries catalogQueries;
+    private final ProductCatalogReader catalogReader;
     private final ProductRepository productRepository;
     private final ProductVariantRepository productVariantRepository;
     private final CategoryRepository categoryRepository;
@@ -94,25 +83,30 @@ public class ProductServiceImpl implements ProductService {
     private final ProductImageRepository productImageRepository;
     private final PriceHistoryRepository priceHistoryRepository;
     private final InventoryBatchRepository inventoryBatchRepository;
-    private final BatchMarkdownRepository batchMarkdownRepository;
     private final InventoryTransactionRepository inventoryTransactionRepository;
-    private final StockAllocationRepository stockAllocationRepository;
     private final InventoryJournalService inventoryJournalService;
     private final InventoryLockHelper inventoryLockHelper;
     private final ShopService shopService;
     private final AuthService authService;
-    private final UserRepository userRepository;
     private final CategoryValidator categoryValidator;
     private final ProductAvailabilityService productAvailabilityService;
 
+    /** Tìm danh sách kho sau khi xác thực shop và chuẩn hóa phạm vi SKU. */
     @Override
     public Page<ProductResponse> searchInventory(Authentication authentication,
-            VietFreshHub.inventory.dto.InventoryCatalogFilter filters, int page, int size) {
-        Long shop = shopService.getManagedShopId(authentication);
+            InventoryCatalogFilter filters, int page, int size) {
+        Long shopId = shopService.getManagedShopId(authentication);
+        prepareInventoryFilters(authentication, filters);
+        return catalogQueries.searchInventory(shopId, filters, page, size);
+    }
+
+    /** Chuẩn hóa bộ lọc và kiểm tra quyền xem SKU, gồm cả dữ liệu đã ngừng kinh doanh. */
+    private void prepareInventoryFilters(Authentication authentication, InventoryCatalogFilter filters) {
         filters.setQ(normalizeFilter(filters.getQ()));
         filters.setStock(normalizeFilter(filters.getStock()));
         filters.setExpiry(normalizeFilter(filters.getExpiry()));
-        // Compatibility for existing dashboard/bookmark links, with visible expiry scope.
+
+        // Tách bộ lọc hạn từ tham số tồn kho cũ để liên kết dashboard hoặc đã lưu vẫn hoạt động.
         if (List.of("near", "expired", "expiry").contains(filters.getStock())) {
             filters.setExpiry(filters.getStock().equals("expiry") ? "attention" : filters.getStock());
             filters.setStock("");
@@ -120,250 +114,84 @@ public class ProductServiceImpl implements ProductService {
             filters.setArchived(true);
             filters.setStock("");
         }
-        require(List.of("", "available", "low", "empty").contains(filters.getStock()), "Mức tồn kho không hợp lệ.");
-        require(List.of("", "valid", "near", "expired", "attention").contains(filters.getExpiry()), "Hạn sử dụng không hợp lệ.");
-        if (filters.getVariantId() != null) {
-            ProductVariant variant = productVariantRepository.findById(filters.getVariantId())
-                    .orElseThrow(() -> new AccessDeniedException("Phân loại không thuộc cửa hàng của bạn."));
-            Product parent = getOwnedProduct(authentication, variant.getProductId(), false);
-            if (parent.getStatus() == ProductStatus.DELETED || variant.getStatus() == VariantStatus.DELETED) {
-                filters.setArchived(true);
-            }
+
+        require(List.of("", "available", "low", "empty").contains(filters.getStock()),
+                "Mức tồn kho không hợp lệ.");
+        require(List.of("", "valid", "near", "expired", "attention").contains(filters.getExpiry()),
+                "Hạn sử dụng không hợp lệ.");
+
+        if (filters.getVariantId() == null) {
+            return;
         }
-        int pageSize = PageSizes.normalize(size);
-        PageRequest request = PageRequest.of(Math.min(Math.max(1, page)-1, Integer.MAX_VALUE/pageSize), pageSize);
-        Page<Product> products = productRepository.searchInventory(shop, filters, today(), request);
-        if (products.getNumber() >= Math.max(1, products.getTotalPages())) {
-            products = productRepository.searchInventory(shop, filters, today(), request.withPage(0));
+
+        // Kiểm tra quyền qua sản phẩm cha trước khi mở rộng phạm vi xem dữ liệu đã ngừng.
+        ProductVariant requestedVariant = productVariantRepository.findById(filters.getVariantId())
+                .orElseThrow(() -> new AccessDeniedException("Phân loại không thuộc cửa hàng của bạn."));
+        Product parentProduct = getOwnedProductForRead(authentication, requestedVariant.getProductId());
+        if (parentProduct.getStatus() == ProductStatus.DELETED
+                || requestedVariant.getStatus() == VariantStatus.DELETED) {
+            filters.setArchived(true);
         }
-        List<Long> ids = products.getContent().stream().map(Product::getProductId).toList();
-        Set<Long> matched = new HashSet<>(productRepository.matchingInventoryVariants(shop, filters, today(), ids));
-        Page<ProductResponse> result = catalogResponses(products);
-        for (ProductResponse row : result) {
-            row.setInventoryVariantTotal((int)row.getVariants().stream()
-                    .filter(v -> filters.isArchived() || v.getVariant().getStatus() != VariantStatus.DELETED).count());
-            List<VariantResponse> children = row.getVariants().stream()
-                    .filter(v -> matched.contains(v.getVariant().getVariantId())).toList();
-            row.setInventoryVariants(children);
-            for (VariantResponse child : children) {
-                if (!filters.getExpiry().isEmpty() || BusinessCodes.parse("LOT", filters.getQ()) != null) {
-                    child.setMatchedBatches(child.getBatches().stream()
-                            .filter(b -> inventoryBatchMatches(b, filters)).toList());
-                }
-            }
-            row.setBatchCount(children.stream().mapToInt(v -> v.getInventoryBatches().size()).sum());
-            row.setExpired(children.stream().flatMap(v -> v.getInventoryBatches().stream())
-                    .anyMatch(b -> b.getBatch().getQuantityOnHand() > 0 && b.isExpired()));
-            row.setNearExpiry(children.stream().flatMap(v -> v.getInventoryBatches().stream())
-                    .anyMatch(b -> b.getBatch().getQuantityOnHand() > 0 && b.isNearExpiry()));
-        }
-        return result;
     }
 
-    private boolean inventoryBatchMatches(BatchResponse b, VietFreshHub.inventory.dto.InventoryCatalogFilter filters) {
-        Long batchCode = BusinessCodes.parse("LOT", filters.getQ());
-        if (batchCode != null && !batchCode.equals(b.getBatch().getBatchId())) return false;
-        return filters.getExpiry().isEmpty() || b.getBatch().getQuantityOnHand() > 0 && switch (filters.getExpiry()) {
-            case "near" -> b.isNearExpiry();
-            case "expired" -> b.isExpired();
-            case "valid" -> !b.isExpired() && !b.isNearExpiry();
-            case "attention" -> b.isExpired() || b.isNearExpiry();
-            default -> false;
-        };
-    }
-
+    /** Chuẩn hóa bộ lọc và truy vấn sản phẩm trong cửa hàng đang quản lý. */
     @Override
-    public Page<ProductResponse> searchManagement(Authentication authentication, String query, Long categoryId,
-            String tab, LocalDate createdFrom, LocalDate createdTo, int page, int size) {
-        ProductCatalogFilter filters = new ProductCatalogFilter();
-        filters.setQ(query);
-        filters.setCategory(categoryId);
-        filters.setTab(tab);
-        filters.setCreatedFrom(createdFrom);
-        filters.setCreatedTo(createdTo);
-        return searchManagement(authentication, filters, page, size);
-    }
-
-    @Override
-    public Page<ProductResponse> searchManagement(Authentication authentication, ProductCatalogFilter filters, int page, int size) {
+    public Page<ProductResponse> searchManagement(Authentication authentication,
+            ProductCatalogFilter filters, int page, int size) {
         Long shopId = shopService.getManagedShopId(authentication);
+        prepareManagementFilters(filters);
+        List<Long> activeCategories = productAvailabilityService.activeCategoryIds();
+        return catalogQueries.searchManagement(shopId, filters, activeCategories, page, size);
+    }
+
+    private void prepareManagementFilters(ProductCatalogFilter filters) {
         filters.setQ(normalizeFilter(filters.getQ()));
         filters.setTab(normalizeFilter(filters.getTab()));
         filters.setStock(normalizeFilter(filters.getStock()));
         filters.setSort(normalizeFilter(filters.getSort()));
-        // Retired UI filter: old bookmarked approval parameters must not silently filter the list.
-        filters.setApproval("");
-        filters.setEligibility(normalizeFilter(filters.getEligibility()));
-        if (filters.getSort().isEmpty()) filters.setSort("updated_desc");
-        require(List.of("", "active", "out-of-stock", "violation", "hidden").contains(filters.getTab()), "Tab sản phẩm không hợp lệ.");
-        require(List.of("", "available", "empty", "low", "expiry").contains(filters.getStock()), "Bộ lọc tồn kho không hợp lệ.");
-        require(List.of("updated_desc", "updated_asc").contains(filters.getSort()), "Cách sắp xếp không hợp lệ.");
-        require(List.of("", "PENDING", "APPROVED", "REJECTED").contains(filters.getApproval()), "Trạng thái kiểm tra không hợp lệ.");
-        require(List.of("", "unavailable").contains(filters.getEligibility()), "Điều kiện đặt mua không hợp lệ.");
+        if (filters.getSort().isEmpty()) {
+            filters.setSort("updated_desc");
+        }
+        require(List.of("", "active", "out-of-stock", "violation", "hidden").contains(filters.getTab()),
+                "Tab sản phẩm không hợp lệ.");
+        require(List.of("", "available", "empty", "low", "expiry").contains(filters.getStock()),
+                "Bộ lọc tồn kho không hợp lệ.");
+        require(List.of("updated_desc", "updated_asc").contains(filters.getSort()),
+                "Cách sắp xếp không hợp lệ.");
+
         LocalDate createdFrom = filters.getCreatedFrom();
         LocalDate createdTo = filters.getCreatedTo();
-        require(createdFrom == null || createdTo == null || !createdFrom.isAfter(createdTo), "Ngày bắt đầu không được sau ngày kết thúc.");
-        for (BigDecimal price : new BigDecimal[] {filters.getMinPrice(), filters.getMaxPrice()}) {
-            require(price == null || (price.signum() >= 0 && price.stripTrailingZeros().scale() <= 0
-                    && price.precision() - price.scale() <= 16), "Giá lọc phải là số nguyên đồng không âm, tối đa 16 chữ số.");
-        }
-        require(filters.getMinPrice() == null || filters.getMaxPrice() == null
-                || filters.getMinPrice().compareTo(filters.getMaxPrice()) <= 0, "Giá từ không được lớn hơn giá đến.");
-        List<Long> activeCategories = productAvailabilityService.activeCategoryIds();
-        int pageSize = PageSizes.normalize(size);
-        PageRequest pageable = PageRequest.of(Math.min(Math.max(1, page) - 1, Integer.MAX_VALUE / pageSize), pageSize);
-        Page<Product> result = productRepository.searchManagement(shopId, filters,
-                startOfDayOrNull(createdFrom), startOfNextDayOrNull(createdTo), activeCategories, today(), pageable);
-        if (result.getNumber() >= Math.max(1, result.getTotalPages())) {
-            // Invalid/outdated pages return to the first page, including after a filter change.
-            result = productRepository.searchManagement(shopId, filters,
-                    startOfDayOrNull(createdFrom), startOfNextDayOrNull(createdTo), activeCategories, today(), pageable.withPage(0));
-        }
-        return catalogResponses(result);
+        require(createdFrom == null || createdTo == null || !createdFrom.isAfter(createdTo),
+                "Ngày bắt đầu không được sau ngày kết thúc.");
+        validateCatalogPriceRange(filters.getMinPrice(), filters.getMaxPrice());
     }
 
+    /** Giá lọc cho phép 0 đồng, phải nguyên đồng và nằm trong giới hạn 16 chữ số. */
+    private void validateCatalogPriceRange(BigDecimal minimumPrice, BigDecimal maximumPrice) {
+        for (BigDecimal price : new BigDecimal[] {minimumPrice, maximumPrice}) {
+            boolean validPrice = price == null || (price.signum() >= 0
+                    && price.stripTrailingZeros().scale() <= 0
+                    && (long) price.precision() - price.scale() <= 16);
+            require(validPrice, "Giá lọc phải là số nguyên đồng thời không âm, tối đa 16 chữ số.");
+        }
+        require(minimumPrice == null || maximumPrice == null || minimumPrice.compareTo(maximumPrice) <= 0,
+                "Giá từ không được lớn hơn giá đến.");
+    }
+
+    /** Đếm sản phẩm theo trạng thái quản lý dựa trên điều kiện kinh doanh và tồn kho hiện tại. */
     @Override
     public ProductTabSummary productTabSummary(Authentication authentication) {
         return productRepository.managementSummary(shopService.getManagedShopId(authentication),
                 productAvailabilityService.activeCategoryIds(), today());
     }
 
+    /** Tổng hợp số phân loại sắp hết hàng và số lô cận hạn, hết hạn cần xử lý trong cửa hàng. */
     @Override
-    public VietFreshHub.inventory.dto.InventoryAttentionSummary inventoryAttentionSummary(Authentication authentication) {
+    public InventoryAttentionSummary inventoryAttentionSummary(Authentication authentication) {
         return productRepository.inventoryAttentionSummary(shopService.getManagedShopId(authentication), today());
     }
 
-    @Override
-    public Page<ProductResponse> search(
-            Authentication authentication,
-            String query,
-            Long categoryId,
-            String status,
-            boolean archived,
-            String stock,
-            int page,
-            int size) {
-        return search(
-                authentication,
-                query,
-                categoryId,
-                status,
-                archived,
-                stock,
-                "",
-                "",
-                null,
-                null,
-                page,
-                size);
-    }
-
-    @Override
-    public Page<ProductResponse> search(
-            Authentication authentication,
-            String query,
-            Long categoryId,
-            String status,
-            boolean archived,
-            String stock,
-            String business,
-            String approval,
-            LocalDate createdFrom,
-            LocalDate createdTo,
-            int page,
-            int size) {
-        Long shopId = shopService.getManagedShopId(authentication);
-        String statusFilter = normalizeFilter(status);
-        String approvalFilter = normalizeFilter(approval);
-        String stockFilter = normalizeFilter(stock);
-        String businessFilter = normalizeFilter(business);
-        ProductStatus productStatus = findProductStatus(statusFilter);
-        ApprovalStatus statusApproval = findApprovalStatus(statusFilter);
-        ApprovalStatus approvalStatus = findApprovalStatus(approvalFilter);
-        validateFilters(
-                statusFilter,
-                productStatus,
-                statusApproval,
-                stockFilter,
-                businessFilter,
-                approvalFilter,
-                approvalStatus,
-                createdFrom,
-                createdTo);
-
-        // Compatibility for service callers using the old business filter names.
-        if (!businessFilter.isEmpty()) {
-            return searchManagement(authentication, query, categoryId,
-                    businessFilter.equals("published") ? "active" : "hidden",
-                    createdFrom, createdTo, page, size);
-        }
-        boolean includeArchived =
-                archived
-                        || stockFilter.equals("archived")
-                        || productStatus == ProductStatus.DELETED;
-        LocalDate date = today();
-        PageRequest pageable = catalogPageRequest(page, size);
-        Page<Product> result =
-                productRepository.search(
-                        shopId,
-                        normalizeFilter(query),
-                        BusinessCodes.parse("PRD", query), BusinessCodes.parse("LOT", query),
-                        categoryId,
-                        productStatus,
-                        statusApproval,
-                        includeArchived,
-                        stockFilter,
-                        approvalStatus,
-                        startOfDayOrNull(createdFrom),
-                        startOfNextDayOrNull(createdTo),
-                        date,
-                        pageable);
-        if (result.getNumber() >= Math.max(1, result.getTotalPages())) {
-            pageable = pageable.withPage(Math.max(0, result.getTotalPages() - 1));
-            result =
-                    productRepository.search(
-                            shopId,
-                            normalizeFilter(query),
-                        BusinessCodes.parse("PRD", query), BusinessCodes.parse("LOT", query),
-                            categoryId,
-                            productStatus,
-                            statusApproval,
-                            includeArchived,
-                            stockFilter,
-                            approvalStatus,
-                            startOfDayOrNull(createdFrom),
-                            startOfNextDayOrNull(createdTo),
-                                date,
-                            pageable);
-        }
-        return catalogResponses(result);
-    }
-
-    private void validateFilters(
-            String status,
-            ProductStatus productStatus,
-            ApprovalStatus statusApproval,
-            String stock,
-            String business,
-            String approval,
-            ApprovalStatus approvalStatus,
-            LocalDate createdFrom,
-            LocalDate createdTo) {
-        require(
-                status.isEmpty() || productStatus != null || statusApproval != null,
-                "Trạng thái sản phẩm được chọn không hợp lệ.");
-        require(
-                List.of("", "low", "near", "expired", "expiry", "archived").contains(stock),
-                "Bộ lọc tồn kho không hợp lệ.");
-        require(
-                List.of("", "published", "unpublished").contains(business),
-                "Trạng thái kinh doanh được chọn không hợp lệ.");
-        require(approval.isEmpty() || approvalStatus != null, "Trạng thái kiểm duyệt được chọn không hợp lệ.");
-        require(
-                createdFrom == null || createdTo == null || !createdFrom.isAfter(createdTo),
-                "Ngày bắt đầu không được sau ngày kết thúc.");
-    }
-
+    /** Loại bỏ khoảng trắng ở hai đầu; coi bộ lọc null là không có điều kiện lọc. */
     private String normalizeFilter(String value) {
         if (value == null) {
             return "";
@@ -371,70 +199,7 @@ public class ProductServiceImpl implements ProductService {
         return value.trim();
     }
 
-    private ProductStatus findProductStatus(String value) {
-        for (ProductStatus status : ProductStatus.values()) {
-            if (status.name().equals(value)) {
-                return status;
-            }
-        }
-        return null;
-    }
-
-    private ApprovalStatus findApprovalStatus(String value) {
-        for (ApprovalStatus status : ApprovalStatus.values()) {
-            if (status.name().equals(value)) {
-                return status;
-            }
-        }
-        return null;
-    }
-
-    private LocalDateTime startOfDayOrNull(LocalDate date) {
-        if (date == null) {
-            return null;
-        }
-        return InventoryRules.startOfDayUtc(date);
-    }
-
-    private LocalDateTime startOfNextDayOrNull(LocalDate date) {
-        if (date == null) {
-            return null;
-        }
-        return InventoryRules.startOfDayUtc(date.plusDays(1));
-    }
-
-    private PageRequest catalogPageRequest(int page, int size) {
-        int pageSize = PageSizes.normalize(size);
-        Sort sort = Sort.by(Sort.Direction.DESC, "productId");
-        int pageIndex = Math.min(Math.max(1, page) - 1, Integer.MAX_VALUE / pageSize);
-        return PageRequest.of(pageIndex, pageSize, sort);
-    }
-
-    private Page<ProductResponse> catalogResponses(Page<Product> products) {
-        List<Long> productIds = new ArrayList<>();
-        for (Product product : products.getContent()) {
-            productIds.add(product.getProductId());
-        }
-        List<ProductVariant> variants = List.of();
-        if (!productIds.isEmpty()) {
-            variants = productVariantRepository.findByProductIdInOrderByVariantId(productIds);
-        }
-        List<ProductVariant> pageVariants = variants;
-        List<InventoryBatch> batches = findBatches(variants);
-        Map<Long, ProductManagementState> states = products.isEmpty() ? Map.of()
-                : productAvailabilityService.states(products.getContent().getFirst().getShopId(), productIds);
-        return products.map(
-                product -> {
-                    List<ProductVariant> productVariants = new ArrayList<>();
-                    for (ProductVariant variant : pageVariants) {
-                        if (variant.getProductId().equals(product.getProductId())) {
-                            productVariants.add(variant);
-                        }
-                    }
-                    return buildProductResponse(product, productVariants, batches, false, states.get(product.getProductId()));
-                });
-    }
-
+    /** Đếm sản phẩm và phân loại chưa ngừng kinh doanh trong cửa hàng đang quản lý. */
     @Override
     public CatalogSummary catalogSummary(Authentication authentication) {
         Long shopId = shopService.getManagedShopId(authentication);
@@ -444,15 +209,14 @@ public class ProductServiceImpl implements ProductService {
         return new CatalogSummary(productCount, variantCount);
     }
 
+    /** Lấy chi tiết sản phẩm thuộc cửa hàng đang quản lý. */
     @Override
     public ProductResponse get(Authentication authentication, Long productId) {
-        Product product = getOwnedProduct(authentication, productId, false);
-        List<ProductVariant> variants =
-                productVariantRepository.findByProductIdOrderByVariantId(productId);
-        ProductManagementState state = productAvailabilityService.states(product.getShopId(), List.of(productId)).get(productId);
-        return buildProductResponse(product, variants, findBatches(variants), true, state);
+        Product product = getOwnedProductForRead(authentication, productId);
+        return catalogReader.forProduct(product);
     }
 
+    /** Lấy phân loại trong sản phẩm đã kiểm tra quyền; từ chối nếu thuộc sản phẩm khác. */
     @Override
     public VariantResponse getVariant(
             Authentication authentication, Long productId, Long variantId) {
@@ -465,252 +229,16 @@ public class ProductServiceImpl implements ProductService {
         throw new AccessDeniedException("Phân loại không thuộc sản phẩm này.");
     }
 
-    private List<InventoryBatch> findBatches(List<ProductVariant> variants) {
-        List<Long> variantIds = new ArrayList<>();
-        for (ProductVariant variant : variants) {
-            variantIds.add(variant.getVariantId());
-        }
-        if (variantIds.isEmpty()) {
-            return List.of();
-        }
-        return inventoryBatchRepository.findByVariantIdInOrderByExpiryDateAscBatchIdAsc(variantIds);
-    }
-
-    private ProductResponse buildProductResponse(
-            Product product,
-            List<ProductVariant> variants,
-            List<InventoryBatch> batches,
-            boolean details,
-            ProductManagementState state) {
-        LocalDate date = today();
-        List<BatchMarkdown> markdowns = findActiveMarkdowns(batches);
-        List<VariantResponse> variantRows = new ArrayList<>();
-        for (ProductVariant variant : variants) {
-            boolean sellable =
-                    state != null && state.code().equals("active")
-                            && variant.getStatus() == VariantStatus.ACTIVE;
-            variantRows.add(
-                    buildVariantResponse(
-                            product, variant, batches, markdowns, details, sellable, date));
-        }
-
-        ProductResponse response = new ProductResponse();
-        response.setProduct(product);
-        response.setImageUrl(productImageUrl(product.getProductId()));
-        List<String> categoryNames = categoryNames(product.getProductId());
-        response.setCategoryNames(categoryNames);
-        response.setCategoryName(String.join(", ", categoryNames));
-        response.setVariants(variantRows);
-        response.setApprovedByName(approvedByName(product.getApprovedBy()));
-        if (state == null) state = new ProductManagementState("archived", "Sản phẩm đã ngừng kinh doanh.");
-        response.setManagementState(state);
-        response.setPublished(List.of("active", "out-of-stock").contains(state.code()));
-        populateCatalogSummary(response);
-        return response;
-    }
-
-    private VariantResponse buildVariantResponse(
-            Product product,
-            ProductVariant variant,
-            List<InventoryBatch> batches,
-            List<BatchMarkdown> markdowns,
-            boolean details,
-            boolean sellable,
-            LocalDate date) {
-        List<BatchResponse> batchRows = new ArrayList<>();
-        long physicalQuantity = 0;
-        long reservedQuantity = 0;
-        long availableQuantity = 0;
-        boolean hasExpiredStock = false;
-        boolean hasNearExpiryStock = false;
-        BigDecimal offerPrice = null;
-
-        for (InventoryBatch batch : batches) {
-            if (!batch.getVariantId().equals(variant.getVariantId())) {
-                continue;
-            }
-            BatchResponse row =
-                    buildBatchResponse(product, variant, batch, markdowns, details, date);
-            batchRows.add(row);
-            physicalQuantity += batch.getQuantityOnHand();
-            reservedQuantity += batch.getReservedQuantity();
-            availableQuantity += row.getAvailable();
-            if (batch.getQuantityOnHand() > 0) {
-                hasExpiredStock = hasExpiredStock || row.isExpired();
-                hasNearExpiryStock = hasNearExpiryStock || row.isNearExpiry();
-            }
-            if (sellable && row.getMarkdown() != null) {
-                offerPrice = lowerPrice(offerPrice, row.getMarkdown().getPrice());
-            }
-        }
-
-        int lowStockThreshold = 0;
-        if (variant.getLowStockThreshold() != null) {
-            lowStockThreshold = variant.getLowStockThreshold();
-        }
-        VariantResponse response = new VariantResponse();
-        response.setVariant(variant);
-        response.setProductName(product.getName());
-        response.setPhysical(physicalQuantity);
-        response.setReserved(reservedQuantity);
-        response.setAvailable(availableQuantity);
-        response.setUnavailable(physicalQuantity - reservedQuantity - availableQuantity);
-        response.setBatches(batchRows);
-        response.setOfferPrice(offerPrice);
-        response.setOfferQuantity(offerQuantity(batchRows, offerPrice));
-        response.setLowStock(availableQuantity > 0 && availableQuantity <= lowStockThreshold);
-        response.setBatchCount(batchRows.size());
-        response.setExpired(hasExpiredStock);
-        response.setNearExpiry(hasNearExpiryStock);
-        return response;
-    }
-
-    private BatchResponse buildBatchResponse(
-            Product product,
-            ProductVariant variant,
-            InventoryBatch batch,
-            List<BatchMarkdown> markdowns,
-            boolean details,
-            LocalDate date) {
-        BatchMarkdown currentMarkdown = null;
-        for (BatchMarkdown markdown : markdowns) {
-            if (InventoryRules.isApplicableMarkdown(batch, markdown, variant.getPrice(), date)) {
-                currentMarkdown = markdown;
-                break;
-            }
-        }
-        List<VietFreshHub.inventory.entity.StockAllocation> allocations = List.of();
-        if (details) {
-            allocations =
-                    stockAllocationRepository.findByBatchIdOrderByAllocationIdDesc(
-                            batch.getBatchId());
-        }
-        return new BatchResponse(
-                batch,
-                available(batch, date),
-                expired(batch, date),
-                nearExpiry(batch, date, product.getExpiryWarningDays()),
-                currentMarkdown,
-                allocations,
-                product.getName(),
-                variant.getSku(),
-                variant.getUnit(),
-                InventoryRules.markdownEligible(batch, date),
-                product.getExpiryWarningDays(),
-                InventoryRules.daysUntilExpiry(batch, date));
-    }
-
-    private List<BatchMarkdown> findActiveMarkdowns(List<InventoryBatch> batches) {
-        List<Long> batchIds = new ArrayList<>();
-        for (InventoryBatch batch : batches) {
-            batchIds.add(batch.getBatchId());
-        }
-        if (batchIds.isEmpty()) {
-            return List.of();
-        }
-        return batchMarkdownRepository.findByBatchIdInAndStatusOrderByMarkdownIdDesc(
-                batchIds, MarkdownStatus.ACTIVE);
-    }
-
-    private long offerQuantity(List<BatchResponse> batches, BigDecimal offerPrice) {
-        if (offerPrice == null) {
-            return 0;
-        }
-        long quantity = 0;
-        for (BatchResponse batch : batches) {
-            BatchMarkdown markdown = batch.getMarkdown();
-            if (markdown != null && markdown.getPrice().compareTo(offerPrice) == 0) {
-                quantity += batch.getAvailable();
-            }
-        }
-        return quantity;
-    }
-
-    private void populateCatalogSummary(ProductResponse response) {
-        List<VariantResponse> visibleVariants = new ArrayList<>();
-        List<VariantResponse> inventoryVariants = new ArrayList<>();
-        int batchCount = 0;
-        for (VariantResponse row : response.getVariants()) {
-            ProductVariant variant = row.getVariant();
-            if (variant.getStatus() != VariantStatus.DELETED) {
-                visibleVariants.add(row);
-                response.setMinPrice(lowerPrice(response.getMinPrice(), variant.getPrice()));
-                response.setMaxPrice(higherPrice(response.getMaxPrice(), variant.getPrice()));
-                response.setMinComparePrice(
-                        lowerPrice(response.getMinComparePrice(), variant.getCompareAtPrice()));
-                response.setMaxComparePrice(
-                        higherPrice(response.getMaxComparePrice(), variant.getCompareAtPrice()));
-            }
-            if (variant.getStatus() != VariantStatus.DELETED
-                    || row.getPhysical() > 0
-                    || row.getReserved() > 0) {
-                inventoryVariants.add(row);
-                batchCount += row.getBatchCount();
-                response.setExpired(response.isExpired() || row.isExpired());
-                response.setNearExpiry(response.isNearExpiry() || row.isNearExpiry());
-            }
-        }
-        response.setVisibleVariants(visibleVariants);
-        response.setInventoryVariants(inventoryVariants);
-        response.setVariantCount(visibleVariants.size());
-        response.setBatchCount(batchCount);
-    }
-
-    private BigDecimal lowerPrice(BigDecimal current, BigDecimal candidate) {
-        if (candidate == null) {
-            return current;
-        }
-        if (current == null || candidate.compareTo(current) < 0) {
-            return candidate;
-        }
-        return current;
-    }
-
-    private BigDecimal higherPrice(BigDecimal current, BigDecimal candidate) {
-        if (candidate == null) {
-            return current;
-        }
-        if (current == null || candidate.compareTo(current) > 0) {
-            return candidate;
-        }
-        return current;
-    }
-
-    private List<String> categoryNames(Long productId) {
-        List<String> names = new ArrayList<>();
-        for (ProductCategory link : productCategoryRepository.findByIdProductId(productId)) {
-            Category category =
-                    categoryRepository.findById(link.getId().getCategoryId()).orElse(null);
-            if (category == null) {
-                names.add("Danh mục không còn tồn tại");
-                continue;
-            }
-            names.add(category.getName());
-        }
-        return names;
-    }
-
+    /** Chọn cùng ảnh cấp sản phẩm với màn hình danh mục khi so sánh thay đổi nội dung. */
     private String productImageUrl(Long productId) {
-        for (ProductImage image :
-                productImageRepository.findByProductIdOrderBySortOrderAscImageIdAsc(productId)) {
-            if (image.getVariantId() == null) {
-                return image.getImageUrl();
-            }
-        }
-        return null;
+        return ProductCatalogReader.primaryProductImageUrl(
+                productImageRepository.findByProductIdOrderBySortOrderAscImageIdAsc(productId));
     }
 
-    private String approvedByName(Long userId) {
-        if (userId == null) {
-            return null;
-        }
-        User user = userRepository.findById(userId).orElse(null);
-        if (user == null) {
-            return null;
-        }
-        return user.getFullName();
-    }
-
+    /**
+     * Kiểm tra còn phân loại đang bật, kể cả phân loại hết hàng.
+     * Có thể bỏ qua một phân loại để kiểm tra điều kiện trước khi đổi trạng thái của chính phân loại đó.
+     */
     private boolean hasOpenVariant(List<ProductVariant> variants, Long excludedVariantId) {
         for (ProductVariant variant : variants) {
             if (variant.getVariantId().equals(excludedVariantId)) {
@@ -724,6 +252,7 @@ public class ProductServiceImpl implements ProductService {
         return false;
     }
 
+    /** Lấy danh mục có toàn bộ chuỗi danh mục cha còn hoạt động, sắp theo tên. */
     @Override
     public List<Category> categories() {
         List<Category> activeCategories = new ArrayList<>();
@@ -735,36 +264,32 @@ public class ProductServiceImpl implements ProductService {
         return activeCategories;
     }
 
+    /** Trả về các đơn vị bán được hỗ trợ khi tạo hoặc cập nhật phân loại. */
     @Override
     public List<String> units() {
         return SALE_UNITS;
     }
 
-    private Product getOwnedProduct(Authentication authentication, Long productId, boolean lock) {
+    /** Đọc sản phẩm thuộc shop hiện tại mà không yêu cầu khóa ghi. */
+    private Product getOwnedProductForRead(Authentication authentication, Long productId) {
         Long shopId = shopService.getManagedShopId(authentication);
-        if (lock) {
-            Product product =
-                    productRepository
-                            .lockOwned(productId, shopId)
-                            .orElseThrow(
-                                    () ->
-                                            new AccessDeniedException(
-                                                    "Sản phẩm không thuộc cửa hàng của bạn."));
-            return inventoryLockHelper.refresh(product);
-        }
-        Product product =
-                productRepository
-                        .findById(productId)
-                        .orElseThrow(
-                                () ->
-                                        new AccessDeniedException(
-                                                "Sản phẩm không thuộc cửa hàng của bạn."));
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new AccessDeniedException("Sản phẩm không thuộc cửa hàng của bạn."));
         if (!product.getShopId().equals(shopId)) {
             throw new AccessDeniedException("Sản phẩm không thuộc cửa hàng của bạn.");
         }
         return product;
     }
 
+    /** Khóa ghi rồi tải lại sản phẩm trong phạm vi shop trước khi cập nhật. */
+    private Product getOwnedProductForUpdate(Authentication authentication, Long productId) {
+        Long shopId = shopService.getManagedShopId(authentication);
+        Product product = productRepository.lockOwned(productId, shopId)
+                .orElseThrow(() -> new AccessDeniedException("Sản phẩm không thuộc cửa hàng của bạn."));
+        return inventoryLockHelper.refresh(product);
+    }
+
+    /** Khóa và tải lại phân loại, đồng thời kiểm tra phân loại thuộc đúng sản phẩm. */
     private ProductVariant getVariantForUpdate(Long productId, Long variantId) {
         ProductVariant variant =
                 productVariantRepository
@@ -780,12 +305,14 @@ public class ProductServiceImpl implements ProductService {
         return variant;
     }
 
+    /** Chặn sửa sản phẩm đã ngừng kinh doanh; chỉ cho xem lịch sử và xử lý tồn kho. */
     private void requireWritableProduct(Product product) {
         require(
                 product.getStatus() != ProductStatus.DELETED,
-                "Sản phẩm đã ngừng kinh doanh. Bạn chỉ có thể xem lịch sử và xử lý tồn kho.");
+                "Sản phẩm đã xóa. Bạn chỉ có thể xem lịch sử và xử lý tồn kho.");
     }
 
+    /** Kiểm tra thông tin sản phẩm, danh mục, ảnh và hướng dẫn chuẩn bị trước khi lưu. */
     private void validateProductFields(ProductRequest form) {
         String name = form.getName();
         require(
@@ -806,6 +333,14 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
+    /** Tên phải duy nhất trong shop; khi sửa thì bỏ qua chính sản phẩm đang sửa. */
+    private void validateUniqueName(Long shopId, String name, Long excludedProductId) {
+        if (productRepository.countDuplicateNames(shopId, name.trim(), excludedProductId) > 0) {
+            throw new DuplicateProductNameException();
+        }
+    }
+
+    /** Chỉ chấp nhận liên kết HTTP, HTTPS hoặc ảnh nội bộ trong giới hạn độ dài cho phép. */
     private void validateImageUrl(String url) {
         boolean valid = url != null && !url.isBlank() && url.length() <= 1000;
         if (valid) {
@@ -817,6 +352,10 @@ public class ProductServiceImpl implements ProductService {
         require(valid, "Dán liên kết ảnh bắt đầu bằng http:// hoặc https://, hoặc tải ảnh lên.");
     }
 
+    /**
+     * Kiểm tra SKU, giá, ảnh, đơn vị, khối lượng và ngưỡng cảnh báo của phân loại.
+     * Không cho đổi đơn vị khi đã có tồn kho, giao dịch kho hoặc tham chiếu đơn hàng.
+     */
     private void validateVariantFields(VariantRequest form, ProductVariant existing) {
         if (form.getSku() != null && !form.getSku().isBlank()) {
             require(form.getSku().matches("[A-Za-z0-9_-]{1,100}"),
@@ -836,6 +375,7 @@ public class ProductServiceImpl implements ProductService {
                 "Nhập tên phân loại.");
         InventoryRules.price(form.getPrice());
         validateImageUrl(form.getThumbnailUrl());
+        // Cho phép giữ đơn vị cũ ngoài danh sách hiện hành để vẫn sửa được dữ liệu đã có.
         boolean supportedUnit = SALE_UNITS.contains(form.getUnit());
         boolean unchangedUnit =
                 existing != null && Objects.equals(existing.getUnit(), form.getUnit());
@@ -846,20 +386,23 @@ public class ProductServiceImpl implements ProductService {
         require(
                 form.getCompareAtPrice() == null
                         || form.getCompareAtPrice().compareTo(form.getPrice()) >= 0,
-                "Giá gốc phải lớn hơn hoặc bằng giá bán.");
+                "Giá trước giảm phải lớn hơn hoặc bằng giá bán.");
         require(
                 form.getWeight() == null
                         || (form.getWeight().compareTo(new BigDecimal("0.001")) >= 0
                                 && form.getWeight().stripTrailingZeros().scale() <= 3),
                 "Giá trị phải từ 0,001 kg, tối đa 3 chữ số thập phân.");
         if (existing != null && !Objects.equals(existing.getUnit(), form.getUnit())) {
+            // Khi đã phát sinh tồn hoặc lịch sử, đổi đơn vị sẽ làm sai ý nghĩa các số lượng đã lưu.
             require(
                     !hasStockOrHistory(existing.getVariantId()),
                     "Không thể đổi đơn vị bán của phân loại đã có tồn kho hoặc lịch sử. Hãy tạo phân loại mới.");
         }
     }
 
+    /** Kiểm tra phân loại đã có giao dịch kho, đơn hàng, tồn thực tế hoặc hàng giữ cho đơn. */
     private boolean hasStockOrHistory(Long variantId) {
+        // Lịch sử kho hoặc đơn hàng vẫn ràng buộc đơn vị bán ngay cả khi tồn hiện tại bằng 0.
         if (inventoryTransactionRepository.existsByVariantId(variantId)
                 || productVariantRepository.orderReferenceCount(variantId) > 0) {
             return true;
@@ -873,6 +416,7 @@ public class ProductServiceImpl implements ProductService {
         return false;
     }
 
+    /** Tạo slug không dấu từ tên sản phẩm và nối ID để giữ slug riêng cho từng sản phẩm. */
     private String generateSlug(String productName, Long productId) {
         String text = productName.toLowerCase(Locale.ROOT).replace('đ', 'd');
         String root = Normalizer.normalize(text, Normalizer.Form.NFD);
@@ -888,6 +432,7 @@ public class ProductServiceImpl implements ProductService {
         return root + "-" + productId;
     }
 
+    /** Gán thông tin sản phẩm từ biểu mẫu; xóa hướng dẫn chuẩn bị khi không yêu cầu kiểm tra. */
     private void applyProductFields(Product product, ProductRequest form) {
         product.setName(form.getName().trim());
         product.setDescription(form.getDescription());
@@ -900,6 +445,7 @@ public class ProductServiceImpl implements ProductService {
         product.setUpdatedAt(now());
     }
 
+    /** Gán thông tin phân loại đã được kiểm tra và cập nhật thời điểm chỉnh sửa. */
     private void applyVariantFields(ProductVariant variant, VariantRequest form) {
         variant.setSku(form.getSku());
         variant.setVariantName(form.getVariantName().trim());
@@ -912,7 +458,11 @@ public class ProductServiceImpl implements ProductService {
         variant.setUpdatedAt(now());
     }
 
+    /**
+     * Cập nhật hoặc tạo ảnh chính cho sản phẩm hay phân loại; variantId null là ảnh cấp sản phẩm.
+     */
     private void savePrimaryImage(Long productId, Long variantId, String url) {
+        // Tìm lại ảnh chính của đúng cấp sản phẩm hoặc SKU để cập nhật, tránh tạo ảnh trùng.
         ProductImage primaryImage = new ProductImage();
         for (ProductImage image :
                 productImageRepository.findByProductIdOrderBySortOrderAscImageIdAsc(productId)) {
@@ -933,12 +483,18 @@ public class ProductServiceImpl implements ProductService {
         productImageRepository.save(primaryImage);
     }
 
+    /**
+     * Đóng khoảng hiệu lực của giá cũ và ghi giá mới.
+     * Thời điểm bắt đầu giá mới luôn sau thời điểm bắt đầu giá cũ, kể cả khi đổi giá trong cùng giây.
+     */
     private void recordPriceChange(ProductVariant variant, Long actorId) {
         LocalDateTime effectiveAt = now();
+        // Đóng các khoảng giá đang mở trước khi ghi mức giá mới.
         for (PriceHistory history :
                 priceHistoryRepository.findByVariantIdAndEffectiveToIsNull(
                         variant.getVariantId())) {
             if (!effectiveAt.isAfter(history.getEffectiveFrom())) {
+                // Hai lần đổi giá trong cùng giây vẫn phải có khoảng hiệu lực dài hơn 0.
                 effectiveAt = history.getEffectiveFrom().plusSeconds(1);
             }
             history.setEffectiveTo(effectiveAt);
@@ -952,17 +508,26 @@ public class ProductServiceImpl implements ProductService {
         priceHistoryRepository.save(history);
     }
 
+    /**
+     * Tạo sản phẩm cùng danh mục, ảnh và các phân loại.
+     * Chỉ chuyển sang trạng thái mở bán sau khi đã lưu đủ dữ liệu liên quan.
+     *
+     * @return ID của sản phẩm vừa tạo.
+     */
     @Override
     @Transactional
     public Long create(Authentication authentication, ProductRequest form) {
+        // Kiểm tra toàn bộ sản phẩm và phân loại trước khi bắt đầu ghi dữ liệu liên quan.
         Long shopId = shopService.getManagedShopId(authentication);
         Long actorId = authService.getCurrentUserId(authentication);
         validateProductFields(form);
+        validateUniqueName(shopId, form.getName(), null);
         validateNewVariants(form);
 
         Product product = new Product();
         product.setShopId(shopId);
         applyProductFields(product, form);
+        // Dùng slug tạm để lưu sản phẩm trước khi có ID tạo slug chính thức.
         product.setSlug("TMP-" + UUID.randomUUID());
         product.setStatus(ProductStatus.INACTIVE);
         product.setApprovalStatus(ApprovalStatus.PENDING);
@@ -976,7 +541,7 @@ public class ProductServiceImpl implements ProductService {
         for (VariantRequest variant : form.getVariants()) {
             createVariant(product, variant, actorId);
         }
-        // Create the category and SKUs before activation to retain publication trigger guards.
+        // Lưu đủ danh mục và phân loại trước khi mở bán để thỏa điều kiện trigger trong cơ sở dữ liệu.
         product.setSellerHidden(false);
         product.setStatus(ProductStatus.ACTIVE);
         productRepository.saveAndFlush(product);
@@ -985,27 +550,24 @@ public class ProductServiceImpl implements ProductService {
         return product.getProductId();
     }
 
+    /** Kiểm tra từ 1 đến 20 phân loại mới và tồn ban đầu; máy chủ cấp SKU sau khi có ID. */
     private void validateNewVariants(ProductRequest form) {
         require(
                 form.getVariants() != null
                         && !form.getVariants().isEmpty()
                         && form.getVariants().size() <= 20,
                 "Mỗi sản phẩm cần từ 1 đến 20 phân loại.");
-        Set<String> usedCodes = new HashSet<>();
         for (VariantRequest variant : form.getVariants()) {
-            if (variant.getSku() != null && !variant.getSku().isBlank()) {
-                require(
-                        usedCodes.add(variant.getSku().toLowerCase(Locale.ROOT)),
-                        "Các phân loại của sản phẩm không được trùng SKU.");
-            }
-        }
-        for (VariantRequest variant : form.getVariants()) {
+            // Máy chủ cấp SKU sau khi cơ sở dữ liệu sinh ID, không dùng mã gửi từ biểu mẫu.
+            variant.setSku(null);
             validateVariantFields(variant, null);
             initialQuantity(variant);
         }
     }
 
+    /** Kiểm tra số lượng, ngày và giá vốn của lô đầu tiên; trả về 0 khi chọn chưa nhập hàng. */
     private int initialQuantity(VariantRequest form) {
+        // Tạo SKU chưa nhập hàng không yêu cầu dữ liệu lô, nhưng số lượng phải trống hoặc bằng 0.
         if (form.isNoInitialStock()) {
             require(
                     form.getInitialQuantity() == null || form.getInitialQuantity() == 0,
@@ -1015,6 +577,7 @@ public class ProductServiceImpl implements ProductService {
         require(
                 form.getInitialQuantity() != null && form.getInitialQuantity() > 0,
                 "Nhập số lượng lớn hơn 0 hoặc chọn Chưa nhập hàng.");
+        // Nếu nhập hàng ngay, kiểm tra ngày nhập, hạn sử dụng được nhập trực tiếp và giá vốn.
         InventoryRules.dates(form.getReceivedDate(), form.getExpiryDate(), today());
         require(
                 form.getCostPrice() == null || form.getCostPrice().signum() >= 0,
@@ -1022,40 +585,38 @@ public class ProductServiceImpl implements ProductService {
         return form.getInitialQuantity();
     }
 
+    /** Tạo phân loại với SKU theo ID, lưu ảnh và giá ban đầu; tạo lô đầu tiên nếu có nhập hàng. */
     private void createVariant(Product product, VariantRequest form, Long actorId) {
         int quantity = initialQuantity(form);
         ProductVariant variant = new ProductVariant();
         variant.setProductId(product.getProductId());
-        boolean automaticSku = form.getSku() == null || form.getSku().isBlank();
         applyVariantFields(variant, form);
-        if (automaticSku) {
-            // NOT NULL requires a provisional unique value before IDENTITY is available.
-            // Both writes are in the caller's transaction; TMP never reaches a committed row.
-            variant.setSku("TMP-" + UUID.randomUUID());
-        }
+        // Lưu SKU tạm để lấy ID rồi thay bằng mã chính thức trước khi hoàn tất giao dịch.
+        variant.setSku("TMP-" + UUID.randomUUID());
         variant.setStatus(VariantStatus.OUT_OF_STOCK);
         if (quantity > 0) {
             variant.setStatus(VariantStatus.ACTIVE);
         }
         variant.setCreatedAt(now());
         productVariantRepository.saveAndFlush(variant);
-        if (automaticSku) {
-            String sku = BusinessCodes.format("SKU", variant.getVariantId());
-            // The unique constraint is the authoritative collision check. A second read here
-            // can scan other uncommitted inserts and deadlock concurrent SQL Server requests.
-            variant.setSku(sku);
-            productVariantRepository.saveAndFlush(variant);
-            form.setSku(sku);
-        }
+        String sku = BusinessCodes.format("SKU", variant.getVariantId());
+        variant.setSku(sku);
+        productVariantRepository.saveAndFlush(variant);
+        form.setSku(sku);
         savePrimaryImage(product.getProductId(), variant.getVariantId(), form.getThumbnailUrl());
         recordPriceChange(variant, actorId);
+        // Chỉ tạo lô và biến động kho khi người bán thực sự nhập số lượng ban đầu.
         if (quantity > 0) {
             createInitialBatch(variant, form, quantity, actorId);
         }
     }
 
+    /**
+     * Lưu lô nhập ban đầu với lượng giữ bằng 0, đồng thời ghi biến động kho và lịch sử thao tác.
+     */
     private void createInitialBatch(
             ProductVariant variant, VariantRequest form, int quantity, Long actorId) {
+        // Lô đầu tiên chứa lượng vừa nhập; chưa có phần nào được giữ cho đơn.
         InventoryBatch batch = new InventoryBatch();
         batch.setVariantId(variant.getVariantId());
         batch.setQuantityOnHand(quantity);
@@ -1067,6 +628,7 @@ public class ProductServiceImpl implements ProductService {
         batch.setCreatedAt(now());
         batch.setUpdatedAt(now());
         inventoryBatchRepository.saveAndFlush(batch);
+        // Cần ID lô trước khi ghi biến động nhập kho và lịch sử thao tác tham chiếu tới lô.
         inventoryJournalService.stock(
                 variant.getVariantId(),
                 batch.getBatchId(),
@@ -1084,35 +646,30 @@ public class ProductServiceImpl implements ProductService {
                 "Nhập kho ban đầu: " + quantity + " " + variant.getUnit());
     }
 
+    /**
+     * Cập nhật sản phẩm và ghi lịch sử khi thông tin hoặc mốc nhắc hạn thay đổi.
+     * Thay đổi nội dung cần hậu kiểm sẽ đặt lại trạng thái duyệt, giữ nguyên trạng thái kinh doanh.
+     */
     @Override
     @Transactional
     public void update(Authentication authentication, Long productId, ProductRequest form) {
-        Product product = getOwnedProduct(authentication, productId, true);
+        // Khóa sản phẩm và kiểm tra quyền, dữ liệu, tên trùng trước khi xác định phần thay đổi.
+        Product product = getOwnedProductForUpdate(authentication, productId);
         requireWritableProduct(product);
         validateProductFields(form);
+        validateUniqueName(product.getShopId(), form.getName(), productId);
         String changeReason = reason(form.getReason());
         boolean metadataChanged = productMetadataChanged(product, form);
         Integer previousReminderDays = product.getExpiryWarningDays();
         boolean reminderChanged = !Objects.equals(previousReminderDays, form.getExpiryWarningDays());
         applyProductFields(product, form);
-        if (!metadataChanged) {
-            productRepository.saveAndFlush(product);
+        if (metadataChanged) {
+            updateProductMetadata(product, productId, form);
         } else {
-            ProductStatus businessStatus = product.getStatus();
-            resetApproval(product);
-            // Temporarily suspend publication within this transaction while replacing categories.
-            // Restore the seller's choice before commit; admin locks are never cleared.
-            product.setStatus(ProductStatus.INACTIVE);
-            productRepository.saveAndFlush(product);
-            productCategoryRepository.deleteByIdProductId(productId);
-            productCategoryRepository.flush();
-            productCategoryRepository.save(new ProductCategory(productId, form.getCategoryId()));
-            savePrimaryImage(productId, null, form.getImageUrl());
-            productCategoryRepository.flush();
-            product.setStatus(businessStatus);
             productRepository.saveAndFlush(product);
         }
         if (metadataChanged || reminderChanged) {
+            // Thay đổi nội dung và thay đổi mốc nhắc hạn có loại lịch sử khác nhau để dễ tra cứu.
             String auditReason = changeReason;
             if (reminderChanged) {
                 auditReason += "; nhắc trước hạn sử dụng " + previousReminderDays
@@ -1127,6 +684,25 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
+    /** Thay nội dung cần hậu kiểm trong cùng transaction, khôi phục trạng thái bán sau khi đổi danh mục. */
+    private void updateProductMetadata(Product product, Long productId, ProductRequest form) {
+        ProductStatus businessStatus = product.getStatus();
+        resetApproval(product);
+        // Tạm ẩn trong giao dịch để thay danh mục rồi khôi phục trạng thái kinh doanh.
+        // Khóa của quản trị viên được giữ nguyên trong toàn bộ quá trình.
+        product.setStatus(ProductStatus.INACTIVE);
+        productRepository.saveAndFlush(product);
+        productCategoryRepository.deleteByIdProductId(productId);
+        productCategoryRepository.flush();
+        productCategoryRepository.save(new ProductCategory(productId, form.getCategoryId()));
+        savePrimaryImage(productId, null, form.getImageUrl());
+        productCategoryRepository.flush();
+        product.setStatus(businessStatus);
+        productRepository.saveAndFlush(product);
+
+    }
+
+    /** Phát hiện thay đổi nội dung cần hậu kiểm; mốc nhắc hạn sử dụng được xử lý riêng. */
     private boolean productMetadataChanged(Product product, ProductRequest form) {
         List<ProductCategory> categories =
                 productCategoryRepository.findByIdProductId(product.getProductId());
@@ -1143,10 +719,15 @@ public class ProductServiceImpl implements ProductService {
                 || !Objects.equals(previousPreparationNote, preparationNote);
     }
 
+    /** Coi chuỗi rỗng như null để so sánh các trường nội dung tùy chọn. */
     private String emptyToNull(String value) {
         return value == null || value.isEmpty() ? null : value;
     }
 
+    /**
+     * Đổi trạng thái tối đa 50 sản phẩm trong cùng giao dịch.
+     * Khóa theo thứ tự ID và kiểm tra toàn bộ lựa chọn; nếu một sản phẩm không hợp lệ thì hoàn tác tất cả.
+     */
     @Override
     @Transactional
     public void changeStatuses(Authentication authentication, BulkProductActionRequest form) {
@@ -1154,16 +735,16 @@ public class ProductServiceImpl implements ProductService {
                 "Chọn từ 1 đến 50 sản phẩm trên trang hiện tại.");
         require(form.getStatus() == ProductStatus.ACTIVE || form.getStatus() == ProductStatus.INACTIVE
                         || form.getStatus() == ProductStatus.DELETED,
-                "Chọn Tạm ẩn, Mở bán hoặc Ngừng kinh doanh.");
+                "Chọn Tạm ẩn, Mở bán hoặc Xóa sản phẩm.");
         reason(form.getReason());
         require(form.getProductIds().stream().allMatch(id -> id != null && id > 0), "Danh sách sản phẩm không hợp lệ.");
         List<Long> ids = form.getProductIds().stream().distinct().sorted().toList();
         require(ids.size() == form.getProductIds().size(),
                 "Danh sách sản phẩm không hợp lệ.");
-        // Lock in ID order and check the entire selection before writing. The outer transaction
-        // also rolls back every status/audit entry if an existing activation rule rejects one item.
+        // Khóa theo ID và kiểm tra toàn bộ lựa chọn trước khi đổi trạng thái.
+        // Nếu một sản phẩm bị từ chối, giao dịch hoàn tác cả trạng thái và lịch sử đã ghi.
         for (Long id : ids) {
-            Product product = getOwnedProduct(authentication, id, true);
+            Product product = getOwnedProductForUpdate(authentication, id);
             requireWritableProduct(product);
             require(form.getStatus() == ProductStatus.DELETED
                             || product.getStatus() == (form.getStatus() == ProductStatus.ACTIVE ? ProductStatus.INACTIVE : ProductStatus.ACTIVE),
@@ -1171,23 +752,31 @@ public class ProductServiceImpl implements ProductService {
             if (form.getStatus() == ProductStatus.DELETED) {
                 for (ProductVariant variant : productVariantRepository.findByProductIdOrderByVariantId(id)) {
                     require(!hasReservedStock(variant.getVariantId()),
-                            "Không thể ngừng kinh doanh sản phẩm còn số lượng chờ xuất kho. Chưa có sản phẩm nào được thay đổi.");
+                            "Không thể xóa sản phẩm còn số lượng chờ xuất kho. Chưa có sản phẩm nào được thay đổi.");
                 }
             }
         }
-        for (Long id : ids) changeStatus(authentication, id, form);
+        for (Long id : ids) {
+            changeStatus(authentication, id, form);
+        }
     }
 
+    /**
+     * Đổi trạng thái kinh doanh và ghi lý do; khi ngừng kinh doanh sẽ ngừng toàn bộ phân loại.
+     * Chặn mở bán sai điều kiện hoặc ngừng kinh doanh khi còn hàng giữ cho đơn.
+     */
     @Override
     @Transactional
     public void changeStatus(Authentication authentication, Long productId, ActionRequest form) {
-        Product product = getOwnedProduct(authentication, productId, true);
+        // Giữ nguyên dữ liệu kho và lịch sử; thao tác này chỉ đổi trạng thái kinh doanh.
+        Product product = getOwnedProductForUpdate(authentication, productId);
         requireWritableProduct(product);
         String changeReason = reason(form.getReason());
         require(form.getStatus() != null, "Chọn trạng thái sản phẩm hợp lệ.");
         List<ProductVariant> variants =
                 productVariantRepository.findByProductIdOrderByVariantId(productId);
         if (form.getStatus() == ProductStatus.ACTIVE) {
+            // Mở bán cần danh mục hợp lệ và ít nhất một SKU đang bật; chủ shop không tự gỡ khóa Admin.
             require(
                     !product.isModerationBlocked(),
                     "Sản phẩm đang bị Admin khóa. Chủ shop không thể tự mở khóa.");
@@ -1198,9 +787,10 @@ public class ProductServiceImpl implements ProductService {
         }
         if (form.getStatus() == ProductStatus.DELETED) {
             for (ProductVariant variant : variants) {
+                // Chưa được ngừng kinh doanh khi còn hàng giữ để thực hiện đơn đã nhận.
                 require(
                         !hasReservedStock(variant.getVariantId()),
-                        "Không thể ngừng kinh doanh sản phẩm còn số lượng chờ xuất kho.");
+                        "Không thể xóa sản phẩm còn số lượng chờ xuất kho.");
             }
         }
         ProductStatus previousStatus = product.getStatus();
@@ -1221,6 +811,7 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
+    /** Kiểm tra có lô nào của phân loại vẫn còn hàng giữ cho đơn hàng. */
     private boolean hasReservedStock(Long variantId) {
         for (InventoryBatch batch :
                 inventoryBatchRepository.findByVariantIdOrderByExpiryDateAscBatchIdAsc(variantId)) {
@@ -1231,6 +822,7 @@ public class ProductServiceImpl implements ProductService {
         return false;
     }
 
+    /** Đánh dấu các phân loại là ngừng kinh doanh, giữ lại dữ liệu tồn kho và lịch sử. */
     private void archiveVariants(List<ProductVariant> variants) {
         for (ProductVariant variant : variants) {
             variant.setStatus(VariantStatus.DELETED);
@@ -1239,16 +831,23 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
+    /**
+     * Thêm phân loại trong giới hạn 20 phân loại còn kinh doanh và yêu cầu hậu kiểm thông tin mới.
+     */
     @Override
     @Transactional
     public void addVariant(Authentication authentication, Long productId, VariantRequest form) {
-        Product product = getOwnedProduct(authentication, productId, true);
+        Product product = getOwnedProductForUpdate(authentication, productId);
         requireWritableProduct(product);
+        require(productVariantRepository.countByProductIdAndStatusNot(productId, VariantStatus.DELETED) < 20,
+                "Mỗi sản phẩm có tối đa 20 phân loại. Xóa phân loại cũ trước khi thêm mới.");
+        form.setSku(null);
         validateVariantFields(form, null);
         initialQuantity(form);
         String changeReason = reason(form.getReason());
         Long actorId = authService.getCurrentUserId(authentication);
         requestReapproval(product);
+        // Thông tin SKU mới cần hậu kiểm; việc tạo SKU không tự đổi trạng thái bán của sản phẩm.
         createVariant(product, form, actorId);
         inventoryJournalService.audit(
                 actorId,
@@ -1258,18 +857,23 @@ public class ProductServiceImpl implements ProductService {
                 changeReason + "; thêm phân loại và yêu cầu hậu kiểm thông tin mới.");
     }
 
+    /**
+     * Cập nhật phân loại nhưng giữ nguyên SKU; ghi lịch sử khi giá hoặc nội dung thay đổi.
+     * Thay đổi tên, đơn vị hoặc khối lượng sẽ yêu cầu hậu kiểm lại sản phẩm.
+     */
     @Override
     @Transactional
     public void updateVariant(
             Authentication authentication, Long productId, Long variantId, VariantRequest form) {
-        Product product = getOwnedProduct(authentication, productId, true);
+        Product product = getOwnedProductForUpdate(authentication, productId);
         requireWritableProduct(product);
         ProductVariant variant = getVariantForUpdate(productId, variantId);
         require(variant.getStatus() != VariantStatus.DELETED, "Phân loại đã ngừng kinh doanh.");
-        // Ignore an altered or empty SKU submitted by the client.
+        // SKU không được sửa; luôn dùng mã đang lưu thay cho giá trị gửi từ trình duyệt.
         form.setSku(variant.getSku());
         validateVariantFields(form, variant);
         String changeReason = reason(form.getReason());
+        // Tách thay đổi cấu trúc, giá và trường khác để quyết định hậu kiểm và loại lịch sử cần ghi.
         boolean structureChanged = variantStructureChanged(variant, form);
         boolean otherFieldsChanged = structureChanged
                 || !Objects.equals(variant.getThumbnailUrl(), form.getThumbnailUrl().trim())
@@ -1286,6 +890,7 @@ public class ProductServiceImpl implements ProductService {
         savePrimaryImage(productId, variantId, form.getThumbnailUrl());
         Long actorId = authService.getCurrentUserId(authentication);
         if (priceChanged) {
+            // Lịch sử hiệu lực giá chỉ ghi khi giá bán thực sự đổi; giá gạch ngang được ghi trong audit.
             recordPriceChange(variant, actorId);
         }
         if (priceChanged || compareAtPriceChanged || otherFieldsChanged) {
@@ -1295,7 +900,7 @@ public class ProductServiceImpl implements ProductService {
                         + " → " + auditPrice(variant.getPrice());
             }
             if (compareAtPriceChanged) {
-                auditReason += "; giá gốc " + auditPrice(previousCompareAtPrice)
+                auditReason += "; giá trước giảm " + auditPrice(previousCompareAtPrice)
                         + " → " + auditPrice(variant.getCompareAtPrice());
             }
             if (structureChanged) {
@@ -1306,12 +911,48 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
+    /**
+     * Xóa mềm SKU và giữ nguyên các tham chiếu đơn hàng, lô và lịch sử.
+     * Khóa product rồi SKU; tạm ẩn product trước khi xóa SKU đang bật cuối để thỏa điều kiện xuất bản.
+     */
+    @Override
+    @Transactional
+    public void deleteVariant(
+            Authentication authentication, Long productId, Long variantId, String deletionReason) {
+        Product product = getOwnedProductForUpdate(authentication, productId);
+        requireWritableProduct(product);
+        ProductVariant variant = getVariantForUpdate(productId, variantId);
+        require(variant.getStatus() != VariantStatus.DELETED, "Phân loại đã được xóa hoặc ngừng kinh doanh.");
+        String changeReason = reason(deletionReason);
+        require(!hasReservedStock(variantId),
+                "Không thể xóa phân loại còn số lượng chờ xuất kho. Hãy xử lý các đơn liên quan trước.");
+
+        Long actorId = authService.getCurrentUserId(authentication);
+        if (product.getStatus() == ProductStatus.ACTIVE
+                && !hasOpenVariant(productVariantRepository.findByProductIdOrderByVariantId(productId), variantId)) {
+            product.setStatus(ProductStatus.INACTIVE);
+            product.setSellerHidden(true);
+            product.setUpdatedAt(now());
+            productRepository.saveAndFlush(product);
+            inventoryJournalService.audit(actorId, "STATUS", "PRODUCT", productId,
+                    "Mở bán → Tạm ẩn: xóa phân loại đang bật cuối cùng (" + variant.getSku() + "). " + changeReason);
+        }
+
+        variant.setStatus(VariantStatus.DELETED);
+        variant.setUpdatedAt(now());
+        productVariantRepository.save(variant);
+        inventoryJournalService.audit(actorId, "DELETE", "VARIANT", variantId,
+                "Xóa phân loại " + variant.getSku() + ": " + changeReason);
+    }
+
+    /** Kiểm tra tên, đơn vị hoặc khối lượng có thay đổi để quyết định yêu cầu hậu kiểm. */
     private boolean variantStructureChanged(ProductVariant variant, VariantRequest form) {
         return !Objects.equals(variant.getVariantName(), form.getVariantName().trim())
                 || !Objects.equals(variant.getUnit(), form.getUnit())
                 || !sameDecimal(variant.getWeight(), form.getWeight());
     }
 
+    /** So sánh giá trị số, bỏ qua khác biệt về số chữ số thập phân và xử lý cả null. */
     private boolean sameDecimal(BigDecimal current, BigDecimal requested) {
         if (current == null) {
             return requested == null;
@@ -1319,26 +960,33 @@ public class ProductServiceImpl implements ProductService {
         return requested != null && current.compareTo(requested) == 0;
     }
 
+    /** Định dạng giá bằng đồng cho lịch sử thao tác, kèm nhãn khi chưa thiết lập giá. */
     private String auditPrice(BigDecimal value) {
         return value == null ? "chưa thiết lập" : value.stripTrailingZeros().toPlainString() + " đ";
     }
 
+    /** Đưa về chờ hậu kiểm và xóa thông tin người duyệt, thời điểm duyệt trước đó. */
     private void resetApproval(Product product) {
         product.setApprovalStatus(ApprovalStatus.PENDING);
         product.setApprovedBy(null);
         product.setApprovedAt(null);
     }
 
+    /** Yêu cầu hậu kiểm nếu chưa chờ duyệt, giữ nguyên trạng thái bán và khóa của quản trị viên. */
     private void requestReapproval(Product product) {
         if (product.getApprovalStatus() == ApprovalStatus.PENDING) {
             return;
         }
         resetApproval(product);
         product.setUpdatedAt(now());
-        // A new review request does not change the seller's business status or admin lock.
+        // Yêu cầu hậu kiểm không thay đổi trạng thái kinh doanh hay khóa của quản trị viên.
         productRepository.saveAndFlush(product);
     }
 
+    /**
+     * Đổi trạng thái phân loại; lựa chọn xóa dùng chung quy tắc xóa từ menu thao tác.
+     * Khi tạm ẩn, sản phẩm đang mở bán phải còn ít nhất một phân loại mở bán.
+     */
     @Override
     @Transactional
     public void changeVariantStatus(
@@ -1346,27 +994,28 @@ public class ProductServiceImpl implements ProductService {
             Long productId,
             Long variantId,
             VariantActionRequest form) {
-        Product product = getOwnedProduct(authentication, productId, true);
+        if (form.getStatus() == VariantStatus.DELETED) {
+            deleteVariant(authentication, productId, variantId, form.getReason());
+            return;
+        }
+        Product product = getOwnedProductForUpdate(authentication, productId);
         requireWritableProduct(product);
         ProductVariant variant = getVariantForUpdate(productId, variantId);
         require(variant.getStatus() != VariantStatus.DELETED, "Phân loại đã ngừng kinh doanh.");
         VariantStatus requestedStatus = form.getStatus();
         require(
                 requestedStatus == VariantStatus.ACTIVE
-                        || requestedStatus == VariantStatus.INACTIVE
-                        || requestedStatus == VariantStatus.DELETED,
-                "Chọn trạng thái phân loại hợp lệ.");
+                        || requestedStatus == VariantStatus.INACTIVE,
+                "Chọn Mở bán, Tạm ẩn hoặc Xóa phân loại.");
         String changeReason = reason(form.getReason());
-        if (requestedStatus == VariantStatus.DELETED) {
-            require(!hasReservedStock(variantId), "Không thể ngừng kinh doanh phân loại còn số lượng chờ xuất kho.");
-        }
         if (requestedStatus != VariantStatus.ACTIVE
                 && product.getStatus() == ProductStatus.ACTIVE) {
+            // Bỏ qua chính SKU đang đổi để kiểm tra sản phẩm vẫn còn SKU khác đang bật.
             List<ProductVariant> variants =
                     productVariantRepository.findByProductIdOrderByVariantId(productId);
             require(
                     hasOpenVariant(variants, variantId),
-                    "Tạm ẩn sản phẩm trước khi tạm dừng hoặc ngừng kinh doanh phân loại cuối cùng.");
+                    "Tạm ẩn sản phẩm trước khi tạm ẩn phân loại mở bán cuối cùng.");
         }
         VariantStatus previousStatus = variant.getStatus();
         variant.setStatus(requestedStatus);
@@ -1382,23 +1031,26 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
+    /** Chuyển trạng thái sản phẩm thành nhãn tiếng Việt để ghi lịch sử thay đổi. */
     private String productStatusLabel(ProductStatus status) {
         return switch (status) {
             case ACTIVE -> "Mở bán";
             case INACTIVE -> "Tạm ẩn";
-            case DELETED -> "Ngừng kinh doanh";
+            case DELETED -> "Đã xóa";
         };
     }
 
+    /** Chuyển trạng thái phân loại thành nhãn tiếng Việt để ghi lịch sử thay đổi. */
     private String variantStatusLabel(VariantStatus status) {
         return switch (status) {
-            case ACTIVE -> "Bật phân loại";
-            case INACTIVE -> "Tạm dừng phân loại";
-            case OUT_OF_STOCK -> "Hết hàng";
-            case DELETED -> "Ngừng kinh doanh phân loại";
+            case ACTIVE -> "Mở bán";
+            case INACTIVE -> "Tạm ẩn";
+            case OUT_OF_STOCK -> "Mở bán (hết hàng)";
+            case DELETED -> "Xóa phân loại";
         };
     }
 
+    /** Tạo biểu mẫu sửa từ sản phẩm đã kiểm tra quyền, kèm danh mục và ảnh hiện tại. */
     @Override
     public ProductRequest editForm(Authentication authentication, Long productId) {
         ProductResponse response = get(authentication, productId);
@@ -1418,10 +1070,14 @@ public class ProductServiceImpl implements ProductService {
         return form;
     }
 
+    /**
+     * Lấy lịch sử giá của phân loại thuộc sản phẩm trong cửa hàng, mới nhất trước và có phân trang.
+     */
     @Override
     public Page<PriceHistory> priceHistory(
             Authentication authentication, Long productId, Long variantId, int page) {
-        getOwnedProduct(authentication, productId, false);
+        // Kiểm tra cả quyền trên sản phẩm và quan hệ SKU, tránh xem lịch sử qua ID ngoài phạm vi.
+        getOwnedProductForRead(authentication, productId);
         ProductVariant variant =
                 productVariantRepository
                         .findById(variantId)
@@ -1430,12 +1086,12 @@ public class ProductServiceImpl implements ProductService {
         if (!variant.getProductId().equals(productId)) {
             throw new AccessDeniedException("Phân loại không thuộc sản phẩm này.");
         }
-        int pageIndex = Math.min(Math.max(1, page) - 1, Integer.MAX_VALUE / PageSizes.DEFAULT);
-        PageRequest pageable = PageRequest.of(pageIndex, PageSizes.DEFAULT);
+        PageRequest pageable = CatalogPagination.request(page, PageSizes.DEFAULT);
         Page<PriceHistory> result =
                 priceHistoryRepository.findByVariantIdOrderByEffectiveFromDescPriceHistoryIdDesc(
                         variantId, pageable);
         if (result.getNumber() >= Math.max(1, result.getTotalPages())) {
+            // Đưa về trang cuối hợp lệ nếu URL còn giữ số trang lớn hơn tổng số trang hiện có.
             pageable = pageable.withPage(Math.max(0, result.getTotalPages() - 1));
             result =
                     priceHistoryRepository
@@ -1445,6 +1101,7 @@ public class ProductServiceImpl implements ProductService {
         return result;
     }
 
+    /** Tạo biểu mẫu sửa phân loại từ dữ liệu hiện tại, không nhập lại tồn kho ban đầu. */
     @Override
     public VariantRequest variantForm(
             Authentication authentication, Long productId, Long variantId) {

@@ -29,7 +29,7 @@
                 </form>
                 <a th:if="${purchasable and #authorization.expression('!isAuthenticated()')}" class="button full" th:href="@{/login(continue=${'/product-detail/' + variantId})}">Đăng nhập để thêm vào giỏ</a>
                 <p th:if="${purchasable and #authorization.expression('isAuthenticated() and !hasRole(''CUSTOMER'')')}" class="muted">Mua hàng bằng tài khoản khách hàng.</p>
-                <p class="muted">Giỏ hàng không giữ hàng. Tồn kho được kiểm tra lại khi bạn đặt hàng.</p>
+                <p class="muted">Giỏ hàng không giữ hàng. Hàng chỉ được giữ khi cửa hàng xác nhận đơn.</p>
             </div>
             <p th:if="${selectedVariant == null}" class="muted">Cửa hàng chưa có phân loại để bán.</p>
         </section>
