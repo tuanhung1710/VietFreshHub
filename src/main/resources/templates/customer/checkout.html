@@ -33,6 +33,9 @@
                     <label class="payment-option"><input type="radio" th:field="*{paymentMethodCode}" value="COD" th:disabled="${!checkout.codAvailable}">
                         <span><strong>Thanh toán khi nhận hàng (COD)</strong><span class="muted">Bạn thanh toán cho nhân viên giao hàng khi nhận sản phẩm.</span></span></label>
                     <p th:unless="${checkout.codAvailable}" class="item-error">Thanh toán khi nhận hàng hiện chưa khả dụng.</p><p class="item-error" th:errors="*{paymentMethodCode}"></p>
+                    <label class="payment-option"><input type="radio" th:field="*{paymentMethodCode}" value="BANK_TRANSFER" th:disabled="${!checkout.vnpayAvailable}">
+                        <span><strong>Chuyển khoản ngân hàng</strong><span class="muted">Bạn sẽ được chuyển đến cổng VNPAY Sandbox. Sản phẩm được giữ trong 15 phút.</span></span></label>
+                    <p th:unless="${checkout.vnpayAvailable}" class="item-error">Chuyển khoản qua VNPAY hiện chưa được cấu hình hoặc chưa khả dụng.</p>
                 </section>
                 <section class="panel"><h2><span class="section-number">3</span>Sản phẩm trong đơn</h2>
                     <p th:if="${#lists.isEmpty(cart.items)}" class="item-error">Giỏ hàng đang trống. <a th:href="@{/home}">Chọn sản phẩm</a> để tiếp tục.</p>
@@ -42,6 +45,7 @@
                         <article th:each="item : ${group.value}" class="checkout-line"><img th:src="${item.imageUrl}" th:alt="${item.productName}" width="64" height="64">
                             <div><strong th:text="${item.productName}"></strong><p class="muted" th:text="${item.variantName} + ' · Số lượng ' + ${item.quantity}"></p>
                                 <p th:if="${item.availabilityMessage != null}" class="item-error" th:text="${item.availabilityMessage}"></p>
+                                <p th:unless="${item.purchasable}" class="item-error">Bạn chọn <strong th:text="${item.quantity}"></strong>, tồn khả dụng hiện tại <strong th:text="${item.availableStock}"></strong>. <a th:href="@{/cart}">Điều chỉnh hoặc xóa trong giỏ</a>.</p>
                                 <p th:if="${item.priceChanged}" class="item-warning">Giá hiện tại đã được cập nhật. Xác nhận bên dưới để đặt theo giá đang hiển thị.</p></div>
                             <span class="price" th:text="${#numbers.formatInteger(item.itemSubtotal,0,'POINT')} + ' ₫'"></span>
                         </article>
@@ -116,8 +120,8 @@
                 </div>
                 <div class="summary-line"><span th:text="${checkout.deliveryOutOfRange ? 'Phí vận chuyển:' : 'Phí vận chuyển (' + #maps.size(shopGroups) + ' shop)'}"></span><strong data-shipping-amount th:if="${checkout.shippingFee != null}" th:text="${#numbers.formatInteger(checkout.shippingFee,0,'POINT')} + ' ₫'"></strong><strong data-shipping-amount th:if="${checkout.deliveryOutOfRange}">Không hỗ trợ</strong></div>
                 <p th:if="${checkout.deliveryOutOfRange}" class="item-error" role="alert" data-shipping-error><strong>Không có phương thức vận chuyển phù hợp</strong></p>
-                <p th:if="${checkout.shippingError != null}" class="item-error" role="alert" data-shipping-error th:text="${checkout.shippingError}"></p>
-                <a th:if="${checkout.shippingError != null}" th:href="@{/customer/checkout(checkoutToken=${form.checkoutToken},addressId=${form.addressId})}" class="button secondary">Tính lại phí giao hàng</a>
+                <p th:if="${checkout.shippingError != null and !checkout.deliveryOutOfRange}" class="item-error" role="alert" data-shipping-error th:text="${checkout.shippingError}"></p>
+                <a th:if="${checkout.shippingError != null and !checkout.deliveryOutOfRange}" th:href="@{/customer/checkout(checkoutToken=${form.checkoutToken},addressId=${form.addressId})}" class="button secondary">Tính lại phí giao hàng</a>
                 <div class="summary-line summary-total"><span>Tổng thanh toán</span><strong class="price" data-grand-total th:if="${checkoutTotal != null}" th:text="${#numbers.formatInteger(checkoutTotal,0,'POINT')} + ' ₫'"></strong><strong data-grand-total th:if="${checkoutTotal == null}">Chưa thể xác định</strong></div>
                 <button class="button full" type="submit" th:disabled="${!checkout.canConfirm() or couponError != null or loyaltyError != null}" data-confirm-order>Xác nhận đặt hàng</button>
                 <a th:href="@{/cart}" class="checkout-back">← Quay lại giỏ hàng</a>

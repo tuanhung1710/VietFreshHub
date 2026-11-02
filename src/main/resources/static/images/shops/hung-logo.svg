@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-labelledby="title">
+  <title id="title">Logo mẫu Trái Cây Khổng Hưng</title>
+  <rect width="240" height="240" rx="28" fill="#f7f2fb"/>
+  <circle cx="120" cy="120" r="100" fill="#e9e0f1"/>
+  <path d="M122 88c-5-28 7-46 32-55" fill="none" stroke="#476d3c" stroke-width="10" stroke-linecap="round"/>
+  <path d="M119 75c-31-34-61-29-75-5 24 22 52 24 75 5m7-8c18-31 48-35 68-15-17 28-40 32-68 15" fill="#79a264"/>
+  <g stroke="#f7f2fb" stroke-width="4"><g fill="#6f4c85"><circle cx="91" cy="112" r="27"/><circle cx="146" cy="112" r="27"/><circle cx="119" cy="156" r="28"/></g><g fill="#9572aa"><circle cx="119" cy="104" r="27"/><circle cx="88" cy="151" r="25"/><circle cx="150" cy="151" r="25"/><circle cx="119" cy="193" r="22"/></g></g>
+  <circle cx="110" cy="95" r="7" fill="#d9c5e6"/>
+</svg>

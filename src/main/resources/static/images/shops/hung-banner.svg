@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" role="img" aria-labelledby="title">
+  <title id="title">Ảnh nền mẫu Trái Cây Khổng Hưng</title>
+  <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#faf6fc"/><stop offset="1" stop-color="#e0d6eb"/></linearGradient></defs>
+  <path fill="url(#bg)" d="M0 0h1200v400H0z"/>
+  <path d="M0 342q260-105 520-10t680-35v103H0z" fill="#d8cce2"/>
+  <path d="M822 0q38 130 136 149t242 3" fill="none" stroke="#91a67a" stroke-width="13"/>
+  <g fill="#a9bc96"><path d="M878 73q-55-59-94-22 37 49 94 22m58 44q4-65 63-73-3 63-63 73m149 38q-5-63 52-81 13 58-52 81"/></g>
+  <g stroke="#e8e0ef" stroke-width="4"><g fill="#9e82b4"><circle cx="963" cy="202" r="31"/><circle cx="1019" cy="202" r="31"/><circle cx="991" cy="250" r="30"/><circle cx="991" cy="296" r="24"/></g><g fill="#7e6395"><circle cx="991" cy="188" r="31"/><circle cx="954" cy="244" r="28"/><circle cx="1027" cy="244" r="28"/></g></g>
+  <circle cx="1165" cy="325" r="77" fill="#eed3a3" opacity=".7"/><path d="M1137 251q36-30 56-3" fill="none" stroke="#9bae87" stroke-width="11"/>
+</svg>

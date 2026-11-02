@@ -11,15 +11,18 @@
     const messageInput = document.getElementById("messageInput");
     const sendButton = document.getElementById("sendButton");
     const messageForm = document.getElementById("messageForm");
+    const quickReplies = document.getElementById("quickReplies");
     const errorBox = document.getElementById("chatError");
     const activeTitle = document.getElementById("activeTitle");
     const connectionStatus = document.getElementById("connectionStatus");
     const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
     const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
     let activeConversationId = null;
-    let activeSubscription = null;
     let stompClient = null;
+    const conversationSubscriptions = new Map();
     const renderedMessageIds = new Set();
+    let reconcilingConversations = false;
+    const pendingConversationMessages = new Map();
 
     const showError = (message = "") => { errorBox.textContent = message; };
 
@@ -94,6 +97,8 @@
             button.append(avatar, copy);
             list.prepend(button);
         }
+        button.dataset.lastMessageAt = conversation.lastMessageAt || "";
+        button.dataset.lastMessageId = conversation.lastMessageId ?? "";
         const preview = button.querySelector(".conversation-preview");
         if (preview) preview.textContent = conversation.lastMessage || "Chưa có tin nhắn";
         if (conversation.unreadCount > 0) {
@@ -107,16 +112,109 @@
         } else button.querySelector(".unread-count")?.remove();
     }
 
+    function sortConversationsByRecentMessage() {
+        const conversations = Array.from(list.querySelectorAll(".conversation-item"));
+        conversations.sort((left, right) => {
+            const leftTime = Date.parse(left.dataset.lastMessageAt || "") || 0;
+            const rightTime = Date.parse(right.dataset.lastMessageAt || "") || 0;
+            return rightTime - leftTime;
+        });
+        conversations.forEach(button => list.append(button));
+    }
+
+    function updateUnreadCount(conversationId) {
+        const button = list.querySelector(`[data-conversation-id="${conversationId}"]`);
+        if (!button) return;
+        let count = button.querySelector(".unread-count");
+        if (!count) {
+            count = document.createElement("span");
+            count.className = "unread-count";
+            button.append(count);
+        }
+        count.textContent = String((Number(count.textContent) || 0) + 1);
+    }
+
+    function handleConversationMessage(id, message) {
+        const button = list.querySelector(`[data-conversation-id="${id}"]`);
+        const preview = button?.querySelector(".conversation-preview");
+        if (preview) preview.textContent = message.content || "";
+        if (button) {
+            button.dataset.lastMessageAt = message.createdAt || button.dataset.lastMessageAt || "";
+            button.dataset.lastMessageId = message.messageId ?? button.dataset.lastMessageId ?? "";
+            sortConversationsByRecentMessage();
+        }
+
+        if (activeConversationId === id) {
+            renderMessage(message);
+            button?.querySelector(".unread-count")?.remove();
+            if (Number(message.senderUserId) !== currentUserId) {
+                request(`/api/chat/conversations/${id}/read`, { method: "POST" }).catch(() => {});
+            }
+        } else if (Number(message.senderUserId) !== currentUserId) {
+            updateUnreadCount(id);
+        }
+    }
+
+    function subscribeToConversation(conversationId) {
+        const id = Number(conversationId);
+        if (!stompClient?.connected || conversationSubscriptions.has(id)) return;
+        const subscription = stompClient.subscribe(`/topic/conversations/${id}`, frame => {
+            const message = JSON.parse(frame.body);
+            if (reconcilingConversations) {
+                const pending = pendingConversationMessages.get(id) || [];
+                pending.push(message);
+                pendingConversationMessages.set(id, pending);
+                return;
+            }
+            handleConversationMessage(id, message);
+        });
+        conversationSubscriptions.set(id, subscription);
+    }
+
+    async function synchronizeConversations() {
+        const endpoint = mode === "shop"
+            ? "/api/chat/shop/conversations"
+            : "/api/chat/customer/conversations";
+        const conversations = await request(endpoint);
+        const latestMessageIds = new Map();
+        conversations.forEach(conversation => {
+            renderConversation(conversation);
+            latestMessageIds.set(Number(conversation.conversationId), Number(conversation.lastMessageId) || 0);
+            subscribeToConversation(conversation.conversationId);
+        });
+        sortConversationsByRecentMessage();
+
+        reconcilingConversations = false;
+        pendingConversationMessages.forEach((messages, id) => {
+            const latestMessageId = latestMessageIds.get(id) || 0;
+            messages
+                .filter(message => Number(message.messageId) > latestMessageId)
+                .forEach(message => handleConversationMessage(id, message));
+        });
+        pendingConversationMessages.clear();
+    }
+
+    function applyPendingMessagesWithoutSnapshot() {
+        reconcilingConversations = false;
+        pendingConversationMessages.forEach((messages, id) => {
+            messages.forEach(message => handleConversationMessage(id, message));
+        });
+        pendingConversationMessages.clear();
+    }
+
+    function setComposerEnabled(enabled) {
+        messageInput.disabled = !enabled;
+        sendButton.disabled = !enabled;
+        quickReplies?.querySelectorAll("button").forEach(button => { button.disabled = !enabled; });
+    }
+
     async function selectConversation(id, title) {
         activeConversationId = Number(id);
         activeTitle.textContent = title;
         showError();
         list.querySelectorAll(".conversation-item").forEach(item => item.classList.toggle("selected", Number(item.dataset.conversationId) === activeConversationId));
         app.classList.remove("mobile-list");
-        messageInput.disabled = true;
-        sendButton.disabled = true;
-        activeSubscription?.unsubscribe();
-        activeSubscription = null;
+        setComposerEnabled(false);
         renderedMessageIds.clear();
         messageList.replaceChildren();
         try {
@@ -127,18 +225,7 @@
             const selected = list.querySelector(`[data-conversation-id="${activeConversationId}"]`);
             selected?.querySelector(".unread-count")?.remove();
             if (stompClient?.connected) {
-                activeSubscription = stompClient.subscribe(`/topic/conversations/${activeConversationId}`, frame => {
-                    const message = JSON.parse(frame.body);
-                    renderMessage(message);
-                    const current = list.querySelector(`[data-conversation-id="${activeConversationId}"]`);
-                    if (current) {
-                        const preview = current.querySelector(".conversation-preview");
-                        if (preview) preview.textContent = message.content;
-                    }
-                    request(`/api/chat/conversations/${activeConversationId}/read`, { method: "POST" }).catch(() => {});
-                });
-                messageInput.disabled = false;
-                sendButton.disabled = false;
+                setComposerEnabled(true);
                 messageInput.focus();
             } else connectionStatus.textContent = "Đang chờ kết nối chat…";
         } catch (error) {
@@ -188,8 +275,21 @@
             },
             onConnect: () => {
                 connectionStatus.textContent = "Đang hoạt động";
-                const selected = list.querySelector(".conversation-item.selected");
-                if (selected) selectConversation(selected.dataset.conversationId, selected.querySelector("strong")?.textContent || "Trò chuyện");
+                conversationSubscriptions.clear();
+                reconcilingConversations = true;
+                pendingConversationMessages.clear();
+                list.querySelectorAll(".conversation-item").forEach(item => {
+                    subscribeToConversation(item.dataset.conversationId);
+                });
+                synchronizeConversations().then(() => {
+                    const selected = list.querySelector(".conversation-item.selected");
+                    if (selected) selectConversation(selected.dataset.conversationId, selected.querySelector("strong")?.textContent || "Trò chuyện");
+                }).catch(error => {
+                    applyPendingMessagesWithoutSnapshot();
+                    console.warn("Không thể đồng bộ danh sách chat sau khi kết nối lại:", error);
+                    const selected = list.querySelector(".conversation-item.selected");
+                    if (selected) selectConversation(selected.dataset.conversationId, selected.querySelector("strong")?.textContent || "Trò chuyện");
+                });
             },
             onWebSocketError: (event) => {
                 console.error("Chat WebSocket error:", event?.type || "unknown", event);
@@ -223,6 +323,13 @@
         if (button) selectConversation(button.dataset.conversationId, button.querySelector("strong")?.textContent || "Trò chuyện");
     });
 
+    quickReplies?.addEventListener("click", event => {
+        const reply = event.target.closest("[data-quick-reply]");
+        if (!reply || messageInput.disabled) return;
+        messageInput.value = reply.dataset.quickReply || "";
+        messageInput.focus();
+    });
+
     document.getElementById("startChat")?.addEventListener("click", async () => {
         const shopId = document.getElementById("shopSelect").value;
         if (!shopId) { showError("Vui lòng chọn cửa hàng."); return; }
@@ -231,6 +338,8 @@
         try {
             const conversation = await request("/api/chat/customer/conversations", { method: "POST", body: JSON.stringify({ shopId: Number(shopId) }) });
             renderConversation(conversation);
+            sortConversationsByRecentMessage();
+            subscribeToConversation(conversation.conversationId);
             selectConversation(conversation.conversationId, conversation.otherPartyName);
         } catch (error) { showError(error.message || "Không tạo được cuộc trò chuyện."); }
         finally { button.disabled = false; }
@@ -247,8 +356,12 @@
         } catch (error) { showError("Không gửi được tin nhắn. Vui lòng thử lại."); }
     });
 
+    sortConversationsByRecentMessage();
     if (window.matchMedia("(max-width: 700px)").matches && !list.querySelector(".conversation-item")) app.classList.add("mobile-list");
-    const first = list.querySelector(".conversation-item.selected") || list.querySelector(".conversation-item");
-    if (first) selectConversation(first.dataset.conversationId, first.querySelector("strong")?.textContent || "Trò chuyện");
+    const first = list.querySelector(".conversation-item");
+    if (first) {
+        list.querySelectorAll(".conversation-item").forEach(item => item.classList.toggle("selected", item === first));
+        selectConversation(first.dataset.conversationId, first.querySelector("strong")?.textContent || "Trò chuyện");
+    }
     connect();
 })();

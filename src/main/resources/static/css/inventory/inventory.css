@@ -1,6 +1,8 @@
 .vf-inventory-card{padding:0}
 .vf-inventory-controls-card{border-radius:12px;margin-bottom:10px;box-shadow:none}
 .vf-inventory-card.vf-inventory-controls-card>.vf-list-controls{border-radius:inherit}
+.vf-inventory-card.vf-inventory-controls-card{border:0;background:transparent;box-shadow:none}
+.vf-inventory-controls-card>.vf-list-controls{background:transparent;box-shadow:none}
 .vf-inventory-results-card{border-radius:12px}
 .vf-activity-filter-grid{display:grid;grid-template-columns:minmax(180px,1fr) auto auto 140px 140px;gap:12px;align-items:end}
 .vf-activity-filter-grid>div{min-width:0}
@@ -22,7 +24,6 @@
 /* Group related fields so every column and action fits the available desktop width. */
 .vf-inventory-table,
 .vf-batch-table,
-.vf-inventory-journal-table,
 .vf-inventory-audit-table,
 .vf-inventory-allocation-table{table-layout:fixed;width:100%;min-width:0}
 .vf-col-name {
@@ -46,23 +47,19 @@
 }
 .vf-inventory-table th,
 .vf-batch-table th,
-.vf-inventory-journal-table th,
 .vf-inventory-audit-table th,
 .vf-inventory-allocation-table th{font-size:12px;white-space:normal;color:#64748b;line-height:1.4}
 .vf-inventory-table-wrap > .vf-inventory-table > thead > tr > th {background:#f5f8fa}
 .vf-inventory-table td,
 .vf-batch-table td,
-.vf-inventory-journal-table td,
 .vf-inventory-audit-table td,
 .vf-inventory-allocation-table td{overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 .vf-inventory-table td,
 .vf-batch-table td,
-.vf-inventory-journal-table td,
 .vf-inventory-audit-table td,
 .vf-inventory-allocation-table td{font-size:13px}
 .vf-inventory-table > :not(caption) > * > *,
 .vf-batch-table > :not(caption) > * > *,
-.vf-inventory-journal-table > :not(caption) > * > *,
 .vf-inventory-audit-table > :not(caption) > * > *,
 .vf-inventory-allocation-table > :not(caption) > * > *{padding:12px 10px}
 .vf-table-number{text-align:right}
@@ -70,7 +67,6 @@
 .vf-batch-table th:nth-child(3),
 .vf-batch-table th:nth-child(4),
 .vf-batch-table th:nth-child(5),
-.vf-inventory-journal-table th:nth-child(4),
 .vf-inventory-allocation-table th:nth-child(2){text-align:right}
 .vf-table-actions .btn,
 .vf-inventory-row-actions .btn,
@@ -85,8 +81,9 @@
 .vf-inventory-product-meta .badge{white-space:nowrap}
 .vf-meta-separator{font-size:11px;color:#cbd5e1}
 .vf-inventory-filter-footer{align-items:center;flex-wrap:wrap;gap:8px 16px;margin-top:10px}
-.vf-inventory-filters .vf-inventory-filter-footer .vf-inventory-archive{flex:0 1 auto;order:0;margin:0;padding:0;font-size:12px}
+.vf-inventory-filters .vf-catalog-advanced-options .vf-inventory-archive{margin:0;padding:0;font-size:12px}
 .vf-inventory-filter-footer>[data-vf-live-summary="count"]{margin-left:auto;text-align:right}
+@media(min-width:768px){.vf-inventory-filters .vf-catalog-advanced-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .vf-inventory-variant-meta span{display:block}
 .vf-variant-cover{width:36px;height:36px;object-fit:cover;border-radius:7px;flex-shrink:0}
 .vf-inventory-product-row td{padding-top:17px!important;padding-bottom:17px!important}
@@ -104,7 +101,6 @@
 .vf-inventory-panel-heading>.btn{flex-shrink:0}
 .vf-batch-table-wrap{border:1px solid #e2e8f0;border-radius:9px;background:#fff}
 .vf-batch-table .badge,
-.vf-inventory-journal-table .badge,
 .vf-inventory-audit-table .badge{white-space:normal;line-height:1.4}
 .vf-batch-table td{vertical-align:top}
 .vf-batch-col-id{width:16%}
@@ -139,12 +135,8 @@
     .vf-batch-more{width:44px}
 }
 
-/* Both histories use the same time cell; identifiers and notes wrap within their columns. */
+/* Activity history: identifiers and notes wrap within their columns. */
 .vf-history-col-time{width:18%}
-.vf-journal-col-product{width:25%}
-.vf-journal-col-type{width:18%}
-.vf-journal-col-quantity{width:16%}
-.vf-journal-col-note{width:23%}
 .vf-audit-col-action{width:24%}
 .vf-audit-col-entity{width:24%}
 .vf-audit-col-reason{width:34%}
@@ -153,9 +145,29 @@
 .vf-history-time-content > small{display:block}
 .vf-history-time-content > small{font-size:12px}
 .vf-history-note{white-space:pre-wrap;overflow-wrap:anywhere}
-.vf-allocation-col-id{width:45%}
-.vf-allocation-col-quantity{width:20%}
-.vf-allocation-col-status{width:35%}
+.vf-allocation-col-id{width:18%}
+.vf-allocation-col-quantity{width:10%}
+.vf-allocation-col-unit{width:11.5%}
+.vf-allocation-col-status{width:22%}
+.vf-allocation-col-updated{width:22.5%}
+.vf-allocation-col-actions{width:16%}
+.vf-allocation-section .vf-inventory-allocation-table{min-width:680px}
+.vf-allocation-order-code{color:var(--vf-green);font-weight:600;white-space:nowrap}
+.vf-allocation-updated,.vf-allocation-event-time{white-space:nowrap;font-size:12px;font-variant-numeric:tabular-nums}
+.vf-allocation-toggle{display:inline-flex;align-items:center;gap:5px;padding:4px 0;border:0;background:transparent;color:var(--vf-green);font:inherit;font-size:12px;white-space:nowrap}
+.vf-allocation-toggle .vf-icon{width:14px;height:14px}
+.vf-allocation-section .badge{white-space:nowrap}
+.vf-allocation-history{padding:18px 20px;background:#f7f9fc}
+.vf-allocation-history h3{font-size:14px}
+.vf-allocation-timeline{margin:0;padding:0;list-style:none}
+.vf-allocation-timeline li{display:grid;grid-template-columns:142px minmax(0,1fr);gap:14px;position:relative;padding:0 0 20px 18px}
+.vf-allocation-timeline li:last-child{padding-bottom:0}
+.vf-allocation-timeline li::before{content:"";position:absolute;left:0;top:6px;width:7px;height:7px;border-radius:50%;background:#64748b}
+.vf-allocation-timeline li:not(:last-child)::after{content:"";position:absolute;left:3px;top:16px;bottom:2px;width:1px;background:var(--vf-border)}
+.vf-allocation-event-time{color:#64748b}
+.vf-allocation-timeline strong{font-weight:600;font-size:13px}
+.vf-allocation-event-note{margin:4px 0 0;color:#64748b;font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(pointer:coarse){.vf-allocation-toggle{min-height:44px}}
 
 /* Forms and toolbars can shrink without making the whole page scroll. */
 .vf-inventory-main>.card,
@@ -184,7 +196,29 @@
     text-align: left;
 }
 
-.batch-summary > p {
+.vf-batch-summary-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.vf-batch-summary-title {
+    flex: 1 1 280px;
+    min-width: 0;
+}
+
+.vf-batch-edit-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+.batch-summary .vf-batch-summary-title > p {
     margin-bottom: 8px;
     font-size: 13px;
 }
@@ -250,7 +284,6 @@
 @media screen and (max-width: 767px) {
     .vf-inventory-table,
     .vf-batch-table,
-    .vf-inventory-journal-table,
     .vf-inventory-audit-table,
     .vf-inventory-allocation-table,
     .vf-inventory-main table tbody,
@@ -359,6 +392,12 @@
     .vf-history-time-content > small {
         margin-top: 0;
     }
+
+    .vf-allocation-section .vf-inventory-allocation-table{min-width:0}
+    .vf-inventory-main table td.vf-allocation-updated-cell{display:block}
+    .vf-allocation-updated-cell::before{display:block;margin-bottom:4px}
+    .vf-allocation-history{padding:16px 14px}
+    .vf-allocation-timeline li{grid-template-columns:minmax(0,1fr);gap:5px}
 }
 
 /* The inventory list keeps all three levels on the same column tracks. */

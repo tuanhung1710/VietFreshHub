@@ -7,7 +7,12 @@ import VietFreshHub.order.repository.OrderDeliveryReadRepository;
 import VietFreshHub.order.repository.OrderItemRepository;
 import VietFreshHub.order.repository.ShopOrderRepository;
 import VietFreshHub.order.service.OrderLifecycleLock;
-import VietFreshHub.order.service.impl.OrderServiceImpl;
+import VietFreshHub.order.service.OrderServiceImpl;
+import VietFreshHub.payment.service.PaymentService;
+import VietFreshHub.delivery.service.DeliveryReturnQueryService;
+import VietFreshHub.order.repository.OrderStatusHistoryRepository;
+import VietFreshHub.order.service.OrderNotificationService;
+import VietFreshHub.inventory.service.StockAllocationService;
 import VietFreshHub.shop.service.ShopService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
@@ -123,8 +128,9 @@ class SellerDashboardReportTest {
     private OrderServiceImpl service(ShopOrderRepository shopOrders, OrderItemRepository orderItems,
                                      ShopService shops) {
         return new OrderServiceImpl(shopOrders, mock(OrderAddressRepository.class),
-                mock(OrderDeliveryReadRepository.class), orderItems, shops,
-                mock(DeliveryCreationService.class), mock(AuthService.class), mock(EntityManager.class),
+                mock(OrderDeliveryReadRepository.class), orderItems, mock(OrderStatusHistoryRepository.class), shops,
+                mock(PaymentService.class), mock(DeliveryCreationService.class), mock(DeliveryReturnQueryService.class),
+                mock(OrderNotificationService.class), mock(StockAllocationService.class), mock(AuthService.class), mock(EntityManager.class),
                 mock(OrderLifecycleLock.class));
     }
 }

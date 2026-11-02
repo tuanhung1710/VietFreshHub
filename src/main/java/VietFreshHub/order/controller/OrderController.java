@@ -3,6 +3,7 @@ package VietFreshHub.order.controller;
 import VietFreshHub.order.dto.IncomingOrderResponse;
 import VietFreshHub.order.dto.OrderFilterRequest;
 import VietFreshHub.order.service.OrderService;
+import VietFreshHub.order.service.OrderLabels;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.CacheControl;
@@ -18,9 +19,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
@@ -68,17 +66,28 @@ public class OrderController {
                 "Hiện không có đơn hàng sẵn sàng giao.", "/seller/ready-orders", "ready", false, model);
     }
 
-    @GetMapping("/seller/processed-orders")
-    public String processedOrders(@ModelAttribute("filter") OrderFilterRequest filter,
+    @GetMapping("/seller/failed-orders")
+    public String failedOrders(@ModelAttribute("filter") OrderFilterRequest filter,
+                               @RequestParam(defaultValue = "0") int page,
+                               Authentication authentication, Model model) {
+        return showOrders(orderService.getFailedOrders(authentication, filter, page), "Giao hàng thất bại",
+                "Hiện không có đơn hàng giao thất bại.", "/seller/failed-orders", "failed", false, model);
+    }
+
+    @GetMapping("/seller/cancelled-orders")
+    public String cancelledOrders(@ModelAttribute("filter") OrderFilterRequest filter,
                                   @RequestParam(defaultValue = "0") int page,
                                   Authentication authentication, Model model) {
-        if (filter.getStatus() == null) {
-            filter.setStatus("COMPLETED");
-        }
-        Page<?> orders = orderService.getProcessedOrderHistory(authentication, filter, page);
-        model.addAttribute("processedOrders", orders.getContent());
-        addPageAttributes(orders, model);
-        return "store_manager/processed-orders";
+        return showOrders(orderService.getCancelledOrders(authentication, filter, page), "Đã hủy",
+                "Hiện không có đơn hàng đã hủy.", "/seller/cancelled-orders", "cancelled", false, model);
+    }
+
+    @GetMapping({"/seller/completed-orders", "/seller/processed-orders"})
+    public String completedOrders(@ModelAttribute("filter") OrderFilterRequest filter,
+                                  @RequestParam(defaultValue = "0") int page,
+                                  Authentication authentication, Model model) {
+        return showOrders(orderService.getCompletedOrders(authentication, filter, page), "Đơn đã hoàn thành",
+                "Hiện không có đơn hàng đã hoàn thành.", "/seller/completed-orders", "completed", false, model);
     }
 
     @GetMapping("/seller/orders/filter-count")
@@ -120,38 +129,6 @@ public class OrderController {
         return "redirect:/seller/orders/" + shopOrderId;
     }
 
-    @PostMapping("/seller/orders/bulk-confirm")
-    public String confirmOrders(@RequestParam(required = false) List<Long> shopOrderIds,
-                                Authentication authentication, RedirectAttributes redirectAttributes) {
-        orderService.confirmOrders(shopOrderIds, authentication);
-        redirectAttributes.addFlashAttribute("clearOrderSelection", "incoming");
-        return "redirect:/seller/incoming-orders";
-    }
-
-    @PostMapping("/seller/orders/bulk-prepare")
-    public String startPreparingOrders(@RequestParam(required = false) List<Long> shopOrderIds,
-                                      Authentication authentication, RedirectAttributes redirectAttributes) {
-        orderService.startPreparingOrders(shopOrderIds, authentication);
-        redirectAttributes.addFlashAttribute("clearOrderSelection", "confirmed");
-        return "redirect:/seller/confirmed-orders";
-    }
-
-    @PostMapping("/seller/orders/bulk-ready")
-    public String markOrdersReady(@RequestParam(required = false) List<Long> shopOrderIds,
-                                 Authentication authentication, RedirectAttributes redirectAttributes) {
-        orderService.markOrdersReady(shopOrderIds, authentication);
-        redirectAttributes.addFlashAttribute("clearOrderSelection", "preparing");
-        return "redirect:/seller/preparing-orders";
-    }
-
-    @PostMapping("/seller/orders/bulk-invoices")
-    public String bulkInvoices(@RequestParam(required = false) List<Long> shopOrderIds,
-                               @RequestParam String view,
-                               Authentication authentication, Model model) {
-        model.addAttribute("invoices", orderService.getBulkInvoices(shopOrderIds, authentication, view));
-        return "store_manager/bulk-invoices";
-    }
-
     private String showOrders(Page<IncomingOrderResponse> orders, String pageTitle,
                               String emptyMessage, String filterAction, String orderView,
                               boolean showStatusFilter, Model model) {
@@ -162,17 +139,11 @@ public class OrderController {
         model.addAttribute("filterAction", filterAction);
         model.addAttribute("orderView", orderView);
         model.addAttribute("showStatusFilter", showStatusFilter);
-        model.addAttribute("bulkAction", switch (orderView) {
-            case "incoming" -> "/seller/orders/bulk-confirm";
-            case "confirmed" -> "/seller/orders/bulk-prepare";
-            case "preparing" -> "/seller/orders/bulk-ready";
-            case "ready" -> "/seller/orders/bulk-invoices";
-            default -> null;
-        });
         return "store_manager/incoming-orders";
     }
 
     private void addPageAttributes(Page<?> page, Model model) {
+        model.addAttribute("paymentStatusOptions", OrderLabels.shopPaymentStatusOptions());
         model.addAttribute("currentPage", page.getNumber());
         model.addAttribute("totalPages", page.getTotalPages());
         model.addAttribute("totalElements", page.getTotalElements());

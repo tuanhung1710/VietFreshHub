@@ -10,10 +10,26 @@
 <main th:with="delivery=${deliveryDetail.summary}">
     <a th:href="@{${basePath}}">Giám sát giao hàng</a>
     <h1>Chi tiết giám sát giao hàng</h1>
+    <p th:if="${basePath == '/admin/deliveries'}">Mã đơn: <span th:text="${delivery.orderCode}"></span></p>
     <p th:if="${successMessage != null}" th:text="${successMessage}" role="status"></p>
     <p th:if="${deliveryDetail.legacyRedelivery}">Hồ sơ giao lại cũ chỉ được xem và cần đối soát thủ công. Chức năng giao lại đã ngừng.</p>
 
-    <section aria-labelledby="delivery-heading">
+    <th:block th:if="${basePath == '/admin/deliveries'}">
+        <section aria-labelledby="shop-heading">
+            <h2 id="shop-heading">THÔNG TIN CỬA HÀNG</h2>
+            <p>Tên cửa hàng: <span th:text="${delivery.shopName ?: '—'}"></span></p>
+            <p>Số điện thoại liên hệ: <span th:text="${adminDetail.shopPhone ?: '—'}"></span></p>
+            <p>Địa chỉ: <span th:text="${adminDetail.shopAddress ?: '—'}"></span></p>
+        </section>
+        <section aria-labelledby="recipient-heading">
+            <h2 id="recipient-heading">THÔNG TIN NHẬN HÀNG</h2>
+            <p>Người nhận: <span th:text="${adminDetail.recipientName ?: '—'}"></span></p>
+            <p>Số điện thoại liên hệ: <span th:text="${adminDetail.recipientPhone ?: '—'}"></span></p>
+            <p>Địa chỉ: <span th:text="${adminDetail.recipientAddress ?: '—'}"></span></p>
+        </section>
+    </th:block>
+
+    <section th:unless="${basePath == '/admin/deliveries'}" aria-labelledby="delivery-heading">
         <h2 id="delivery-heading">Thông tin đơn hàng</h2>
         <dl>
             <dt>Mã đơn hàng</dt>
@@ -28,6 +44,26 @@
             <p>Xác nhận hoàn hàng:</p>
             <button type="submit">XÁC NHẬN ĐÃ NHẬN LẠI HÀNG</button>
         </form>
+    </section>
+
+    <section th:if="${basePath == '/admin/deliveries'}" aria-labelledby="order-history-heading">
+        <h2 id="order-history-heading">Lịch sử xử lý đơn hàng</h2>
+        <table>
+            <thead>
+            <tr>
+                <th scope="col">Trạng thái</th>
+                <th scope="col">Thời gian</th>
+                <th scope="col">Ghi chú</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="event : ${adminDetail.orderHistory}">
+                <td th:text="${event.statusLabel}"></td>
+                <td th:text="${event.createdAt == null ? '—' : #temporals.format(event.createdAt, 'dd-MM-yyyy HH:mm')}"></td>
+                <td th:text="${event.note}"></td>
+            </tr>
+            </tbody>
+        </table>
     </section>
 
     <section aria-labelledby="history-heading">

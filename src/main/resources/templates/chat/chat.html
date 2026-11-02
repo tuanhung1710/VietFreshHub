@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
+    <th:block th:if="${chatMode == 'customer'}"><th:block th:replace="~{fragments/head :: assets}"></th:block></th:block>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="_csrf" th:content="${_csrf.token}">
@@ -11,6 +12,8 @@
     <script defer th:src="@{/js/chat.js}"></script>
 </head>
 <body>
+<th:block th:if="${chatMode == 'customer'}"><header th:replace="~{fragments/header :: header}"></header></th:block>
+<style>body:has(> header) .chat-app { margin-top: 112px; height: calc(100dvh - 132px); } body:has(> header) { font-family: 'Be Vietnam Pro', sans-serif; background: #f8f9ff; }</style>
 <main class="chat-app" id="chatApp"
       th:attr="data-mode=${chatMode},data-user-id=${currentUserId}">
     <aside class="chat-sidebar">
@@ -37,7 +40,7 @@
         <nav class="conversation-list" id="conversationList" aria-label="Danh sách cuộc trò chuyện">
             <button class="conversation-item" type="button"
                     th:each="conversation : ${conversations}"
-                    th:attr="data-conversation-id=${conversation.conversationId},data-shop-id=${conversation.shopId}"
+                    th:attr="data-conversation-id=${conversation.conversationId},data-shop-id=${conversation.shopId},data-last-message-at=${conversation.lastMessageAt},data-last-message-id=${conversation.lastMessageId}"
                     th:classappend="${conversationStat.first} ? ' selected' : ''">
                 <span class="conversation-avatar" th:text="${#strings.substring(conversation.otherPartyName, 0, 1)}">V</span>
                 <span class="conversation-copy">
@@ -66,6 +69,12 @@
                 <p>Chọn một cuộc trò chuyện ở bên trái để xem và gửi tin nhắn.</p>
             </div>
         </div>
+        <section class="quick-replies" id="quickReplies" th:if="${chatMode == 'shop'}" aria-label="Trả lời nhanh">
+            <span class="quick-replies-label">Trả lời nhanh</span>
+            <button type="button" data-quick-reply="Xin chào, shop có thể hỗ trợ bạn như thế nào?" disabled>Chào khách</button>
+            <button type="button" data-quick-reply="Shop đã nhận được tin nhắn, sẽ phản hồi bạn sớm." disabled>Đã nhận tin</button>
+            <button type="button" data-quick-reply="Bạn vui lòng cho shop xin thêm thông tin nhé." disabled>Xin thêm thông tin</button>
+        </section>
         <form class="message-form" id="messageForm">
             <label class="visually-hidden" for="messageInput">Nội dung tin nhắn</label>
             <input id="messageInput" type="text" maxlength="4000" autocomplete="off"

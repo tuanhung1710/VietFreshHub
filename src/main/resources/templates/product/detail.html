@@ -62,6 +62,7 @@
       </div>
       <div th:replace="~{fragments/product-inventory :: messages}"></div>
 
+
       <section class="card p-4 mb-4">
         <div class="row g-4">
           <div class="col-sm-3 col-lg-2" th:if="${row.imageUrl!=null}">
@@ -78,19 +79,6 @@
                 th:replace="~{fragments/product-inventory :: productStatus(${row})}"
               >
               </span>
-              <span
-                class="badge border"
-                th:if="${row.product.status.name()!='DELETED'}"
-                th:classappend="${row.product.approvalStatus.name()=='APPROVED'?'bg-success-subtle text-success-emphasis':row.product.approvalStatus.name()=='REJECTED'?'bg-danger-subtle text-danger-emphasis':'bg-warning-subtle text-warning-emphasis'}"
-                th:text="${row.product.approvalStatus.name()=='APPROVED'?'Đã kiểm tra':row.product.approvalStatus.name()=='REJECTED'?'Cần cập nhật':'Chờ kiểm tra'}"
-              >
-              </span>
-              <span
-                class="badge bg-info-subtle text-info-emphasis border"
-                th:if="${row.product.requiresPreparationCheck}"
-              >
-                Kiểm tra trước khi đóng gói
-              </span>
             </div>
             <p
               class="small text-body-secondary mb-2"
@@ -105,22 +93,7 @@
                 th:text="${'Ngày tạo: '+#temporals.format(row.product.createdAt.plusHours(7),'dd/MM/yyyy')}"
               >
               </span>
-              <span
-                th:if="${row.approvedByName!=null}"
-                th:text="${'Người duyệt: '+row.approvedByName}"
-              >
-              </span>
-              <span
-                th:if="${row.product.approvedAt!=null}"
-                th:text="${'Ngày duyệt: '+#temporals.format(row.product.approvedAt.plusHours(7),'dd/MM/yyyy')}"
-              >
-              </span>
             </div>
-            <p
-              class="alert alert-info small mb-3"
-              th:if="${row.product.requiresPreparationCheck}"
-              th:text="${'Hướng dẫn kiểm tra và đóng gói: '+row.product.preparationNote}"
-            ></p>
           </div>
         </div>
 
@@ -140,7 +113,7 @@
               class="form-select"
               id="product-status"
               name="status"
-              aria-describedby="approval-help"
+              aria-describedby="product-status-help"
             >
               <option
                 value="ACTIVE"
@@ -156,7 +129,7 @@
                 Tạm ẩn
               </option>
               <option value="DELETED">
-                Ngừng kinh doanh (hiện chưa thể mở bán lại)
+                Xóa sản phẩm
               </option>
             </select>
           </div>
@@ -180,11 +153,10 @@
           </div>
         </form>
 
-        <p class="small text-body-secondary mt-3 mb-0" id="approval-help">
-          Sản phẩm đủ điều kiện có thể bán ngay và được Admin hậu kiểm. Chờ kiểm
-          tra hoặc Cần cập nhật không tự động ngừng bán. Chủ shop không thể tự
-          mở khóa sản phẩm vi phạm. Sản phẩm ngừng kinh doanh vẫn lưu lịch sử và
-          không thể mở bán lại.
+        <p class="small text-body-secondary mt-3 mb-0" id="product-status-help">
+          Sản phẩm đủ điều kiện có thể bán ngay. Sản phẩm bị khóa sẽ hiển thị
+          trong mục Vi phạm; chủ shop không thể tự mở khóa. Khi xóa sản phẩm,
+          tồn kho và lịch sử vẫn được lưu trong Kho hàng.
         </p>
         <p
           class="alert alert-warning small mt-3 mb-0"
@@ -195,7 +167,15 @@
         </p>
       </section>
 
-      <section class="card p-4 mb-4" th:each="v : ${row.variants}">
+      <p class="alert alert-info" th:if="${#lists.isEmpty(row.visibleVariants)}">
+        Sản phẩm chưa có phân loại còn kinh doanh.
+      </p>
+      <p class="small text-body-secondary" th:if="${row.variants!=null&&row.visibleVariants!=null&&#lists.size(row.variants)>#lists.size(row.visibleVariants)}">
+        Phân loại đã xóa được lưu cùng lịch sử và tồn kho.
+        <a class="text-success" th:href="@{/seller/inventory(q=${row.product.productCode},archived=true)}">Xem trong kho hàng</a>.
+      </p>
+
+      <section class="card p-4 mb-4" th:each="v : ${row.visibleVariants}" th:id="${'variant-'+v.variant.variantId}">
         <div
           class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3"
         >
@@ -225,8 +205,9 @@
               </div>
               <span
                 class="badge ms-2"
-                th:classappend="${v.variant.status.name()=='ACTIVE'?'bg-success-subtle text-success-emphasis':'bg-secondary-subtle text-secondary-emphasis'}"
-                th:text="${v.variant.status.name()=='ACTIVE'?'Đang bật':(v.variant.status.name()=='OUT_OF_STOCK'?'Hết hàng':(v.variant.status.name()=='DELETED'?'Ngừng kinh doanh':'Tạm dừng'))}"
+                th:classappend="${v.enabled?'bg-success-subtle text-success-emphasis':'bg-secondary-subtle text-secondary-emphasis'}"
+                th:text="${v.configurationLabel}"
+                title="Cấu hình phân loại; lượng hàng khả dụng được hiển thị riêng bên dưới."
               >
               </span>
             </div>
@@ -242,6 +223,17 @@
               </svg>
               Xem tồn kho
             </a>
+            <button
+              class="btn btn-outline-danger btn-sm vf-product-icon-action"
+              type="button"
+              th:if="${row.product.status.name()!='DELETED'&&v.variant.status.name()!='DELETED'}"
+              data-bs-toggle="modal"
+              data-bs-target="#variantDeleteModal"
+              th:attr="data-action-url=@{/seller/products/{p}/variants/{v}/delete(p=${row.product.productId},v=${v.variant.variantId})},data-name=${v.variant.variantName+' · '+v.variant.sku},aria-label=${'Xóa phân loại '+v.variant.variantName}"
+              title="Xóa phân loại; tồn kho và lịch sử được giữ lại"
+            >
+              <svg class="vf-icon" aria-hidden="true"><use href="#vf-trash" /></svg>
+            </button>
             <div class="dropdown">
               <button
                 type="button"
@@ -279,23 +271,12 @@
                 >
                   <a
                     class="dropdown-item"
-                    th:href="@{/seller/inventory/products/{p}/variants/{v}/restock(p=${row.product.productId},v=${v.variant.variantId})}"
+                    th:href="@{/seller/inventory/products/{p}/variants/{v}/restock(p=${row.product.productId},v=${v.variant.variantId},returnTo=${'/seller/products/'+row.product.productId})}"
                   >
                     <svg class="vf-icon" aria-hidden="true">
                       <use href="#vf-plus" />
                     </svg>
                     Nhập kho
-                  </a>
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    th:href="@{/seller/inventory/journal(variant=${v.variant.variantId})}"
-                  >
-                    <svg class="vf-icon" aria-hidden="true">
-                      <use href="#vf-history" />
-                    </svg>
-                    Lịch sử tồn kho
                   </a>
                 </li>
                 <li>
@@ -321,7 +302,7 @@
           <small
             class="text-body-secondary"
             th:if="${v.variant.compareAtPrice!=null}"
-            th:text="${'Giá gốc: '+#numbers.formatDecimal(v.variant.compareAtPrice,0,'POINT',0,'COMMA')+' ₫'}"
+            th:text="${'Giá trước giảm: '+#numbers.formatDecimal(v.variant.compareAtPrice,0,'POINT',0,'COMMA')+' ₫'}"
           >
           </small>
           <span
@@ -381,6 +362,7 @@
           th:if="${row.product.status.name()!='DELETED'&&v.variant.status.name()!='DELETED'}"
           th:action="@{/seller/products/{p}/variants/{v}/status(p=${row.product.productId},v=${v.variant.variantId})}"
           method="post"
+          data-variant-status
           data-confirm="Xác nhận thay đổi trạng thái phân loại?"
         >
           <div class="col-md-3">
@@ -388,7 +370,7 @@
               class="form-label"
               th:for="${'sku-status-'+v.variant.variantId}"
             >
-              Trạng thái phân loại
+              Cấu hình phân loại
             </label>
             <select
               class="form-select"
@@ -399,15 +381,15 @@
                 value="ACTIVE"
                 th:selected="${v.variant.status.name()=='ACTIVE'||v.variant.status.name()=='OUT_OF_STOCK'}"
               >
-                Bật phân loại
+                Mở bán
               </option>
               <option
                 value="INACTIVE"
                 th:selected="${v.variant.status.name()=='INACTIVE'}"
               >
-                Tạm dừng phân loại
+                Tạm ẩn
               </option>
-              <option value="DELETED">Ngừng kinh doanh</option>
+              <option value="DELETED">Xóa phân loại</option>
             </select>
           </div>
           <div class="col-md-6">
@@ -427,21 +409,25 @@
             />
           </div>
           <div class="col-md-3">
-            <button type="submit" class="btn btn-outline-secondary w-100">
+            <button type="submit" class="btn btn-outline-success w-100">
               Cập nhật trạng thái
             </button>
           </div>
         </form>
 
         <p class="small text-body-secondary mt-3 mb-0">
-          Phân loại đang bật, có giá hợp lệ và còn hàng có thể bán khi sản phẩm
+          Phân loại được cấu hình mở bán, có giá hợp lệ và còn hàng có thể bán khi sản phẩm
           được mở bán, không bị Admin khóa và shop đang nhận đơn.
+          Khi tạm ẩn phân loại mở bán cuối cùng, cần tạm ẩn sản phẩm trước.
+          Chọn Xóa phân loại trong trạng thái hoặc icon thùng rác phía trên để xóa. Lịch sử và tồn kho
+          được giữ lại; không thể xóa khi còn hàng chờ xuất kho.
         </p>
       </section>
     </main>
 
     </div>
 
+    <div th:replace="~{fragments/product-inventory :: variantDeleteModal(false)}"></div>
     <script defer th:src="@{/js/product/product.js}"></script>
   </body>
 </html>

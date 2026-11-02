@@ -5,6 +5,7 @@ import VietFreshHub.auth.dto.RegisterRequest;
 import VietFreshHub.auth.exception.RegistrationException;
 import VietFreshHub.auth.service.AuthService;
 import VietFreshHub.auth.service.EmailVerificationService;
+import VietFreshHub.auth.service.LoginRedirectService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -38,6 +39,13 @@ public class AuthController {
     private final AuthService authService;
     private final SecurityContextRepository securityContextRepository;
     private final EmailVerificationService emailVerificationService;
+    private final LoginRedirectService loginRedirects;
+
+    @ModelAttribute
+    public void rememberShoppingDestination(@RequestParam(required = false) String returnTo,
+                                            HttpServletRequest request) {
+        loginRedirects.remember(request, returnTo);
+    }
 
     @GetMapping("/register")
     public String showRegisterForm(Model model) {
@@ -46,14 +54,14 @@ public class AuthController {
     }
 
     @GetMapping("/")
-    public String redirectToLogin(Authentication authentication) {
+    public String redirectToHome(Authentication authentication) {
         if (authentication == null
                 || !authentication.isAuthenticated()
                 || authentication instanceof AnonymousAuthenticationToken) {
-            return "redirect:/login";
+            return "redirect:/home";
         }
 
-        return "redirect:" + getHomeUrl(authentication);
+        return "redirect:" + loginRedirects.home(authentication);
     }
 
     @PostMapping("/register")
@@ -123,8 +131,7 @@ public class AuthController {
 
         saveAuthentication(authentication, request, response);
 
-        // Thêm "redirect:" để chuyển URL trình duyệt tới trang home.
-        return "redirect:" + getHomeUrl(authentication);
+        return "redirect:" + loginRedirects.destination(authentication, request, response);
     }
 
     @GetMapping("/verify-email")
@@ -185,7 +192,7 @@ public class AuthController {
             session.removeAttribute(PENDING_REGISTRATION);
             saveAuthentication(authentication, request, response);
 
-            return "redirect:" + getHomeUrl(authentication);
+            return "redirect:" + loginRedirects.destination(authentication, request, response);
 
         } catch (RegistrationException | IllegalStateException ex) {
             model.addAttribute("email", pending.getEmail());
@@ -245,38 +252,4 @@ public class AuthController {
         securityContextRepository.saveContext(context, request, response);
     }
 
-    private String getHomeUrl(Authentication authentication) {
-        log.info(
-                "Home routing for user={}, authorities={}",
-                authentication.getName(),
-                authentication.getAuthorities()
-        );
-
-        if (hasAuthority(authentication, "ROLE_ADMIN")) {
-            return "/admin";
-        }
-        if (hasAuthority(authentication, "ROLE_STORE_MANAGER")) {
-            return "/seller";
-        }
-        if (hasAuthority(authentication, "ROLE_DELIVERY_STAFF")) {
-            return "/delivery";
-        }
-        if (hasAuthority(authentication, "ROLE_CUSTOMER")) {
-            return "/home";
-        }
-
-        log.warn("Không nhận diện được role của user={}", authentication.getName());
-        return "/access-denied";
-    }
-
-    private boolean hasAuthority(Authentication authentication, String role) {
-        return authentication.getAuthorities().stream()
-                .anyMatch(authority ->
-                        authority.getAuthority().equals(role));
-    }
-
-    @GetMapping("/home")
-    public String customerHome() {
-        return "redirect:/customer/home";
-    }
 }

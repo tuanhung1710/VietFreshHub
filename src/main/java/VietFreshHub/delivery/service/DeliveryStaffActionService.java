@@ -8,8 +8,8 @@ import VietFreshHub.order.service.OrderService;
 import VietFreshHub.payment.service.PaymentService;
 import VietFreshHub.loyalty.services.LoyaltyService;
 import jakarta.persistence.EntityManager;
+import VietFreshHub.payout.service.SellerPayoutService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -25,10 +25,10 @@ public class DeliveryStaffActionService {
     private final DeliveryStatusHistoryWriter deliveryStatusHistoryWriter;
     private final OrderService orderService;
     private final DeliveryNotificationService deliveryNotificationService;
-    private final ApplicationEventPublisher events;
     private final PaymentService paymentService;
     private final LoyaltyService loyaltyService;
     private final EntityManager em;
+    private final SellerPayoutService sellerPayoutService;
 
     @Transactional
     public void confirmPickup(Long assignmentId, Authentication authentication) {
@@ -40,6 +40,7 @@ public class DeliveryStaffActionService {
         }
         deliveryService.markPickedUp(delivery.getDeliveryId());
         deliveryStatusHistoryWriter.record(delivery, assignment.getDeliveryStaff().getUserId(), null);
+        deliveryNotificationService.notifyPickedUp(delivery);
     }
 
     @Transactional
@@ -81,16 +82,20 @@ public class DeliveryStaffActionService {
         deliveryService.markDelivered(delivery.getDeliveryId());
         orderService.completeDeliveredShopOrder(shopOrder.getShopOrderId(), delivery.getDeliveredAt(),
                 assignment.getDeliveryStaff().getUserId());
+        sellerPayoutService.createForDeliveredOrder(shopOrder.getShopOrderId(), delivery.getDeliveredAt());
         deliveryStatusHistoryWriter.record(delivery, assignment.getDeliveryStaff().getUserId(), null);
         assignment.complete();
         Long orderId = shopOrder.getOrder().getOrderId();
-        if (paymentService.recordCodCollection(orderId, shopOrder.getShopOrderId())) {
-            // earnReward refreshes Order: keep COMPLETED/PAID in the database first.
+        if (paymentService.isCodOrder(orderId)) {
+            if (paymentService.recordCodCollection(orderId, shopOrder.getShopOrderId())) {
+                em.flush();
+                loyaltyService.earnReward(orderId);
+            }
+        } else {
             em.flush();
             loyaltyService.earnReward(orderId);
         }
         deliveryNotificationService.notifyCompleted(delivery);
-        events.publishEvent(new DeliveryAssignmentRetryEvent());
     }
 
     @Transactional

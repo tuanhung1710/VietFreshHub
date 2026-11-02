@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/customer-shop :: head('Ưu đãi cửa hàng')}"></head>
+<body>
+<header th:replace="~{fragments/customer-shop :: header}"></header>
+<main class="container">
+    <section th:replace="~{fragments/customer-shop :: shopHeader(${shop},'offers')}"></section>
+    <div class="sectiontop"><div><h2>Ưu đãi dành cho bạn</h2><p class="muted">Các khuyến mãi và mã giảm giá đang áp dụng tại cửa hàng.</p></div></div>
+    <p th:if="${offersPage.empty}" class="notice">Hiện chưa có ưu đãi.</p>
+    <div class="shopgrid"><article class="section" th:each="offer : ${offersPage.content}">
+        <p th:text="${offer.code != null ? 'MÃ GIẢM GIÁ' : 'KHUYẾN MÃI'}"></p><h2 th:text="${offer.name}"></h2>
+        <p class="muted" th:text="${offer.description}"></p>
+        <p th:text="'Giảm ' + ${#numbers.formatDecimal(offer.discountValue,1,0)} + ${offer.discountType == 'PERCENT' ? '%' : ' ₫'}"></p>
+        <p th:if="${offer.code != null}"><span th:text="${offer.code}"></span></p>
+        <p class="muted" th:if="${offer.maxDiscount != null}" th:text="'Giảm tối đa ' + ${#numbers.formatDecimal(offer.maxDiscount,1,0)} + ' ₫'"></p>
+        <p class="muted" th:text="'Đơn tối thiểu ' + ${#numbers.formatDecimal(offer.minimumOrderValue,1,0)} + ' ₫'"></p>
+        <p class="muted" th:if="${offer.perUserLimit != null}" th:text="'Mỗi khách tối đa ' + ${offer.perUserLimit} + ' lượt'"></p>
+        <p class="muted">Đến <time th:text="${#temporals.format(offer.endAt,'dd/MM/yyyy HH:mm')}"></time></p>
+    </article></div>
+    <nav class="pagination" th:if="${offersPage.totalPages > 1}" aria-label="Phân trang ưu đãi">
+        <a th:if="${offersPage.hasPrevious()}" th:href="@{/shops/{id}/offers(id=${shop.shopId},page=${offersPage.number})}">← Trang trước</a>
+        <span class="muted" th:text="${offersPage.number + 1} + ' / ' + ${offersPage.totalPages}"></span>
+        <a th:if="${offersPage.hasNext()}" th:href="@{/shops/{id}/offers(id=${shop.shopId},page=${offersPage.number + 2})}">Trang tiếp →</a>
+    </nav>
+</main>
+<footer th:replace="~{fragments/customer-shop :: footer}"></footer>
+</body>
+</html>

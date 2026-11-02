@@ -3,6 +3,7 @@ package VietFreshHub.security;
 import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.auth.repository.UserRoleRepository;
 import VietFreshHub.auth.service.Oidc_UserService;
+import VietFreshHub.auth.service.LoginRedirectService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -14,6 +15,8 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 @Configuration
@@ -28,11 +31,22 @@ public class SecurityConfig {
     public SecurityContextRepository securityContextRepository() {
         return new HttpSessionSecurityContextRepository();
     }
+
+    @Bean
+    public RequestCache requestCache() {
+        var cache = new HttpSessionRequestCache();
+        cache.setMatchingRequestParameterName(null);
+        cache.setRequestMatcher(request -> "GET".equals(request.getMethod())
+                && !request.getServletPath().startsWith("/storefront/api/"));
+        return cache;
+    }
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             Oidc_UserService oidcUserService,
             SecurityContextRepository securityContextRepository,
+            RequestCache requestCache,
+            LoginRedirectService loginRedirects,
             UserRepository userRepository,
             UserRoleRepository userRoleRepository)
             throws Exception {
@@ -44,11 +58,18 @@ public class SecurityConfig {
         http.securityContext(context -> {
             context.securityContextRepository(securityContextRepository);
         });
+        http.requestCache(cache -> cache.requestCache(requestCache));
 
         http.authorizeHttpRequests(authorize -> {
+            authorize.requestMatchers(org.springframework.http.HttpMethod.GET,
+                    "/home", "/customer/home", "/product-detail", "/product-detail/**", "/shops", "/shops/**",
+                    "/storefront/api/options", "/storefront/api/home", "/storefront/api/products", "/storefront/api/products/**", "/storefront/api/cart").permitAll();
+            authorize.requestMatchers(org.springframework.http.HttpMethod.POST, "/storefront/api/cart").hasRole("CUSTOMER");
             authorize.requestMatchers(
-                    "/", "/login", "/register", "/verify-email",
-                    "/verify-email/resend", "/error", "/reviews/product/**", "/reviews/shop/**",
+                    "/", "/login", "/register", "/verify-email", "/verify-email/resend", "/error",
+                    "/reviews/product/**", "/reviews/shop/**", "/payment/vnpay/return",
+                    "/seller-onboarding/register", "/seller-onboarding/verify-email",
+                    "/seller-onboarding/verify-email/resend", "/forgot-password", "/reset-password",
                     "/css/**", "/js/**", "/images/**","/oauth2/**", "/login/oauth2/**"
             ).permitAll()
                     .requestMatchers("/admin", "/admin/**")
@@ -63,8 +84,13 @@ public class SecurityConfig {
                     .requestMatchers("/delivery", "/delivery/**")
                     .hasRole("DELIVERY_STAFF")
 
+                    // Applicants without a customer role may view and manage only their own applications.
+                    .requestMatchers("/customer/seller-applications", "/customer/seller-applications/**")
+                    .authenticated()
+
                     .requestMatchers(
-                            "/home", "/customer", "/customer/**", "/cart", "/cart/**", "/product-detail", "/product-detail/**"
+                            "/home", "/customer", "/customer/**", "/cart", "/cart/**", "/product-detail", "/product-detail/**",
+                            "/api/catalog/products/*/availability"
                     ).hasRole("CUSTOMER")
 
                     .anyRequest().authenticated();
@@ -74,7 +100,7 @@ public class SecurityConfig {
                 .userInfoEndpoint(userInfo -> userInfo
                         .oidcUserService(oidcUserService)
                 )
-                .defaultSuccessUrl("/", true)
+                .successHandler(loginRedirects)
                 .failureUrl("/login?oauthError=true")
         );
 
@@ -85,7 +111,13 @@ public class SecurityConfig {
         // Chuyển người chưa đăng nhập về trang login
         http.exceptionHandling(exception -> {
             exception.authenticationEntryPoint(
-                    new LoginUrlAuthenticationEntryPoint("/login")
+                    (request, response, authenticationException) -> {
+                        if (request.getRequestURI().startsWith(request.getContextPath() + "/storefront/api/")) {
+                            response.sendError(401);
+                        } else {
+                            new LoginUrlAuthenticationEntryPoint("/login").commence(request, response, authenticationException);
+                        }
+                    }
             );
         });
 

@@ -76,7 +76,8 @@ class CheckoutCouponFormTest {
         var controller = new CheckoutController(currentCustomer, checkout, shipping, drafts,
                 mock(CheckoutAddressService.class),
                 mock(VietFreshHub.customer.service.CustomerAddressService.class),
-                mock(VietFreshHub.vietmap.service.VietMapService.class), carts, coupons, loyalty);
+                mock(VietFreshHub.vietmap.service.VietMapService.class), carts, coupons, loyalty,
+                mock(VietFreshHub.payment.vnpay.VnpayPaymentService.class));
         mvc = MockMvcBuilders.standaloneSetup(controller)
                 .setViewResolvers((name, locale) -> name.startsWith("redirect:")
                         ? new RedirectView(name.substring("redirect:".length()))
@@ -293,12 +294,9 @@ class CheckoutCouponFormTest {
         when(checkout.confirm(eq(1L), any(), any())).thenThrow(new org.springframework.dao.CannotAcquireLockException("internal lock details"));
         var result = mvc.perform(post("/customer/checkout").principal(authentication).session(session)
                         .param("checkoutToken", token).param("addressId", "42").param("paymentMethodCode", "COD"))
-                .andExpect(status().isServiceUnavailable()).andExpect(view().name("customer/checkout"))
-                .andExpect(model().attributeHasErrors("form")).andReturn();
-        var form = (CheckoutRequest) result.getModelAndView().getModel().get("form");
-        assertEquals(42L, form.getAddressId()); assertEquals("COD", form.getPaymentMethodCode());
-        var binding = (org.springframework.validation.BindingResult) result.getModelAndView().getModel().get("org.springframework.validation.BindingResult.form");
-        assertEquals("Đơn hàng chưa được tạo. Vui lòng kiểm tra lại và thử xác nhận lần nữa.", binding.getGlobalError().getDefaultMessage());
+                .andExpect(status().isServiceUnavailable()).andExpect(view().name("customer/checkout-unavailable"))
+                .andExpect(model().attribute("checkoutToken", token));
+        verify(checkout, never()).preview(anyLong(), anyList());
     }
 
     @ParameterizedTest
@@ -311,7 +309,8 @@ class CheckoutCouponFormTest {
         };
         when(checkout.confirm(eq(1L), any(), any())).thenThrow(failure);
         var thrown = assertThrows(jakarta.servlet.ServletException.class, () -> mvc.perform(post("/customer/checkout")
-                .principal(authentication).session(session).param("checkoutToken", token).param("addressId", "42")));
+                .principal(authentication).session(session).param("checkoutToken", token).param("addressId", "42")
+                .param("paymentMethodCode", "COD")));
         assertSame(failure, thrown.getCause());
         verify(checkout, never()).preview(anyLong(), anyList());
     }

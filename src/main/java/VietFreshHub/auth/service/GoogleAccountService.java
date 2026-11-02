@@ -74,13 +74,28 @@ public class GoogleAccountService {
 
         String normalizedEmail = googleEmail.trim().toLowerCase(Locale.ROOT);
 
-        // Do not attach a new Google identity to an existing local account based only on email.
-        // The existing account must be authenticated and linked through a separate explicit flow.
-        if (userRepository.findByEmailIgnoreCase(normalizedEmail).isPresent()) {
-            throw oauthError(
-                    "account_link_required",
-                    "An account with this email already exists. Sign in to that account and link Google first."
-            );
+        var existingUser = userRepository.findByEmailIgnoreCase(normalizedEmail);
+        if (existingUser.isPresent()) {
+            User user = existingUser.get();
+            if (!ACTIVE_STATUS.equalsIgnoreCase(user.getStatus())) {
+                throw oauthError("account_not_active", "This VietFresh Hub account is not active.");
+            }
+            if (user.getEmailVerifiedAt() == null) {
+                throw oauthError(
+                        "email_not_verified",
+                        "Verify this VietFresh Hub email address before signing in with Google."
+                );
+            }
+            if (externalAccountRepository.existsByUser_UserIdAndProvider(
+                    user.getUserId(), GOOGLE_PROVIDER)) {
+                throw oauthError(
+                        "google_account_already_linked",
+                        "This VietFresh Hub account is already linked to another Google account."
+                );
+            }
+
+            linkGoogleAccount(user, googleSubject);
+            return user;
         }
 
         Role customerRole = roleRepository.findByRoleName(CUSTOMER_ROLE)
@@ -114,13 +129,17 @@ public class GoogleAccountService {
         userRole.setRole(customerRole);
         userRoleRepository.save(userRole);
 
+        linkGoogleAccount(savedUser, googleSubject);
+
+        return savedUser;
+    }
+
+    private void linkGoogleAccount(User user, String googleSubject) {
         UserExternalAccount externalAccount = new UserExternalAccount();
-        externalAccount.setUser(savedUser);
+        externalAccount.setUser(user);
         externalAccount.setProvider(GOOGLE_PROVIDER);
         externalAccount.setProviderUserId(googleSubject);
         externalAccountRepository.save(externalAccount);
-
-        return savedUser;
     }
 
     private OAuth2AuthenticationException oauthError(String code, String description) {

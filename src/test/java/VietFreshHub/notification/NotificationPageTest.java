@@ -72,7 +72,10 @@ class NotificationPageTest {
         var views = new ThymeleafViewResolver();
         views.setTemplateEngine(engine);
         views.setCharacterEncoding("UTF-8");
-        mvc = MockMvcBuilders.standaloneSetup(new NotificationController(inbox, mock(VietFreshHub.delivery.service.DeliveryNotificationService.class)))
+        mvc = MockMvcBuilders.standaloneSetup(new NotificationController(inbox,
+                        mock(VietFreshHub.delivery.service.DeliveryNotificationService.class),
+                        mock(VietFreshHub.inventory.service.InventoryNotificationDestination.class),
+                        mock(VietFreshHub.order.service.OrderNotificationService.class)))
                 .setViewResolvers(views).build();
     }
 
@@ -88,8 +91,8 @@ class NotificationPageTest {
 
     @Test
     void rendersOnlyCurrentUserPageEscapesContentAndShowsUnreadAction() throws Exception {
-        when(repository.findInboxByUserId(7L, PageRequest.of(0, 15, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt", "notificationId"))))
-                .thenReturn(new PageImpl<>(List.of(notification(1L, false), notification(2L, true)), PageRequest.of(0, 15), 41));
+        when(repository.findInboxByUserId(7L, PageRequest.of(0, VietFreshHub.common.PageSizes.DEFAULT, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt", "notificationId"))))
+                .thenReturn(new PageImpl<>(List.of(notification(1L, false), notification(2L, true)), PageRequest.of(0, VietFreshHub.common.PageSizes.DEFAULT), 41));
         mvc.perform(get("/notifications").principal(user).param("userId", "999"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Gói dịch vụ &lt;Pro&gt;")))
@@ -98,7 +101,7 @@ class NotificationPageTest {
                 .andExpect(content().string(containsString("/notifications/1/read")))
                 .andExpect(content().string(not(containsString("/notifications/2/read"))))
                 .andExpect(content().string(containsString("/notifications?page=1")));
-        verify(repository).findInboxByUserId(7L, PageRequest.of(0, 15, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt", "notificationId")));
+        verify(repository).findInboxByUserId(7L, PageRequest.of(0, VietFreshHub.common.PageSizes.DEFAULT, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt", "notificationId")));
     }
 
     @Test

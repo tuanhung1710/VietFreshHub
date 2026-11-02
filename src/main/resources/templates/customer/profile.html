@@ -24,9 +24,28 @@
             </a>
         </div>
 
-        <form th:action="@{/customer/profile}" th:object="${profile}" method="post"
+        <form th:action="@{/customer/profile}" th:object="${profile}" method="post" enctype="multipart/form-data"
               class="rounded-xl border border-outline-variant bg-surface-container-lowest p-space-lg shadow-sm">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+            <div th:if="${#fields.hasGlobalErrors()}" class="mb-space-md rounded-lg bg-red-50 p-3 text-sm text-red-800" role="alert">
+                <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+            </div>
+
+            <div class="mb-space-lg flex flex-wrap items-center gap-4">
+                <img th:if="${profile.avatarUrl != null and !#strings.isEmpty(profile.avatarUrl)}"
+                     th:src="${profile.avatarUrl}" alt="Ảnh đại diện hiện tại"
+                     class="h-20 w-20 rounded-full border border-outline-variant object-cover">
+                <span th:unless="${profile.avatarUrl != null and !#strings.isEmpty(profile.avatarUrl)}"
+                      class="grid h-20 w-20 place-items-center rounded-full bg-surface-container text-2xl font-bold text-primary"
+                      th:text="${#strings.substring(profile.fullName, 0, 1)}">A</span>
+                <div>
+                    <label for="avatarFile" class="mb-1 block font-semibold">Ảnh đại diện</label>
+                    <input id="avatarFile" name="avatarFile" type="file" accept="image/jpeg,image/png"
+                           class="block max-w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-surface-container file:px-3 file:py-2">
+                    <p class="mt-1 text-sm text-on-surface-variant">Chọn ảnh JPG hoặc PNG, tối đa 5 MB. Bỏ trống nếu không muốn đổi ảnh.</p>
+                </div>
+            </div>
 
             <div class="mb-space-md">
                 <label for="email" class="mb-2 block font-semibold">Email</label>

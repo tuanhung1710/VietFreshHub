@@ -11,6 +11,7 @@ import VietFreshHub.catalog.service.CatalogService;
 import VietFreshHub.checkout.dto.*;
 import VietFreshHub.checkout.repository.CheckoutAddressRepository;
 import VietFreshHub.checkout.service.*;
+import VietFreshHub.checkout.service.impl.CheckoutServiceImpl;
 import VietFreshHub.coupon.entity.*;
 import VietFreshHub.coupon.repository.*;
 import VietFreshHub.coupon.services.CouponApplicationServiceImpl;
@@ -23,6 +24,8 @@ import VietFreshHub.order.entity.Order;
 import VietFreshHub.order.repository.OrderRepository;
 import VietFreshHub.payment.entity.*;
 import VietFreshHub.payment.repository.PaymentMethodRepository;
+import VietFreshHub.payment.repository.PaymentRepository;
+import VietFreshHub.payment.vnpay.VnpayProperties;
 import VietFreshHub.promotion.entity.*;
 import VietFreshHub.shop.entity.Shop;
 import jakarta.persistence.*;
@@ -74,8 +77,8 @@ class LoyaltyCheckoutTransactionTest {
         var metadata = new MetadataSources(registry);
         Set<Class<?>> entities = new LinkedHashSet<>();
         for (var type : List.of(LoyaltyAccount.class, LoyaltyTransaction.class, LoyaltyRule.class,
-                Order.class, ShopOrder.class, OrderAddress.class, OrderStatusHistory.class,
-                Payment.class, Cart.class, Coupon.class, CouponUsage.class)) collect(type, entities);
+                Order.class, ShopOrder.class, OrderAddress.class, OrderStatusHistory.class, OrderDeliveryView.class,
+                Payment.class, PaymentMethod.class, Cart.class, Coupon.class, CouponUsage.class)) collect(type, entities);
         entities.forEach(metadata::addAnnotatedClass);
         factory = metadata.buildMetadata().buildSessionFactory();
         em = SharedEntityManagerCreator.createSharedEntityManager(factory);
@@ -143,9 +146,13 @@ class LoyaltyCheckoutTransactionTest {
         for (Class<?> type : List.of(Shop.class, CatalogProduct.class, CatalogVariant.class))
             doAnswer(call -> { em.lock(call.getArgument(0), call.getArgument(1)); return null; })
                     .when(checkoutEm).refresh(isA(type), any(LockModeType.class));
+        var orderRepository = repositories.getRepository(OrderRepository.class);
+        var paymentMethods = repositories.getRepository(PaymentMethodRepository.class);
+        var checkoutOrders = new CheckoutOrderService(orderRepository, checkoutEm, shipping);
         checkout = new CheckoutServiceImpl(repositories.getRepository(UserRepository.class), repositories.getRepository(CartRepository.class), carts,
-                repositories.getRepository(CheckoutAddressRepository.class), addresses, repositories.getRepository(PaymentMethodRepository.class),
-                repositories.getRepository(OrderRepository.class), catalog, mock(InventoryReservationService.class), shipping, checkoutEm, events, coupons, loyalty);
+                repositories.getRepository(CheckoutAddressRepository.class), addresses, paymentMethods, orderRepository,
+                catalog, mock(InventoryReservationService.class), shipping, checkoutOrders, checkoutEm, events,
+                repositories.getRepository(PaymentRepository.class), new VnpayProperties(), coupons, loyalty);
         var preview = checkout.preview(customerId, List.of(item.getCartItemId()));
         String token = "0123456789abcdef0123456789abcdef";
         var quote = new ShopShippingQuote(shop.getShopId(), null, null, null, null, money("1000"), money("15000"));

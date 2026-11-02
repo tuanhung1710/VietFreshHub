@@ -1,24 +1,26 @@
 package VietFreshHub.product.config;
 
-import VietFreshHub.product.service.ProductImageStorageService;
+import java.nio.file.Path;
 
-import lombok.RequiredArgsConstructor;
-
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-@RequiredArgsConstructor
 public class ProductImageWebConfig implements WebMvcConfigurer {
 
-    private final ProductImageStorageService productImageStorageService;
+    private final Path legacyUploadDirectory;
+
+    public ProductImageWebConfig(
+            @Value("${vietfresh.product.upload-directory:uploads/product}") String uploadDirectory) {
+        legacyUploadDirectory = Path.of(uploadDirectory).toAbsolutePath().normalize();
+    }
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        String resourceLocation =
-                productImageStorageService.getDirectory().toUri().toString() + "/";
+        String location = legacyUploadDirectory.toUri().toString();
         registry.addResourceHandler("/images/product-upload/**")
-                .addResourceLocations(resourceLocation);
+                .addResourceLocations(location.endsWith("/") ? location : location + "/");
     }
 }

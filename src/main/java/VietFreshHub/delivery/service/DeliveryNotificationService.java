@@ -19,8 +19,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 
 @Service
@@ -35,12 +33,25 @@ public class DeliveryNotificationService {
     private final OrderRepository orderRepository;
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void notifyAssigned(DeliveryAssignment assignment) {
-        String orderCode = assignment.getDelivery().getShopOrder().getOrder().getOrderCode();
+    public void notifyClaimed(DeliveryAssignment assignment) {
+        Delivery delivery = assignment.getDelivery();
         notificationService.createInApp(assignment.getDeliveryStaff().getUserId(), "DELIVERY_ASSIGNED",
-                "Bạn có đơn giao hàng mới",
-                "Bạn được phân công giao đơn #" + orderCode + ". Vui lòng chấp nhận trong vòng 30 giây.",
+                "Bạn đã nhận đơn giao hàng",
+                "Bạn đã nhận giao đơn hàng #" + delivery.getShopOrder().getShopOrderCode() + ".",
                 "DELIVERY_ASSIGNMENT", assignment.getAssignmentId());
+        notificationService.createInApp(delivery.getShopOrder().getOrder().getCustomer().getUserId(),
+                "DELIVERY_CLAIMED", "Đã có nhân viên nhận giao hàng",
+                deliveryLabel(delivery) + " đã có nhân viên nhận giao.", "DELIVERY", delivery.getDeliveryId());
+        notifyManagers(delivery, "DELIVERY_CLAIMED", "Nhân viên đã nhận đơn giao hàng",
+                deliveryLabel(delivery) + " đã có nhân viên nhận giao. Vui lòng chuẩn bị bàn giao hàng.");
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void notifyPickedUp(Delivery delivery) {
+        notificationService.createInApp(delivery.getShopOrder().getOrder().getCustomer().getUserId(),
+                "DELIVERY_PICKED_UP", "Nhân viên đã lấy hàng",
+                deliveryLabel(delivery) + " đã được nhân viên lấy tại cửa hàng.",
+                "DELIVERY", delivery.getDeliveryId());
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -74,7 +85,7 @@ public class DeliveryNotificationService {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void notifyGoodsReturnConfirmed(DeliveryAssignment assignment) {
-        String orderCode = assignment.getDelivery().getShopOrder().getOrder().getOrderCode();
+        String orderCode = assignment.getDelivery().getShopOrder().getShopOrderCode();
         notificationService.createInApp(assignment.getDeliveryStaff().getUserId(), "GOODS_RETURN_CONFIRMED",
                 "Cửa hàng đã xác nhận nhận lại hàng",
                 "Cửa hàng đã xác nhận nhận lại hàng của đơn #" + orderCode + ".",
@@ -102,11 +113,8 @@ public class DeliveryNotificationService {
                                     DeliveryAssignmentStatus.COMPLETED, DeliveryAssignmentStatus.REJECTED,
                                     DeliveryAssignmentStatus.CANCELLED))
                     .orElseThrow(this::unavailable);
-            boolean expiredOffer = assignment.getStatus() == DeliveryAssignmentStatus.ASSIGNED
-                    && (assignment.getAssignedAt() == null || !LocalDateTime.now(ZoneOffset.UTC).isBefore(
-                            assignment.getAssignedAt().plusSeconds(DeliveryAssignmentService.OFFER_TIMEOUT_SECONDS)));
             if (assignment.getStatus() == DeliveryAssignmentStatus.REJECTED
-                    || assignment.getStatus() == DeliveryAssignmentStatus.CANCELLED || expiredOffer) {
+                    || assignment.getStatus() == DeliveryAssignmentStatus.CANCELLED) {
                 return "/delivery";
             }
             return "/delivery/assignments/" + assignment.getAssignmentId();
@@ -115,9 +123,10 @@ public class DeliveryNotificationService {
                 .orElseThrow(this::unavailable);
         Order order = delivery.getShopOrder().getOrder();
         if (hasRole(authentication, "ROLE_CUSTOMER") && order.getCustomer().getUserId().equals(userId)) {
-            return "/customer/orders/" + order.getOrderId() + "/tracking";
+            return "/customer/orders/shops/" + delivery.getShopOrder().getShopOrderId() + "/tracking";
         }
-        if (!"DELIVERY_STARTED".equals(notification.type()) && hasRole(authentication, "ROLE_STORE_MANAGER")) {
+        if (List.of("DELIVERY_CLAIMED", "DELIVERY_COMPLETED", "DELIVERY_FAILED").contains(notification.type())
+                && hasRole(authentication, "ROLE_STORE_MANAGER")) {
             Long shopId = shopService.getManagedShopId(authentication);
             if (shopId.equals(delivery.getShopOrder().getShopId())) {
                 return "/seller/deliveries/" + delivery.getDeliveryId();
@@ -133,8 +142,7 @@ public class DeliveryNotificationService {
     }
 
     private String deliveryLabel(Delivery delivery) {
-        return "Đơn giao hàng #" + delivery.getDeliveryId() + " thuộc mã #"
-                + delivery.getShopOrder().getOrder().getOrderCode();
+        return "Đơn hàng #" + delivery.getShopOrder().getShopOrderCode();
     }
 
     private boolean hasRole(Authentication authentication, String role) {

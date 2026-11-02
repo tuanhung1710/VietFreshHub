@@ -211,7 +211,7 @@
   <section class="w-full py-space-xl px-margin">
     <div class="max-w-5xl mx-auto">
       <form id="sellerApplicationForm"
-            th:action="@{/customer/apply}"
+            th:action="@{${applicationAction}}"
             th:object="${sellerApplicationForm}"
             method="post"
             enctype="multipart/form-data"
@@ -884,7 +884,7 @@ if (firstInvalidInput) {
         if (
             xhr.status >= 200 &&
             xhr.status < 400 &&
-            responseUrl.pathname === "/customer/apply/success"
+            responseUrl.pathname === "/customer/home"
         ) {
           window.location.assign(responseUrl.href);
           return;

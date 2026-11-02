@@ -9,5 +9,10 @@ import java.util.List;
 
 @Repository
 public interface CategoryRepository extends JpaRepository<Category, Long> {
+    /** Lấy toàn bộ danh mục theo tên để kiểm tra chuỗi danh mục cha và hiển thị lựa chọn. */
     List<Category> findAllByOrderByNameAsc();
+
+    boolean existsBySlugIgnoreCase(String slug);
+
+    boolean existsBySlugIgnoreCaseAndCategoryIdNot(String slug, Long categoryId);
 }

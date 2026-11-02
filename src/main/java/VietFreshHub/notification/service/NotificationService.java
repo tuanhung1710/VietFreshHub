@@ -25,7 +25,7 @@ import java.time.ZoneOffset;
 @RequiredArgsConstructor
 public class NotificationService {
 
-    private static final int PAGE_SIZE = 15;
+    private static final int PAGE_SIZE = VietFreshHub.common.PageSizes.DEFAULT;
     private static final ZoneId DISPLAY_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private final NotificationRepository notificationRepository;
@@ -37,6 +37,23 @@ public class NotificationService {
         if (notificationRepository.existsByUserIdAndTypeAndEntityTypeAndEntityId(userId, type, entityType, entityId)) {
             return;
         }
+        persistInApp(userId, type, title, content, entityType, entityId);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void createInAppForTransition(
+            Long userId,
+            String type,
+            String title,
+            String content,
+            String entityType,
+            Long entityId
+    ) {
+        persistInApp(userId, type, title, content, entityType, entityId);
+    }
+
+    private void persistInApp(Long userId, String type, String title, String content,
+                              String entityType, Long entityId) {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
         Notification notification = notificationRepository.save(
                 new Notification(userId, type, title, content, entityType, entityId, now));

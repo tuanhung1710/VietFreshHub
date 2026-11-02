@@ -307,10 +307,8 @@
                 <div class="order-filter-options">
                     <label><input type="radio" name="paymentStatus" value=""
                                   th:checked="${#strings.isEmpty(filter.paymentStatus)}"><span>Tất cả</span></label>
-                    <label><input type="radio" name="paymentStatus" value="UNPAID"
-                                  th:checked="${filter.paymentStatus == 'UNPAID'}"><span>Chưa thanh toán</span></label>
-                    <label><input type="radio" name="paymentStatus" value="PAID"
-                                  th:checked="${filter.paymentStatus == 'PAID'}"><span>Đã thanh toán</span></label>
+                    <label th:each="option : ${paymentStatusOptions}"><input type="radio" name="paymentStatus" th:value="${option.key}"
+                                  th:checked="${filter.paymentStatus == option.key}"><span th:text="${option.value}"></span></label>
                 </div>
             </fieldset>
             <p id="order-filter-error" class="order-filter-error" role="alert" hidden></p>
@@ -350,10 +348,14 @@
         }
 
         function validateOrderDateRange() {
-            const now = new Date();
-            const today = now.getFullYear() + '-'
-                + String(now.getMonth() + 1).padStart(2, '0') + '-'
-                + String(now.getDate()).padStart(2, '0');
+            const dateParts = new Intl.DateTimeFormat('en', {
+                timeZone: 'Asia/Ho_Chi_Minh',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).formatToParts(new Date());
+            const today = ['year', 'month', 'day']
+                .map(type => dateParts.find(part => part.type === type).value).join('-');
             const fromDate = fromDateInput.value;
             const toDate = toDateInput.value;
             let fromMessage = fromDateInput.validity.badInput ? 'Vui lòng nhập Từ ngày hợp lệ.' : '';

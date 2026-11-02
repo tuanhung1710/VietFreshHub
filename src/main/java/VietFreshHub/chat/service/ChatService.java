@@ -171,6 +171,7 @@ public class ChatService {
                         conversation.getConversationId(), viewerId);
         return new ChatConversationView(
                 conversation.getConversationId(),
+                lastMessage == null ? null : lastMessage.getMessageId(),
                 conversation.getShop().getShopId(),
                 conversation.getShop().getShopName(),
                 conversation.getCustomer().getUserId(),

@@ -58,8 +58,4 @@ public class InventoryTransaction {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
-    @jakarta.persistence.Transient
-    public String getTransactionCode() {
-        return VietFreshHub.common.BusinessCodes.format("INV", transactionId);
-    }
 }

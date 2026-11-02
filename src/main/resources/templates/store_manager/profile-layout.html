@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title}">Hồ sơ cửa hàng | VietFresh Hub</title>
+    <link rel="stylesheet" th:href="@{/css/seller-profile.css}">
+    <script th:src="@{/js/seller-profile.js}" defer></script>
+</head>
+<body>
+<header th:fragment="header">
+    <div class="topline"><div class="container topline-inner"><span>VIETFRESH HUB · QUẢN LÝ CỬA HÀNG</span><a th:href="@{/seller}">Về trang quản lý</a></div></div>
+    <div class="brandbar"><div class="container brand-inner"><a class="brand" th:href="@{/seller}">VietFresh Hub</a><div class="brandnote">Quản lý cửa hàng<br>Hồ sơ &amp; trạng thái nhận đơn</div></div></div>
+</header>
+<section th:fragment="pickup" id="pickup" class="panel section-anchor" aria-labelledby="pickup-title">
+    <div class="panel-head"><h2 id="pickup-title">Địa điểm lấy hàng</h2><small>Thông tin phục vụ bàn giao đơn hàng</small></div>
+    <div class="panel-body">
+        <div class="pickup-card">
+            <div>
+                <h3>Địa điểm lấy hàng mặc định</h3>
+                <p th:if="${pickupLocation == null}">Chưa cập nhật địa chỉ cụ thể.</p>
+                <p th:if="${pickupLocation != null}" th:text="${#strings.isEmpty(pickupLocation.formattedAddress) ? pickupLocation.addressLine : pickupLocation.formattedAddress}"></p>
+                <p class="muted">Địa chỉ nhận hàng của đơn vị vận chuyển, không thay thế địa chỉ hiển thị của shop.</p>
+            </div>
+            <span class="pickup-tag">Mặc định</span>
+        </div>
+        <a class="button pickup-action" th:href="@{/seller/pickup-location}">Chỉnh sửa địa điểm</a>
+    </div>
+</section>
+<section th:fragment="summary" class="panel" aria-labelledby="summary-title">
+    <div class="panel-head"><h2 id="summary-title">Tóm tắt</h2></div>
+    <div class="panel-body">
+        <div class="summary-line"><span>Mã cửa hàng</span><strong th:text="${shop.shopCode}"></strong></div>
+        <div class="summary-line"><span>Tên cửa hàng</span><strong th:text="${shop.shopName}"></strong></div>
+        <div class="summary-line"><span>Nhận đơn</span><strong th:text="${shop.availabilityStatus == 'OPEN' ? 'Mở cửa' : 'Tạm đóng'}"></strong></div>
+    </div>
+</section>
+<footer th:fragment="footer"><div class="container"><span>© VietFresh Hub · Quản lý cửa hàng</span><span>Hồ sơ &amp; trạng thái nhận đơn</span></div></footer>
+</body>
+</html>

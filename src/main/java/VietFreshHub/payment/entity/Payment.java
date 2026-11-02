@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Nationalized;
+import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -19,7 +21,13 @@ public class Payment {
     @Enumerated(EnumType.STRING) @Column(nullable=false, length=30) private Status status=Status.PENDING;
     @Nationalized @Column(length=100) private String provider;
     @Nationalized @Column(name="transaction_reference", length=255) private String transactionReference;
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.LOCAL_DATE_TIME)
     @Column(name="created_at", nullable=false, updatable=false) private LocalDateTime createdAt;
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.LOCAL_DATE_TIME)
     @Column(name="paid_at") private LocalDateTime paidAt;
-    @PrePersist void timestamp() { if(createdAt==null) createdAt=LocalDateTime.now(ZoneOffset.UTC).withNano(0); }
+    @PrePersist
+    void timestamp() {
+        if(createdAt==null)
+            createdAt=LocalDateTime.now(ZoneOffset.UTC).withNano(0);
+    }
 }

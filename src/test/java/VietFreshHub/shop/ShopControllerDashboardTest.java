@@ -29,7 +29,7 @@ class ShopControllerDashboardTest {
         ProductService products = mock(ProductService.class);
         Authentication authentication = mock(Authentication.class);
         when(shops.getManagedShopCode(authentication)).thenReturn("SHP-42");
-        when(orders.getOrderCounts(authentication)).thenReturn(new OrderCountsResponse(0, 0, 0, 0, 0, 0));
+        when(orders.getOrderCounts(authentication)).thenReturn(new OrderCountsResponse(0, 0, 0, 0, 0, 0, 0, 0));
         var sales = new VietFreshHub.order.dto.ShopReportSummary.Sales(
                 BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 0L);
         when(orders.getShopSalesSummary(authentication, null)).thenReturn(sales);
@@ -65,7 +65,7 @@ class ShopControllerDashboardTest {
         ProductService products = mock(ProductService.class);
         Authentication authentication = mock(Authentication.class);
         when(shops.getManagedShopCode(authentication)).thenReturn("SHP-42");
-        when(orders.getOrderCounts(authentication)).thenReturn(new OrderCountsResponse(0, 0, 0, 0, 0, 0));
+        when(orders.getOrderCounts(authentication)).thenReturn(new OrderCountsResponse(0, 0, 0, 0, 0, 0, 0, 0));
         when(orders.getShopSalesSummary(authentication, null)).thenReturn(
                 new VietFreshHub.order.dto.ShopReportSummary.Sales(
                         BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 0L));

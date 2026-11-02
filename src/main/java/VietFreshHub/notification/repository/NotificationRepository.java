@@ -12,6 +12,13 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
+    @Query("""
+            select n from Notification n where n.userId=:userId
+              and n.type in ('SYSTEM_ANNOUNCEMENT','ADMIN_ANNOUNCEMENT')
+              and exists (select d.notificationDeliveryId from NotificationDelivery d
+                          where d.notification=n and d.channel='IN_APP' and d.status='SENT')
+            """)
+    Page<Notification> findAnnouncements(@Param("userId") Long userId, Pageable pageable);
 
     boolean existsByUserIdAndTypeAndEntityTypeAndEntityId(Long userId, String type, String entityType, Long entityId);
 

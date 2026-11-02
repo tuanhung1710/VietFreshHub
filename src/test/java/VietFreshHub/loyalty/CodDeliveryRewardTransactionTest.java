@@ -14,19 +14,24 @@ import VietFreshHub.loyalty.repository.*;
 import VietFreshHub.loyalty.services.*;
 import VietFreshHub.order.entity.Order;
 import VietFreshHub.order.entity.OrderStatusHistory;
+import VietFreshHub.order.entity.OrderDeliveryView;
 import VietFreshHub.order.entity.ShopOrder;
 import VietFreshHub.order.repository.*;
 import VietFreshHub.order.service.OrderLifecycleLock;
 import VietFreshHub.order.service.OrderService;
 import VietFreshHub.order.service.CustomerOrderService;
-import VietFreshHub.order.service.CustomerOrderServiceImpl;
+import VietFreshHub.order.service.impl.CustomerOrderServiceImpl;
 import VietFreshHub.order.service.OrderInventoryReleaseService;
 import VietFreshHub.exception.CustomerOrderException;
+import VietFreshHub.exception.ResourceNotFoundException;
 import VietFreshHub.cart.repository.*;
 import VietFreshHub.catalog.repository.CatalogVariantRepository;
 import VietFreshHub.catalog.service.CatalogService;
 import VietFreshHub.checkout.repository.CheckoutInventoryBatchRepository;
-import VietFreshHub.order.service.impl.OrderServiceImpl;
+import VietFreshHub.order.service.OrderServiceImpl;
+import VietFreshHub.order.service.OrderNotificationService;
+import VietFreshHub.inventory.service.StockAllocationService;
+import VietFreshHub.payout.service.SellerPayoutService;
 import VietFreshHub.payment.entity.*;
 import VietFreshHub.payment.repository.PaymentRepository;
 import VietFreshHub.payment.service.PaymentService;
@@ -101,7 +106,7 @@ class CodDeliveryRewardTransactionTest {
         var metadata = new MetadataSources(registry);
         Set<Class<?>> entities = new LinkedHashSet<>();
         for (Class<?> type : List.of(Order.class, ShopOrder.class, OrderStatusHistory.class, Payment.class,
-                Delivery.class, DeliveryAssignment.class, DeliveryStatusHistory.class,
+                Delivery.class, OrderDeliveryView.class, DeliveryAssignment.class, DeliveryStatusHistory.class,
                 LoyaltyAccount.class, LoyaltyTransaction.class, LoyaltyRule.class)) collect(type, entities);
         entities.forEach(metadata::addAnnotatedClass);
         factory = metadata.buildMetadata().buildSessionFactory();
@@ -112,35 +117,42 @@ class CodDeliveryRewardTransactionTest {
         var auth = mock(AuthService.class);
         shops = mock(ShopService.class);
         notifications = mock(DeliveryNotificationService.class);
+        var shopOrderRepository = repositories.getRepository(ShopOrderRepository.class);
+        var returnedFailures = new DeliveryReturnQueryService(shopOrderRepository);
         events = mock(ApplicationEventPublisher.class);
         context = new AnnotationConfigApplicationContext();
         context.register(Transactions.class);
         context.registerBean("transactionManager", JpaTransactionManager.class, () -> manager);
         context.registerBean(AuthService.class, () -> new AuthService(repositories.getRepository(UserRepository.class),
-                repositories.getRepository(RoleRepository.class), repositories.getRepository(UserRoleRepository.class), mock(PasswordEncoder.class)));
+                repositories.getRepository(RoleRepository.class), repositories.getRepository(UserRoleRepository.class), mock(PasswordEncoder.class), em));
         context.registerBean(OrderLifecycleLock.class, () -> new OrderLifecycleLock(em));
+        context.registerBean(DeliveryReturnQueryService.class, () -> returnedFailures);
         context.registerBean(OrderServiceImpl.class, () -> new OrderServiceImpl(
-                repositories.getRepository(ShopOrderRepository.class), mock(OrderAddressRepository.class),
-                mock(OrderDeliveryReadRepository.class), mock(OrderItemRepository.class), shops,
-                mock(DeliveryCreationService.class), auth, em, context.getBean(OrderLifecycleLock.class)));
+                shopOrderRepository, mock(OrderAddressRepository.class),
+                repositories.getRepository(OrderDeliveryReadRepository.class), mock(OrderItemRepository.class),
+                repositories.getRepository(OrderStatusHistoryRepository.class), shops,
+                context.getBean(PaymentService.class), mock(DeliveryCreationService.class),
+                 returnedFailures, mock(OrderNotificationService.class),
+                mock(StockAllocationService.class), auth, em, context.getBean(OrderLifecycleLock.class)));
         context.registerBean(DeliveryService.class, () -> new DeliveryService(
                 repositories.getRepository(DeliveryRepository.class), context.getBean(OrderLifecycleLock.class)));
         context.registerBean(DeliveryStatusHistoryWriter.class, () -> new DeliveryStatusHistoryWriter(
                 repositories.getRepository(DeliveryStatusHistoryRepository.class)));
         context.registerBean(DeliveryAssignmentService.class, () -> new DeliveryAssignmentService(
                 repositories.getRepository(DeliveryAssignmentRepository.class), repositories.getRepository(DeliveryRepository.class),
-                context.getBean(DeliveryService.class), context.getBean(DeliveryStatusHistoryWriter.class),
-                repositories.getRepository(DeliveryStatusHistoryRepository.class), auth, shops,
-                context.getBean(OrderService.class), events, notifications, context.getBean(OrderLifecycleLock.class)));
+                context.getBean(DeliveryStatusHistoryWriter.class), repositories.getRepository(DeliveryStatusHistoryRepository.class),
+                auth, shops, context.getBean(OrderService.class), notifications,
+                context.getBean(OrderLifecycleLock.class), mock(OrderInventoryReleaseService.class)));
         context.registerBean(PaymentService.class, () -> new PaymentService(repositories.getRepository(PaymentRepository.class),
-                context.getBean(OrderLifecycleLock.class), em));
+                context.getBean(OrderLifecycleLock.class), context.getBean(DeliveryReturnQueryService.class), em));
         context.registerBean(LoyaltyServiceImpl.class, () -> new LoyaltyServiceImpl(
                 repositories.getRepository(LoyaltyAccountRepository.class), repositories.getRepository(LoyaltyTransactionRepository.class),
                 repositories.getRepository(LoyaltyRuleRepository.class), em));
         context.registerBean(DeliveryStaffActionService.class, () -> new DeliveryStaffActionService(
                 context.getBean(DeliveryService.class), context.getBean(DeliveryAssignmentService.class),
-                context.getBean(DeliveryStatusHistoryWriter.class), context.getBean(OrderService.class), notifications, events,
-                context.getBean(PaymentService.class), context.getBean(LoyaltyService.class), em));
+                context.getBean(DeliveryStatusHistoryWriter.class), context.getBean(OrderService.class), notifications,
+                context.getBean(PaymentService.class), context.getBean(LoyaltyService.class), em,
+                mock(SellerPayoutService.class)));
         context.registerBean(CustomerOrderServiceImpl.class, () -> new CustomerOrderServiceImpl(
                 repositories.getRepository(OrderRepository.class), repositories.getRepository(ShopOrderRepository.class),
                 repositories.getRepository(PaymentRepository.class), mock(OrderDeliveryReadRepository.class),
@@ -195,9 +207,9 @@ class CodDeliveryRewardTransactionTest {
                 var child = new ShopOrder(); child.setOrder(order); child.setShop(shop); child.setStatus("READY_FOR_DELIVERY");
                 child.setSubtotal(money("200000")); child.setDiscountTotal(money("30000"));
                 child.setShippingFee(money("15000")); child.setTotalAmount(money("185000")); em.persist(child); childIds.add(child.getShopOrderId());
-                var delivery = new Delivery(); delivery.setShopOrder(child); delivery.markAssigned(now().minusMinutes(5)); delivery.accept(); em.persist(delivery); deliveryIds.add(delivery.getDeliveryId());
+                var delivery = new Delivery(); delivery.setShopOrder(child); delivery.accept(now().minusMinutes(5)); em.persist(delivery); deliveryIds.add(delivery.getDeliveryId());
                 var assignment = new DeliveryAssignment(delivery, em.getReference(User.class, staffId), now().minusMinutes(5));
-                assignment.accept(now().minusMinutes(4)); em.persist(assignment); assignmentIds.add(assignment.getAssignmentId());
+                em.persist(assignment); assignmentIds.add(assignment.getAssignmentId());
             }
             var method = em.createQuery("select m from PaymentMethod m where m.methodCode = 'COD'", PaymentMethod.class).getResultStream().findFirst().orElse(null);
             if (method == null) { method = new PaymentMethod(); method.setMethodCode("COD"); method.setName("COD"); em.persist(method); }
@@ -276,11 +288,11 @@ class CodDeliveryRewardTransactionTest {
             assertEquals(1L, count("LoyaltyTransaction")); // Earn really executed before the tail failed.
             assertEquals(Payment.Status.PAID, em.find(Payment.class, f.paymentId()).getStatus());
             throw new IllegalStateException("tail failure");
-        }).when(events).publishEvent(isA(DeliveryAssignmentRetryEvent.class));
+        }).when(notifications).notifyCompleted(isA(Delivery.class));
         assertThrows(IllegalStateException.class, () -> deliver(f, 0));
         assertUnpaid(f, Order.Status.PENDING);
         assertDeliveryRolledBack(f);
-        reset(events); deliver(f, 0); assertEarned(f, "1700");
+        reset(notifications); deliver(f, 0); assertEarned(f, "1700");
     }
 
     private void assertDeliveryRolledBack(Fixture f) {
@@ -303,7 +315,7 @@ class CodDeliveryRewardTransactionTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"missing", "wrong-order", "wrong-amount", "online", "duplicate", "cancelled", "failed", "processing", "refunded", "wrong-child-total", "wrong-parent-total"})
+    @ValueSource(strings = {"missing", "wrong-order", "wrong-amount", "negative-amount", "online", "duplicate", "cancelled", "failed", "processing", "refunded", "wrong-child-total", "wrong-parent-total", "negative-child-component"})
     void invalidPaymentOrAmountsRollbackCompletion(String problem) {
         var f = fixture(1); start(f, 0);
         change(f, payment -> {
@@ -313,6 +325,7 @@ class CodDeliveryRewardTransactionTest {
                     var other = new Order(); other.setCustomer(em.getReference(User.class, customerId)); other.setOrderCode(UUID.randomUUID().toString()); em.persist(other); payment.setOrder(other);
                 }
                 case "wrong-amount" -> payment.setAmount(money("1"));
+                case "negative-amount" -> payment.setAmount(money("-1"));
                 case "online" -> { var method = new PaymentMethod(); method.setMethodCode("ONLINE"); method.setName("Online"); em.persist(method); payment.setPaymentMethod(method); }
                 case "duplicate" -> { var copy = new Payment(); copy.setOrder(payment.getOrder()); copy.setPaymentMethod(payment.getPaymentMethod()); copy.setAmount(payment.getAmount()); em.persist(copy); }
                 case "cancelled" -> payment.setStatus(Payment.Status.CANCELLED);
@@ -321,6 +334,7 @@ class CodDeliveryRewardTransactionTest {
                 case "refunded" -> payment.setStatus(Payment.Status.REFUNDED);
                 case "wrong-child-total" -> em.find(ShopOrder.class, f.childIds().getFirst()).setTotalAmount(money("1"));
                 case "wrong-parent-total" -> payment.getOrder().setGrandTotal(money("1"));
+                case "negative-child-component" -> em.find(ShopOrder.class, f.childIds().getFirst()).setShippingFee(money("-1"));
                 default -> throw new AssertionError(problem);
             }
         });
@@ -335,20 +349,47 @@ class CodDeliveryRewardTransactionTest {
         tx.executeWithoutResult(status -> when(shops.getManagedShopId(any())).thenReturn(em.find(ShopOrder.class, f.childIds().get(1)).getShopId()));
         assignments.confirmGoodsReturn(f.deliveryIds().get(1), null);
         assertThrows(ResponseStatusException.class, () -> deliver(f, 1));
-        assertUnpaid(f, Order.Status.PARTIALLY_COMPLETED);
+        tx.executeWithoutResult(status -> {
+            assertEquals(Order.Status.PARTIALLY_COMPLETED, em.find(Order.class, f.orderId()).getStatus());
+            assertEquals("PAID", em.find(Order.class, f.orderId()).getPaymentStatus());
+            assertEquals(Payment.Status.PAID, em.find(Payment.class, f.paymentId()).getStatus());
+            amount("185000", em.find(Payment.class, f.paymentId()).getAmount());
+        });
         tx.executeWithoutResult(status -> {
             assertEquals(DeliveryAssignmentStatus.COMPLETED, em.find(DeliveryAssignment.class, f.assignmentIds().get(1)).getStatus());
             assertEquals(DeliveryStatus.FAILED, em.find(Delivery.class, f.deliveryIds().get(1)).getStatus());
-            assertFalse(payments.recordCodCollection(f.orderId(), f.childIds().getFirst()));
+            assertTrue(payments.recordCodCollection(f.orderId(), f.childIds().getFirst()));
+            amount("185000", em.find(Payment.class, f.paymentId()).getAmount());
+            assertEquals(Payment.Status.PAID, em.find(Payment.class, f.paymentId()).getStatus());
         });
     }
 
     @Test
     void cancelledChildCannotBeCountedOrCompleteParent() {
-        var f = fixture(2); start(f, 0);
+        var f = fixture(2); start(f, 0); start(f, 1);
         tx.executeWithoutResult(status -> em.find(ShopOrder.class, f.childIds().get(1)).setStatus("CANCELLED"));
-        deliver(f, 0); assertUnpaid(f, Order.Status.PARTIALLY_COMPLETED);
+        deliver(f, 0);
+        tx.executeWithoutResult(status -> {
+            assertEquals(Order.Status.PARTIALLY_COMPLETED, em.find(Order.class, f.orderId()).getStatus());
+            assertEquals("PAID", em.find(Order.class, f.orderId()).getPaymentStatus());
+            assertEquals(Payment.Status.PAID, em.find(Payment.class, f.paymentId()).getStatus());
+            amount("185000", em.find(Payment.class, f.paymentId()).getAmount());
+            assertEquals(0L, count("LoyaltyTransaction")); // Existing Loyalty eligibility requires a COMPLETED parent order.
+        });
         assertThrows(ResponseStatusException.class, () -> deliver(f, 1));
+    }
+
+    @Test
+    void paidVnpayOrderStillCompletesAndEarnsAfterDelivery() {
+        var f = fixture(1);
+        tx.executeWithoutResult(status -> {
+            var payment = em.find(Payment.class, f.paymentId());
+            var method = new PaymentMethod(); method.setMethodCode("BANK_TRANSFER"); method.setName("BANK_TRANSFER"); em.persist(method);
+            payment.setPaymentMethod(method); payment.setProvider("VNPAY"); payment.setStatus(Payment.Status.PAID); payment.setPaidAt(now());
+            payment.getOrder().setPaymentStatus("PAID");
+            em.find(ShopOrder.class, f.childIds().getFirst()).setPaymentStatus("PAID");
+        });
+        start(f, 0); deliver(f, 0); assertEarned(f, "1700");
     }
 
     @Test
@@ -377,6 +418,87 @@ class CodDeliveryRewardTransactionTest {
         tx.executeWithoutResult(status -> {
             assertEquals("CANCELLED", em.find(ShopOrder.class, f.childIds().getFirst()).getStatus());
             assertEquals(Payment.Status.CANCELLED, em.find(Payment.class, f.paymentId()).getStatus());
+        });
+    }
+
+    @Test
+    void wholeOrderCancellationIsRejectedImmediatelyAfterConfirmation() {
+        var f = fixture(1);
+        tx.executeWithoutResult(status -> {
+            var child = em.find(ShopOrder.class, f.childIds().getFirst());
+            child.setStatus("CONFIRMED");
+            child.setConfirmedAt(now());
+        });
+
+        assertThrows(CustomerOrderException.class,
+                () -> customerOrders.cancel(customerId, f.orderId(), "Too late"));
+
+        tx.executeWithoutResult(status -> {
+            assertEquals(Order.Status.PENDING, em.find(Order.class, f.orderId()).getStatus());
+            assertEquals("CONFIRMED", em.find(ShopOrder.class, f.childIds().getFirst()).getStatus());
+            assertEquals(Payment.Status.PENDING, em.find(Payment.class, f.paymentId()).getStatus());
+        });
+    }
+
+    @Test
+    void mixedPendingAndConfirmedShopOrdersRejectWholeOrderCancellation() {
+        var f = fixture(2);
+        tx.executeWithoutResult(status -> {
+            em.find(ShopOrder.class, f.childIds().getFirst()).setStatus("PENDING");
+            var confirmed = em.find(ShopOrder.class, f.childIds().getLast());
+            confirmed.setStatus("CONFIRMED");
+            confirmed.setConfirmedAt(now());
+        });
+
+        assertThrows(CustomerOrderException.class,
+                () -> customerOrders.cancel(customerId, f.orderId(), "Mixed shops"));
+
+        tx.executeWithoutResult(status -> {
+            assertEquals(Order.Status.PENDING, em.find(Order.class, f.orderId()).getStatus());
+            assertEquals("PENDING", em.find(ShopOrder.class, f.childIds().getFirst()).getStatus());
+            assertEquals("CONFIRMED", em.find(ShopOrder.class, f.childIds().getLast()).getStatus());
+        });
+    }
+
+    @Test
+    void anotherCustomerCannotCancelTheOrder() {
+        var f = fixture(1);
+        Long otherCustomerId = tx.execute(status -> user("other-buyer").getUserId());
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> customerOrders.cancel(otherCustomerId, f.orderId(), "Not mine"));
+        assertUnpaid(f, Order.Status.PENDING);
+    }
+
+    @Test
+    void confirmedVnpayOrderCannotBeCancelledOrHaveItsPaymentRewritten() {
+        var f = fixture(1);
+        tx.executeWithoutResult(status -> {
+            var order = em.find(Order.class, f.orderId());
+            order.setPaymentStatus("PAID");
+            var child = em.find(ShopOrder.class, f.childIds().getFirst());
+            child.setStatus("CONFIRMED");
+            child.setConfirmedAt(now());
+            child.setPaymentStatus("PAID");
+            var method = new PaymentMethod();
+            method.setName("Bank transfer");
+            method.setMethodCode("BANK_TRANSFER");
+            em.persist(method);
+            var payment = em.find(Payment.class, f.paymentId());
+            payment.setPaymentMethod(method);
+            payment.setProvider("VNPAY");
+            payment.setStatus(Payment.Status.PAID);
+            payment.setPaidAt(now());
+        });
+
+        assertThrows(CustomerOrderException.class,
+                () -> customerOrders.cancel(customerId, f.orderId(), "Confirmed VNPAY order"));
+
+        tx.executeWithoutResult(status -> {
+            assertEquals(Order.Status.PENDING, em.find(Order.class, f.orderId()).getStatus());
+            assertEquals("PAID", em.find(Order.class, f.orderId()).getPaymentStatus());
+            assertEquals(Payment.Status.PAID, em.find(Payment.class, f.paymentId()).getStatus());
+            assertNotNull(em.find(Payment.class, f.paymentId()).getPaidAt());
         });
     }
 

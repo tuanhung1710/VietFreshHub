@@ -1,5 +1,7 @@
 package VietFreshHub.product.service;
 
+import VietFreshHub.inventory.dto.InventoryAttentionSummary;
+import VietFreshHub.inventory.dto.InventoryCatalogFilter;
 import VietFreshHub.product.dto.ActionRequest;
 import VietFreshHub.product.dto.BulkProductActionRequest;
 import VietFreshHub.product.dto.ProductCatalogFilter;
@@ -16,79 +18,73 @@ import VietFreshHub.product.entity.PriceHistory;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public interface ProductService {
 
+    /** Tìm sản phẩm và phân loại khớp bộ lọc kho trong cửa hàng người dùng quản lý. */
     Page<ProductResponse> searchInventory(Authentication authentication,
-            VietFreshHub.inventory.dto.InventoryCatalogFilter filters, int page, int size);
+            InventoryCatalogFilter filters, int page, int size);
 
+    /** Lấy danh sách quản lý sản phẩm theo bộ lọc, có phân trang. */
     Page<ProductResponse> searchManagement(Authentication authentication, ProductCatalogFilter filters, int page, int size);
 
+    /** Đổi trạng thái nhiều sản phẩm trong cùng giao dịch; một lỗi sẽ hoàn tác toàn bộ lựa chọn. */
     void changeStatuses(Authentication authentication, BulkProductActionRequest form);
 
-    Page<ProductResponse> searchManagement(Authentication authentication, String query, Long categoryId,
-            String tab, LocalDate createdFrom, LocalDate createdTo, int page, int size);
-
+    /** Đếm sản phẩm theo các nhóm trạng thái quản lý trên toàn cửa hàng. */
     ProductTabSummary productTabSummary(Authentication authentication);
-    VietFreshHub.inventory.dto.InventoryAttentionSummary inventoryAttentionSummary(Authentication authentication);
+    /** Tổng hợp cảnh báo tồn thấp, cận hạn và hết hạn trên toàn cửa hàng. */
+    InventoryAttentionSummary inventoryAttentionSummary(Authentication authentication);
 
-    Page<ProductResponse> search(
-            Authentication authentication,
-            String query,
-            Long categoryId,
-            String status,
-            boolean archived,
-            String stock,
-            int page,
-            int size);
-
-    Page<ProductResponse> search(
-            Authentication authentication,
-            String query,
-            Long categoryId,
-            String status,
-            boolean archived,
-            String stock,
-            String business,
-            String approval,
-            LocalDate createdFrom,
-            LocalDate createdTo,
-            int page,
-            int size);
-
+    /** Đếm sản phẩm và phân loại chưa ngừng kinh doanh của cửa hàng. */
     CatalogSummary catalogSummary(Authentication authentication);
 
+    /** Lấy chi tiết sản phẩm sau khi kiểm tra quyền quản lý cửa hàng. */
     ProductResponse get(Authentication authentication, Long productId);
 
+    /** Lấy phân loại thuộc đúng sản phẩm và cửa hàng của người quản lý. */
     VariantResponse getVariant(Authentication authentication, Long productId, Long variantId);
 
+    /** Lấy danh mục còn hoạt động ở toàn bộ các cấp cha. */
     List<Category> categories();
 
+    /** Lấy danh sách đơn vị bán được hỗ trợ. */
     List<String> units();
 
+    /** Chuẩn bị dữ liệu biểu mẫu sửa sản phẩm hiện có. */
     ProductRequest editForm(Authentication authentication, Long productId);
 
+    /** Chuẩn bị dữ liệu biểu mẫu sửa phân loại hiện có. */
     VariantRequest variantForm(Authentication authentication, Long productId, Long variantId);
 
+    /** Tạo sản phẩm cùng phân loại, ảnh và tồn ban đầu; trả ID sản phẩm vừa tạo. */
     Long create(Authentication authentication, ProductRequest form);
 
+    /** Cập nhật thông tin sản phẩm và ghi nhận các thay đổi cần hậu kiểm. */
     void update(Authentication authentication, Long productId, ProductRequest form);
 
+    /** Đổi trạng thái kinh doanh của sản phẩm sau khi kiểm tra điều kiện mở bán hoặc ngừng bán. */
     void changeStatus(Authentication authentication, Long productId, ActionRequest form);
 
+    /** Thêm phân loại và tồn ban đầu cho sản phẩm thuộc quyền quản lý. */
     void addVariant(Authentication authentication, Long productId, VariantRequest form);
 
+    /** Cập nhật phân loại, giữ nguyên SKU và ghi nhận thay đổi giá hoặc thông tin. */
     void updateVariant(
             Authentication authentication, Long productId, Long variantId, VariantRequest form);
 
+    /** Xóa mềm phân loại; tự tạm ẩn sản phẩm nếu không còn phân loại đang bật. */
+    void deleteVariant(Authentication authentication, Long productId, Long variantId, String reason);
+
+    /** Đổi trạng thái phân loại, bảo đảm các điều kiện về hàng giữ và phân loại đang bật. */
     void changeVariantStatus(
             Authentication authentication,
             Long productId,
             Long variantId,
             VariantActionRequest form);
 
+    /** Lấy lịch sử giá có phân trang của phân loại thuộc quyền quản lý. */
     Page<PriceHistory> priceHistory(
             Authentication authentication, Long productId, Long variantId, int page);
 }

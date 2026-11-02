@@ -3,11 +3,9 @@ package VietFreshHub.product.service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Path;
 
 public interface ProductImageStorageService {
 
-    Path getDirectory();
-
+    /** Kiểm tra và tải ảnh lên Cloudinary, trả URL HTTPS để lưu vào sản phẩm. */
     String upload(MultipartFile file) throws IOException;
 }

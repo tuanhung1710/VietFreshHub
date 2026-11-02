@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/customer-shop :: head('Sản phẩm không còn được bán')}"></head>
+<body>
+<header th:replace="~{fragments/customer-shop :: header}"></header>
+<main class="container"><section class="notice">
+    <h1>Sản phẩm không còn được bán</h1><p class="muted" th:text="${message}"></p>
+    <a th:href="@{/home}">Khám phá sản phẩm khác</a>
+</section></main>
+<footer th:replace="~{fragments/customer-shop :: footer}"></footer>
+</body>
+</html>

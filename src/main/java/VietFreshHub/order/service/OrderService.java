@@ -4,15 +4,16 @@ import VietFreshHub.order.dto.IncomingOrderResponse;
 import VietFreshHub.order.dto.OrderCountsResponse;
 import VietFreshHub.order.dto.OrderDetailResponse;
 import VietFreshHub.order.dto.OrderFilterRequest;
-import VietFreshHub.order.dto.ProcessedOrderResponse;
 import VietFreshHub.order.dto.SellerDashboardOrder;
 import VietFreshHub.order.dto.ShopReportSummary;
 import VietFreshHub.order.repository.OrderItemRepository.BestSellingProduct;
+import VietFreshHub.order.dto.OrderProcessingHistoryEntry;
 import VietFreshHub.order.entity.OrderAddress;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -28,7 +29,11 @@ public interface OrderService {
 
     Page<IncomingOrderResponse> getReadyOrders(Authentication authentication, OrderFilterRequest filter, int page);
 
-    Page<ProcessedOrderResponse> getProcessedOrderHistory(Authentication authentication, OrderFilterRequest filter, int page);
+    Page<IncomingOrderResponse> getFailedOrders(Authentication authentication, OrderFilterRequest filter, int page);
+
+    Page<IncomingOrderResponse> getCancelledOrders(Authentication authentication, OrderFilterRequest filter, int page);
+
+    Page<IncomingOrderResponse> getCompletedOrders(Authentication authentication, OrderFilterRequest filter, int page);
 
     long countFilteredOrders(Authentication authentication, OrderFilterRequest filter, String view);
 
@@ -48,11 +53,19 @@ public interface OrderService {
 
     OrderAddress getOrderAddress(Long orderId);
 
+    List<OrderProcessingHistoryEntry> getProcessingHistoryForAdmin(Long shopOrderId, Authentication authentication);
+
     void lockOrderForDeliveryCompletion(Long orderId);
 
     void startShopOrderDelivery(Long shopOrderId, Long changedBy);
 
     void completeDeliveredShopOrder(Long shopOrderId, LocalDateTime completedAt, Long changedBy);
+
+    void reconcileCodPayment(Long orderId);
+
+    boolean isCheckoutPaymentEligible(Long orderId, BigDecimal amount);
+
+    void updateShopPaymentStatusesForVnpay(Long orderId, String paymentStatus);
 
     void confirmOrder(Long shopOrderId, Authentication authentication);
 
@@ -60,11 +73,4 @@ public interface OrderService {
 
     void markReady(Long shopOrderId, Authentication authentication);
 
-    void confirmOrders(List<Long> shopOrderIds, Authentication authentication);
-
-    void startPreparingOrders(List<Long> shopOrderIds, Authentication authentication);
-
-    void markOrdersReady(List<Long> shopOrderIds, Authentication authentication);
-
-    List<OrderDetailResponse> getBulkInvoices(List<Long> shopOrderIds, Authentication authentication, String view);
 }

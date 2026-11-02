@@ -1,40 +1,19 @@
 package VietFreshHub.product.service;
 
-import VietFreshHub.inventory.rule.InventoryRules;
 import VietFreshHub.product.dto.ProductManagementState;
-import VietFreshHub.product.entity.Category;
 import VietFreshHub.product.entity.ProductVariant;
-import VietFreshHub.product.repository.CategoryRepository;
-import VietFreshHub.product.repository.ProductRepository;
-import VietFreshHub.product.validator.CategoryValidator;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import java.util.ArrayList;
+
 import java.util.List;
 import java.util.Map;
 
-@Service
-@RequiredArgsConstructor
-@Transactional(readOnly = true)
-public class ProductAvailabilityService {
-    private final ProductRepository products;
-    private final CategoryRepository categories;
-    private final CategoryValidator categoryValidator;
+public interface ProductAvailabilityService {
 
-    public List<Long> activeCategoryIds() {
-        List<Long> ids = new ArrayList<>();
-        for (Category category : categories.findAllByOrderByNameAsc()) {
-            if (categoryValidator.isActiveCategoryChain(category.getCategoryId())) ids.add(category.getCategoryId());
-        }
-        return ids;
-    }
+    /** Lấy ID danh mục có toàn bộ chuỗi danh mục cha còn hoạt động. */
+    List<Long> activeCategoryIds();
 
-    public Map<Long, ProductManagementState> states(Long shop, List<Long> productIds) {
-        return products.managementStates(shop, productIds, activeCategoryIds(), InventoryRules.today());
-    }
+    /** Lấy trạng thái quản lý nhiều sản phẩm theo điều kiện kinh doanh hiện tại. */
+    Map<Long, ProductManagementState> states(Long shopId, List<Long> productIds);
 
-    public boolean canSellVariant(Long shop, ProductVariant variant) {
-        return products.canSellVariant(shop, variant.getVariantId(), activeCategoryIds(), InventoryRules.today());
-    }
+    /** Kiểm tra điều kiện kinh doanh của phân loại; số lượng tồn được xét riêng khi giữ hàng. */
+    boolean canSellVariant(Long shopId, ProductVariant variant);
 }

@@ -104,8 +104,10 @@ public interface InventoryBatchRepository extends JpaRepository<InventoryBatch, 
 
     List<InventoryBatch> findByVariantIdOrderByExpiryDateAscBatchIdAsc(Long variantId);
 
+    /** Tải chung lô của nhiều phân loại theo hạn sử dụng và ID tăng dần. */
     List<InventoryBatch> findByVariantIdInOrderByExpiryDateAscBatchIdAsc(List<Long> ids);
 
+    /** Khóa ghi lô theo ID trước khi cập nhật tồn, lượng giữ hoặc thông tin lô. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select b from InventoryBatch b where b.batchId=:id")
     Optional<InventoryBatch> lockById(Long id);
