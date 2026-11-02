@@ -5,7 +5,6 @@ import VietFreshHub.order.service.CustomerOrderQueryService;
 import VietFreshHub.order.service.OrderLabels;
 import VietFreshHub.payment.dto.PaymentHistoryFilter;
 import VietFreshHub.payment.dto.PaymentHistoryRow;
-import VietFreshHub.payment.entity.Payment;
 import VietFreshHub.payment.service.CustomerPaymentHistoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,9 +16,6 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -44,22 +40,8 @@ public class CustomerPaymentHistoryController {
                 model.addAttribute("pageNotice", "Đang hiển thị trang " + (result.getNumber() + 1) + ".");
             }
         }
-        model.addAttribute("statusOptions", statusOptions());
+        model.addAttribute("statusOptions", OrderLabels.paymentStatusOptions());
         model.addAttribute("cartBadgeTotal", orders.getCartBadgeTotal(customerId));
         return "customer/payment-history";
-    }
-
-    private Map<String, String> statusOptions() {
-        Map<String, String> options = new LinkedHashMap<>();
-        for (Payment.Status status : Payment.Status.values()) {
-            String label;
-            if (status == Payment.Status.PENDING) {
-                label = "Chờ thanh toán / Chờ thu COD";
-            } else {
-                label = OrderLabels.paymentTransaction(status);
-            }
-            options.put(status.name(), label);
-        }
-        return options;
     }
 }

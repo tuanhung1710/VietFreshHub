@@ -1,5 +1,6 @@
 package VietFreshHub.payment.service.impl;
 
+import VietFreshHub.order.service.OrderLabels;
 import VietFreshHub.payment.dto.PaymentHistoryFilter;
 import VietFreshHub.payment.dto.PaymentHistoryRow;
 import VietFreshHub.payment.entity.Payment;
@@ -64,6 +65,9 @@ public class CustomerPaymentHistoryServiceImpl implements CustomerPaymentHistory
         try {
             if (statusText.isEmpty()) {
                 return null;
+            }
+            if (!OrderLabels.paymentStatusOptions().containsKey(statusText)) {
+                throw new IllegalArgumentException();
             }
             return Payment.Status.valueOf(statusText);
         } catch (IllegalArgumentException exception) {

@@ -213,7 +213,7 @@ class CustomerOrderHistorySummaryTest {
             assertEquals(row.grandTotal(),detail.grandTotal());assertEquals(detail.grandTotal(),payment.amount());
             assertEquals("Chờ thu COD",summary.payments().getFirst().statusLabel());
             assertEquals(VietFreshHub.payment.entity.Payment.Status.PENDING,payment.status());assertNull(payment.paidAt());
-            assertEquals("Chưa thu tiền",detail.paymentStatusLabel());
+            assertEquals("Chờ thanh toán",detail.paymentStatusLabel());
             assertEquals(summary.unitCount(),detail.shops().stream().flatMap(shop -> shop.items().stream()).mapToLong(OrderDetailsResponse.Item::quantity).sum());
             assertEquals("Tên lúc mua",detail.shops().getFirst().items().getFirst().productName());
             assertEquals(row.placedAtLocal(),detail.placedAt());

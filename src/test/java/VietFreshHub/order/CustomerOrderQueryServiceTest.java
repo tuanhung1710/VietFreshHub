@@ -31,7 +31,7 @@ class CustomerOrderQueryServiceTest {
         when(reads.findPayments(7L,10L)).thenReturn(List.of(cod));
         var detail = service.getDetails(7L,10L);
         assertEquals("Đang chuẩn bị", detail.statusLabel());
-        assertEquals("Chưa thu tiền", detail.paymentStatusLabel());
+        assertEquals("Chờ thanh toán", detail.paymentStatusLabel());
         assertEquals("Chờ thu COD", detail.payments().getFirst().statusLabel());
         verify(orders).findCustomerStage(10L,7L);
         verify(reads).findItems(7L,10L);

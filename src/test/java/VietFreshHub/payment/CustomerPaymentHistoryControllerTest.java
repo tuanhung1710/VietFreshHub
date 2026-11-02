@@ -77,7 +77,8 @@ class CustomerPaymentHistoryControllerTest {
         when(payments.history(eq(7L), any())).thenReturn(new PageImpl<>(List.of(row()), PageRequest.of(0,10), 11));
         String html = mvc.perform(get("/customer/payments").principal(auth).param("keyword", "VF-10")
                 .param("status", "PENDING").param("fromDate", "2026-10-20")).andReturn().getResponse().getContentAsString();
-        for (String label : List.of("Tất cả", "Chờ thanh toán / Chờ thu COD", "Đang xử lý", "Đã thanh toán", "Thanh toán thất bại", "Đã hủy giao dịch", "Đã hoàn tiền", "Hoàn tiền một phần")) assertTrue(html.contains(label));
+        for (String label : List.of("Tất cả", "Chờ thanh toán / Chờ thu COD", "Đang xử lý", "Đã thanh toán", "Thanh toán thất bại")) assertTrue(html.contains(label));
+        for (String status : List.of("CANCELLED", "REFUNDED", "PARTIALLY_REFUNDED")) assertFalse(html.contains("value=\"" + status + "\""));
         assertTrue(html.contains("Chờ thu COD")); assertTrue(html.contains("10:00 20/10/2026"));
         assertTrue(html.contains("&lt;script&gt;")); assertFalse(html.contains("<script>alert(1)</script>"));
         assertTrue(html.contains("/customer/order-receipts/10")); assertTrue(html.contains("page=2"));
@@ -142,7 +143,7 @@ class CustomerPaymentHistoryControllerTest {
         assertFalse(html.contains("data-payment-id="));
     }
     @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.CsvSource({"status,SHIPPING","page,0","fromDate,not-a-date"})
+    @org.junit.jupiter.params.provider.CsvSource({"status,SHIPPING","status,CANCELLED","status,REFUNDED","status,PARTIALLY_REFUNDED","page,0","fromDate,not-a-date"})
     void invalidFiltersDoNotCallThePaymentService(String key, String value) throws Exception {
         String html = mvc.perform(get("/customer/payments").principal(auth).param(key,value)).andReturn().getResponse().getContentAsString();
         assertTrue(html.contains("Bộ lọc không hợp lệ")); verifyNoInteractions(payments);

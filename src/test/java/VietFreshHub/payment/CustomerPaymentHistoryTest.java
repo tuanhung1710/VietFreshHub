@@ -62,7 +62,7 @@ class CustomerPaymentHistoryTest {
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(998,10), 11), last);
         assertSame(last, service.history(7L, filter));
     }
-    @ParameterizedTest @ValueSource(strings={"WAITING_PAYMENT","WAITING_CONFIRMATION","PREPARING","SHIPPING","AWAITING_DELIVERY","COMPLETED","RETURN_REFUND"})
+    @ParameterizedTest @ValueSource(strings={"CANCELLED","REFUNDED","PARTIALLY_REFUNDED","WAITING_PAYMENT","WAITING_CONFIRMATION","PREPARING","SHIPPING","AWAITING_DELIVERY","COMPLETED","RETURN_REFUND"})
     void orderStagesAreNotPaymentFilters(String status) {
         filter.setStatus(status);
         assertThrows(IllegalArgumentException.class, () -> service.history(7L, filter));
