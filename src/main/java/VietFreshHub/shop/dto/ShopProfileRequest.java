@@ -21,9 +21,9 @@ public class ShopProfileRequest {
     @Size(max = 255)
     private String email;
     @Size(max = 1000)
-    @Pattern(regexp = "^$|https://[^\\s]+", message = "Ảnh phải là đường dẫn HTTPS.")
+    @Pattern(regexp = "^$|https://[^\\s]+|/images/shops/[A-Za-z0-9_-]+\\.(svg|png|jpe?g|webp)", message = "Ảnh phải là URL HTTPS hoặc đường dẫn ảnh trong /images/shops/.")
     private String logoUrl;
     @Size(max = 1000)
-    @Pattern(regexp = "^$|https://[^\\s]+", message = "Ảnh phải là đường dẫn HTTPS.")
+    @Pattern(regexp = "^$|https://[^\\s]+|/images/shops/[A-Za-z0-9_-]+\\.(svg|png|jpe?g|webp)", message = "Ảnh phải là URL HTTPS hoặc đường dẫn ảnh trong /images/shops/.")
     private String bannerUrl;
 }

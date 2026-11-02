@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" role="img" aria-labelledby="title">
+  <title id="title">Ảnh nền mẫu Nông Sản Phạm Phước</title>
+  <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#faf8ed"/><stop offset="1" stop-color="#dce7c9"/></linearGradient></defs>
+  <path fill="url(#bg)" d="M0 0h1200v400H0z"/>
+  <circle cx="1090" cy="58" r="105" fill="#efdfaa" opacity=".65"/>
+  <path d="M0 320q280-100 540-5t660-65v150H0z" fill="#c3d5aa"/>
+  <path d="M0 370q260-70 560-15t640-48v93H0z" fill="#a9c18c"/>
+  <g fill="none" stroke="#78975d" stroke-width="10" stroke-linecap="round"><path d="M970 365V151m100 214V114m91 251V176"/></g>
+  <g fill="#9db77d"><path d="M970 266q-90-12-88-94 78 7 88 94m0-55q71-5 79-78-70 5-79 78m100 58q-70-16-73-85 70 7 73 85m0-70q70-3 79-80-68 9-79 80m91 108q-70-11-75-80 70 6 75 80m0-64q58-8 66-66-62 2-66 66"/></g>
+  <path d="M40 90q80-40 120 10M57 122q70-33 110 4" fill="none" stroke="#e3e9d0" stroke-width="4"/>
+</svg>

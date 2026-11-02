@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-labelledby="title">
+  <title id="title">Logo mẫu Nông Sản Phạm Phước</title>
+  <rect width="240" height="240" rx="28" fill="#f3f5e9"/>
+  <circle cx="120" cy="120" r="100" fill="#e3ead1"/>
+  <path d="M118 138c-2-40-25-74-62-79-6 43 16 75 62 79" fill="#82a363"/>
+  <path d="M120 137c-4-53 26-92 67-94 1 47-23 81-67 94" fill="#48784b"/>
+  <path d="m76 81 46 67m46-82-46 82" fill="none" stroke="#d5e4b8" stroke-width="5" stroke-linecap="round"/>
+  <path d="M52 137h136l-17 64H69z" fill="#bc8f59"/>
+  <path d="M63 153h114M67 170h106M72 187h97" fill="none" stroke="#ead2aa" stroke-width="5"/>
+  <path d="m86 137 10 64m24-64v64m34-64-10 64" fill="none" stroke="#a77844" stroke-width="4"/>
+</svg>

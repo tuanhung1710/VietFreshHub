@@ -33,11 +33,11 @@
                     </div>
                     <div class="field">
                         <label class="url-label" for="logoUrl">Hoặc đường dẫn logo</label>
-                        <input type="text" inputmode="url" th:field="*{logoUrl}" maxlength="1000" placeholder="https://..." th:errorclass="invalid">
+                        <input type="text" inputmode="url" th:field="*{logoUrl}" maxlength="1000" placeholder="https://... hoặc /images/shops/son-logo.svg" th:errorclass="invalid">
                     </div>
                     <div class="field">
                         <label class="url-label" for="bannerUrl">Hoặc đường dẫn ảnh bìa</label>
-                        <input type="text" inputmode="url" th:field="*{bannerUrl}" maxlength="1000" placeholder="https://..." th:errorclass="invalid">
+                        <input type="text" inputmode="url" th:field="*{bannerUrl}" maxlength="1000" placeholder="https://... hoặc /images/shops/son-banner.svg" th:errorclass="invalid">
                     </div>
                     <p class="help">Để trống đường dẫn và không chọn ảnh mới nếu muốn gỡ ảnh hiện tại.</p>
                     <div class="form-actions"><a class="button" th:href="@{/seller/profile}">Hủy</a><button type="submit" class="primary">Lưu thay đổi</button></div>
