@@ -69,11 +69,12 @@ public class CustomerCartViewController {
             flash.addFlashAttribute("requestedQuantity", form.getQuantity());
         } else {
             try {
-                var added = cartService.addToCart(currentCustomer.requireCustomerId(authentication), form);
-                flash.addFlashAttribute("successMessage", "Đã thêm sản phẩm vào giỏ hàng.");
                 if ("checkout".equals(redirect)) {
-                    return "redirect:/customer/checkout?selectionSubmitted=true&itemIds=" + added.getCartItemId();
+                    currentCustomer.requireCustomerId(authentication);
+                    return "redirect:/customer/checkout?buyNowVariantId=" + form.getVariantId() + "&buyNowQuantity=" + form.getQuantity();
                 }
+                cartService.addToCart(currentCustomer.requireCustomerId(authentication), form);
+                flash.addFlashAttribute("successMessage", "Đã thêm sản phẩm vào giỏ hàng.");
             } catch (OutOfStockException | ResourceNotFoundException | IllegalArgumentException ex) {
                 flash.addFlashAttribute("errorMessage", ex.getMessage());
                 flash.addFlashAttribute("requestedQuantity", form.getQuantity());

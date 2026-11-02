@@ -60,6 +60,8 @@ import static VietFreshHub.checkout.service.CheckoutCartSupport.selectCartItems;
 @Service
 @RequiredArgsConstructor
 public class CheckoutServiceImpl implements CheckoutService {
+    private final VietFreshHub.catalog.repository.CatalogVariantRepository buyNowVariants;
+    private final VietFreshHub.checkout.repository.CheckoutInventoryBatchRepository buyNowStock;
     private final UserRepository userRepository;
     private final CartRepository cartRepository;
     private final CartService cartService;
@@ -86,6 +88,10 @@ public class CheckoutServiceImpl implements CheckoutService {
     @Transactional(readOnly = true)
     public CheckoutPreview preview(Long customerId, List<Long> selectedItemIds) {
         CartDto selectedCart = selectCartItems(cartService.getActiveCart(customerId), selectedItemIds);
+        return previewForSelection(customerId, selectedCart);
+    }
+
+    private CheckoutPreview previewForSelection(Long customerId, CartDto selectedCart) {
         List<CheckoutPreview.AddressOption> addressOptions = new ArrayList<>();
         for (Address address : checkoutAddressRepository.findByUserUserIdOrderByIsDefaultDescAddressIdAsc(customerId)) {
             addressOptions.add(new CheckoutPreview.AddressOption(
@@ -98,6 +104,29 @@ public class CheckoutServiceImpl implements CheckoutService {
         // Phí giao hàng sẽ được bổ sung sau khi khách chọn địa chỉ nhận hàng.
         return new CheckoutPreview(selectedCart, List.copyOf(addressOptions), null, Map.of(), null, null,
                 codAvailable, vnpayProperties.isReady() && paymentMethodRepository.findByMethodCodeAndStatus("BANK_TRANSFER", "ACTIVE").isPresent(), createCartFingerprint(selectedCart), null, false);
+    }
+
+    @Override
+    @Transactional(readOnly=true)
+    public CheckoutPreview previewBuyNow(Long customerId, Long variantId, Integer quantity) {
+        CartItem item = buyNowItem(variantId, quantity);
+        return previewForSelection(customerId, buyNowCart(customerId, item));
+    }
+
+    private CartItem buyNowItem(Long variantId, Integer quantity) {
+        if (variantId == null || variantId < 1 || quantity == null || quantity < 1)
+            throw new CheckoutException("Sản phẩm hoặc số lượng mua ngay không hợp lệ.");
+        var variant=buyNowVariants.findById(variantId).orElseThrow(() -> new CheckoutException("Sản phẩm không còn tồn tại."));
+        var item=new CartItem(); item.setCartItemId(variantId); item.setVariant(variant);
+        item.setQuantity(quantity); item.setUnitPriceSnapshot(variant.getPrice());
+        return item;
+    }
+
+    private CartDto buyNowCart(Long customerId, CartItem item) {
+        var dto=VietFreshHub.cart.service.CartViewMapper.toCartItem(item,
+                buyNowStock.getAvailableStockByVariantId(item.getVariant().getVariantId()), catalogService.isPurchasable(item.getVariant()));
+        return CartDto.builder().userId(customerId).status("BUY_NOW").items(List.of(dto))
+                .totalItems(item.getQuantity()).totalAmount(dto.getItemSubtotal()).hasUnavailableItems(!dto.isPurchasable()).build();
     }
 
     @Override
@@ -115,8 +144,8 @@ public class CheckoutServiceImpl implements CheckoutService {
         // 2. Kiểm tra lại địa chỉ, mặt hàng và báo giá ngay trước khi tạo đơn.
         PaymentMethod paymentMethod = requirePaymentMethod(request.getPaymentMethodCode());
         Address deliveryAddress = lockAddress(customerId, request.getAddressId());
-        Cart cart = requireActiveCart(customerId, draft.cartId());
-        List<CartItem> selectedItems = requireSelectedItems(cart, draft.selectedItemIds());
+        Cart cart = draft.buyNow() ? null : requireActiveCart(customerId, draft.cartId());
+        List<CartItem> selectedItems = draft.buyNow() ? List.of(buyNowItem(draft.buyNowVariantId(), draft.buyNowQuantity())) : requireSelectedItems(cart, draft.selectedItemIds());
         validateCurrentItems(customerId, draft, selectedItems);
         Map<Long, List<CartItem>> itemsByShopId = groupItemsByShop(selectedItems);
         BigDecimal subtotal = calculateSubtotal(selectedItems);
@@ -141,9 +170,9 @@ public class CheckoutServiceImpl implements CheckoutService {
         }
 
         // 4. Giữ lại món chưa chọn; nếu đặt hết giỏ thì đóng giỏ hiện tại.
-        if (selectedItems.size() == cart.getItems().size()) {
+        if (cart != null && selectedItems.size() == cart.getItems().size()) {
             cart.setStatus("CHECKED_OUT");
-        } else {
+        } else if (cart != null) {
             cart.getItems().removeAll(selectedItems);
         }
         // flush chưa phải commit; consumer gửi thông báo cần xử lý AFTER_COMMIT.
@@ -241,7 +270,7 @@ public class CheckoutServiceImpl implements CheckoutService {
                         + ": sản phẩm hoặc cửa hàng không còn nhận đơn. Vui lòng kiểm tra lại giỏ.");
             }
         }
-        CartDto currentSelection = selectCartItems(cartService.getActiveCart(customerId), draft.selectedItemIds());
+        CartDto currentSelection = draft.buyNow() ? buyNowCart(customerId, selectedItems.getFirst()) : selectCartItems(cartService.getActiveCart(customerId), draft.selectedItemIds());
         if (!createCartFingerprint(currentSelection).equals(draft.fingerprint())) {
             throw new CheckoutException("Giá hoặc số lượng trong giỏ vừa thay đổi. Vui lòng xem lại đơn và xác nhận lần nữa.");
         }

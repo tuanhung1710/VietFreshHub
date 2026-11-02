@@ -75,7 +75,9 @@ public class CheckoutController {
                        @RequestParam(required = false) List<Long> itemIds,
                        @RequestParam(defaultValue = "false") boolean selectionSubmitted,
                        @RequestParam(required = false) String checkoutToken,
-                       @RequestParam(required = false) Long addressId) {
+                       @RequestParam(required = false) Long addressId,
+                       @RequestParam(required = false) Long buyNowVariantId,
+                       @RequestParam(required = false) Integer buyNowQuantity) {
         Long customerId = currentCustomer.requireCustomerId(authentication);
         CheckoutRequest form = new CheckoutRequest();
         CheckoutDraft draft = null;
@@ -85,6 +87,9 @@ public class CheckoutController {
         CheckoutPreview preview;
         if (draft != null) {
             preview = previewDraft(customerId, draft);
+            form.setCheckoutToken(draft.token());
+        } else if (buyNowVariantId != null) {
+            preview = checkout.previewBuyNow(customerId, buyNowVariantId, buyNowQuantity);
         } else if (itemIds == null && !selectionSubmitted) {
             preview = checkout.preview(customerId);
         } else {
@@ -99,7 +104,7 @@ public class CheckoutController {
             selectedAddressId = draft.addressId();
         }
         preview = shippingQuotes.quote(customerId, preview, selectedAddressId);
-        populate(customerId, form, preview, session, model);
+        populate(customerId, form, preview, session, model, draft == null && buyNowVariantId != null);
         return "customer/checkout";
     }
 
@@ -168,7 +173,7 @@ public class CheckoutController {
                 return "customer/checkout-unavailable";
             }
         }
-        CheckoutPreview preview = checkout.preview(customerId, draft.selectedItemIds());
+        CheckoutPreview preview = draft.buyNow() ? checkout.previewBuyNow(customerId, draft.buyNowVariantId(), draft.buyNowQuantity()) : checkout.preview(customerId, draft.selectedItemIds());
         Long selectedAddressId = form.getAddressId();
         if (selectedAddressId == null) {
             selectedAddressId = draft.addressId();
@@ -276,7 +281,7 @@ public class CheckoutController {
     }
 
     private CheckoutPreview previewDraft(Long customerId, CheckoutDraft draft) {
-        CheckoutPreview preview = checkout.preview(customerId, draft.selectedItemIds());
+        CheckoutPreview preview = draft.buyNow() ? checkout.previewBuyNow(customerId, draft.buyNowVariantId(), draft.buyNowQuantity()) : checkout.preview(customerId, draft.selectedItemIds());
         if (!Objects.equals(preview.cart().getCartId(), draft.cartId()) || !Objects.equals(preview.fingerprint(), draft.fingerprint())) {
             throw new CheckoutException("Giỏ hàng đã thay đổi. Vui lòng chọn lại sản phẩm.");
         }
@@ -311,7 +316,13 @@ public class CheckoutController {
     }
 
     private void populate(Long customerId, CheckoutRequest form, CheckoutPreview preview, HttpSession session, Model model) {
-        CheckoutDraft draft = drafts.issue(session, customerId, preview);
+        populate(customerId,form,preview,session,model,false);
+    }
+
+    private void populate(Long customerId, CheckoutRequest form, CheckoutPreview preview, HttpSession session, Model model, boolean fresh) {
+        CheckoutDraft draft = "BUY_NOW".equals(preview.cart().getStatus())
+                ? drafts.issueBuyNow(session, customerId, preview, fresh ? null : form.getCheckoutToken())
+                : drafts.issue(session, customerId, preview);
         form.setCheckoutToken(draft.token());
         if (!preview.codAvailable() && preview.vnpayAvailable()) form.setPaymentMethodCode("BANK_TRANSFER");
         form.setAddressId(preview.addressId());

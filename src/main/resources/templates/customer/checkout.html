@@ -6,6 +6,7 @@
     <nav class="checkout-steps" aria-label="Tiến trình mua hàng"><a th:href="@{/cart}">Giỏ hàng</a><span aria-hidden="true">›</span><strong aria-current="step">Đặt hàng</strong><span aria-hidden="true">›</span><span>Hoàn tất</span></nav>
     <div class="page-heading"><h1 class="checkout-title">Kiểm tra và đặt hàng</h1><p class="muted">Xem lại địa chỉ, sản phẩm và tổng tiền trước khi xác nhận.</p></div>
     <div th:replace="~{fragments/storefront :: messages}"></div>
+    <p th:if="${cart.status == 'BUY_NOW'}" class="notice info">Mua ngay: chỉ đặt số lượng vừa chọn. Sản phẩm đang có trong giỏ hàng được giữ nguyên.</p>
     <form th:action="@{/customer/checkout}" th:object="${form}" method="post" id="checkout-form">
         <input type="hidden" name="checkoutToken" th:value="${form.checkoutToken}">
         <div th:if="${#fields.hasGlobalErrors()}" class="notice error" role="alert"><p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p></div>
@@ -38,7 +39,7 @@
                 <section class="panel checkout-products-panel"><h2><span class="material-symbols-outlined">inventory_2</span>Sản phẩm trong đơn</h2>
                     <p th:if="${#lists.isEmpty(cart.items)}" class="item-error">Giỏ hàng đang trống. <a th:href="@{/home}">Chọn sản phẩm</a> để tiếp tục.</p>
                     <p th:if="${cart.hasUnavailableItems}" class="notice error">Một sản phẩm đã chọn không còn đủ điều kiện mua. <a th:href="@{/cart}">Chọn lại sản phẩm trong giỏ</a> để tiếp tục.</p>
-                    <p class="muted">Chỉ các sản phẩm bên dưới được đặt hàng. <a th:href="@{/cart}">Thay đổi lựa chọn</a></p>
+                    <p class="muted">Chỉ các sản phẩm bên dưới được đặt hàng. <a th:unless="${cart.status == 'BUY_NOW'}" th:href="@{/cart}">Thay đổi lựa chọn</a><a th:if="${cart.status == 'BUY_NOW'}" th:href="@{/product-detail/{id}(id=${cart.items[0].variantId},quantity=${cart.items[0].quantity})}">Thay đổi số lượng mua ngay</a></p>
                     <section th:each="group : ${shopGroups}" class="checkout-shop"><h3><span class="material-symbols-outlined">storefront</span><span th:text="${group.value[0].shopName}"></span></h3><div class="checkout-product-columns" aria-hidden="true"><span>Sản phẩm</span><span>Đơn giá</span><span>Số lượng</span><span>Thành tiền</span></div>
                         <article th:each="item : ${group.value}" class="checkout-line"><img th:src="${item.imageUrl}" th:alt="${item.productName}" width="64" height="64">
                             <div><strong th:text="${item.productName}"></strong><p class="muted" th:text="${item.variantName}"></p>
