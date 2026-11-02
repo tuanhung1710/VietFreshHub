@@ -208,18 +208,20 @@
 <div th:fragment="filters(orderView, filterAction, showStatusFilter, showPaymentFilter, resultCount)">
     <div class="order-filter-toolbar">
         <form class="order-search-form" method="get" role="search" th:action="@{${filterAction}}">
+            <input type="hidden" name="size" th:value="${filter.size}">
             <input type="search" name="keyword" th:value="${filter.keyword}"
                    aria-label="Tìm theo mã đơn hàng hoặc khách hàng"
                    placeholder="Tìm theo mã đơn hàng hoặc khách hàng">
             <button class="order-search-button" type="submit">TÌM</button>
             <input type="hidden" name="fromDate" th:value="${filter.fromDate}">
             <input type="hidden" name="toDate" th:value="${filter.toDate}">
-            <input type="hidden" name="priceRange" th:value="${filter.priceRange}">
-            <input th:if="${showStatusFilter}" type="hidden" name="status" th:value="${filter.status}">
-            <input th:if="${showPaymentFilter}" type="hidden" name="paymentStatus" th:value="${filter.paymentStatus}">
+            <input type="hidden" name="priceRange" th:each="value : ${filter.priceRange}" th:value="${value}">
+            <input th:if="${showStatusFilter}" type="hidden" name="status" th:each="value : ${filter.status}" th:value="${value}">
+            <input th:if="${showPaymentFilter}" type="hidden" name="paymentStatus" th:each="value : ${filter.paymentStatus}" th:value="${value}">
             <input type="hidden" name="sort" th:value="${filter.sort}">
         </form>
         <form class="order-sort-form" method="get" th:action="@{${filterAction}}">
+            <input type="hidden" name="size" th:value="${filter.size}">
             <label for="order-sort">Sắp xếp theo</label>
             <select id="order-sort" name="sort">
                 <option value="NEWEST" th:selected="${filter.sort == 'NEWEST'}">Ngày đặt hàng: Mới nhất trước</option>
@@ -232,9 +234,9 @@
             <input type="hidden" name="keyword" th:value="${filter.keyword}">
             <input type="hidden" name="fromDate" th:value="${filter.fromDate}">
             <input type="hidden" name="toDate" th:value="${filter.toDate}">
-            <input type="hidden" name="priceRange" th:value="${filter.priceRange}">
-            <input th:if="${showStatusFilter}" type="hidden" name="status" th:value="${filter.status}">
-            <input th:if="${showPaymentFilter}" type="hidden" name="paymentStatus" th:value="${filter.paymentStatus}">
+            <input type="hidden" name="priceRange" th:each="value : ${filter.priceRange}" th:value="${value}">
+            <input th:if="${showStatusFilter}" type="hidden" name="status" th:each="value : ${filter.status}" th:value="${value}">
+            <input th:if="${showPaymentFilter}" type="hidden" name="paymentStatus" th:each="value : ${filter.paymentStatus}" th:value="${value}">
         </form>
         <button id="open-order-filter" class="order-filter-button" type="button"
                 aria-haspopup="dialog" aria-controls="order-filter-dialog">Bộ lọc</button>
@@ -246,6 +248,7 @@
         </div>
         <form id="order-filter-form" method="get" novalidate th:action="@{${filterAction}}"
               th:attr="data-count-url=@{/seller/orders/filter-count},data-view=${orderView}">
+            <input type="hidden" name="size" th:value="${filter.size}">
             <input type="hidden" name="keyword" th:value="${filter.keyword}">
             <input type="hidden" name="sort" th:value="${filter.sort}">
             <fieldset>
@@ -263,57 +266,57 @@
             <fieldset>
                 <legend>Khoảng giá</legend>
                 <div class="order-filter-options">
-                    <label><input type="radio" name="priceRange" value="UNDER_100K"
-                                  th:checked="${filter.priceRange == 'UNDER_100K'}"><span>Dưới 100.000 VND</span></label>
-                    <label><input type="radio" name="priceRange" value="FROM_100K_TO_300K"
-                                  th:checked="${filter.priceRange == 'FROM_100K_TO_300K'}"><span>100.000 - 300.000 VND</span></label>
-                    <label><input type="radio" name="priceRange" value="FROM_300K_TO_500K"
-                                  th:checked="${filter.priceRange == 'FROM_300K_TO_500K'}"><span>300.000 - 500.000 VND</span></label>
-                    <label><input type="radio" name="priceRange" value="FROM_500K_TO_1M"
-                                  th:checked="${filter.priceRange == 'FROM_500K_TO_1M'}"><span>500.000 - 1.000.000 VND</span></label>
-                    <label><input type="radio" name="priceRange" value="FROM_1M_TO_2M"
-                                  th:checked="${filter.priceRange == 'FROM_1M_TO_2M'}"><span>1.000.000 - 2.000.000 VND</span></label>
-                    <label><input type="radio" name="priceRange" value="OVER_2M"
-                                  th:checked="${filter.priceRange == 'OVER_2M'}"><span>Trên 2.000.000 VND</span></label>
+                    <label><input type="checkbox" name="priceRange" value="UNDER_100K"
+                                  th:checked="${#lists.contains(filter.priceRange, 'UNDER_100K')}"><span>Dưới 100.000 VND</span></label>
+                    <label><input type="checkbox" name="priceRange" value="FROM_100K_TO_300K"
+                                  th:checked="${#lists.contains(filter.priceRange, 'FROM_100K_TO_300K')}"><span>100.000 - 300.000 VND</span></label>
+                    <label><input type="checkbox" name="priceRange" value="FROM_300K_TO_500K"
+                                  th:checked="${#lists.contains(filter.priceRange, 'FROM_300K_TO_500K')}"><span>300.000 - 500.000 VND</span></label>
+                    <label><input type="checkbox" name="priceRange" value="FROM_500K_TO_1M"
+                                  th:checked="${#lists.contains(filter.priceRange, 'FROM_500K_TO_1M')}"><span>500.000 - 1.000.000 VND</span></label>
+                    <label><input type="checkbox" name="priceRange" value="FROM_1M_TO_2M"
+                                  th:checked="${#lists.contains(filter.priceRange, 'FROM_1M_TO_2M')}"><span>1.000.000 - 2.000.000 VND</span></label>
+                    <label><input type="checkbox" name="priceRange" value="OVER_2M"
+                                  th:checked="${#lists.contains(filter.priceRange, 'OVER_2M')}"><span>Trên 2.000.000 VND</span></label>
                 </div>
             </fieldset>
             <fieldset th:if="${showStatusFilter}">
                 <legend>Trạng thái đơn hàng</legend>
                 <div class="order-filter-options">
-                    <label><input type="radio" name="status" value=""
-                                  th:checked="${#strings.isEmpty(filter.status)}"><span>Tất cả</span></label>
+                    <label><input type="checkbox" name="status" value="" data-filter-all
+                                  th:checked="${#lists.isEmpty(filter.status)}"><span>Tất cả</span></label>
                     <th:block th:if="${orderView == 'all'}">
-                        <label><input type="radio" name="status" value="PENDING"
-                                      th:checked="${filter.status == 'PENDING'}"><span>Chờ xác nhận</span></label>
-                        <label><input type="radio" name="status" value="CONFIRMED"
-                                      th:checked="${filter.status == 'CONFIRMED'}"><span>Đã xác nhận</span></label>
-                        <label><input type="radio" name="status" value="PREPARING"
-                                      th:checked="${filter.status == 'PREPARING'}"><span>Đang chuẩn bị</span></label>
-                        <label><input type="radio" name="status" value="READY_FOR_DELIVERY"
-                                      th:checked="${filter.status == 'READY_FOR_DELIVERY'}"><span>Sẵn sàng giao hàng</span></label>
-                        <label><input type="radio" name="status" value="OUT_FOR_DELIVERY"
-                                      th:checked="${filter.status == 'OUT_FOR_DELIVERY'}"><span>Đang giao hàng</span></label>
-                        <label><input type="radio" name="status" value="DELIVERY_FAILED"
-                                      th:checked="${filter.status == 'DELIVERY_FAILED'}"><span>Giao hàng thất bại</span></label>
+                        <label><input type="checkbox" name="status" value="PENDING"
+                                      th:checked="${#lists.contains(filter.status, 'PENDING')}"><span>Chờ xác nhận</span></label>
+                        <label><input type="checkbox" name="status" value="CONFIRMED"
+                                      th:checked="${#lists.contains(filter.status, 'CONFIRMED')}"><span>Đã xác nhận</span></label>
+                        <label><input type="checkbox" name="status" value="PREPARING"
+                                      th:checked="${#lists.contains(filter.status, 'PREPARING')}"><span>Đang chuẩn bị</span></label>
+                        <label><input type="checkbox" name="status" value="READY_FOR_DELIVERY"
+                                      th:checked="${#lists.contains(filter.status, 'READY_FOR_DELIVERY')}"><span>Sẵn sàng giao hàng</span></label>
+                        <label><input type="checkbox" name="status" value="OUT_FOR_DELIVERY"
+                                      th:checked="${#lists.contains(filter.status, 'OUT_FOR_DELIVERY')}"><span>Đang giao hàng</span></label>
+                        <label><input type="checkbox" name="status" value="DELIVERY_FAILED"
+                                      th:checked="${#lists.contains(filter.status, 'DELIVERY_FAILED')}"><span>Giao hàng thất bại</span></label>
                     </th:block>
-                    <label><input type="radio" name="status" value="COMPLETED"
-                                  th:checked="${filter.status == 'COMPLETED'}"><span>Hoàn thành</span></label>
-                    <label><input type="radio" name="status" value="CANCELLED"
-                                  th:checked="${filter.status == 'CANCELLED'}"><span>Đã hủy</span></label>
+                    <label><input type="checkbox" name="status" value="COMPLETED"
+                                  th:checked="${#lists.contains(filter.status, 'COMPLETED')}"><span>Hoàn thành</span></label>
+                    <label><input type="checkbox" name="status" value="CANCELLED"
+                                  th:checked="${#lists.contains(filter.status, 'CANCELLED')}"><span>Đã hủy</span></label>
                 </div>
             </fieldset>
             <fieldset th:if="${showPaymentFilter}">
                 <legend>Trạng thái thanh toán</legend>
                 <div class="order-filter-options">
-                    <label><input type="radio" name="paymentStatus" value=""
-                                  th:checked="${#strings.isEmpty(filter.paymentStatus)}"><span>Tất cả</span></label>
-                    <label th:each="option : ${paymentStatusOptions}"><input type="radio" name="paymentStatus" th:value="${option.key}"
-                                  th:checked="${filter.paymentStatus == option.key}"><span th:text="${option.value}"></span></label>
+                    <label><input type="checkbox" name="paymentStatus" value="" data-filter-all
+                                  th:checked="${#lists.isEmpty(filter.paymentStatus)}"><span>Tất cả</span></label>
+                    <label th:each="option : ${paymentStatusOptions}"><input type="checkbox" name="paymentStatus" th:value="${option.key}"
+                                  th:checked="${#lists.contains(filter.paymentStatus, option.key)}"><span th:text="${option.value}"></span></label>
                 </div>
             </fieldset>
             <p id="order-filter-error" class="order-filter-error" role="alert" hidden></p>
             <div class="order-filter-actions">
-                <a class="order-filter-clear" th:href="@{${filterAction}(keyword=${filter.keyword},sort=${filter.sort})}">BỎ CHỌN</a>
+                <a class="order-filter-clear" th:href="@{${filterAction}(keyword=${filter.keyword},sort=${filter.sort})}">XÓA BỘ LỌC</a>
                 <button id="apply-order-filter" class="order-filter-apply" type="submit" aria-live="polite"
                         th:text="${resultCount + ' KẾT QUẢ'}">KẾT QUẢ</button>
             </div>
@@ -453,7 +456,21 @@
                 orderCountRequest.abort();
             }
         });
-        orderFilterForm.addEventListener('input', refreshOrderFilterCount);
+        orderFilterForm.addEventListener('input', event => {
+            const option = event.target;
+            if (option.matches('.order-filter-options input[type="checkbox"]')) {
+                const group = option.closest('.order-filter-options');
+                const allOption = group.querySelector('[data-filter-all]');
+                if (allOption) {
+                    const choices = [...group.querySelectorAll('input[type="checkbox"]:not([data-filter-all])')];
+                    if (option === allOption && allOption.checked) {
+                        choices.forEach(choice => choice.checked = false);
+                    }
+                    allOption.checked = !choices.some(choice => choice.checked);
+                }
+            }
+            refreshOrderFilterCount();
+        });
         orderFilterForm.addEventListener('submit', (event) => {
             if (!validateOrderDateRange()) {
                 event.preventDefault();
@@ -466,12 +483,12 @@
         });
     </script>
 </div>
-<nav th:fragment="pagination(filterAction)" th:if="${totalPages > 1}" aria-label="Phân trang đơn hàng">
-    <a th:if="${currentPage > 0}"
-       th:href="@{${filterAction}(page=${currentPage - 1},keyword=${filter.keyword},fromDate=${filter.fromDate},toDate=${filter.toDate},priceRange=${filter.priceRange},status=${filter.status},paymentStatus=${filter.paymentStatus},sort=${filter.sort})}">← Trước</a>
-    <span th:text="${'Trang ' + (currentPage + 1) + ' / ' + totalPages}"></span>
-    <a th:if="${currentPage + 1 < totalPages}"
-       th:href="@{${filterAction}(page=${currentPage + 1},keyword=${filter.keyword},fromDate=${filter.fromDate},toDate=${filter.toDate},priceRange=${filter.priceRange},status=${filter.status},paymentStatus=${filter.paymentStatus},sort=${filter.sort})}">Sau →</a>
+<nav th:fragment="pagination(filterAction)">
+    <div th:replace="~{fragments/pagination :: panel(${ordersPage},
+        @{${filterAction}(page=${ordersPage.number - 1},size=${ordersPage.size},keyword=${filter.keyword},fromDate=${filter.fromDate},toDate=${filter.toDate},priceRange=${filter.priceRange},status=${filter.status},paymentStatus=${filter.paymentStatus},sort=${filter.sort})},
+        @{${filterAction}(page=${ordersPage.number + 1},size=${ordersPage.size},keyword=${filter.keyword},fromDate=${filter.fromDate},toDate=${filter.toDate},priceRange=${filter.priceRange},status=${filter.status},paymentStatus=${filter.paymentStatus},sort=${filter.sort})},
+        @{${filterAction} }, ${ {'keyword': filter.keyword, 'fromDate': filter.fromDate, 'toDate': filter.toDate, 'priceRange': filter.priceRange, 'status': filter.status, 'paymentStatus': filter.paymentStatus, 'sort': filter.sort} },
+        'Phân trang đơn hàng', 'đơn hàng', 'Đơn hàng mỗi trang')}"></div>
 </nav>
 </body>
 </html>

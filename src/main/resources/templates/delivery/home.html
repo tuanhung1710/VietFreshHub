@@ -32,6 +32,9 @@
 <header>
     <span th:replace="~{fragments/notifications :: bell}"></span>
     <p>VIETFRESH HUB</p>
+    <form th:action="@{/logout}" method="post">
+        <button type="submit">Đăng xuất</button>
+    </form>
 </header>
 <main id="delivery-dashboard">
     <h1>ĐƠN GIAO HÀNG CỦA TÔI</h1>

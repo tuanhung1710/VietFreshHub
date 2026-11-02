@@ -21,6 +21,9 @@
             <span th:replace="~{fragments/notifications :: bell}"></span>
             <span class="admin-label">QUẢN TRỊ VIÊN</span>
             <span class="admin-avatar" aria-label="Quản trị viên">AD</span>
+            <form th:action="@{/logout}" method="post">
+                <button class="button" type="submit">Đăng xuất</button>
+            </form>
         </div>
     </header>
 

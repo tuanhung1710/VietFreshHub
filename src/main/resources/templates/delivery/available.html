@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nhận đơn mới | VIETFRESH HUB</title>
+    <link th:replace="~{fragments/pagination :: styles}">
 </head>
 <body>
 <header>
@@ -14,7 +15,7 @@
     <p th:if="${errorMessage != null}" th:text="${errorMessage}" role="alert"></p>
     <p id="available-refresh-status" role="status" hidden></p>
     <section id="available-deliveries" th:fragment="deliveries"
-             th:attr="data-refresh-url=@{/delivery/available(fragment=true)}">
+             th:attr="data-refresh-url=@{/delivery/available(fragment=true,page=${availablePage.number + 1},size=${availablePage.size})},data-page-size=${availablePage.size}">
         <p th:if="${#lists.isEmpty(availableDeliveries)}">Hiện chưa có đơn giao hàng nào có thể nhận.</p>
         <table th:unless="${#lists.isEmpty(availableDeliveries)}">
             <thead>
@@ -42,6 +43,10 @@
             </tr>
             </tbody>
         </table>
+        <div th:replace="~{fragments/pagination :: panel(${availablePage},
+            @{/delivery/available(page=${availablePage.number},size=${availablePage.size})},
+            @{/delivery/available(page=${availablePage.number + 2},size=${availablePage.size})},
+            @{/delivery/available}, ${ {:} }, 'Phân trang đơn có thể nhận', 'đơn hàng', 'Đơn hàng mỗi trang')}"></div>
     </section>
 </main>
 <template>
@@ -64,6 +69,12 @@
         if (!document.hidden) {
             try {
                 const currentList = document.getElementById('available-deliveries');
+                const sizeSelect = currentList.querySelector('select[name="size"]');
+                if (currentList.querySelector('.vf-page-size').contains(document.activeElement)
+                        || sizeSelect.value !== currentList.dataset.pageSize) {
+                    window.setTimeout(refreshAvailableDeliveries, 1000);
+                    return;
+                }
                 const response = await fetch(currentList.dataset.refreshUrl, {cache: 'no-store'});
                 if (!response.ok || response.redirected) {
                     throw new Error('Không thể cập nhật danh sách.');
