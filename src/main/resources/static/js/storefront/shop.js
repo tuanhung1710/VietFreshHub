@@ -66,9 +66,13 @@ async function catalog(push = true) {
 async function loadHome() {
     const sectionSize = options.pageSizes.find(size => size >= 5) || options.defaultPageSize;
     try {
-        const suggestions = await request(shopProductsPath(shopId, { page: 1, pageSize: sectionSize, sort: 'popular' }));
+        const [suggestions, best] = await Promise.all([
+            request(shopProductsPath(shopId, { page: 1, pageSize: sectionSize, sort: 'popular' })),
+            request(shopProductsPath(shopId, { page: 1, pageSize: sectionSize, sort: 'sales' }))
+        ]);
         $('productCount').textContent = `${suggestions.total} sản phẩm`;
         $('recommended').innerHTML = suggestions.items.slice(0, 5).map(product => shopProductCard(product)).join('') || empty;
+        $('topProducts').innerHTML = best.items.slice(0, 5).map((product, index) => shopProductCard(product, index + 1)).join('') || empty;
     } catch (error) {
         $('productCount').textContent = 'Chưa tải được';
         $('recommended').innerHTML = $('topProducts').innerHTML = '<p class="empty-products">Chưa tải được sản phẩm. Vui lòng tải lại trang.</p>';
