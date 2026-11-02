@@ -1,0 +1,39 @@
+package VietFreshHub.shop.service;
+
+import VietFreshHub.shop.entity.Shop;
+import VietFreshHub.shop.repository.ShopRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+import VietFreshHub.common.PageSizes;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class ShopBrowseService {
+    private final ShopRepository shops;
+    private final VietFreshHub.shop.repository.ShopLocationRepository locations;
+
+    public Shop profile(Long shopId) {
+        return shops.findByShopIdAndStatus(shopId, "ACTIVE")
+                .filter(shop -> "OPEN".equals(shop.getAvailabilityStatus()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy cửa hàng đang hoạt động."));
+    }
+
+    public java.util.Optional<VietFreshHub.shop.entity.ShopLocation> location(Long shopId) {
+        profile(shopId);
+        return locations.findById(shopId);
+    }
+
+    public Page<Shop> list(int page, String keyword) {
+        if (page < 1 || page > 10000 || keyword == null || keyword.length() > 100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Trang hoặc từ khóa không hợp lệ.");
+        }
+        return shops.findPublicShops(keyword.strip(), PageRequest.of(page - 1, PageSizes.DEFAULT, Sort.by("shopName", "shopId")));
+    }
+}

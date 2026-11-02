@@ -1,0 +1,94 @@
+
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:#111;font:15px 'Times New Roman',Georgia,serif}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;background:#fff;border:1px solid #888;padding:7px 12px}
+button:hover{background:#efefef}
+input,select{border:1px solid #888;padding:9px;background:#fff}
+a{color:#111}
+h1{font-size:32px;margin:20px 0}h2{font-size:24px;margin:10px 0}h3{font-size:19px;margin:0}
+small,.muted{color:#555}
+.container{max-width:1270px;padding:0 18px;margin:auto}
+header{border-bottom:2px solid #111;background:#fff}
+header .utility{display:flex;justify-content:space-between;padding:8px 0;font-size:13px;border-bottom:1px solid #ddd}
+.headmain{display:flex;align-items:center;gap:26px;padding:16px 0}
+.brand{font-size:27px;font-weight:bold;white-space:nowrap;border:0;padding:0}
+.search{display:flex;flex:1;gap:8px}
+.search input{flex:1;min-width:0}
+.headcats{display:flex;align-items:center;gap:4px;flex-wrap:wrap;border-top:1px solid #ddd;padding:8px 0}
+.headcats button{border:0;border-right:1px solid #bbb;padding:5px 10px;font-size:14px;background:none}
+.headcats button:last-child{border-right:0}
+.headcats button.active{font-weight:bold;text-decoration:underline}
+main{padding-bottom:85px}
+.bread{font-size:13px;padding:14px 0}
+.bannergrid{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+.hero,.sidebanner,.section{border:1px solid #888;background:#fff}
+.hero{min-height:220px;padding:34px}
+.hero p{max-width:560px}
+.sidebanners{display:grid;gap:12px}
+.sidebanner{padding:20px;display:flex;flex-direction:column;justify-content:center}
+.section{margin-top:24px}
+.sectiontop{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #888}
+.sectiontop h2{font-size:20px;margin:0}
+.textlink{border:0;text-decoration:underline;padding:4px;background:none}
+.categories{display:grid;grid-template-columns:repeat(6,1fr)}
+.cat{padding:22px 8px;border:0;border-right:1px solid #ccc;border-bottom:1px solid #ccc;min-height:95px;font-weight:bold;background:#fff}
+.cat .catIcon{display:block;font-size:26px;font-weight:normal;margin-bottom:8px;filter:grayscale(1)}
+.products{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0}
+.p-card{border:1px solid #bbb;margin:-.5px;padding:0;display:block;text-align:left;min-width:0;background:#fff}
+.p-image{height:165px;background:#fafafa;display:flex;align-items:center;justify-content:center;font-size:60px;filter:grayscale(1);border:1px solid #b6b6b6;margin:10px 10px 0 10px}
+.p-body{padding:12px}
+.p-name{height:42px;overflow:hidden;font-weight:bold;font-size:17px;line-height:1.25}
+.p-shop{font-size:12px;color:#555;margin:10px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-price{font-size:18px}
+.p-sub{font-size:12px;color:#555;margin-top:8px;display:flex;justify-content:space-between;gap:10px}
+.shopgrid{display:grid;grid-template-columns:repeat(4,1fr)}
+.shop{border:1px solid #bbb;padding:22px;text-align:left;background:#fff}
+.shop h3{margin:10px 0}.shop p{margin:7px 0}
+.twocol{display:grid;grid-template-columns:240px minmax(0,1fr);gap:20px}
+.sidebar{border:1px solid #888;padding:13px;align-self:start;background:#fff}
+.filtergroup{border-bottom:1px solid #ccc;padding:16px 0}
+.filtergroup h3{font-size:16px;margin:0 0 12px}
+.filtergroup label{display:flex;align-items:center;gap:8px;margin:11px 0}
+.filtergroup input[type=checkbox],.filtergroup input[type=radio]{width:16px;height:16px;accent-color:#111}
+.filtergroup input[type=number]{width:100%;min-width:0}
+.tinyinput{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.filtercategory{display:block;border:0;padding:7px 4px;text-align:left;width:100%;background:none}
+.filtercategory.active{text-decoration:underline;font-weight:bold}
+.toolbar{border:1px solid #888;padding:11px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px;background:#fff}
+.toolbar select{padding:8px}
+.chips{margin:8px 0 12px;display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid #aaa;padding:4px 8px;font-size:12px;background:#fff}
+.pagination{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:38px 0 76px;padding:20px 22px;border:1px solid #aaa;background:#fff;flex-wrap:wrap;min-height:94px}.pager-left,.pager-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.pager-info{display:flex;flex-direction:column;gap:6px;min-width:100px;text-align:center}.pager-info small{font-size:13px}.pagination button{min-width:40px;padding:9px 13px;background:white;border:1px solid #888}.pagination button:disabled{opacity:.35;cursor:not-allowed}.pagination select{padding:9px 12px;min-width:70px}.pager-right label{white-space:nowrap}.catalog-products-wrap{min-height:0}
+.pagination .active{background:#111;color:#fff}
+.item-title{margin-bottom:15px}.notice{border:1px solid #999;padding:10px;margin:12px 0}.modal-back{position:fixed;inset:0;background:#0008;display:flex;justify-content:center;align-items:center;padding:15px;z-index:20}.modal{max-width:600px;width:100%;background:white;border:2px solid #111;padding:24px}.close{float:right}.hide{display:none!important}
+footer{border-top:2px solid #111;text-align:center;padding:25px;color:#555}
+.mobileonly{display:none}
+@media(max-width:850px){.pagination{margin-bottom:50px;padding:15px}.pager-left,.pager-right{gap:8px}}@media(max-width:850px){.products{grid-template-columns:repeat(3,1fr)}.categories{grid-template-columns:repeat(4,1fr)}.shopgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:630px){.headmain{flex-wrap:wrap;gap:12px}.brand{font-size:23px}.search{order:3;flex-basis:100%}.bannergrid{grid-template-columns:1fr}.hero{min-height:170px}.categories{grid-template-columns:repeat(3,1fr)}.products{grid-template-columns:repeat(2,1fr)}.p-image{height:125px;font-size:50px}.twocol{display:block}.sidebar{display:none;margin:12px 0}.sidebar.open{display:block}.mobileonly{display:block}.shopgrid{grid-template-columns:1fr 1fr}}
+
+/* Home: separate the last fruit product row from the footer */
+#home > .section:last-child{margin-bottom:70px}
+#home #homeproducts{margin-bottom:0}
+@media(max-width:630px){#home > .section:last-child{margin-bottom:48px}}
+
+/* Footer – monochrome */
+.site-footer{border-top:2px solid #111;background:#fff;text-align:left;padding:0;color:#111}
+.footer-inner{display:grid;grid-template-columns:1.35fr repeat(3,1fr);gap:28px;padding-top:32px;padding-bottom:28px}
+.footer-column h3{font-size:17px;margin:0 0 15px}
+.footer-column p{margin:0 0 10px;line-height:1.65}
+.footer-column button{display:block;padding:3px 0;border:0;background:none;text-align:left;font-size:14px;color:#222}
+.footer-column button:hover{text-decoration:underline;background:none}
+.footer-bottom{border-top:1px solid #aaa;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:13px;padding-bottom:16px;font-size:13px;color:#555}
+@media(max-width:760px){.footer-inner{grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}}
+@media(max-width:480px){.footer-inner{grid-template-columns:1fr}}
+
+/* Category page: clear breathing room between the last product row, pager, and footer. */
+#catalog #results{margin-bottom:60px}
+#catalog #pagination{margin-top:0;margin-bottom:76px}
+@media(max-width:630px){#catalog #results{margin-bottom:36px}#catalog #pagination{margin-bottom:52px}}
+/* Home pagination: independent of category pagination */
+#home #homeproducts{margin-bottom:0}
+#home #homePagination{margin:44px 18px 4px}
+#home > .section:last-child{margin-bottom:76px}
+@media(max-width:630px){#home #homePagination{margin:32px 10px 4px}#home > .section:last-child{margin-bottom:52px}}

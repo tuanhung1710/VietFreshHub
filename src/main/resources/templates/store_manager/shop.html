@@ -8,6 +8,8 @@
 <body>
 <span th:replace="~{fragments/notifications :: bell}"></span>
 <h1>SHOP</h1>
+<p><a th:href="@{/seller/announcements}">Thông báo từ hệ thống và quản trị viên</a></p>
+<p><a th:href="@{/seller/profile}">Hồ sơ cửa hàng và trạng thái nhận đơn</a></p>
 <p>Mã shop: <span th:text="${shopCode}"></span>
 <button type="button" th:attr="data-vf-copy-code=${shopCode},aria-label=${'Sao chép mã shop '+shopCode}">Sao chép</button></p>
 <p><a th:href="@{/store_manager/chat}">Mở tin nhắn khách hàng</a></p>

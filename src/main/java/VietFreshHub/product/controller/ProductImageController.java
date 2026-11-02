@@ -6,6 +6,7 @@ import VietFreshHub.shop.service.ShopService;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -25,18 +26,21 @@ public class ProductImageController {
     private final ProductImageStorageService productImageStorageService;
 
     /**
-     * Kiểm tra quyền quản lý shop rồi tải ảnh lên; trả URL khi thành công hoặc thông báo lỗi với HTTP 400.
+     * Kiểm tra quyền quản lý shop rồi tải ảnh lên Cloudinary; trả lỗi dữ liệu 400 hoặc lỗi upload 502.
      */
     @PostMapping("/seller/products/images")
     @ResponseBody
     public ResponseEntity<Map<String, String>> upload(
-            Authentication authentication, @RequestParam MultipartFile file) throws IOException {
+            Authentication authentication, @RequestParam("file") MultipartFile file) {
         shopService.getManagedShopId(authentication);
         try {
             String imageUrl = productImageStorageService.upload(file);
             return ResponseEntity.ok(Map.of("url", imageUrl));
         } catch (CatalogException exception) {
             return ResponseEntity.badRequest().body(Map.of("message", exception.getMessage()));
+        } catch (IOException exception) {
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .body(Map.of("message", "Không thể tải ảnh lên Cloudinary. Vui lòng thử lại."));
         }
     }
 }

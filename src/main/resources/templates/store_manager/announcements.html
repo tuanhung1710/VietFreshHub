@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Thông báo hệ thống</title></head>
+<body>
+<nav><a th:href="@{/seller}">Cửa hàng của tôi</a> · <a th:href="@{/notifications}">Tất cả thông báo</a></nav>
+<h1>Thông báo từ hệ thống và quản trị viên</h1>
+<p th:if="${announcementsPage.empty}">Chưa có thông báo.</p>
+<article th:each="notice : ${announcementsPage.content}">
+    <h2 th:text="${notice.title}"></h2><p th:text="${notice.content}"></p>
+    <time th:text="${#temporals.format(notice.createdAt,'dd/MM/yyyy HH:mm')}"></time>
+    <form th:if="${notice.readAt == null}" method="post" th:action="@{/notifications/{id}/read(id=${notice.notificationId})}"><button>Đánh dấu đã đọc</button></form>
+</article>
+<nav th:if="${announcementsPage.totalPages > 1}">
+    <a th:if="${announcementsPage.hasPrevious()}" th:href="@{/seller/announcements(page=${announcementsPage.number})}">Trang trước</a>
+    <span th:text="${announcementsPage.number + 1} + ' / ' + ${announcementsPage.totalPages}"></span>
+    <a th:if="${announcementsPage.hasNext()}" th:href="@{/seller/announcements(page=${announcementsPage.number + 2})}">Trang tiếp</a>
+</nav>
+</body>
+</html>

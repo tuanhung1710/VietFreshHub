@@ -1,147 +1,112 @@
 package VietFreshHub.checkout.service;
 
 import VietFreshHub.auth.entity.User;
-import VietFreshHub.checkout.entity.CheckoutInventoryBatch;
-import VietFreshHub.checkout.entity.CheckoutStockAllocation;
 import VietFreshHub.checkout.entity.CheckoutStockMovement;
 import VietFreshHub.exception.CheckoutException;
-import VietFreshHub.checkout.exception.CheckoutStockException;
-import VietFreshHub.catalog.entity.CatalogVariant;
+import VietFreshHub.checkout.entity.CheckoutInventoryBatch;
+import VietFreshHub.checkout.entity.CheckoutStockAllocation;
 import VietFreshHub.order.entity.OrderItem;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.math.BigDecimal;
+import VietFreshHub.inventory.entity.InventoryBatch;
+import VietFreshHub.inventory.enums.BatchStatus;
+import VietFreshHub.inventory.service.BatchMarkdownLookup;
+import VietFreshHub.inventory.rule.InventoryRules;
 
-/** Giữ hàng theo lô, ưu tiên lô hết hạn trước. */
-@Service
-@RequiredArgsConstructor
+@Service @RequiredArgsConstructor
 public class InventoryReservationService {
-    private final EntityManager entityManager;
-
-    public record Reservation(Long orderItemId, Long variantId, int quantity) {
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void reserve(List<Reservation> reservations, Long customerId) {
-        User actor = entityManager.getReference(User.class, customerId);
-        LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
-
-        // Mọi yêu cầu đều khóa theo cùng thứ tự để giảm nguy cơ deadlock.
-        List<Reservation> sortedReservations = new ArrayList<>(reservations);
-        sortedReservations.sort(Comparator.comparing(Reservation::variantId)
-                .thenComparing(Reservation::orderItemId));
-
-        for (Reservation reservation : sortedReservations) {
-            validateReservation(reservation);
-            List<CheckoutInventoryBatch> batches = lockSellableBatches(reservation.variantId(), today);
-            checkAvailableQuantity(batches, reservation);
-            reserveFromBatches(batches, reservation, actor);
-        }
-    }
-
-    private void validateReservation(Reservation reservation) {
-        if (reservation.orderItemId() == null || reservation.variantId() == null || reservation.quantity() < 1) {
-            throw new CheckoutException("Yêu cầu giữ kho không hợp lệ.");
-        }
-    }
-
-    private List<CheckoutInventoryBatch> lockSellableBatches(Long variantId, LocalDate today) {
-        // Khóa theo mã lô trước, rồi mới sắp xếp theo hạn sử dụng để phân bổ hàng.
-        String query = "select b from CheckoutInventoryBatch b where b.variant.variantId=:variantId "
-                + "and b.status='ACTIVE' and (b.expiryDate is null or b.expiryDate>=:today) order by b.batchId";
-        List<CheckoutInventoryBatch> batches = entityManager.createQuery(query, CheckoutInventoryBatch.class)
-                .setParameter("variantId", variantId)
-                .setParameter("today", today)
-                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
-                .getResultList();
-        // Nếu entity đã được đọc trước khi chờ khóa, lấy lại số lượng sau khi có khóa.
-        for (CheckoutInventoryBatch batch : batches) {
-            entityManager.refresh(batch, LockModeType.PESSIMISTIC_WRITE);
-        }
-        return batches;
-    }
-
-    private void checkAvailableQuantity(List<CheckoutInventoryBatch> batches, Reservation reservation) {
-        long availableQuantity = 0;
-        for (CheckoutInventoryBatch batch : batches) {
-            availableQuantity += (long) batch.getQuantityOnHand() - batch.getReservedQuantity();
-        }
-        if (availableQuantity < reservation.quantity()) {
-            CatalogVariant variant = entityManager.getReference(CatalogVariant.class, reservation.variantId());
-            throw new CheckoutStockException(reservation.variantId(), variant.getProduct().getName(),
-                    variant.getVariantName(), reservation.quantity(), availableQuantity);
-        }
-    }
-
-    private void reserveFromBatches(List<CheckoutInventoryBatch> batches, Reservation reservation, User actor) {
-        List<CheckoutInventoryBatch> sortedBatches = new ArrayList<>(batches);
-        sortedBatches.sort(Comparator.comparing(CheckoutInventoryBatch::getExpiryDate,
-                        Comparator.nullsLast(Comparator.naturalOrder()))
-                .thenComparing(CheckoutInventoryBatch::getBatchId));
-
-        int remainingQuantity = reservation.quantity();
-        for (CheckoutInventoryBatch batch : sortedBatches) {
-            int availableQuantity = batch.getQuantityOnHand() - batch.getReservedQuantity();
-            int reservedQuantity = Math.min(remainingQuantity, availableQuantity);
-            if (reservedQuantity <= 0) {
-                continue;
-            }
-
-            batch.setReservedQuantity(batch.getReservedQuantity() + reservedQuantity);
-            createAllocation(batch, reservation.orderItemId(), reservedQuantity);
-            recordStockMovement(batch, reservation.orderItemId(), reservedQuantity, actor);
-
-            remainingQuantity -= reservedQuantity;
-            if (remainingQuantity == 0) {
-                break;
-            }
-        }
-    }
-
-    private void createAllocation(CheckoutInventoryBatch batch, Long orderItemId, int quantity) {
-        CheckoutStockAllocation allocation = new CheckoutStockAllocation();
-        allocation.setOrderItem(entityManager.getReference(OrderItem.class, orderItemId));
-        allocation.setBatch(batch);
-        allocation.setQuantity(quantity);
-        entityManager.persist(allocation);
-    }
-
-    private void recordStockMovement(CheckoutInventoryBatch batch, Long orderItemId, int quantity, User actor) {
-        CheckoutStockMovement movement = new CheckoutStockMovement();
-        movement.setVariant(batch.getVariant());
-        movement.setBatch(batch);
-        movement.setTransactionType("RESERVE");
-        movement.setQuantity(quantity);
-        movement.setReferenceType("ORDER_ITEM");
-        movement.setReferenceId(orderItemId);
-        movement.setCreatedBy(actor);
-        movement.setNote("Giữ kho khi đặt đơn COD.");
-        entityManager.persist(movement);
-    }
+    public record Reservation(Long orderItemId,Long variantId,int quantity) {}
     public enum ReservationState { NONE, COMPLETE, INCONSISTENT }
+
+    private final EntityManager em;
+    private final BatchMarkdownLookup markdowns;
+    @Transactional(propagation=Propagation.MANDATORY)
+    public void reserve(List<Reservation> lines,Long customerId) {
+        User actor=em.getReference(User.class,customerId);
+        LocalDate today=LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+        for(Reservation line:lines.stream().sorted(Comparator.comparing(Reservation::variantId)
+                .thenComparing(Reservation::orderItemId)).toList()) {
+            if(line.orderItemId()==null || line.variantId()==null || line.quantity()<1) {
+                throw new CheckoutException("Yêu cầu giữ kho không hợp lệ.");
+            }
+            List<CheckoutInventoryBatch> batches=em.createQuery("select b from CheckoutInventoryBatch b where b.variant.variantId=:variantId "
+                            +"and b.status='ACTIVE' and (b.expiryDate is null or b.expiryDate>=:today) order by b.batchId",CheckoutInventoryBatch.class)
+                    .setParameter("variantId",line.variantId()).setParameter("today",today)
+                    .setLockMode(LockModeType.PESSIMISTIC_WRITE).getResultList();
+            batches = atOrderPrice(line, batches, today);
+            long available=batches.stream().mapToLong(b -> (long)b.getQuantityOnHand()-b.getReservedQuantity()).sum();
+            if(available<line.quantity()) throw new CheckoutException("Một sản phẩm không còn đủ hàng. Vui lòng kiểm tra lại giỏ.");
+            int remaining=line.quantity();
+            // Lock by primary key first; then allocate the earliest-expiring sellable batches.
+            for(CheckoutInventoryBatch batch:batches.stream().sorted(Comparator.comparing(CheckoutInventoryBatch::getExpiryDate, Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(CheckoutInventoryBatch::getBatchId)).toList()) {
+                int reserved=Math.min(remaining,batch.getQuantityOnHand()-batch.getReservedQuantity());
+                if(reserved<=0) continue;
+                batch.setReservedQuantity(batch.getReservedQuantity()+reserved);
+                CheckoutStockAllocation allocation = new CheckoutStockAllocation();
+                allocation.setOrderItem(em.getReference(OrderItem.class,line.orderItemId()));
+                allocation.setBatch(batch); allocation.setQuantity(reserved); em.persist(allocation);
+                CheckoutStockMovement movement=new CheckoutStockMovement();
+                movement.setVariant(batch.getVariant()); movement.setBatch(batch); movement.setTransactionType("RESERVE");
+                movement.setQuantity(reserved); movement.setReferenceType("ORDER_ITEM"); movement.setReferenceId(line.orderItemId());
+                movement.setCreatedBy(actor); movement.setNote("Giữ kho khi đơn chờ thanh toán hoặc xử lý."); em.persist(movement);
+                remaining-=reserved; if(remaining==0) break;
+            }
+        }
+    }
+
     @Transactional(propagation=Propagation.MANDATORY)
     public boolean canReserve(List<Reservation> lines) {
         for (Reservation line : lines.stream().sorted(Comparator.comparing(Reservation::variantId)
                 .thenComparing(Reservation::orderItemId)).toList()) {
             LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
-            List<CheckoutInventoryBatch> batches = entityManager.createQuery("select b from CheckoutInventoryBatch b where b.variant.variantId=:variantId "
+            List<CheckoutInventoryBatch> batches = em.createQuery("select b from CheckoutInventoryBatch b where b.variant.variantId=:variantId "
                             + "and b.status='ACTIVE' and (b.expiryDate is null or b.expiryDate>=:today) order by b.batchId", CheckoutInventoryBatch.class)
                     .setParameter("variantId", line.variantId()).setParameter("today", today)
                     .setLockMode(LockModeType.PESSIMISTIC_WRITE).getResultList();
+            batches = atOrderPrice(line, batches, today);
             long available = batches.stream().mapToLong(b -> (long) b.getQuantityOnHand() - b.getReservedQuantity()).sum();
             if (available < line.quantity()) return false;
         }
         return true;
+    }
+
+    /** Allocate the exact price quoted by the catalog; a discounted order cannot consume full-price lots. */
+    private List<CheckoutInventoryBatch> atOrderPrice(Reservation line, List<CheckoutInventoryBatch> batches, LocalDate today) {
+        OrderItem item = em.find(OrderItem.class, line.orderItemId());
+        if (item == null || item.getUnitPrice() == null) throw new CheckoutException("Không xác định được giá của dòng đơn hàng.");
+        var snapshots = batches.stream().map(batch -> {
+            var snapshot = new InventoryBatch();
+            snapshot.setBatchId(batch.getBatchId());
+            snapshot.setVariantId(line.variantId());
+            snapshot.setQuantityOnHand(batch.getQuantityOnHand());
+            snapshot.setReservedQuantity(batch.getReservedQuantity());
+            snapshot.setExpiryDate(batch.getExpiryDate());
+            snapshot.setStatus(BatchStatus.valueOf(batch.getStatus()));
+            return snapshot;
+        }).toList();
+        var activeMarkdowns = markdowns.findActive(snapshots);
+        Map<Long,BigDecimal> batchPrices = new HashMap<>();
+        for (int index=0; index<batches.size(); index++) {
+            var batch = batches.get(index);
+            var snapshot = snapshots.get(index);
+            BigDecimal basePrice = batch.getVariant().getPrice();
+            BigDecimal price = activeMarkdowns.stream().filter(markdown -> InventoryRules.isApplicableMarkdown(snapshot,markdown,basePrice,today))
+                    .map(markdown -> markdown.getPrice()).min(BigDecimal::compareTo).orElse(basePrice);
+            batchPrices.put(batch.getBatchId(),price);
+        }
+        return batches.stream().filter(batch -> batchPrices.get(batch.getBatchId()).compareTo(item.getUnitPrice())==0).toList();
     }
 
     @Transactional(propagation=Propagation.MANDATORY)
@@ -150,7 +115,7 @@ public class InventoryReservationService {
         Map<Long, Long> expected = new HashMap<>();
         for (Reservation line : lines) expected.put(line.orderItemId(), (long) line.quantity());
         List<Long> itemIds = lines.stream().map(Reservation::orderItemId).toList();
-        List<CheckoutStockAllocation> allocations = entityManager.createQuery("select a from CheckoutStockAllocation a "
+        List<CheckoutStockAllocation> allocations = em.createQuery("select a from CheckoutStockAllocation a "
                         + "where a.orderItem.orderItemId in :ids and a.status='RESERVED' order by a.allocationId", CheckoutStockAllocation.class)
                 .setParameter("ids", itemIds).setLockMode(LockModeType.PESSIMISTIC_WRITE).getResultList();
         Map<Long, Long> active = new HashMap<>();

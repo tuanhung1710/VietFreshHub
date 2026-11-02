@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{store_manager/profile-layout :: head('Hồ sơ cửa hàng | VietFresh Hub')}"></head>
+<body>
+<header th:replace="~{store_manager/profile-layout :: header}"></header>
+<main class="container">
+    <nav class="breadcrumb" aria-label="Đường dẫn">
+        <a th:href="@{/seller}">Cửa hàng của tôi</a> &nbsp;/&nbsp; <b>Hồ sơ cửa hàng</b>
+        &nbsp;·&nbsp; <a href="#pickup">Địa điểm lấy hàng</a>
+    </nav>
+    <div class="page-heading">
+        <div><h1>Hồ sơ cửa hàng</h1><p>Xem và cập nhật thông tin gian hàng, quản lý trạng thái nhận đơn.</p></div>
+        <a class="button primary" th:href="@{/seller/profile/edit}">Sửa hồ sơ</a>
+    </div>
+    <p class="inline-message" th:if="${successMessage}" th:text="${successMessage}" role="status"></p>
+    <p class="inline-message" th:if="${errorMessage}" th:text="${errorMessage}" role="alert"></p>
+    <div class="layout">
+        <div>
+            <section class="panel" aria-labelledby="profile-title">
+                <div class="panel-head">
+                    <h2 id="profile-title">Thông tin gian hàng</h2>
+                    <small>Mã cửa hàng: <strong th:text="${shop.shopCode}"></strong></small>
+                </div>
+                <div class="panel-body">
+                    <div class="cover">
+                        <img th:if="${!#strings.isEmpty(shop.bannerUrl)}" th:src="${shop.bannerUrl}"
+                             th:alt="${'Ảnh bìa ' + shop.shopName}" data-image-fallback>
+                        <div class="cover-text" th:hidden="${!#strings.isEmpty(shop.bannerUrl)}">
+                            <span th:text="${shop.shopName}"></span>
+                            <small>Trái cây tươi · Gian hàng VietFresh Hub</small>
+                        </div>
+                    </div>
+                    <div class="identity">
+                        <div class="avatar">
+                            <img th:if="${!#strings.isEmpty(shop.logoUrl)}" th:src="${shop.logoUrl}"
+                                 th:alt="${'Logo ' + shop.shopName}" data-image-fallback>
+                            <span th:hidden="${!#strings.isEmpty(shop.logoUrl)}" aria-label="Chưa cập nhật logo"
+                                  th:text="${#strings.toUpperCase(#strings.substring(shop.shopName, 0, 1))}">V</span>
+                        </div>
+                        <div><h2 th:text="${shop.shopName}"></h2><p>Hồ sơ gian hàng trên VietFresh Hub</p></div>
+                    </div>
+                    <table class="info-table"><tbody>
+                        <tr><th scope="row">Mã cửa hàng</th><td th:text="${shop.shopCode}"></td></tr>
+                        <tr><th scope="row">Mô tả</th><td class="description" th:text="${#strings.isEmpty(shop.description) ? 'Chưa cập nhật' : shop.description}"></td></tr>
+                        <tr><th scope="row">Điện thoại</th><td th:text="${#strings.isEmpty(shop.phone) ? 'Chưa cập nhật' : shop.phone}"></td></tr>
+                        <tr><th scope="row">Email</th><td th:text="${#strings.isEmpty(shop.email) ? 'Chưa cập nhật' : shop.email}"></td></tr>
+                        <tr><th scope="row">Logo</th><td class="path" th:text="${#strings.isEmpty(shop.logoUrl) ? 'Chưa cập nhật' : shop.logoUrl}"></td></tr>
+                        <tr><th scope="row">Ảnh bìa</th><td class="path" th:text="${#strings.isEmpty(shop.bannerUrl) ? 'Chưa cập nhật' : shop.bannerUrl}"></td></tr>
+                    </tbody></table>
+                </div>
+            </section>
+            <section th:replace="~{store_manager/profile-layout :: pickup}"></section>
+        </div>
+        <aside class="right-rail" aria-label="Trạng thái và tóm tắt cửa hàng">
+            <section class="panel" aria-labelledby="availability-title">
+                <div class="panel-head"><h2 id="availability-title">Trạng thái nhận đơn</h2></div>
+                <div class="panel-body">
+                    <div class="status-line">
+                        <span class="status-text" th:text="${shop.availabilityStatus == 'OPEN' ? 'Đang nhận đơn' : 'Tạm ngừng nhận đơn'}"></span>
+                        <span class="pill" th:text="${shop.availabilityStatus == 'OPEN' ? 'Mở cửa' : 'Tạm đóng'}"></span>
+                    </div>
+                    <p class="status-caption">Cho phép khách hàng đặt hàng mới từ gian hàng khi trạng thái là “Mở cửa”.</p>
+                    <form class="availability-form" method="post" th:action="@{/seller/profile/availability}">
+                        <label for="availability">Nhận đơn</label>
+                        <select id="availability" name="status" th:disabled="${shop.status != 'ACTIVE'}" aria-describedby="availability-help">
+                            <option value="OPEN" th:selected="${shop.availabilityStatus == 'OPEN'}">Mở cửa – Nhận đơn mới</option>
+                            <option value="CLOSED" th:selected="${shop.availabilityStatus == 'CLOSED'}">Tạm ngừng nhận đơn</option>
+                        </select>
+                        <p class="help" id="availability-help" th:text="${shop.status == 'ACTIVE' ? 'Thay đổi trạng thái không xóa sản phẩm hoặc hồ sơ cửa hàng.' : 'Cửa hàng chưa hoạt động không thể đổi trạng thái nhận đơn.'}"></p>
+                        <button class="primary" type="submit" th:disabled="${shop.status != 'ACTIVE'}">Lưu trạng thái</button>
+                    </form>
+                </div>
+            </section>
+            <section th:replace="~{store_manager/profile-layout :: summary}"></section>
+        </aside>
+    </div>
+</main>
+<footer th:replace="~{store_manager/profile-layout :: footer}"></footer>
+</body>
+</html>

@@ -6,15 +6,20 @@ import lombok.Getter;
 @Getter @Builder
 public class CatalogProductResponse {
     private Long productId;
+    private Long shopId;
     private String name, slug, description, imageUrl, shopName;
+    private String shopPlace, categoryName;
+    private Long categoryId;
+    private BigDecimal rating;
+    private long sales;
     private List<VariantResponse> variants;
     private VariantResponse selectedVariant;
     @Getter @Builder
     public static class VariantResponse {
         private Long variantId;
-        private String variantName, sku, status;
+        private String variantName, sku, status, imageUrl;
         private BigDecimal price;
-        private String imageUrl;
+        private BigDecimal basePrice;
         private String availabilityMessage;
         private int availableStock;
         private boolean purchasable;

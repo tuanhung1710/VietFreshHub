@@ -150,7 +150,7 @@
                             <span class="material-symbols-outlined absolute left-3 text-outline text-[20px] pointer-events-none">lock</span>
                             <input class="w-full pl-10 pr-12 py-2.5 bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg outline-none transition-shadow shadow-[0_1px_3px_0_rgba(15,23,42,0.06)] focus:shadow-[0_0_0_2px_#006b2c] placeholder:text-outline"
                                    id="password"
-                                   th:field="*{password}"
+                                   th:field="*{password}" maxlength="72"
                                    minlength="8"
                                    placeholder="Tối thiểu 8 ký tự"
                                    required
@@ -189,7 +189,7 @@
                             <span class="material-symbols-outlined absolute left-3 text-outline text-[20px] pointer-events-none">lock_reset</span>
                             <input class="w-full pl-10 pr-12 py-2.5 bg-surface-container-lowest text-on-surface font-body-md text-body-md rounded-lg outline-none transition-shadow shadow-[0_1px_3px_0_rgba(15,23,42,0.06)] focus:shadow-[0_0_0_2px_#006b2c] placeholder:text-outline"
                                    id="confirmPassword"
-                                   th:field="*{confirmPassword}"
+                                   th:field="*{confirmPassword}" maxlength="72"
                                    placeholder="Nhập lại mật khẩu vừa đặt"
                                    required
                                    type="password"/>
@@ -246,7 +246,7 @@
                 <div class="mt-space-lg text-center pt-space-md bg-surface-container-lowest">
                     <p class="font-body-md text-body-md text-on-surface-variant">
                         Đã có tài khoản?
-                        <a class="text-primary hover:text-primary-container font-title-md text-title-md ml-1 hover:underline" href="/login">
+                        <a class="text-primary hover:text-primary-container font-title-md text-title-md ml-1 hover:underline" th:href="@{/login}">
                             Đăng nhập ngay
                         </a>
                     </p>

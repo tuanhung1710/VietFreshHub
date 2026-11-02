@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" role="img" aria-labelledby="title">
+  <title id="title">Ảnh nền mẫu Vườn Nhà Sơn</title>
+  <defs><linearGradient id="sky" x2="1" y2="1"><stop stop-color="#fbf7e8"/><stop offset="1" stop-color="#d8e8c3"/></linearGradient></defs>
+  <path fill="url(#sky)" d="M0 0h1200v400H0z"/>
+  <circle cx="1050" cy="65" r="115" fill="#f5d88b" opacity=".55"/>
+  <path d="M0 315Q220 240 430 320T840 290t360-20v130H0z" fill="#c8dcb4"/>
+  <path d="M0 365Q240 290 500 360T920 330t280-20v90H0z" fill="#aac68e"/>
+  <g stroke="#64844d" stroke-width="12" stroke-linecap="round"><path d="M948 352V174m117 180V133m102 222V207"/></g>
+  <g fill="#87ad6d"><circle cx="948" cy="173" r="83"/><circle cx="1065" cy="141" r="100"/><circle cx="1167" cy="207" r="75"/></g>
+  <g fill="#edae48" stroke="#dd9633" stroke-width="3"><circle cx="916" cy="158" r="19"/><circle cx="969" cy="198" r="17"/><circle cx="1044" cy="104" r="21"/><circle cx="1100" cy="163" r="20"/><circle cx="1145" cy="208" r="17"/></g>
+  <g fill="none" stroke="#e8efdb" stroke-width="3" opacity=".7"><path d="M35 55q40 12 65-12M65 85q45 12 70-12M800 38q40 12 65-12"/></g>
+</svg>

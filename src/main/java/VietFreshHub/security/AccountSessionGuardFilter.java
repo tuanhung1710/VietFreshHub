@@ -99,6 +99,10 @@ public class AccountSessionGuardFilter extends OncePerRequestFilter {
             session.invalidate();
         }
         securityContextRepository.saveContext(emptyContext, request, response);
-        response.sendRedirect(request.getContextPath() + "/login?" + reason + "=true");
+        if (request.getRequestURI().startsWith(request.getContextPath() + "/storefront/api/")) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+        } else {
+            response.sendRedirect(request.getContextPath() + "/login?" + reason + "=true");
+        }
     }
 }
