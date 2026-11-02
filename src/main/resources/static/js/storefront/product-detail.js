@@ -11,4 +11,11 @@ document.querySelectorAll('img').forEach(image => {
     image.addEventListener('error', fallback);
     if (image.complete && !image.naturalWidth) fallback();
 });
+document.addEventListener('click', event => {
+    const thumb = event.target.closest('[data-photo]');
+    if (thumb) {
+        photo.src = thumb.dataset.photo;
+        document.querySelectorAll('[data-photo]').forEach(button => button.classList.toggle('active', button === thumb));
+    }
+});
 refreshCartCount().catch(error => notice(error.message));

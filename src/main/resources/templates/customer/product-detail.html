@@ -24,6 +24,10 @@
   <section class="detail">
     <div class="gallery">
       <div class="mainphoto"><img id="mainPhoto" th:src="${mainUrl}" th:alt="${product.name}"></div>
+      <div class="thumbs" aria-label="Ảnh sản phẩm">
+        <button class="thumb active" type="button" th:attr="data-photo=${mainUrl}" aria-label="Ảnh chính"><img th:src="${mainUrl}" th:alt="${product.name}"></button>
+        <th:block th:each="image,iter : ${details.images}"><button th:if="${image != mainUrl}" class="thumb" type="button" th:attr="data-photo=${image},aria-label=${'Ảnh sản phẩm '+(iter.index+2)}"><img th:src="${image}" alt="Ảnh sản phẩm" loading="lazy"></button></th:block>
+      </div>
       <p class="photo-caption">Ảnh sản phẩm</p>
     </div>
     <div class="info">
