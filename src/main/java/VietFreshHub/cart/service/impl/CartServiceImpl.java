@@ -2,64 +2,33 @@ package VietFreshHub.cart.service.impl;
 
 import VietFreshHub.auth.entity.User;
 import VietFreshHub.auth.repository.UserRepository;
-import VietFreshHub.cart.dto.AddToCartRequest;
-import VietFreshHub.cart.dto.AddToCartResponse;
-import VietFreshHub.cart.dto.CartDto;
-import VietFreshHub.cart.dto.CartItemDto;
-import VietFreshHub.cart.entity.Cart;
-import VietFreshHub.cart.entity.CartItem;
-import VietFreshHub.cart.repository.CartItemRepository;
-import VietFreshHub.cart.repository.CartRepository;
+import VietFreshHub.cart.dto.*;
+import VietFreshHub.cart.entity.*;
+import VietFreshHub.cart.repository.*;
 import VietFreshHub.cart.service.CartService;
-import VietFreshHub.cart.service.CartViewMapper;
+import VietFreshHub.catalog.service.CatalogPricingService;
 import VietFreshHub.catalog.dto.StockCheckResponse;
 import VietFreshHub.catalog.entity.CatalogVariant;
 import VietFreshHub.catalog.repository.CatalogVariantRepository;
 import VietFreshHub.catalog.service.CatalogService;
-import VietFreshHub.checkout.repository.CheckoutInventoryBatchRepository;
-import VietFreshHub.exception.OutOfStockException;
-import VietFreshHub.exception.ResourceNotFoundException;
+import VietFreshHub.exception.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
+import java.math.BigDecimal;
 import java.util.Comparator;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+
 @Service
 @RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
     private final CatalogVariantRepository productVariantRepository;
-    private final CheckoutInventoryBatchRepository inventoryBatchRepository;
+    private final CatalogPricingService pricing;
     private final UserRepository userRepository;
     private final CatalogService catalogService;
-
-    @Override
-    @Transactional
-    public AddToCartResponse addToCart(Long userId, AddToCartRequest request) {
-        validateAddRequest(request);
-        User user = lockCustomer(userId);
-        CatalogVariant variant = requirePurchasable(request.getVariantId());
-        Cart cart = findOrCreateCart(userId, user);
-        CartItem item = findOrCreateItem(cart, variant);
-
-        long combinedQuantity = (long) item.getQuantity() + request.getQuantity();
-        int stock = availableStock(variant.getVariantId());
-        if (combinedQuantity > stock) {
-            throw insufficientStock(variant, combinedQuantity, stock);
-        }
-
-        item.setQuantity((int) combinedQuantity);
-        item.setUnitPriceSnapshot(variant.getPrice());
-        CartItem savedItem = cartItemRepository.save(item);
-        return CartViewMapper.toAddResponse(cart, savedItem, variant);
-    }
 
     @Override
     @Transactional(readOnly = true)
@@ -68,80 +37,104 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
+    @Transactional
+    public AddToCartResponse addToCart(Long userId, AddToCartRequest request) {
+        if (request == null || request.getVariantId() == null || request.getVariantId() <= 0
+                || request.getQuantity() == null || request.getQuantity() < 1) {
+            throw new IllegalArgumentException("Vui lòng chọn sản phẩm và nhập số lượng từ 1 trở lên.");
+        }
+        User user = lockCustomer(userId);
+        CatalogVariant variant = requirePurchasable(request.getVariantId());
+        Cart cart = cartRepository.findByUserUserIdAndStatus(userId, "ACTIVE").orElseGet(() -> {
+            Cart created = new Cart();
+            created.setUser(user);
+            return cartRepository.save(created);
+        });
+        CartItem item = cartItemRepository.findByCartCartIdAndVariantVariantId(cart.getCartId(), variant.getVariantId())
+                .orElseGet(() -> {
+                    CartItem created = new CartItem();
+                    created.setCart(cart);
+                    created.setVariant(variant);
+                    created.setQuantity(0);
+                    return created;
+                });
+        long quantity = (long) item.getQuantity() + request.getQuantity();
+        var offer = offer(variant.getVariantId());
+        int stock = offer.availableStock();
+        if (quantity > stock) throw insufficientStock(stock);
+        item.setQuantity((int) quantity);
+        item.setUnitPriceSnapshot(offer.price());
+        CartItem saved = cartItemRepository.save(item);
+        return AddToCartResponse.builder().cartItemId(saved.getCartItemId()).cartId(cart.getCartId())
+                .variantId(variant.getVariantId()).variantName(variant.getVariantName()).quantity(saved.getQuantity())
+                .unitPriceSnapshot(offer.price()).itemSubtotal(offer.price().multiply(BigDecimal.valueOf(quantity)))
+                .message("Đã thêm sản phẩm vào giỏ hàng.").build();
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public CartDto getActiveCart(Long userId) {
         Cart cart = cartRepository.findByUserUserIdAndStatus(userId, "ACTIVE").orElse(null);
-        if (cart == null) {
-            return CartViewMapper.emptyCart(userId);
-        }
+        if (cart == null) return CartDto.builder().userId(userId).status("ACTIVE").totalItems(0).totalAmount(BigDecimal.ZERO).build();
+        var offers = pricing.offers(cart.getItems().stream()
+                .map(i -> i.getVariant().getVariantId()).distinct().toList());
+        List<CartItemDto> items = cart.getItems().stream().map(i -> toItem(i, offers.get(i.getVariant().getVariantId())))
+                .sorted(Comparator.comparing(CartItemDto::getShopId).thenComparing(CartItemDto::getCartItemId)).toList();
+        return CartDto.builder().cartId(cart.getCartId()).userId(userId).status(cart.getStatus()).items(items)
+                .totalItems(items.stream().mapToLong(CartItemDto::getQuantity).sum())
+                .totalAmount(items.stream().filter(CartItemDto::isPurchasable).map(CartItemDto::getItemSubtotal)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add))
+                .hasUnavailableItems(items.stream().anyMatch(i -> !i.isPurchasable())).build();
+    }
 
-        List<Long> variantIds = collectVariantIds(cart);
-        Map<Long, Integer> stocks = inventoryBatchRepository.getAvailableStocks(variantIds);
-        List<CatalogVariant> cartVariants = new ArrayList<>();
-        for (CartItem item : cart.getItems()) {
-            cartVariants.add(item.getVariant());
-        }
-        Map<Long, Boolean> purchasableVariants = catalogService.purchasableVariants(cartVariants);
-        List<CartItemDto> items = new ArrayList<>();
-        for (CartItem item : cart.getItems()) {
-            CatalogVariant variant = item.getVariant();
-            int stock = stocks.getOrDefault(variant.getVariantId(), 0);
-            boolean catalogPurchasable = purchasableVariants.getOrDefault(variant.getVariantId(), false);
-            CartItemDto itemDto = CartViewMapper.toCartItem(item, stock, catalogPurchasable);
-            items.add(itemDto);
-        }
-
-        items.sort(Comparator.comparing(CartItemDto::getShopId)
-                .thenComparing(CartItemDto::getCartItemId));
-        return CartViewMapper.toCart(cart, userId, items);
+    private CartItemDto toItem(CartItem item, CatalogPricingService.Offer offer) {
+        CatalogVariant variant = item.getVariant();
+        int stock = offer == null ? 0 : offer.availableStock();
+        BigDecimal price = offer == null ? variant.getPrice() : offer.price();
+        boolean eligible = catalogService.isPurchasable(variant);
+        boolean purchasable = eligible && stock > 0 && item.getQuantity() <= stock;
+        String message = !eligible ? "Sản phẩm hoặc cửa hàng hiện không nhận đơn."
+                : stock == 0 ? "Tạm hết hàng. Bạn có thể giữ lại trong giỏ hoặc xóa sản phẩm."
+                : item.getQuantity() > stock ? "Chỉ còn " + stock + " sản phẩm. Vui lòng giảm số lượng." : null;
+        return CartItemDto.builder().cartItemId(item.getCartItemId()).variantId(variant.getVariantId())
+                .variantName(variant.getVariantName()).quantity(item.getQuantity()).unitPriceSnapshot(price)
+                .previousPrice(item.getUnitPriceSnapshot()).priceChanged(price.compareTo(item.getUnitPriceSnapshot()) != 0)
+                .itemSubtotal(price.multiply(BigDecimal.valueOf(item.getQuantity())))
+                .availableStock(stock).status(variant.getStatus()).purchasable(purchasable).quantityEditable(eligible && stock > 0).availabilityMessage(message)
+                .imageUrl(variant.getDisplayImageUrl()).productName(variant.getProduct().getName())
+                .shopId(variant.getProduct().getShop().getShopId()).shopName(variant.getProduct().getShop().getShopName()).build();
     }
 
     @Override
     @Transactional(readOnly = true)
     public StockCheckResponse getVariantStock(Long variantId) {
         CatalogVariant variant = productVariantRepository.findById(variantId).orElse(null);
-        boolean catalogPurchasable = catalogService.isPurchasable(variant);
-        int stock = 0;
-        if (catalogPurchasable) {
-            stock = availableStock(variantId);
-        }
-
-        String status = "NOT_FOUND";
-        if (variant != null) {
-            status = variant.getStatus();
-        }
-        return StockCheckResponse.builder()
-                .variantId(variantId)
-                .availableStock(stock)
-                .status(status)
-                .purchasable(catalogPurchasable && stock > 0)
-                .build();
+        boolean eligible = catalogService.isPurchasable(variant);
+        int stock = eligible ? availableStock(variantId) : 0;
+        return StockCheckResponse.builder().variantId(variantId).availableStock(stock)
+                .status(variant == null ? "NOT_FOUND" : variant.getStatus()).purchasable(eligible && stock > 0).build();
     }
 
     @Override
     @Transactional
     public void updateCartItemQuantity(Long userId, Long variantId, int quantity) {
-        if (quantity < 0) {
-            throw new IllegalArgumentException("Số lượng không được âm.");
-        }
+        if (quantity < 0) throw new IllegalArgumentException("Số lượng không được âm.");
         lockCustomer(userId);
         Cart cart = cartRepository.findByUserUserIdAndStatus(userId, "ACTIVE")
                 .orElseThrow(() -> new ResourceNotFoundException("Giỏ hàng đang trống."));
         CartItem item = cartItemRepository.findByCartCartIdAndVariantVariantId(cart.getCartId(), variantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm không còn trong giỏ hàng."));
-
         if (quantity == 0) {
-            deleteItem(cart, item);
+            cart.getItems().remove(item);
+            cartItemRepository.delete(item);
             return;
         }
-
         CatalogVariant variant = requirePurchasable(variantId);
-        int stock = availableStock(variantId);
-        if (quantity > stock) {
-            throw insufficientStock(variant, quantity, stock);
-        }
+        var offer = offer(variantId);
+        int stock = offer.availableStock();
+        if (quantity > stock) throw insufficientStock(stock);
         item.setQuantity(quantity);
-        item.setUnitPriceSnapshot(variant.getPrice());
+        item.setUnitPriceSnapshot(offer.price());
         cartItemRepository.save(item);
     }
 
@@ -149,100 +142,43 @@ public class CartServiceImpl implements CartService {
     @Transactional
     public void removeCartItem(Long userId, Long variantId) {
         lockCustomer(userId);
-        Cart cart = cartRepository.findByUserUserIdAndStatus(userId, "ACTIVE").orElse(null);
-        if (cart == null) {
-            return;
-        }
-        CartItem item = cartItemRepository.findByCartCartIdAndVariantVariantId(cart.getCartId(), variantId)
-                .orElse(null);
-        if (item != null) {
-            deleteItem(cart, item);
-        }
+        cartRepository.findByUserUserIdAndStatus(userId, "ACTIVE").ifPresent(cart ->
+                cartItemRepository.findByCartCartIdAndVariantVariantId(cart.getCartId(), variantId).ifPresent(item -> {
+                    cart.getItems().remove(item);
+                    cartItemRepository.delete(item);
+                }));
     }
 
     @Override
     @Transactional
     public void clearCart(Long userId) {
         lockCustomer(userId);
-        Cart cart = cartRepository.findByUserUserIdAndStatus(userId, "ACTIVE").orElse(null);
-        if (cart != null) {
-            cart.getItems().clear();
-        }
-    }
-
-    private void validateAddRequest(AddToCartRequest request) {
-        if (request == null || request.getVariantId() == null || request.getVariantId() <= 0
-                || request.getQuantity() == null || request.getQuantity() < 1) {
-            throw new IllegalArgumentException("Vui lòng chọn sản phẩm và nhập số lượng từ 1 trở lên.");
-        }
-    }
-
-    private Cart findOrCreateCart(Long userId, User user) {
-        Cart cart = cartRepository.findByUserUserIdAndStatus(userId, "ACTIVE").orElse(null);
-        if (cart != null) {
-            return cart;
-        }
-        Cart newCart = new Cart();
-        newCart.setUser(user);
-        return cartRepository.save(newCart);
-    }
-
-    private CartItem findOrCreateItem(Cart cart, CatalogVariant variant) {
-        CartItem item = cartItemRepository.findByCartCartIdAndVariantVariantId(cart.getCartId(), variant.getVariantId())
-                .orElse(null);
-        if (item != null) {
-            return item;
-        }
-        CartItem newItem = new CartItem();
-        newItem.setCart(cart);
-        newItem.setVariant(variant);
-        newItem.setQuantity(0);
-        return newItem;
-    }
-
-    private List<Long> collectVariantIds(Cart cart) {
-        Set<Long> variantIds = new LinkedHashSet<>();
-        for (CartItem item : cart.getItems()) {
-            variantIds.add(item.getVariant().getVariantId());
-        }
-        return List.copyOf(variantIds);
-    }
-
-    private void deleteItem(Cart cart, CartItem item) {
-        cart.getItems().remove(item);
-        cartItemRepository.delete(item);
+        cartRepository.findByUserUserIdAndStatus(userId, "ACTIVE").ifPresent(cart -> cart.getItems().clear());
     }
 
     private User lockCustomer(Long userId) {
+        // Serialize mutations on the user row, including creation of the first active cart.
         User user = userRepository.findByUserIdForUpdate(userId)
                 .orElseThrow(() -> new AccessDeniedException("Tài khoản không hợp lệ."));
-        if (!"ACTIVE".equals(user.getStatus())) {
-            throw new AccessDeniedException("Tài khoản không còn được phép mua hàng.");
-        }
+        if (!"ACTIVE".equals(user.getStatus())) throw new AccessDeniedException("Tài khoản không còn được phép mua hàng.");
         return user;
     }
 
     private CatalogVariant requirePurchasable(Long variantId) {
         CatalogVariant variant = productVariantRepository.findById(variantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sản phẩm không còn được bán."));
-        if (!catalogService.isPurchasable(variant)) {
-            throw new ResourceNotFoundException("Sản phẩm hoặc cửa hàng hiện không nhận đơn.");
-        }
+        if (!catalogService.isPurchasable(variant)) throw new ResourceNotFoundException("Sản phẩm hoặc cửa hàng hiện không nhận đơn.");
         return variant;
     }
-
     private int availableStock(Long variantId) {
-        Integer stock = inventoryBatchRepository.getAvailableStockByVariantId(variantId);
-        if (stock == null) {
-            return 0;
-        }
-        return stock;
+        return offer(variantId).availableStock();
     }
-
-    private OutOfStockException insufficientStock(CatalogVariant variant, long requestedQuantity, int stock) {
-        String message = variant.getProduct().getName() + " — " + variant.getVariantName()
-                + ": tổng số lượng trong giỏ cần " + requestedQuantity + ", hiện chỉ còn " + stock
-                + " sản phẩm có thể mua. Vui lòng điều chỉnh số lượng.";
-        return new OutOfStockException(message, stock);
+    private CatalogPricingService.Offer offer(Long variantId) {
+        var offer = pricing.offers(List.of(variantId)).get(variantId);
+        if (offer == null) throw new ResourceNotFoundException("Sản phẩm không còn được bán.");
+        return offer;
+    }
+    private OutOfStockException insufficientStock(int stock) {
+        return new OutOfStockException("Chỉ còn " + stock + " sản phẩm có thể mua. Vui lòng điều chỉnh số lượng.", stock);
     }
 }

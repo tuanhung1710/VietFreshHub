@@ -16,9 +16,23 @@ public interface CustomerPaymentReadRepository extends Repository<Payment, Long>
             + "p.amount,p.status,p.createdAt,p.paidAt,p.transactionReference"
             + ") from Payment p join p.order o where o.customer.userId=:customerId "
             + "and (:status is null or p.status=:status) "
-            + "and (:keyword='' or locate(lower(:keyword),lower(o.orderCode))>0) "
+            + "and (:keyword='' or locate(lower(:keyword),lower(o.orderCode))>0 "
+            + "or exists (select s.shopOrderId from ShopOrder s where s.order=o and s.shopOrderId=:shopOrderId)) "
             + "and (:fromDate is null or p.createdAt>=:fromDate) and (:untilDate is null or p.createdAt<:untilDate)")
-    Page<PaymentHistoryRow> findHistory(@Param("customerId") Long customerId,
+    Page<PaymentHistoryRow> findHistoryWithOrderCode(@Param("customerId") Long customerId,
             @Param("status") Payment.Status status, @Param("keyword") String keyword,
-            @Param("fromDate") LocalDateTime fromDate, @Param("untilDate") LocalDateTime untilDate, Pageable pageable);
+            @Param("fromDate") LocalDateTime fromDate, @Param("untilDate") LocalDateTime untilDate, @Param("shopOrderId") Long shopOrderId, Pageable pageable);
+
+    default Page<PaymentHistoryRow> findHistory(Long customerId, Payment.Status status, String keyword,
+            LocalDateTime fromDate, LocalDateTime untilDate, Pageable pageable) {
+        return findHistoryWithOrderCode(customerId, status, keyword, fromDate, untilDate,
+                VietFreshHub.common.BusinessCodes.parse("VFH", keyword), pageable);
+    }
+
+    interface OrderReference { Long getOrderId(); Long getShopOrderId(); }
+
+    @Query("select s.order.orderId as orderId, s.shopOrderId as shopOrderId from ShopOrder s "
+            + "where s.order.customer.userId=:customerId and s.order.orderId in :orderIds order by s.shopOrderId")
+    java.util.List<OrderReference> findOrderReferences(@Param("customerId") Long customerId,
+            @Param("orderIds") java.util.List<Long> orderIds);
 }

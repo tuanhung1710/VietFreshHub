@@ -1,74 +1,110 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/head :: head('Trang chủ | VietFresh Hub')}"></head>
-<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col">
-<div th:replace="~{fragments/header :: header}"></div>
-<main class="w-full pt-24 bg-surface flex-1">
-    <style>@import url('/css/storefront.css');</style>
-<div class="container page marketplace-page">
-        <div th:replace="~{fragments/storefront :: messages}"></div>
-    <section th:if="${#strings.isEmpty(keyword)}" class="market-hero" aria-label="Khám phá trái cây">
-        <div class="hero-copy"><span class="hero-kicker">VIETFRESH HUB · TRÁI CÂY THEO MÙA</span>
-            <h1>Trái cây tươi<br>cho mỗi ngày.</h1>
-            <p>Khám phá các cửa hàng, chọn phân loại và gom sản phẩm vào một giỏ hàng.</p>
-            <a class="button hero-cta" href="#catalog">Khám phá sản phẩm <span aria-hidden="true">↗</span></a>
-        </div>
-        <div class="hero-photo"><img th:src="@{/images/buoi-da-xanh.jpg}" alt="Bưởi da xanh" width="460" height="300"></div>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VietFresh Hub | Monochrome Fruit Storefront</title>
+<link rel="stylesheet" th:href="@{/css/customer-shop.css}" href="/css/customer-shop.css">
+<link rel="stylesheet" th:href="@{/css/discount-pricing.css}">
+<th:block th:replace="~{fragments/account-menu :: assets}"></th:block>
+<meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
+<meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
+</head>
+<body th:attr="data-initial-view=${initialView},data-shop-id=${initialShopId},data-product-id=${initialProductId},data-variant-id=${initialVariantId}">
+<header th:replace="~{fragments/customer-shop :: header}"></header>
+<main class="container">
+  <div id="notice" class="notice hide"></div>
+
+  <div id="home">
+    <section class="bannergrid" style="margin-top:22px">
+      <div class="hero">
+        <h1>Trái cây tươi mỗi ngày</h1>
+        <p>Khám phá các loại trái cây nội địa và nhập khẩu từ nhiều gian hàng trên VietFresh Hub. Toàn bộ dữ liệu demo trong trang này đều là trái cây.</p>
+        <button data-all>Xem tất cả sản phẩm</button>
+      </div>
+      <div class="sidebanners">
+        <div class="sidebanner"><h3>Sản phẩm bán chạy</h3><p>Khám phá các loại trái cây được mua nhiều.</p><button data-best>Xem ngay</button></div>
+        <div class="sidebanner"><h3>Khám phá gian hàng</h3><p>Truy cập các shop trái cây để xem sản phẩm riêng.</p><button data-shops>Danh sách shop</button></div>
+      </div>
     </section>
-    <section id="catalog" class="catalog-section">
-        <div class="catalog-heading"><div><p class="eyebrow">Khám phá cửa hàng</p>
-            <h1 class="catalog-title" th:if="${not #strings.isEmpty(keyword)}" th:text="'Kết quả cho “' + ${keyword} + '”'"></h1>
-            <h2 class="catalog-title" th:if="${#strings.isEmpty(keyword)}">Danh sách sản phẩm</h2></div>
-            <p class="muted" th:text="${productPage.totalElements} + ' sản phẩm'"></p>
-        </div>
-        <nav class="category-chips" aria-label="Lọc theo nhóm sản phẩm">
-            <a th:href="@{/home(keyword=${keyword})} + '#catalog'"
-               th:classappend="${#strings.isEmpty(category)} ? 'active'"
-               th:attr="aria-current=${#strings.isEmpty(category) ? 'true' : null}">Tất cả</a>
-            <a th:each="option : ${categories}" th:text="${option.name}"
-               th:href="@{/home(category=${option.slug},keyword=${keyword})} + '#catalog'"
-               th:classappend="${category == option.slug} ? 'active'"
-               th:attr="aria-current=${category == option.slug ? 'true' : null}"></a>
-        </nav>
-        <section th:if="${#lists.isEmpty(products)}" class="panel empty">
-            <h2 th:text="${#strings.isEmpty(keyword)} ? 'Chưa có sản phẩm để hiển thị' : 'Không tìm thấy sản phẩm phù hợp'"></h2>
-            <p class="muted">Nhóm này hiện chưa có sản phẩm phù hợp. Bạn có thể chọn nhóm khác hoặc xem tất cả sản phẩm.</p><a class="button secondary" th:href="@{/home}">Xem tất cả sản phẩm</a>
-        </section>
-        <div class="product-grid" aria-label="Danh sách sản phẩm">
-            <article th:each="product : ${products}" class="panel product-card">
-                <a class="card-image" th:href="@{/product-detail(productId=${product.productId})}">
-                    <img th:src="${product.imageUrl}" th:alt="${product.name}" loading="lazy" width="280" height="240">
-                    <span th:if="${product.selectedVariant != null and product.selectedVariant.purchasable}" class="stock-label">Có sẵn</span>
-                    <span th:if="${product.selectedVariant == null or !product.selectedVariant.purchasable}" class="stock-label unavailable"
-                          th:text="${product.selectedVariant == null or product.selectedVariant.availableStock <= 0 or product.selectedVariant.status == 'OUT_OF_STOCK'} ? 'Hết hàng' : 'Tạm ngừng nhận đơn'">Hết hàng</span>
-                </a>
-                <div class="card-content"><p class="shop-label" th:text="${product.shopName}"></p>
-                    <h3><a th:href="@{/product-detail(productId=${product.productId})}" th:text="${product.name}"></a></h3>
-                    <p th:if="${product.selectedVariant != null}" class="card-variant" th:text="${product.selectedVariant.variantName}"></p>
-                    <div class="card-bottom"><span th:if="${product.selectedVariant != null}" class="price" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'POINT')} + ' ₫'"></span>
-                        <a class="card-action" th:href="@{/product-detail(productId=${product.productId})}" th:aria-label="'Xem phân loại ' + ${product.name}">Chọn <span aria-hidden="true">→</span></a>
-                    </div>
-                </div>
-            </article>
-        </div>
-        <nav th:if="${productPage.totalPages > 1}" class="pagination catalog-pagination" aria-label="Phân trang sản phẩm"
-             th:with="current=${productPage.number + 1}, total=${productPage.totalPages}, start=${T(java.lang.Math).max(1, T(java.lang.Math).min(current - 2, total - 4))}, end=${T(java.lang.Math).min(total, start + 4)}">
-            <a th:if="${productPage.hasPrevious()}" class="page-direction" th:href="@{/home(page=${current - 1},keyword=${keyword},category=${category})} + '#catalog'" aria-label="Trang trước"><span aria-hidden="true">‹</span><span class="page-direction-label">Trang trước</span></a>
-            <span th:unless="${productPage.hasPrevious()}" class="page-direction disabled" aria-disabled="true"><span aria-hidden="true">‹</span><span class="page-direction-label">Trang trước</span></span>
-            <a th:if="${start > 1}" class="page-number" th:href="@{/home(page=1,keyword=${keyword},category=${category})} + '#catalog'">1</a>
-            <span th:if="${start > 2}" class="page-ellipsis" aria-hidden="true">…</span>
-            <th:block th:each="pageNumber : ${#numbers.sequence(start, end)}">
-                <span th:if="${pageNumber == current}" class="page-number active" aria-current="page" th:text="${pageNumber}"></span>
-                <a th:unless="${pageNumber == current}" class="page-number" th:href="@{/home(page=${pageNumber},keyword=${keyword},category=${category})} + '#catalog'" th:text="${pageNumber}" th:aria-label="'Trang ' + ${pageNumber}"></a>
-            </th:block>
-            <span th:if="${end < total - 1}" class="page-ellipsis" aria-hidden="true">…</span>
-            <a th:if="${end < total}" class="page-number" th:href="@{/home(page=${total},keyword=${keyword},category=${category})} + '#catalog'" th:text="${total}"></a>
-            <a th:if="${productPage.hasNext()}" class="page-direction" th:href="@{/home(page=${current + 1},keyword=${keyword},category=${category})} + '#catalog'" aria-label="Trang tiếp"><span class="page-direction-label">Trang tiếp</span><span aria-hidden="true">›</span></a>
-            <span th:unless="${productPage.hasNext()}" class="page-direction disabled" aria-disabled="true"><span class="page-direction-label">Trang tiếp</span><span aria-hidden="true">›</span></span>
-        </nav>
+
+    <section class="section">
+      <div class="sectiontop"><h2>DANH MỤC TRÁI CÂY</h2><button class="textlink" data-all>Xem tất cả</button></div>
+      <div class="categories" id="homecategories"></div>
     </section>
+
+    <section class="section">
+      <div class="sectiontop"><h2>TOP PRODUCTS – TRÁI CÂY BÁN CHẠY</h2><button class="textlink" data-best>Xem tất cả</button></div>
+      <div class="products" id="topproducts"></div>
+    </section>
+
+    <section class="section">
+      <div class="sectiontop"><h2>GIAN HÀNG NỔI BẬT</h2><button class="textlink" data-shops>Xem tất cả</button></div>
+      <div class="shopgrid" id="homeshops"></div>
+    </section>
+
+    <section class="section">
+      <div class="sectiontop"><h2>GỢI Ý HÔM NAY</h2><button class="textlink" data-all>Xem tất cả sản phẩm</button></div>
+      <div class="products" id="homeproducts"></div>
+      <div id="homePagination" class="pagination" aria-label="Phân trang gợi ý hôm nay"></div>
+    </section>
+  </div>
+
+  <div id="catalog" class="hide">
+    <div class="bread"><button class="textlink" data-home>Trang chủ</button> / <span id="breadcrumb">Tất cả sản phẩm</span></div>
+    <h1 id="catTitle">Tất cả sản phẩm</h1>
+    <p class="muted item-title">Danh sách trái cây từ nhiều nhà bán hàng</p>
+    <button id="toggleFilters" class="mobileonly">☰ Bộ lọc</button>
+    <div class="twocol">
+      <aside class="sidebar" id="sidebar">
+        <h3>BỘ LỌC TÌM KIẾM</h3>
+        <div class="filtergroup"><h3>Theo danh mục</h3><div id="filterCategories"></div></div>
+        <div class="filtergroup"><h3>Nơi gửi hàng (Shipped From)</h3><div id="locations"></div><button class="textlink" id="moreLocations">Xem thêm</button></div>
+        <div class="filtergroup"><h3>Nhà bán hàng</h3><div id="filterShops"></div></div>
+        <div class="filtergroup"><h3>Khoảng giá (VNĐ)</h3><div class="tinyinput"><input type="number" id="min" placeholder="TỪ" min="0"><input type="number" id="max" placeholder="ĐẾN" min="0"></div><button id="applyPrice" style="width:100%;margin-top:8px">Áp dụng</button></div>
+        <div class="filtergroup"><h3>Đánh giá</h3><div id="ratings"></div></div>
+        <button id="reset" style="width:100%;margin-top:16px">XÓA TẤT CẢ BỘ LỌC</button>
+      </aside>
+      <div>
+        <div class="toolbar">
+          <div class="sort-actions" aria-label="Sắp xếp sản phẩm">
+            <span>Sắp xếp theo:</span>
+            <button type="button" data-sort="popular" class="active">Phổ biến</button>
+            <button type="button" data-sort="latest">Mới nhất</button>
+            <button type="button" data-sort="sales">Bán chạy</button>
+            <select id="sort" aria-label="Sắp xếp theo giá">
+              <option value="none">Giá</option>
+              <option value="asc">Giá: Thấp đến cao</option>
+              <option value="desc">Giá: Cao đến thấp</option>
+            </select>
+          </div>
+          <span class="countline">Tìm thấy <strong id="count">0</strong> sản phẩm</span>
+        </div>
+        <div id="chips" class="chips"></div>
+        <div id="results" class="products"></div>
+        <div id="pagination" class="pagination"></div>
+      </div>
     </div>
+  </div>
+
+  <div id="shopspage" class="hide">
+    <div class="bread"><button class="textlink" data-home>Trang chủ</button> / Gian hàng</div>
+    <h1>Danh sách gian hàng</h1>
+    <div id="shoplist" class="shopgrid"></div>
+  </div>
+
+  <div id="shopdetail" class="hide"></div>
 </main>
-<div th:replace="~{fragments/footer :: footer}"></div>
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-column"><h3>VietFresh Hub</h3><p>Sàn mua sắm trái cây từ nhiều nhà bán hàng. Khám phá trái cây nội địa, nhập khẩu và các loại trái cây theo mùa.</p><p><strong>Chăm sóc khách hàng:</strong><br>support@vietfreshhub.example</p></div>
+    <div class="footer-column" id="footerCategories"><h3>Danh mục trái cây</h3><button data-cat="Trái cây nhập khẩu">Trái cây nhập khẩu</button><button data-cat="Trái cây nội địa">Trái cây nội địa</button><button data-cat="Trái cây nhiệt đới">Trái cây nhiệt đới</button><button data-cat="Trái cây theo mùa">Trái cây theo mùa</button><button data-all>Xem tất cả</button></div>
+    <div class="footer-column"><h3>Hỗ trợ khách hàng</h3><button data-footer-info="Hướng dẫn mua hàng">Hướng dẫn mua hàng</button><button data-footer-info="Theo dõi đơn hàng">Theo dõi đơn hàng</button><button data-footer-info="Đổi trả và hoàn tiền">Đổi trả và hoàn tiền</button><button data-footer-info="Câu hỏi thường gặp">Câu hỏi thường gặp</button></div>
+    <div class="footer-column"><h3>Thông tin & chính sách</h3><button data-footer-info="Giới thiệu VietFresh Hub">Giới thiệu VietFresh Hub</button><button data-shops>Danh sách gian hàng</button><button data-footer-info="Chính sách bảo mật">Chính sách bảo mật</button><button data-footer-info="Điều khoản sử dụng">Điều khoản sử dụng</button></div>
+  </div>
+  <div class="container footer-bottom"><span>© 2026 VietFresh Hub. All rights reserved.</span><span>Giao diện minh họa · Dữ liệu demo, không phải thông tin kinh doanh thực tế.</span></div>
+</footer>
+<div id="modal"></div>
+<script type="module" th:src="@{/js/storefront/storefront.js}" src="/js/storefront/storefront.js"></script>
 </body>
 </html>

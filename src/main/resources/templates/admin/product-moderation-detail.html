@@ -23,12 +23,13 @@
     </style>
 </head>
 <body>
-<header><a th:href="@{/admin/products}">← Quay lại danh sách hậu kiểm</a></header>
+<header><a th:href="@{/admin/products(tab=${tab})}">← Quay lại danh sách hậu kiểm</a></header>
 <main>
     <h1 th:text="${detail.product.name}">Tên sản phẩm</h1>
     <p><strong>Cửa hàng:</strong> <span th:text="${detail.shopName}">Tên cửa hàng</span></p>
     <p><strong>Trạng thái hậu kiểm:</strong>
-        <span th:if="${detail.product.moderationBlocked}">Đang bị khóa</span>
+        <span th:if="${detail.product.moderationBlocked and detail.product.approvalStatus == T(VietFreshHub.product.enums.ApprovalStatus).PENDING}">Chờ duyệt mở khóa · đang khóa</span>
+        <span th:if="${detail.product.moderationBlocked and detail.product.approvalStatus != T(VietFreshHub.product.enums.ApprovalStatus).PENDING}">Đang bị khóa</span>
         <span th:if="${!detail.product.moderationBlocked and detail.product.approvalStatus == T(VietFreshHub.product.enums.ApprovalStatus).PENDING}">Chờ hậu kiểm</span>
         <span th:if="${!detail.product.moderationBlocked and detail.product.approvalStatus == T(VietFreshHub.product.enums.ApprovalStatus).APPROVED}">Đã duyệt</span>
         <span th:if="${!detail.product.moderationBlocked and detail.product.approvalStatus == T(VietFreshHub.product.enums.ApprovalStatus).REJECTED}">Đã từ chối</span>
@@ -74,11 +75,13 @@
         <form th:if="${detail.product.approvalStatus == T(VietFreshHub.product.enums.ApprovalStatus).PENDING and !detail.product.moderationBlocked}"
               method="post" th:action="@{/admin/products/{id}/review(id=${detail.product.productId})}">
             <input type="hidden" name="action" value="APPROVE">
+            <input type="hidden" name="tab" th:value="${tab}">
             <button type="submit">Đã kiểm tra, tiếp tục bán</button>
         </form>
         <form th:if="${!detail.product.moderationBlocked}" method="post"
               th:action="@{/admin/products/{id}/review(id=${detail.product.productId})}">
             <input type="hidden" name="action" value="BLOCK">
+            <input type="hidden" name="tab" th:value="${tab}">
             <label for="reason">Lý do tạm khóa (bắt buộc)</label>
             <textarea id="reason" name="reason" maxlength="1000" required></textarea>
             <button class="danger" type="submit">Tạm khóa</button>
@@ -86,6 +89,7 @@
         <form th:if="${detail.product.moderationBlocked}" method="post"
               th:action="@{/admin/products/{id}/review(id=${detail.product.productId})}">
             <input type="hidden" name="action" value="UNBLOCK">
+            <input type="hidden" name="tab" th:value="${tab}">
             <button type="submit">Mở khóa và duyệt</button>
         </form>
     </section>

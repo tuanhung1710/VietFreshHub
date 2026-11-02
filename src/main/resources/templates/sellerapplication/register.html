@@ -40,13 +40,13 @@
             <div>
                 <label class="mb-1 block text-sm font-semibold" for="password">Mật khẩu</label>
                 <input class="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                       id="password" type="password" autocomplete="new-password" th:field="*{password}" required>
+                       id="password" type="password" autocomplete="new-password" th:field="*{password}" maxlength="72" required>
                 <p class="mt-1 text-sm text-rose-700" th:errors="*{password}"></p>
             </div>
             <div>
                 <label class="mb-1 block text-sm font-semibold" for="confirmPassword">Nhập lại mật khẩu</label>
                 <input class="w-full rounded-lg border border-slate-300 px-3 py-2.5 focus:border-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                       id="confirmPassword" type="password" autocomplete="new-password" th:field="*{confirmPassword}" required>
+                       id="confirmPassword" type="password" autocomplete="new-password" th:field="*{confirmPassword}" maxlength="72" required>
                 <p class="mt-1 text-sm text-rose-700" th:errors="*{confirmPassword}"></p>
             </div>
             <label class="flex items-start gap-2 text-sm text-slate-700">

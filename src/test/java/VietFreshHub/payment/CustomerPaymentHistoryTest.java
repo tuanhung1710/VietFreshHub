@@ -92,4 +92,24 @@ class CustomerPaymentHistoryTest {
         assertEquals(LocalDateTime.of(2026,10,20,10,0), row(Payment.Status.PENDING).createdAtLocal());
         assertNull(row(Payment.Status.PENDING).paidAtLocal());
     }
+    @Test void showsActualShopCodesWithoutConfusingReceiptIdsOrDuplicatingPayments() {
+        var source = new PageImpl<>(List.of(row(Payment.Status.PAID)));
+        when(payments.findHistory(anyLong(),any(),anyString(),any(),any(),any())).thenReturn(source);
+        var first = mock(CustomerPaymentReadRepository.OrderReference.class);
+        when(first.getOrderId()).thenReturn(10L); when(first.getShopOrderId()).thenReturn(73L);
+        var second = mock(CustomerPaymentReadRepository.OrderReference.class);
+        when(second.getOrderId()).thenReturn(10L); when(second.getShopOrderId()).thenReturn(1000001L);
+        when(payments.findOrderReferences(7L,List.of(10L))).thenReturn(List.of(first,second));
+        var page=service.history(7L,filter); var result=page.getContent().getFirst();
+        assertEquals(1,page.getTotalElements()); assertEquals(BigDecimal.TEN,result.amount());
+        assertEquals(List.of("VFH-000073","VFH-1000001"),result.orders().stream().map(PaymentHistoryRow.OrderReference::orderCode).toList());
+        assertEquals("VF-10",result.orderCode());
+        verify(payments).findOrderReferences(7L,List.of(10L));
+    }
+    @Test void searchUsesCanonicalShopIdWithoutReplacingReceiptKeyword() {
+        var repository=mock(CustomerPaymentReadRepository.class,CALLS_REAL_METHODS);
+        var pageable=PageRequest.of(0,10);
+        repository.findHistory(7L,null,"vfh-000073",null,null,pageable);
+        verify(repository).findHistoryWithOrderCode(7L,null,"vfh-000073",null,null,73L,pageable);
+    }
 }

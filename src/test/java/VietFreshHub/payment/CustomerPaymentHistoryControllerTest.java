@@ -162,4 +162,14 @@ class CustomerPaymentHistoryControllerTest {
         java.nio.file.Files.createDirectories(java.nio.file.Path.of(".document-analysis"));
         java.nio.file.Files.writeString(java.nio.file.Path.of(".document-analysis/phase4-payments-preview.html"),html);
     }
+    @Test void canonicalCodesLinkToTheSameShopDetailsForMultiShopPayment() throws Exception {
+        var row=record(1L,"VNPAY",Payment.Status.PAID,null,null).withOrders(List.of(
+                new PaymentHistoryRow.OrderReference(10L,73L),new PaymentHistoryRow.OrderReference(10L,91L)));
+        when(payments.history(eq(7L),any())).thenReturn(new PageImpl<>(List.of(row)));
+        String html=render();
+        assertTrue(html.contains("VFH-000073"));assertTrue(html.contains("VFH-000091"));
+        assertTrue(html.contains("/customer/orders/73"));assertTrue(html.contains("/customer/orders/91"));
+        assertTrue(html.contains("/customer/order-receipts/10"));
+        assertEquals(1,html.split("data-payment-id=",-1).length-1);
+    }
 }

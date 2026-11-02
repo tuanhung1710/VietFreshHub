@@ -6,9 +6,6 @@ import VietFreshHub.cart.dto.CartDto;
 import VietFreshHub.cart.dto.CartItemDto;
 import VietFreshHub.cart.dto.UpdateCartQuantityRequest;
 import VietFreshHub.cart.service.CartService;
-import VietFreshHub.catalog.dto.CatalogProductResponse;
-import VietFreshHub.catalog.dto.CatalogProductResponse.VariantResponse;
-import VietFreshHub.catalog.service.CatalogService;
 import VietFreshHub.exception.OutOfStockException;
 import VietFreshHub.exception.ResourceNotFoundException;
 import VietFreshHub.recommendation.service.ProductRecommendationService;
@@ -39,65 +36,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class CustomerCartViewController {
     private final CartService cartService;
-    private final CatalogService catalogService;
+    private final VietFreshHub.catalog.service.CatalogService catalogService;
     private final CurrentCustomerService currentCustomer;
     private final ProductRecommendationService recommendations;
-
-    @GetMapping("/customer/home")
-    public String showHomePage(@RequestParam(defaultValue = "1") int page,
-                               @RequestParam(defaultValue = "") String keyword,
-                               @RequestParam(defaultValue = "") String category,
-                               Authentication authentication, Model model) {
-        if (page < 1 || page > 10000) {
-            return "redirect:/home";
-        }
-        if (keyword.length() > 100) {
-            model.addAttribute("errorMessage", "Từ khóa tìm kiếm tối đa 100 ký tự.");
-            keyword = "";
-        }
-        model.addAttribute("cart", populateCartBadge(authentication));
-
-        String searchKeyword = keyword.trim();
-        Page<CatalogProductResponse> products;
-        if (category.isBlank()) {
-            products = catalogService.listProducts(page, searchKeyword);
-        } else {
-            products = catalogService.listProducts(page, searchKeyword, category);
-        }
-        model.addAttribute("categories", catalogService.categories());
-        model.addAttribute("category", category);
-        model.addAttribute("products", products.getContent());
-        model.addAttribute("productPage", products);
-        model.addAttribute("keyword", searchKeyword);
-        return "customer/home";
-    }
-
-    @GetMapping({"/product-detail", "/product-detail/{variantId}"})
-    public String showProductDetail(@PathVariable(required = false) Long variantId,
-                                     @RequestParam(required = false) Long productId,
-                                     @RequestParam(required = false) String slug,
-                                     Authentication authentication, Model model) {
-        model.addAttribute("cart", populateCartBadge(authentication));
-        CatalogProductResponse product = catalogService.getProduct(variantId, productId, slug);
-        VariantResponse selectedVariant = product.getSelectedVariant();
-
-        Long selectedVariantId = null;
-        int availableStock = 0;
-        boolean purchasable = false;
-        if (selectedVariant != null) {
-            selectedVariantId = selectedVariant.getVariantId();
-            availableStock = selectedVariant.getAvailableStock();
-            purchasable = selectedVariant.isPurchasable();
-        }
-        model.addAttribute("product", product);
-        model.addAttribute("recommendations", recommendations.relatedTo(product.getProductId()));
-        model.addAttribute("variants", product.getVariants());
-        model.addAttribute("selectedVariant", selectedVariant);
-        model.addAttribute("variantId", selectedVariantId);
-        model.addAttribute("availableStock", availableStock);
-        model.addAttribute("purchasable", purchasable);
-        return "customer/product-detail";
-    }
 
     @GetMapping("/cart")
     public String showCartPage(Authentication authentication, Model model) {
@@ -112,6 +53,10 @@ public class CustomerCartViewController {
         model.addAttribute("cart", cart);
         model.addAttribute("selectableCount", selectableCount);
         model.addAttribute("shopGroups", shopGroups);
+        model.addAttribute("cartSuggestions", catalogService.listProducts(1).getContent().stream()
+                .filter(product -> product.getSelectedVariant() != null && product.getSelectedVariant().isPurchasable())
+                .filter(product -> cart.getItems().stream().noneMatch(item -> item.getVariantId().equals(product.getSelectedVariant().getVariantId())))
+                .limit(4).toList());
         return "customer/cart";
     }
 
@@ -124,15 +69,17 @@ public class CustomerCartViewController {
             flash.addFlashAttribute("requestedQuantity", form.getQuantity());
         } else {
             try {
-                Long customerId = currentCustomer.requireCustomerId(authentication);
-                cartService.addToCart(customerId, form);
+                var added = cartService.addToCart(currentCustomer.requireCustomerId(authentication), form);
                 flash.addFlashAttribute("successMessage", "Đã thêm sản phẩm vào giỏ hàng.");
-            } catch (OutOfStockException | ResourceNotFoundException | IllegalArgumentException exception) {
-                flash.addFlashAttribute("errorMessage", exception.getMessage());
+                if ("checkout".equals(redirect)) {
+                    return "redirect:/customer/checkout?selectionSubmitted=true&itemIds=" + added.getCartItemId();
+                }
+            } catch (OutOfStockException | ResourceNotFoundException | IllegalArgumentException ex) {
+                flash.addFlashAttribute("errorMessage", ex.getMessage());
                 flash.addFlashAttribute("requestedQuantity", form.getQuantity());
             }
         }
-        if ("detail".equals(redirect) && form.getVariantId() != null && form.getVariantId() > 0) {
+        if (("detail".equals(redirect) || "checkout".equals(redirect)) && form.getVariantId() != null && form.getVariantId() > 0) {
             return "redirect:/product-detail/" + form.getVariantId();
         }
         return "redirect:/cart";

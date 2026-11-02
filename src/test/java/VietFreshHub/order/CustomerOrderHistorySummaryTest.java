@@ -273,4 +273,17 @@ class CustomerOrderHistorySummaryTest {
         java.nio.file.Files.writeString(java.nio.file.Path.of(".document-analysis/phase6-query-counts.json"),
                 counts.entrySet().stream().map(e -> "\""+e.getKey()+"\":"+e.getValue()).collect(java.util.stream.Collectors.joining(",","{","}")));
     }
+    @Test void paymentHistoryFindsCanonicalShopCodesAndKeepsCustomerOwnership() {
+        try (var session=factory.openSession()) {
+            var repository=new JpaRepositoryFactory(session).getRepository(VietFreshHub.payment.repository.CustomerPaymentReadRepository.class);
+            var service=new VietFreshHub.payment.service.impl.CustomerPaymentHistoryServiceImpl(repository);
+            var filter=new VietFreshHub.payment.dto.PaymentHistoryFilter();filter.setKeyword("vfh-000111");
+            var page=service.history(7L,filter);
+            assertEquals(1,page.getTotalElements());
+            assertEquals(11L,page.getContent().getFirst().orderId());
+            assertEquals(List.of("VFH-000110","VFH-000111"),page.getContent().getFirst().orders().stream().map(VietFreshHub.payment.dto.PaymentHistoryRow.OrderReference::orderCode).toList());
+            filter.setKeyword("VFH-000120");assertTrue(service.history(7L,filter).isEmpty());
+            filter.setKeyword("VF-11");assertEquals(1,service.history(7L,filter).getTotalElements());
+        }
+    }
 }

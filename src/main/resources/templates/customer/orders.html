@@ -13,7 +13,7 @@
     <p th:if="${filterError != null}" class="notice error" role="alert" th:text="${filterError}"></p>
     <p th:if="${pageNotice != null}" class="notice info" role="status" th:text="${pageNotice}"></p>
     <form class="panel order-filters" th:action="@{/customer/order-receipts}" th:object="${filter}" method="get" aria-label="Lọc đơn hàng">
-        <div><label for="order-keyword">Mã đơn hàng</label><input id="order-keyword" type="search" th:field="*{keyword}" maxlength="100" placeholder="Tìm theo mã đơn hàng"></div>
+        <div><label for="order-keyword">Mã lượt mua</label><input id="order-keyword" type="search" th:field="*{keyword}" maxlength="100" placeholder="Tìm theo mã đơn hàng"></div>
         <div><label for="order-status">Trạng thái đơn hàng</label><select id="order-status" th:field="*{status}">
             <option value="">Tất cả</option><option th:if="${#fields.hasErrors('status')}" th:value="*{status}">Trạng thái không hợp lệ</option>
             <option th:each="state : ${statusOptions}" th:value="${state.key}" th:text="${state.value}"></option></select></div>
@@ -36,13 +36,13 @@
         <article th:each="order : ${orderPage.content}" class="panel history-order" th:with="summary=${orderSummaries[order.orderId]}">
             <div class="history-order-top">
                 <div><span class="muted order-date" th:text="'Đặt lúc ' + ${#temporals.format(order.placedAtLocal(),'HH:mm · dd/MM/yyyy')}"></span>
-                    <h2 class="order-code"><a th:href="@{/customer/order-receipts/{id}(id=${order.orderId})}" th:text="${order.orderCode}"></a></h2></div>
+                    <h2 class="order-code"><a th:href="@{/customer/order-receipts/{id}(id=${order.orderId})}" th:text="'Lượt mua: ' + ${order.orderCode}"></a></h2></div>
                 <span class="order-state" th:attr="data-stage=${order.stage}" th:text="${order.statusLabel()}"></span>
             </div>
             <th:block th:if="${summary != null}">
                 <div class="orders-shop-list" aria-label="Tiến trình theo cửa hàng">
                     <div th:each="shop : ${summary.shops}" class="orders-shop-status">
-                        <strong th:text="${shop.name}"></strong><span class="muted" th:text="${shop.fulfillmentLabel}"></span>
+                        <strong th:text="${shop.name}"></strong><a th:if="${shop.shopOrderId != null}" class="order-code" th:href="@{/customer/orders/{id}(id=${shop.shopOrderId})}" th:text="${shop.orderCode()}"></a><span class="muted" th:text="${shop.fulfillmentLabel}"></span>
                         <span th:if="${shop.deliveryLabel != null}" class="orders-delivery-label" th:attr="data-delivery=${shop.deliveryStatus}" th:text="${shop.deliveryLabel}"></span>
                     </div>
                 </div>

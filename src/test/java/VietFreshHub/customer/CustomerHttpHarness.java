@@ -52,7 +52,7 @@ public final class CustomerHttpHarness implements AutoCloseable {
         context.setServletContext(new MockServletContext());
         context.register(WebConfiguration.class, CustomerCartViewController.class, CheckoutController.class,
                 CustomerOrderController.class, CustomerOrderDetailsController.class, CustomerPaymentHistoryController.class,
-                ProductAvailabilityController.class);
+                ProductAvailabilityController.class, VietFreshHub.auth.service.LoginRedirectService.class);
         context.addBeanFactoryPostProcessor(beans -> {
             beans.registerSingleton("userRepository", users);
             beans.registerSingleton("userRoleRepository", roles);

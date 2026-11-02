@@ -1,5 +1,7 @@
 package VietFreshHub.auth.dto;
 
+import VietFreshHub.auth.validation.PasswordByteLength;
+
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -31,7 +33,8 @@ public class RegisterRequest {
     private String phone;
 
     @NotBlank(message = "Vui lòng nhập mật khẩu")
-    @Size(min = 8, max = 100, message = "Mật khẩu phải có ít nhất 8 ký tự")
+    @Size(min = 8, max = 72, message = "Mật khẩu phải có từ 8 đến 72 ký tự")
+    @PasswordByteLength
     private String password;
 
     @NotBlank(message = "Vui lòng xác nhận mật khẩu")

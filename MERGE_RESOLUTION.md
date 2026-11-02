@@ -1,4 +1,19 @@
-# Merge main into Tuan-Hung
+# Current merge resolution (2026-11-02)
+
+- Local HEAD: `cc324454bd0c373858f40f064b9c3983c3e9ce08`.
+- Incoming MERGE_HEAD and freshly fetched origin/main: `4deeff6c11a346a19e98e15ae25e26797f265e12`.
+- The in-progress merge had four modify/delete conflicts, all in tests. Keep the exact local contents of CustomerOrderHistorySummaryTest, CustomerOrderQueryServiceTest, CustomerPaymentHistoryControllerTest and CustomerPaymentHistoryTest.
+- The user explicitly chose main behavior where catalog out-of-stock handling and the removed receipt confirmation route differ, and authorized retaining main's deletion of the other legacy tests.
+- Retain CustomerHttpHarness because the preserved summary test requires it. Register main's LoginRedirectService in that test context; no production business code was edited during this resolution.
+- No unmerged index entries or source conflict markers remain. The existing automatic production merge is preserved, including local payment-label/filter changes.
+- Validation: Java 21, cached Maven 3.9.16, offline clean test. Production and test compilation pass. 56 tests run: 55 pass, one fails, no errors or skips.
+- Known incompatibility intentionally retained: CustomerOrderHistorySummaryTest.samePersistedCodOrderSurvivesNavigationAcrossAllFivePagesWithoutWrites expects HTTP 200 from `/customer/order-receipts/10/confirmation`; main removed that route, so it returns HTTP 404. Neither the preserved assertion nor main's route behavior was changed to hide this mismatch.
+- Full log: `target/merge-verification.log`; reports: `target/surefire-reports`. These tests do not establish complete business equivalence or verify external providers/production SQL Server.
+- Resolution is staged, with the merge left uncommitted and unpushed.
+
+---
+
+# Historical merge notes (previous merge; validation below is not the current result)
 
 ## Sources
 

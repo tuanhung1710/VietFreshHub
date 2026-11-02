@@ -38,6 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const chosen = selections.filter(box => box.checked);
             const subtotal = chosen.reduce((total, box) => total + Number(box.dataset.amount), 0);
             document.getElementById('selected-item-count').textContent = chosen.length;
+            const caption = document.getElementById('selection-caption');
+            if (caption) caption.textContent = '(' + chosen.length + ' sản phẩm đã chọn)';
             document.getElementById('selected-subtotal').textContent = money(subtotal);
             document.getElementById('selected-grand-total').textContent = money(subtotal);
             selectAll.checked = selections.length > 0 && chosen.length === selections.length;

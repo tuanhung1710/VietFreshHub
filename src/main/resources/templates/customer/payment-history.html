@@ -43,7 +43,7 @@
                 <span class="order-state payment-status" th:attr="data-payment-status=${payment.status}" th:text="${payment.statusLabel()}"></span>
             </div>
             <dl class="payment-record-data">
-                <div><dt>Đơn hàng liên quan</dt><dd><a th:href="@{/customer/order-receipts/{id}(id=${payment.orderId})}" th:text="${payment.orderCode}"></a></dd></div>
+                <div><dt>Đơn hàng liên quan</dt><dd><div th:each="reference : ${payment.orders}"><a class="order-code" th:href="@{/customer/orders/{id}(id=${reference.shopOrderId})}" th:text="${reference.orderCode()}"></a></div><a th:if="${#lists.isEmpty(payment.orders)}" th:href="@{/customer/order-receipts/{id}(id=${payment.orderId})}" th:text="'Lượt mua: ' + ${payment.orderCode}"></a></dd></div>
                 <div><dt>Phương thức thanh toán</dt><dd th:text="${payment.methodName}"></dd></div>
                 <div th:if="${payment.paidAt != null}"><dt>Thời điểm ghi nhận thanh toán</dt><dd th:text="${#temporals.format(payment.paidAtLocal(),'HH:mm dd/MM/yyyy')}"></dd></div>
                 <div th:if="${payment.transactionReference != null}" class="payment-reference"><dt>Mã tham chiếu thanh toán</dt><dd th:text="${payment.transactionReference}"></dd></div>
@@ -51,7 +51,7 @@
             <p th:if="${payment.pendingCod()}" class="payment-cod-note">Thanh toán khi nhận hàng. Hệ thống chưa xác nhận đã thu tiền COD cho bản ghi này.</p>
             <div class="history-order-bottom">
                 <div><span class="muted">Số tiền của bản ghi</span><strong class="price" th:text="${#numbers.formatDecimal(payment.amount,1,'POINT',payment.amount.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></strong></div>
-                <a class="button secondary" th:href="@{/customer/order-receipts/{id}(id=${payment.orderId})}">Xem đơn hàng <span aria-hidden="true">↗</span></a>
+                <a th:if="${#lists.size(payment.orders) == 1}" class="button secondary" th:href="@{/customer/orders/{id}(id=${payment.orders[0].shopOrderId})}">Xem đơn hàng <span aria-hidden="true">↗</span></a><a th:unless="${#lists.size(payment.orders) == 1}" class="button secondary" th:href="@{/customer/order-receipts/{id}(id=${payment.orderId})}">Xem lượt mua <span aria-hidden="true">↗</span></a>
             </div>
         </article>
     </section>

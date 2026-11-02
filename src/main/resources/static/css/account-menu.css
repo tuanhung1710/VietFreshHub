@@ -1,0 +1,12 @@
+/* Adapt the account menu from main to the local storefront headers. */
+.header-account{font:14px/1.5 Arial,Helvetica,sans-serif;text-align:left;flex:0 1 auto}
+.header-account *{box-sizing:border-box}
+.header-account svg{display:block;width:22px;height:22px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.header-account .header-account-chevron{width:18px;height:18px}
+.header-account-dropdown{z-index:100}
+.header-account-label>span{color:#64736c;font-size:11px}
+.header-account-heading>span{color:#64736c;font-size:11px}
+.header-account-links{display:flex;flex-direction:column}
+.utility:has(.header-account){align-items:center;gap:12px;flex-wrap:wrap}
+.header-account-guest{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+@media(max-width:640px){.utility .header-account-label{display:flex;max-width:140px}.utility>.header-account{margin-left:auto}}

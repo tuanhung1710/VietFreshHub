@@ -48,9 +48,20 @@ public class CustomerPaymentHistoryServiceImpl implements CustomerPaymentHistory
         }
         if (result.getNumber() >= result.getTotalPages()) {
             PageRequest lastPage = PageRequest.of(result.getTotalPages() - 1, 10, sort);
-            return payments.findHistory(customerId, status, filter.getKeyword(), from, until, lastPage);
+            result = payments.findHistory(customerId, status, filter.getKeyword(), from, until, lastPage);
         }
-        return result;
+        return attachOrderReferences(customerId, result);
+    }
+
+    private Page<PaymentHistoryRow> attachOrderReferences(Long customerId, Page<PaymentHistoryRow> page) {
+        var orderIds = page.getContent().stream().map(PaymentHistoryRow::orderId).distinct().toList();
+        if (orderIds.isEmpty()) return page;
+        var references = payments.findOrderReferences(customerId, orderIds).stream().collect(
+                java.util.stream.Collectors.groupingBy(CustomerPaymentReadRepository.OrderReference::getOrderId,
+                        java.util.stream.Collectors.mapping(reference -> new PaymentHistoryRow.OrderReference(
+                                reference.getOrderId(), reference.getShopOrderId()), java.util.stream.Collectors.toList())));
+        if (references.isEmpty()) return page;
+        return page.map(row -> row.withOrders(references.getOrDefault(row.orderId(), java.util.List.of())));
     }
 
     private void validateFilter(Long customerId, PaymentHistoryFilter filter) {

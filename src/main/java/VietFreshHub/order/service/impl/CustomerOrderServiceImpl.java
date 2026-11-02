@@ -254,7 +254,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
                 deliveryStatus = matchedDelivery.getStatus();
                 deliveryLabel = historyDeliveryLabel(deliveryStatus);
             }
-            result.add(new OrderHistorySummary.Shop(shop.getShop().getShopName(), fulfillmentLabel, deliveryStatus, deliveryLabel));
+            result.add(new OrderHistorySummary.Shop(shop.getShop().getShopName(), fulfillmentLabel, deliveryStatus, deliveryLabel, shop.getShopOrderId()));
         }
         return result;
     }

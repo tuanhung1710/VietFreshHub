@@ -25,7 +25,7 @@ import java.time.ZoneOffset;
 @RequiredArgsConstructor
 public class NotificationService {
 
-    private static final int PAGE_SIZE = 15;
+    private static final int PAGE_SIZE = VietFreshHub.common.PageSizes.DEFAULT;
     private static final ZoneId DISPLAY_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private final NotificationRepository notificationRepository;

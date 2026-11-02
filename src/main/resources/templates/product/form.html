@@ -112,6 +112,12 @@
                                 th:style="*{imageUrl==null?'display:none':''}"
                             >
                         </div>
+                        <label class="col-12 form-label" for="origin">
+                            Xuất xứ <span class="text-danger">*</span>
+                            <input class="form-control mt-1" id="origin" th:field="*{origin}"
+                                   maxlength="200" placeholder="Ví dụ: Tiền Giang, Việt Nam hoặc New Zealand" required>
+                            <small class="field-error text-danger" th:errors="*{origin}"></small>
+                        </label>
                         <label class="col-12 form-label" for="description">
                             Mô tả sản phẩm
                             <textarea
@@ -120,7 +126,7 @@
                                 th:field="*{description}"
                                 rows="4"
                                 maxlength="20000"
-                                placeholder="Xuất xứ, hương vị, độ chín và cách bảo quản…"
+                                placeholder="Hương vị, độ chín và cách bảo quản…"
                             ></textarea>
                         </label>
                     </div>
