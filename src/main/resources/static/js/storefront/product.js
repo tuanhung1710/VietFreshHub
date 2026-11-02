@@ -1,37 +1,16 @@
 import { request } from './api.js';
 import { $, html, money, rating, placeName, notice } from './render.js';
 
-let revision = 0;
 let adding = false;
 let previousFocus;
 
 export function closeModal() {
-    revision++;
     $('modal').replaceChildren();
     previousFocus?.focus();
 }
 
-export async function openProduct(id, variantId) {
-    const current = ++revision;
-    previousFocus = document.activeElement;
-    try {
-        const product = await request(`/products/${id}${variantId ? `?variantId=${variantId}` : ''}`);
-        if (current !== revision) return;
-        $('modal').innerHTML = `<div class="modal-back"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="productTitle">
-            <button class="close" data-close>Đóng ✕</button><h2 id="productTitle">${html(product.name)}</h2>
-            <div style="font-size:65px;filter:grayscale(1);border:1px solid #aaa;display:inline-flex;padding:18px;margin:10px 0">${html(product.emoji)}</div>
-            <p><strong>Giá:</strong> ${money(product.price)}</p><p><strong>Đánh giá:</strong> ${rating(product.rating)}/5 · Đã bán ${Number(product.sales)}</p>
-            <p><strong>Shop:</strong> ${html(product.shopName)} · ${html(placeName(product.place))}</p>
-            <p><strong>Danh mục:</strong> ${html(product.category)}</p>
-            <button data-add="${Number(product.variantId)}" data-product-id="${Number(product.id)}" title="${html(product.variantName)}" aria-label="Thêm ${html(product.variantName)} vào giỏ hàng">Thêm vào giỏ</button>
-            <button data-shopview="${Number(product.shopId)}">Xem shop</button>
-        </div></div>`;
-        $('modal').querySelector('[data-close]').focus();
-    } catch (error) {
-        if (current !== revision) return;
-        if (error.status === 404) document.querySelectorAll(`[data-product="${Number(id)}"]`).forEach(card => card.remove());
-        notice(error.message);
-    }
+export function openProduct(id, variantId) {
+    window.location.assign(variantId ? '/product-detail/' + Number(variantId) : '/product-detail?productId=' + Number(id));
 }
 
 export function openInformation(title) {

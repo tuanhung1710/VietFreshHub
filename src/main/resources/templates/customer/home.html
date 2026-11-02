@@ -9,17 +9,7 @@
 <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
 </head>
 <body th:attr="data-initial-view=${initialView},data-shop-id=${initialShopId},data-product-id=${initialProductId},data-variant-id=${initialVariantId}">
-<header>
-  <div class="container">
-    <div class="utility"><span>VietFresh Hub · Sàn trái cây đa nhà bán hàng</span><span>Trợ giúp | Đăng nhập / Đăng ký</span></div>
-    <div class="headmain">
-      <button class="brand" data-home>VietFresh Hub</button>
-      <div class="search"><input id="search" placeholder="Tìm trái cây trên toàn sàn..." aria-label="Tìm sản phẩm"><button id="searchGo">TÌM</button></div>
-      <button id="cart">Giỏ hàng (<span id="cartCount">0</span>)</button>
-    </div>
-    <nav class="headcats" id="headcats"></nav>
-  </div>
-</header>
+<header th:replace="~{fragments/customer-shop :: header}"></header>
 <main class="container">
   <div id="notice" class="notice hide"></div>
 

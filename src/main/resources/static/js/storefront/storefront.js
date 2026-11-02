@@ -1,5 +1,5 @@
 import { request, parameters } from './api.js';
-import { $, html, card, shopCard, pager, notice, show, placeName } from './render.js';
+import { $, html, card, shopCard, pager, notice, show } from './render.js';
 import { openProduct, openInformation, closeModal, addProduct, refreshCartCount } from './product.js';
 
 let options;
@@ -115,20 +115,8 @@ function shops(push = true) {
     if (push) saveLocation();
 }
 
-async function openShop(id, push = true) {
-    const selected = shop(id);
-    if (!selected) throw new Error('Không tìm thấy cửa hàng đang hoạt động.');
-    const current = activate('shopdetail');
-    if (push) saveLocation(false, id);
-    $('shopdetail').innerHTML = `<div class="bread"><button class="textlink" data-home>Trang chủ</button> / <button class="textlink" data-shops>Gian hàng</button> / ${html(selected.name)}</div><h1>${html(selected.name)}</h1><p>${html(selected.description)} | Nơi gửi hàng: ${html(placeName(selected.place))}</p><section class="section"><div class="sectiontop"><h2>SẢN PHẨM CỦA SHOP</h2><button data-shopfilterpage="${Number(id)}">Lọc sản phẩm shop</button></div><div class="products" id="shopProducts"></div></section>`;
-    const filter = { page: 1, pageSize: Math.max(...options.pageSizes), shopIds: [id] };
-    let page;
-    do {
-        page = await request('/products?' + parameters(filter));
-        if (current !== revision) return;
-        $('shopProducts').insertAdjacentHTML('beforeend', page.items.map(card).join(''));
-        filter.page = page.page + 1;
-    } while (filter.page <= page.pages);
+function openShop(id) {
+    location.assign('/shops/' + Number(id));
 }
 
 function readLocation() {
@@ -184,7 +172,6 @@ async function clicked(event) {
         case 'reset': Object.assign(state, { places: [], shopIds: [], min: '', max: '', minRating: 0, sort: 'popular', page: 1 }); return catalog();
         case 'moreLocations': extended = !extended; return renderLocations();
         case 'toggleFilters': $('sidebar').classList.toggle('open'); return;
-        case 'cart': await refreshCartCount(); notice('Giỏ hàng: ' + $('cartCount').textContent + ' sản phẩm. Checkout thuộc module khác.'); return;
     }
     if (data.footerInfo !== undefined) openInformation(data.footerInfo);
 }
@@ -215,7 +202,6 @@ async function start() {
             if (button.dataset.shops !== undefined) location.assign('/shops');
             if (button.dataset.all !== undefined) location.assign('/home?view=catalog');
             if (button.dataset.cat !== undefined) location.assign('/home?view=catalog&categoryId=' + Number(button.dataset.cat));
-            if (button.id === 'cart') notice('Giỏ hàng: ' + $('cartCount').textContent + ' sản phẩm. Checkout thuộc module khác.');
             if (button.id === 'searchGo') location.assign('/home?view=catalog&keyword=' + encodeURIComponent($('search').value));
         });
         $('search').addEventListener('keydown', event => { if (event.key === 'Enter') $('searchGo').click(); });
