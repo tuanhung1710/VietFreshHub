@@ -31,6 +31,7 @@ public class CouponForm {
     @NotNull(message = "Vui lòng nhập giá trị đơn tối thiểu")
     @DecimalMin(value = "0", message = "Giá trị đơn tối thiểu không được âm")
     @Digits(integer = 16, fraction = 2, message = "Tối đa 16 chữ số nguyên và 2 chữ số thập phân")
+    @DecimalMax(value = "9999999999999999.99", message = "Giá trị vượt giới hạn cho phép.")
     private BigDecimal minimumOrderValue = BigDecimal.ZERO;
 
     @NotNull(message = "Vui lòng chọn thời gian bắt đầu")
