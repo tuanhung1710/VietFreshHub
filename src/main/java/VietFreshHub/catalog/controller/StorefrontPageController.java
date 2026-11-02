@@ -32,8 +32,10 @@ public class StorefrontPageController {
     private void addShopInformation(Long shopId, Model model) {
         var shop = shops.profile(shopId);
         model.addAttribute("shop", shop);
-        model.addAttribute("formattedAddress", "Chưa cập nhật địa chỉ");
-        model.addAttribute("joinedDate", null);
+        model.addAttribute("formattedAddress", storefront.shopAddress(shopId).orElse("Chưa cập nhật địa chỉ"));
+        model.addAttribute("joinedDate", shop.getCreatedAt() == null ? null
+                : shop.getCreatedAt().atOffset(java.time.ZoneOffset.UTC)
+                .atZoneSameInstant(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate());
     }
 
     @GetMapping({"/product-detail", "/product-detail/{variantId}"})

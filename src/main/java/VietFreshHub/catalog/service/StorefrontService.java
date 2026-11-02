@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Comparator;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +22,10 @@ public class StorefrontService {
     public record Home(PageResponse<StorefrontProduct> products, List<StorefrontProduct> topProducts) { }
     private final CatalogService catalog;
     private final StorefrontShopRepository shops;
+
+    public Optional<String> shopAddress(Long shopId) {
+        return shops.formattedAddress(shopId);
+    }
 
     public Options options() {
         var categories = catalog.categories().stream().sorted(Comparator.comparing(c -> c.getCategoryId()))
