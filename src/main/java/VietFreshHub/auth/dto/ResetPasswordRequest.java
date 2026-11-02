@@ -1,5 +1,7 @@
 package VietFreshHub.auth.dto;
 
+import VietFreshHub.auth.validation.PasswordByteLength;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -10,7 +12,8 @@ public class ResetPasswordRequest {
     private String token;
 
     @NotBlank(message = "Vui lòng nhập mật khẩu mới.")
-    @Size(min = 8, max = 100, message = "Mật khẩu mới phải có từ 8 đến 100 ký tự.")
+    @Size(min = 8, max = 72, message = "Mật khẩu mới phải có từ 8 đến 72 ký tự.")
+    @PasswordByteLength
     private String newPassword;
 
     @NotBlank(message = "Vui lòng xác nhận mật khẩu mới.")

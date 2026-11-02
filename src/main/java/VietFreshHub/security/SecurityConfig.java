@@ -3,6 +3,7 @@ package VietFreshHub.security;
 import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.auth.repository.UserRoleRepository;
 import VietFreshHub.auth.service.Oidc_UserService;
+import VietFreshHub.auth.service.LoginRedirectService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -14,6 +15,8 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
+import org.springframework.security.web.savedrequest.RequestCache;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 @Configuration
@@ -28,11 +31,22 @@ public class SecurityConfig {
     public SecurityContextRepository securityContextRepository() {
         return new HttpSessionSecurityContextRepository();
     }
+
+    @Bean
+    public RequestCache requestCache() {
+        var cache = new HttpSessionRequestCache();
+        cache.setMatchingRequestParameterName(null);
+        cache.setRequestMatcher(request -> "GET".equals(request.getMethod())
+                && !request.getServletPath().startsWith("/storefront/api/"));
+        return cache;
+    }
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             Oidc_UserService oidcUserService,
             SecurityContextRepository securityContextRepository,
+            RequestCache requestCache,
+            LoginRedirectService loginRedirects,
             UserRepository userRepository,
             UserRoleRepository userRoleRepository)
             throws Exception {
@@ -44,6 +58,7 @@ public class SecurityConfig {
         http.securityContext(context -> {
             context.securityContextRepository(securityContextRepository);
         });
+        http.requestCache(cache -> cache.requestCache(requestCache));
 
         http.authorizeHttpRequests(authorize -> {
             authorize.requestMatchers(org.springframework.http.HttpMethod.GET,
@@ -87,7 +102,7 @@ public class SecurityConfig {
                 .userInfoEndpoint(userInfo -> userInfo
                         .oidcUserService(oidcUserService)
                 )
-                .defaultSuccessUrl("/", true)
+                .successHandler(loginRedirects)
                 .failureUrl("/login?oauthError=true")
         );
 
