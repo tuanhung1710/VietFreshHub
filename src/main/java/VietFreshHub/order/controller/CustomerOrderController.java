@@ -130,7 +130,7 @@ public class CustomerOrderController {
             return "redirect:/cart";
         } catch (CustomerOrderException exception) {
             flash.addFlashAttribute("errorMessage", exception.getMessage());
-            return "redirect:/customer/order-receipts/" + orderId;
+            return "redirect:/customer/orders";
         }
     }
 
