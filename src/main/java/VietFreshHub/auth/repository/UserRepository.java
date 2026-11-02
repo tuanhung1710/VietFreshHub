@@ -23,14 +23,14 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     @Query("""
             select count(distinct u.userId) from User u
-            join u.userRoles ur join ur.role r where r.roleName = 'CUSTOMER'
+            join u.userRoles ur join ur.role r where r.roleName = 'ROLE_CUSTOMER'
             """)
     long countCustomers();
 
     @Query("""
             select count(distinct u.userId) from User u
             join u.userRoles ur join ur.role r
-            where r.roleName = 'CUSTOMER' and u.createdAt >= :from and u.createdAt < :to
+            where r.roleName = 'ROLE_CUSTOMER' and u.createdAt >= :from and u.createdAt < :to
             """)
     long countNewCustomers(@Param("from") java.time.LocalDateTime from,
                            @Param("to") java.time.LocalDateTime to);
@@ -40,7 +40,7 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
                    day(u.createdAt) as customerDay, hour(u.createdAt) as customerHour,
                    count(distinct u.userId) as customerCount
             from User u join u.userRoles ur join ur.role r
-            where r.roleName = 'CUSTOMER' and u.createdAt >= :from and u.createdAt < :to
+            where r.roleName = 'ROLE_CUSTOMER' and u.createdAt >= :from and u.createdAt < :to
             group by year(u.createdAt), month(u.createdAt), day(u.createdAt), hour(u.createdAt)
             order by year(u.createdAt), month(u.createdAt), day(u.createdAt), hour(u.createdAt)
             """)
@@ -49,7 +49,7 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     @Query("""
             select count(distinct u.userId) from User u join u.userRoles ur join ur.role r
-            where r.roleName = 'CUSTOMER'
+            where r.roleName = 'ROLE_CUSTOMER'
               and exists (select o.orderId from Order o
                   where o.customer = u and o.status = VietFreshHub.order.entity.Order.Status.COMPLETED
                     and exists (select s.shopOrderId from ShopOrder s
@@ -61,7 +61,7 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     @Query("""
             select count(distinct u.userId) from User u join u.userRoles ur join ur.role r
-            where r.roleName = 'CUSTOMER'
+            where r.roleName = 'ROLE_CUSTOMER'
               and (select count(o.orderId) from Order o
                   where o.customer = u and o.status = VietFreshHub.order.entity.Order.Status.COMPLETED
                     and exists (select s.shopOrderId from ShopOrder s

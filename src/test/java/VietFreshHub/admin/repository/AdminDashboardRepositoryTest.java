@@ -66,7 +66,7 @@ class AdminDashboardRepositoryTest {
     void dashboardAggregatesDeliveredValueOncePerShopOrderAndExcludesCancelledSales() {
         LocalDate day = LocalDate.of(2026, 10, 12);
         LocalDateTime deliveredAt = day.atTime(18, 20).atZone(HCMC).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
-        User customer = customerWithRole("CUSTOMER");
+        User customer = customerWithRole("ROLE_CUSTOMER");
         Shop firstShop = shop("Shop A");
         Shop secondShop = shop("Shop B");
         CatalogProduct firstProduct = product(firstShop, "Táo");
@@ -123,7 +123,7 @@ class AdminDashboardRepositoryTest {
 
     @Test
     void customerAndInventoryQueriesUseRoleAndCurrentAvailabilityRules() {
-        User customer = customerWithRole("CUSTOMER");
+        User customer = customerWithRole("ROLE_CUSTOMER");
         addRole(customer, "STORE_MANAGER");
         customerWithRole("ADMIN");
         Shop shop = shop("Inventory Shop");
@@ -154,9 +154,9 @@ class AdminDashboardRepositoryTest {
     @Test
     void platformStatisticsCountDeliveredParentOrdersOnceAndExcludeFailedPurchases() {
         LocalDateTime completed = LocalDateTime.now(ZoneOffset.UTC).withNano(0).minusDays(2);
-        User first = customerWithRole("CUSTOMER");
-        User returning = customerWithRole("CUSTOMER");
-        User failed = customerWithRole("CUSTOMER");
+        User first = customerWithRole("ROLE_CUSTOMER");
+        User returning = customerWithRole("ROLE_CUSTOMER");
+        User failed = customerWithRole("ROLE_CUSTOMER");
         Shop shop = shop("Statistics Shop");
         CatalogProduct bought = product(shop, "Bought product");
         bought.setStatus("ACTIVE");
