@@ -1602,6 +1602,9 @@ IF OBJECT_ID('dbo.orders','U') IS NULL OR OBJECT_ID('dbo.shop_orders','U') IS NU
  OR OBJECT_ID('dbo.seller_payouts','U') IS NULL OR OBJECT_ID('dbo.subscription_plans','U') IS NULL
  THROW 51500,'Unrecognized or incomplete existing VietFreshHub schema.',1;
 
+IF COL_LENGTH(N'dbo.categories', N'image_url') IS NULL
+    EXEC(N'ALTER TABLE dbo.categories ADD image_url NVARCHAR(1000) NULL;');
+
 IF COL_LENGTH(N'dbo.products', N'origin') IS NULL
     EXEC(N'ALTER TABLE dbo.products ADD origin NVARCHAR(200) NULL;');
 

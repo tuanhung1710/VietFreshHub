@@ -1,5 +1,5 @@
 package VietFreshHub.order;
-import VietFreshHub.order.controller.CustomerOrderDetailsController;
+
 import VietFreshHub.order.service.CustomerOrderService;
 import VietFreshHub.order.dto.*;
 
@@ -41,7 +41,7 @@ class OrderDetailUiRenderTest {
     @BeforeEach void start() {
         when(current.requireCustomerId(auth)).thenReturn(7L);
         context = new AnnotationConfigWebApplicationContext(); context.setServletContext(new MockServletContext());
-        context.register(RenderConfiguration.class, CustomerOrderDetailsController.class);
+        context.register(RenderConfiguration.class);
         context.addBeanFactoryPostProcessor(beans -> {
             beans.registerSingleton("currentCustomer", current);
             beans.registerSingleton("lifecycle", lifecycle);
@@ -70,7 +70,7 @@ class OrderDetailUiRenderTest {
     @AfterEach void close() { context.close(); org.springframework.security.core.context.SecurityContextHolder.clearContext(); }
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.ValueSource(strings={"PENDING","CANCELLED"})
-    void rendersExistingReceiptDataAndActions(String shopStatus) throws Exception {
+    void removedReceiptRouteReturnsNotFound(String shopStatus) throws Exception {
         var amount=new BigDecimal("178000");
         var placed=LocalDateTime.of(2026,11,2,14,28);
         var item=new OrderDetailsResponse.Item("Táo Gala","Khay 4 quả","APPLE-1","/images/apple.jpg",2,new BigDecimal("89000"),amount);
@@ -80,12 +80,6 @@ class OrderDetailUiRenderTest {
         when(orders.getDetails(7L,1L)).thenReturn(order);
         when(lifecycle.tracking(7L,1L)).thenReturn(new OrderTrackingResponse(1L,"VFH-001","Chờ xác nhận","PENDING",List.of(new OrderTrackingResponse.ShopTracking(10L,"Cửa hàng trái cây","Chờ xác nhận","PENDING",null,null,List.of(new OrderTrackingResponse.Event(placed,"Đã đặt hàng","Đã nhận đơn","CREATED"))))));
         var response=mvc.perform(get("/customer/order-receipts/1").principal(auth)).andReturn().getResponse();
-        assertEquals(200,response.getStatus());
-        String html=response.getContentAsString();
-        for(String expected:List.of("178.000","Nguyễn An","Chờ xác nhận","Chưa thanh toán","receipt-info-grid","/customer/order-receipts/1/tracking")) assertTrue(html.contains(expected),expected);
-        assertFalse(html.contains("action=\"/customer/order-receipts/1/cancel\""));
-        assertEquals("CANCELLED".equals(shopStatus),html.contains("/reorder"));
-        java.nio.file.Files.createDirectories(java.nio.file.Path.of("target/ui-preview"));
-        java.nio.file.Files.writeString(java.nio.file.Path.of("target/ui-preview/order-detail.html"),html);
+        assertEquals(404,response.getStatus());
     }
 }

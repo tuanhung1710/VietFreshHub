@@ -380,10 +380,9 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         if(children.isEmpty()) return "Đơn hàng chưa có thông tin cửa hàng, không thể hủy.";
         if(children.stream().anyMatch(c -> "CANCELLED".equals(c.getStatus())))
             return "Một đơn cửa hàng đã được hủy. Không thể hủy lại hoặc hủy một phần đơn này.";
-        // UC-22 / GBR-25: confirmation still allows cancellation; preparation does not.
         for (ShopOrder child : children) {
-            if (!"PENDING".equals(child.getStatus()) && !"CONFIRMED".equals(child.getStatus())) {
-                return "Một cửa hàng đã bắt đầu chuẩn bị hoặc xử lý đơn. Bạn không thể hủy toàn bộ đơn này.";
+            if (!"PENDING".equals(child.getStatus()) || child.getConfirmedAt() != null) {
+                return "Một cửa hàng đã xác nhận hoặc bắt đầu xử lý đơn. Bạn không thể hủy toàn bộ đơn này.";
             }
         }
         if(delivery.stream().anyMatch(d -> !Set.of("UNASSIGNED","ASSIGNED","ACCEPTED","CANCELLED").contains(d.getStatus())))

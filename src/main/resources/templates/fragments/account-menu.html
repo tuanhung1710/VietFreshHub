@@ -26,6 +26,7 @@
                 <th:block th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}">
                     <a th:href="@{/customer/profile}"><svg th:replace="~{fragments/account-menu :: icon('person')}"></svg><span>Tài khoản của tôi</span></a>
                     <a th:href="@{/customer/orders}"><svg th:replace="~{fragments/account-menu :: icon('orders')}"></svg><span>Đơn mua</span></a>
+                    <a th:href="@{/customer/loyalty}"><span>Tiền thưởng</span></a>
                     <a th:href="@{/customer/addresses}"><svg th:replace="~{fragments/account-menu :: icon('location')}"></svg><span>Sổ địa chỉ</span></a>
                     <a th:href="@{/customer/payments}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="17" height="13" rx="1"/><circle cx="12.5" cy="9.5" r="3"/><path d="M1 7v14h17"/></svg><span>Lịch sử thanh toán</span></a>
                     <a th:href="@{/customer/chat}"><svg th:replace="~{fragments/account-menu :: icon('chat')}"></svg><span>Tin nhắn với cửa hàng</span></a>

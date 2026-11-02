@@ -1,6 +1,8 @@
 package VietFreshHub.notification.entity;
 
-import jakarta.persistence.Column;
+import VietFreshHub.auth.entity.User;
+import jakarta.persistence.*;
+import lombok.Setter;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -15,6 +17,7 @@ import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 
 @Getter
+@Setter
 @NoArgsConstructor
 @Entity
 @Table(schema = "dbo", name = "notifications")
@@ -25,8 +28,38 @@ public class Notification {
     @Column(name = "notification_id")
     private Long notificationId;
 
-    @Column(name = "user_id", nullable = false, updatable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false, updatable = false)
+    private User user;
+
+    @Column(name = "user_id", insertable = false, updatable = false)
     private Long userId;
+
+    public Long getUserId() {
+        return user == null ? userId : user.getUserId();
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+        this.userId = user == null ? null : user.getUserId();
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+        if (userId == null) {
+            this.user = null;
+        } else if (this.user == null || !userId.equals(this.user.getUserId())) {
+            this.user = new User();
+            this.user.setUserId(userId);
+        }
+    }
+
+    @PrePersist
+    private void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now(java.time.ZoneOffset.UTC).withNano(0);
+        }
+    }
 
     @Column(name = "type", nullable = false, length = 80, updatable = false)
     private String type;
@@ -55,7 +88,7 @@ public class Notification {
 
     public Notification(Long userId, String type, String title, String content,
                         String entityType, Long entityId, LocalDateTime createdAt) {
-        this.userId = userId;
+        setUserId(userId);
         this.type = type;
         this.title = title;
         this.content = content;

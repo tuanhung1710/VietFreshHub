@@ -25,10 +25,13 @@ document.addEventListener('DOMContentLoaded', () => {
             url.searchParams.set('checkoutToken', form.elements.checkoutToken.value);
             url.searchParams.set('addressId', address.value);
             url.searchParams.set('selectionSubmitted', 'true');
+            url.searchParams.set('couponCode', form.elements.couponCode.value);
+            url.searchParams.set('rewardAmountToUse', form.elements.rewardAmountToUse.value);
             window.location.assign(url.toString());
         });
     });
     form.addEventListener('submit', event => {
+        if (!event.submitter?.matches('[data-confirm-order]')) return;
         if (requoting || button.disabled) {
             event.preventDefault();
             return;

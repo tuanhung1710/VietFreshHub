@@ -23,17 +23,17 @@ import java.time.ZoneId;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/manager/coupons")
+@RequestMapping("/seller/coupons")
 public class CouponController {
 
     private static final String FORM_VIEW =
-            "store_manager/coupons/coupon-form";
+            "coupons/coupon-form";
 
     private static final String LIST_VIEW =
-            "store_manager/coupons/coupon-list";
+            "coupons/coupon-list";
 
     private static final String REDIRECT_LIST =
-            "redirect:/manager/coupons";
+            "redirect:/seller/coupons";
 
     private final CouponService couponService;
     private final PromotionService promotionService;

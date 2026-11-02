@@ -11,6 +11,7 @@ public record NotificationRow(Long notificationId, String type, String title, St
             return false;
         }
         return switch (type) {
+            case "REVIEW_REMINDER" -> "CUSTOMER_ORDER".equals(entityType);
             case "LOW_STOCK" -> "INVENTORY_VARIANT".equals(entityType);
             case "NEAR_EXPIRY", "EXPIRED_STOCK" -> "INVENTORY_BATCH".equals(entityType);
             case "DELIVERY_ASSIGNED", "GOODS_RETURN_CONFIRMED" -> "DELIVERY_ASSIGNMENT".equals(entityType);

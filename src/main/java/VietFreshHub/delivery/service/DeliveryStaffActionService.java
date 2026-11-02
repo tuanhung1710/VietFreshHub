@@ -5,6 +5,9 @@ import VietFreshHub.delivery.entity.DeliveryAssignment;
 import VietFreshHub.delivery.entity.DeliveryStatus;
 import VietFreshHub.order.entity.ShopOrder;
 import VietFreshHub.order.service.OrderService;
+import VietFreshHub.payment.service.PaymentService;
+import VietFreshHub.loyalty.services.LoyaltyService;
+import jakarta.persistence.EntityManager;
 import VietFreshHub.payout.service.SellerPayoutService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,6 +25,9 @@ public class DeliveryStaffActionService {
     private final DeliveryStatusHistoryWriter deliveryStatusHistoryWriter;
     private final OrderService orderService;
     private final DeliveryNotificationService deliveryNotificationService;
+    private final PaymentService paymentService;
+    private final LoyaltyService loyaltyService;
+    private final EntityManager em;
     private final SellerPayoutService sellerPayoutService;
 
     @Transactional
@@ -79,6 +85,16 @@ public class DeliveryStaffActionService {
         sellerPayoutService.createForDeliveredOrder(shopOrder.getShopOrderId(), delivery.getDeliveredAt());
         deliveryStatusHistoryWriter.record(delivery, assignment.getDeliveryStaff().getUserId(), null);
         assignment.complete();
+        Long orderId = shopOrder.getOrder().getOrderId();
+        if (paymentService.isCodOrder(orderId)) {
+            if (paymentService.recordCodCollection(orderId, shopOrder.getShopOrderId())) {
+                em.flush();
+                loyaltyService.earnReward(orderId);
+            }
+        } else {
+            em.flush();
+            loyaltyService.earnReward(orderId);
+        }
         deliveryNotificationService.notifyCompleted(delivery);
     }
 

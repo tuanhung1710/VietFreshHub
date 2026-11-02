@@ -6,6 +6,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import VietFreshHub.common.PageSizes;
 
 @Getter
 @Setter
@@ -23,4 +24,5 @@ public class DeliveryHistoryFilter {
     private BigDecimal maxAmount;
     private String returnStatus = "ALL";
     private String sort = "NEWEST";
+    private int size = PageSizes.DEFAULT;
 }

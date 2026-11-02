@@ -1,7 +1,7 @@
 package VietFreshHub.order;
 import VietFreshHub.checkout.dto.*;
 import VietFreshHub.cart.dto.*;
-import VietFreshHub.order.controller.CustomerOrderDetailsController;
+
 import VietFreshHub.order.service.CustomerOrderService;
 import VietFreshHub.order.dto.*;
 
@@ -76,6 +76,9 @@ class CheckoutUiRenderTest {
             var cart=CartDto.builder().cartId(1L).items(List.of(item)).totalAmount(new BigDecimal("59000")).build();
             var form=new CheckoutRequest();form.setAddressId(1L);form.setCheckoutToken("0123456789abcdef0123456789abcdef");
             var preview=new CheckoutPreview(cart,List.of(new CheckoutPreview.AddressOption(1L,"Trần Quốc Bảo","0987253641","18 Trần Hưng Đạo",true,true)),1L,java.util.Map.of(),null,null,true,true,"fingerprint",null,true);
+            model.addAttribute("availableCoupons", List.of());
+            model.addAttribute("loyaltyBalance", new VietFreshHub.loyalty.dto.LoyaltyBalanceResponse(1L,7L,BigDecimal.ZERO,BigDecimal.ZERO,BigDecimal.ZERO,null));
+            model.addAttribute("couponDiscount",BigDecimal.ZERO);model.addAttribute("loyaltyDiscount",BigDecimal.ZERO);
             model.addAttribute("cart",cart);model.addAttribute("checkout",preview);model.addAttribute("form",form);model.addAttribute("shopGroups",java.util.Map.of(1L,cart.getItems()));return "customer/checkout";
         }
     }

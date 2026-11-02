@@ -5,13 +5,32 @@ import VietFreshHub.delivery.entity.DeliveryAssignmentStatus;
 import VietFreshHub.delivery.entity.DeliveryStatus;
 import VietFreshHub.delivery.entity.DeliveryStatusHistory;
 import VietFreshHub.order.entity.ShopOrder;
+import VietFreshHub.order.repository.ShopOrderRepository;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 @Service
+@RequiredArgsConstructor
 public class DeliveryReturnQueryService {
+
+    private final ShopOrderRepository shopOrders;
+
+    public List<ShopOrder> collectibleCodShopOrders(Long orderId, List<ShopOrder> children) {
+        Specification<ShopOrder> returnedFailures = confirmedReturnedFailures()
+                .and((root, query, builder) -> builder.equal(root.get("order").get("orderId"), orderId));
+        Set<Long> returnedIds = shopOrders.findAll(returnedFailures).stream()
+                .map(ShopOrder::getShopOrderId).collect(Collectors.toSet());
+        return children.stream()
+                .filter(child -> !"CANCELLED".equals(child.getStatus()) && !returnedIds.contains(child.getShopOrderId()))
+                .toList();
+    }
 
     public Specification<ShopOrder> confirmedReturnedFailures() {
         return (shopOrder, query, builder) -> {

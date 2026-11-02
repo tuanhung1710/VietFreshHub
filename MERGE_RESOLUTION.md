@@ -1,4 +1,21 @@
-# Current merge resolution (2026-11-02)
+# Current merge resolution (2026-11-03)
+
+- Local starting commit: `165d6993845dc0d17ba030a4f1a5b754126476d5`; fetched main: `97c53c846086d07a57c71596ffde69d49c0269aa`.
+- Started from a clean working tree on Tuan-Hung. Merge is left staged without committing or pushing.
+- Resolved five conflicts: CheckoutController, checkout.html, orders.html, payment-history.html, and the modified/deleted order-detail.html.
+- Retained local buy-now checkout, isolated cart contents, reorder eligibility, payment display/status filters, redesigned history screens and pagination.
+- Retained main coupon and reward calculations, confirmation validation, and other automatically merged features. As previously authorized, retain main's removal of aggregate receipt detail and its pre-confirmation cancellation restrictions. These are existing differences between the branches, so this merge does not claim identical observable behavior to both inputs.
+- Combined checkout request parameters and draft routing. Coupon/reward preview uses the current buy-now draft; coupon eligibility reuses main's existing calculation and scope/usage rules with the selected variant and quantity, without reading or mutating cart lines.
+- Kept local shop-order payment links and displayed amounts. Links that previously opened the removed aggregate detail now open main's order search.
+- Kept the four previously protected test files unchanged. Updated test wiring for removed controller/new coupon and loyalty dependencies, and checkout render fixtures. Receipt-detail UI checks now expect the retired route to return 404.
+- Added BuyNowCouponTest for quantity-based eligibility/discounts and absence of cart reads/writes. Production and test sources compile with Java 21 and cached Maven 3.9.16.
+- Final clean-test result: 93 run, 87 passed, 6 failed, no errors or skips. Buy-now checkout, buy-now coupon eligibility, checkout rendering, cart rendering, reorder eligibility, purchase-history rendering and shop-order detail rendering pass.
+- All six failures are in the unchanged protected test files: two summary tests request removed receipt-detail routes (404), three payment rendering tests expect links to that removed route, and one summary fixture expects 11 IDs to exceed the old page limit while local PageSizes supports up to 50; it reaches the fixture's null ShopOrderRepository. The history-summary implementation/page-size rule was not changed by this conflict resolution.
+- Full log: `target/merge-current-verification.log`; reports: `target/surefire-reports`. The complete Maven test command fails because of those six preserved assertions. External provider integrations and production database runtime are not exercised by this merge validation.
+
+---
+
+# Previous merge resolution (2026-11-02)
 
 - Local HEAD: `cc324454bd0c373858f40f064b9c3983c3e9ce08`.
 - Incoming MERGE_HEAD and freshly fetched origin/main: `4deeff6c11a346a19e98e15ae25e26797f265e12`.

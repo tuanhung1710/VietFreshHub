@@ -34,9 +34,10 @@ public class DeliveryMonitoringController {
                                          @RequestParam(defaultValue = "placedAt") String sortBy,
                                          @RequestParam(defaultValue = "desc") String direction,
                                          @RequestParam(defaultValue = "0") int page,
+                                         @RequestParam(defaultValue = "10") int size,
                                          Authentication authentication, Model model) {
         return showList(deliveryMonitoringService.getManagedShopDeliveries(
-                        authentication, status, orderCode, sortBy, direction, page),
+                        authentication, status, orderCode, sortBy, direction, page, size),
                 status, orderCode, sortBy, direction, "/seller/deliveries", "/seller",
                 "Giao hàng của cửa hàng bạn quản lý", model);
     }
@@ -54,11 +55,12 @@ public class DeliveryMonitoringController {
                                    @RequestParam(defaultValue = "placedAt") String sortBy,
                                    @RequestParam(defaultValue = "desc") String direction,
                                    @RequestParam(defaultValue = "0") int page,
+                                   @RequestParam(defaultValue = "10") int size,
                                    Authentication authentication, Model model) {
         model.addAttribute("shops", deliveryMonitoringService.getAdminShopOptions(authentication));
         model.addAttribute("selectedShopId", shopId);
         return showList(deliveryMonitoringService.getAdminDeliveries(
-                        authentication, status, orderCode, shopId, sortBy, direction, page),
+                        authentication, status, orderCode, shopId, sortBy, direction, page, size),
                 status, orderCode, sortBy, direction, "/admin/deliveries", "/admin/accounts",
                 "Giao hàng toàn hệ thống", model);
     }

@@ -12,7 +12,7 @@ import VietFreshHub.checkout.controller.CheckoutController;
 import VietFreshHub.checkout.service.*;
 import VietFreshHub.customer.service.CustomerAddressService;
 import VietFreshHub.order.controller.CustomerOrderController;
-import VietFreshHub.order.controller.CustomerOrderDetailsController;
+
 import VietFreshHub.order.service.CustomerOrderQueryService;
 import VietFreshHub.order.service.CustomerOrderService;
 import VietFreshHub.payment.controller.CustomerPaymentHistoryController;
@@ -51,7 +51,7 @@ public final class CustomerHttpHarness implements AutoCloseable {
         context = new AnnotationConfigWebApplicationContext();
         context.setServletContext(new MockServletContext());
         context.register(WebConfiguration.class, CustomerCartViewController.class, CheckoutController.class,
-                CustomerOrderController.class, CustomerOrderDetailsController.class, CustomerPaymentHistoryController.class,
+                CustomerOrderController.class, CustomerPaymentHistoryController.class,
                 ProductAvailabilityController.class, VietFreshHub.auth.service.LoginRedirectService.class);
         context.addBeanFactoryPostProcessor(beans -> {
             beans.registerSingleton("userRepository", users);
@@ -62,6 +62,8 @@ public final class CustomerHttpHarness implements AutoCloseable {
             beans.registerSingleton("catalogService", catalog);
             beans.registerSingleton("productRecommendations", mock(VietFreshHub.recommendation.service.ProductRecommendationService.class));
             beans.registerSingleton("checkoutService", checkout);
+            beans.registerSingleton("couponApplicationService", mock(VietFreshHub.coupon.services.CouponApplicationService.class));
+            beans.registerSingleton("loyaltyService", mock(VietFreshHub.loyalty.services.LoyaltyService.class));
             beans.registerSingleton("shippingQuotes", shipping);
             beans.registerSingleton("drafts", drafts);
             beans.registerSingleton("checkoutAddresses", mock(CheckoutAddressService.class));

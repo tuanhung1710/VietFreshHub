@@ -15,6 +15,7 @@
 <header th:replace="~{fragments/customer-shop :: header}"></header>
 <main class="container">
   <div id="notice" class="notice hide"></div>
+  <p th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" class="section"><a th:href="@{/customer/loyalty}">Tiền thưởng và điểm tích lũy</a></p>
 
   <div id="home">
     <section class="bannergrid" style="margin-top:22px">

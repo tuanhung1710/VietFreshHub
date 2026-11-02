@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Thông báo</title>
+    <style>
+        body { margin: 0; background: #f5f7f6; color: #24342b; font-family: Arial, sans-serif; }
+        main { max-width: 850px; margin: 40px auto; padding: 0 20px; }
+        article { margin-bottom: 16px; padding: 20px; background: white; border: 1px solid #dce5df; border-radius: 12px; }
+        article.unread { border-left: 5px solid #198754; }
+        h2 { margin: 0 0 10px; font-size: 18px; }
+        .content { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+        .muted { color: #647067; font-size: 14px; }
+        button, .pagination a { display: inline-block; padding: 9px 14px; border: 0; border-radius: 6px; background: #198754; color: white; cursor: pointer; text-decoration: none; }
+        .pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 24px 0; }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Thông báo của bạn</h1>
+    <p th:if="${notificationPage.empty}" class="muted">Bạn chưa có thông báo nào.</p>
+    <article th:each="item : ${notificationPage.content}"
+             th:classappend="${item.readAt == null} ? 'unread' : ''">
+        <h2 th:text="${item.title}"></h2>
+        <p class="content" th:text="${item.content}"></p>
+        <p class="muted">
+            <time th:text="${#temporals.format(item.createdAt, 'dd/MM/yyyy HH:mm')}"></time>
+            <span> UTC · </span>
+            <span th:text="${item.readAt == null ? 'Chưa đọc' : 'Đã đọc'}"></span>
+        </p>
+        <form th:if="${item.readAt == null}"
+              th:action="@{/notifications/{id}/read(id=${item.notificationId})}" method="post">
+            <button type="submit">Đánh dấu đã đọc</button>
+        </form>
+    </article>
+    <nav class="pagination" aria-label="Phân trang thông báo" th:if="${notificationPage.totalPages > 1}">
+        <a th:if="${notificationPage.hasPrevious()}" th:href="@{/notifications(page=${notificationPage.number - 1})}">Trang trước</a>
+        <span th:text="${'Trang ' + (notificationPage.number + 1) + ' / ' + notificationPage.totalPages}"></span>
+        <a th:if="${notificationPage.hasNext()}" th:href="@{/notifications(page=${notificationPage.number + 1})}">Trang sau</a>
+    </nav>
+</main>
+</body>
+</html>

@@ -11,6 +11,7 @@ import VietFreshHub.delivery.repository.DeliveryAssignmentRepository;
 import VietFreshHub.delivery.repository.DeliveryRepository;
 import VietFreshHub.delivery.repository.DeliveryStatusHistoryRepository;
 import VietFreshHub.order.service.OrderService;
+import VietFreshHub.order.service.OrderLifecycleLock;
 import VietFreshHub.order.service.OrderInventoryReleaseService;
 import VietFreshHub.exception.CustomerOrderException;
 import VietFreshHub.shop.service.ShopService;
@@ -40,6 +41,7 @@ public class DeliveryAssignmentService {
     private final ShopService shopService;
     private final OrderService orderService;
     private final DeliveryNotificationService deliveryNotificationService;
+    private final OrderLifecycleLock lifecycleLock;
     private final OrderInventoryReleaseService inventoryRelease;
 
     @Transactional(readOnly = true)
@@ -161,6 +163,7 @@ public class DeliveryAssignmentService {
     }
 
     private Delivery getDeliveryForUpdate(Long deliveryId) {
+        lifecycleLock.lockForDelivery(deliveryId);
         return deliveryRepository.findForUpdateByDeliveryId(deliveryId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Không tìm thấy thông tin giao hàng."));

@@ -12,7 +12,7 @@ public record RefundPeriod(LocalDateTime start, LocalDateTime end, LocalDateTime
     }
 
     public boolean isCompleted() {
-        return !end.isAfter(currentTime);
+        return start != null && end != null && !end.isAfter(currentTime);
     }
 
     public LocalDateTime getLatestSelectableTime() {
