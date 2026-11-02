@@ -43,7 +43,7 @@
                 <tr th:if="${#lists.isEmpty(subscriptions)}"><td colspan="5" class="text-center text-secondary py-5">Chưa có đăng ký gói dịch vụ.</td></tr>
                 <tr th:each="subscription : ${subscriptions}">
                     <td th:text="${subscription.subscriptionId}"></td>
-                    
+
                     <td class="fw-semibold" th:text="${subscription.planName}"></td>
                     <td class="text-nowrap" th:text="${subscription.startAt != null ? #temporals.format(subscription.startAt, 'dd/MM/yyyy HH:mm') : '—'}"></td>
                     <td class="text-nowrap" th:text="${subscription.endAt != null ? #temporals.format(subscription.endAt, 'dd/MM/yyyy HH:mm') : '—'}"></td>
@@ -55,4 +55,3 @@
 </main>
 </body>
 </html>
-
