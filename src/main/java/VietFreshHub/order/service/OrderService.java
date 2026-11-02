@@ -19,29 +19,21 @@ import java.util.List;
 
 public interface OrderService {
 
-    Page<IncomingOrderResponse> getIncomingOrders(
-            Authentication authentication, OrderFilterRequest filter, int page);
+    Page<IncomingOrderResponse> getIncomingOrders(Authentication authentication, OrderFilterRequest filter, int page);
 
-    Page<IncomingOrderResponse> getAllOrders(
-            Authentication authentication, OrderFilterRequest filter, int page);
+    Page<IncomingOrderResponse> getAllOrders(Authentication authentication, OrderFilterRequest filter, int page);
 
-    Page<IncomingOrderResponse> getConfirmedOrders(
-            Authentication authentication, OrderFilterRequest filter, int page);
+    Page<IncomingOrderResponse> getConfirmedOrders(Authentication authentication, OrderFilterRequest filter, int page);
 
-    Page<IncomingOrderResponse> getPreparingOrders(
-            Authentication authentication, OrderFilterRequest filter, int page);
+    Page<IncomingOrderResponse> getPreparingOrders(Authentication authentication, OrderFilterRequest filter, int page);
 
-    Page<IncomingOrderResponse> getReadyOrders(
-            Authentication authentication, OrderFilterRequest filter, int page);
+    Page<IncomingOrderResponse> getReadyOrders(Authentication authentication, OrderFilterRequest filter, int page);
 
-    Page<IncomingOrderResponse> getFailedOrders(
-            Authentication authentication, OrderFilterRequest filter, int page);
+    Page<IncomingOrderResponse> getFailedOrders(Authentication authentication, OrderFilterRequest filter, int page);
 
-    Page<IncomingOrderResponse> getCancelledOrders(
-            Authentication authentication, OrderFilterRequest filter, int page);
+    Page<IncomingOrderResponse> getCancelledOrders(Authentication authentication, OrderFilterRequest filter, int page);
 
-    Page<IncomingOrderResponse> getCompletedOrders(
-            Authentication authentication, OrderFilterRequest filter, int page);
+    Page<IncomingOrderResponse> getCompletedOrders(Authentication authentication, OrderFilterRequest filter, int page);
 
     long countFilteredOrders(Authentication authentication, OrderFilterRequest filter, String view);
 
@@ -61,8 +53,7 @@ public interface OrderService {
 
     OrderAddress getOrderAddress(Long orderId);
 
-    List<OrderProcessingHistoryEntry> getProcessingHistoryForAdmin(
-            Long shopOrderId, Authentication authentication);
+    List<OrderProcessingHistoryEntry> getProcessingHistoryForAdmin(Long shopOrderId, Authentication authentication);
 
     void lockOrderForDeliveryCompletion(Long orderId);
 
@@ -81,4 +72,5 @@ public interface OrderService {
     void startPreparing(Long shopOrderId, Authentication authentication);
 
     void markReady(Long shopOrderId, Authentication authentication);
+
 }

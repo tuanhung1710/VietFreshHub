@@ -11,12 +11,6 @@ public enum CustomerOrderStage {
     CANCELLED("Đã hủy");
 
     private final String label;
-
-    CustomerOrderStage(String label) {
-        this.label = label;
-    }
-
-    public String label() {
-        return label;
-    }
+    CustomerOrderStage(String label) { this.label = label; }
+    public String label() { return label; }
 }

@@ -14,26 +14,21 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 
     List<OrderItem> findByShopOrderId(Long shopOrderId);
 
-    List<OrderItem>
-            findByShopOrder_Order_Customer_UserIdAndShopOrder_StatusAndVariant_Product_ProductId(
-                    Long userId, String status, Long productId);
+    List<OrderItem> findByShopOrder_Order_Customer_UserIdAndShopOrder_StatusAndVariant_Product_ProductId(
+            Long userId, String status, Long productId);
 
     interface BestSellingProduct {
         String getProductName();
-
         Long getUnitsSold();
     }
 
     interface AdminBestSellingProduct {
         String getProductName();
-
         String getUnit();
-
         Long getUnitsSold();
     }
 
-    @Query(
-            """
+    @Query("""
             select i.productNameSnapshot as productName, v.unit as unit, sum(i.quantity) as unitsSold
             from OrderItem i join i.shopOrder s join s.order o join i.variant v
             join VietFreshHub.delivery.entity.Delivery d on d.shopOrder = s
@@ -43,24 +38,21 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             group by v.product.productId, i.productNameSnapshot, v.unit
             order by sum(i.quantity) desc, i.productNameSnapshot, v.unit
             """)
-    List<AdminBestSellingProduct> findAdminBestSellers(
-            @Param("from") LocalDateTime from,
-            @Param("to") LocalDateTime to,
-            org.springframework.data.domain.Pageable pageable);
+    List<AdminBestSellingProduct> findAdminBestSellers(@Param("from") LocalDateTime from,
+                                                       @Param("to") LocalDateTime to,
+                                                       org.springframework.data.domain.Pageable pageable);
 
-    @Query(
-            """
+    @Query("""
             select v.product.name as productName, sum(i.quantity) as unitsSold
             from OrderItem i join i.shopOrder so join i.variant v
             where so.shopId = :shopId and so.status = 'COMPLETED'
             group by v.product.productId, v.product.name
             order by sum(i.quantity) desc
             """)
-    List<BestSellingProduct> findTopSellingProducts(
-            @Param("shopId") Long shopId, org.springframework.data.domain.Pageable pageable);
+    List<BestSellingProduct> findTopSellingProducts(@Param("shopId") Long shopId,
+                                                    org.springframework.data.domain.Pageable pageable);
 
-    @Query(
-            """
+    @Query("""
             select v.product.name as productName, sum(i.quantity) as unitsSold
             from OrderItem i join i.shopOrder so join i.variant v
             where so.shopId = :shopId and so.status = 'COMPLETED'
@@ -68,9 +60,8 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             group by v.product.productId, v.product.name
             order by sum(i.quantity) desc
             """)
-    List<BestSellingProduct> findTopSellingProductsInPeriod(
-            @Param("shopId") Long shopId,
-            @Param("from") java.time.LocalDateTime from,
-            @Param("to") java.time.LocalDateTime to,
-            org.springframework.data.domain.Pageable pageable);
+    List<BestSellingProduct> findTopSellingProductsInPeriod(@Param("shopId") Long shopId,
+                                                             @Param("from") java.time.LocalDateTime from,
+                                                             @Param("to") java.time.LocalDateTime to,
+                                                             org.springframework.data.domain.Pageable pageable);
 }

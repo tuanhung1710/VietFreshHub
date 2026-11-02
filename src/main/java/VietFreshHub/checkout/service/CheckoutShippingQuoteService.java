@@ -46,12 +46,10 @@ public class CheckoutShippingQuoteService {
                 throw new CheckoutException("Giỏ hàng không thuộc tài khoản của bạn.");
             }
             if (preview.cart().getItems().isEmpty() || preview.cart().isHasUnavailableItems()) {
-                throw new CheckoutException(
-                        "Vui lòng kiểm tra lại sản phẩm trong giỏ trước khi tính phí giao hàng.");
+                throw new CheckoutException("Vui lòng kiểm tra lại sản phẩm trong giỏ trước khi tính phí giao hàng.");
             }
             if (selectedAddressId == null) {
-                throw new CheckoutException(
-                        "Vui lòng thêm hoặc chọn địa chỉ nhận hàng để tính phí giao hàng.");
+                throw new CheckoutException("Vui lòng thêm hoặc chọn địa chỉ nhận hàng để tính phí giao hàng.");
             }
             Address address = requireDeliveryAddress(customerId, selectedAddressId);
             Map<Long, String> shopNames = new TreeMap<>();
@@ -63,36 +61,15 @@ public class CheckoutShippingQuoteService {
             BigDecimal total = BigDecimal.ZERO;
             for (Long shopId : locations.keySet()) {
                 ShopLocation location = locations.get(shopId);
-                ShopShippingQuote quote =
-                        quoteShop(shopId, shopNames.get(shopId), location, address);
+                ShopShippingQuote quote = quoteShop(shopId, shopNames.get(shopId), location, address);
                 quotes.put(shopId, quote);
                 total = total.add(quote.shippingFee());
             }
-            return new CheckoutPreview(
-                    preview.cart(),
-                    preview.addresses(),
-                    selectedAddressId,
-                    quotes,
-                    money(total),
-                    money(preview.cart().getTotalAmount().add(total)),
-                    preview.codAvailable(),
-                    preview.vnpayAvailable(),
-                    preview.fingerprint(),
-                    null,
-                    false);
+            return new CheckoutPreview(preview.cart(), preview.addresses(), selectedAddressId, quotes, money(total),
+                    money(preview.cart().getTotalAmount().add(total)), preview.codAvailable(), preview.vnpayAvailable(), preview.fingerprint(), null, false);
         } catch (CheckoutException exception) {
-            return new CheckoutPreview(
-                    preview.cart(),
-                    preview.addresses(),
-                    selectedAddressId,
-                    Map.of(),
-                    null,
-                    null,
-                    preview.codAvailable(),
-                    preview.vnpayAvailable(),
-                    preview.fingerprint(),
-                    exception.getMessage(),
-                    exception instanceof DeliveryRangeException);
+            return new CheckoutPreview(preview.cart(), preview.addresses(), selectedAddressId, Map.of(), null, null,
+                    preview.codAvailable(), preview.vnpayAvailable(), preview.fingerprint(), exception.getMessage(), exception instanceof DeliveryRangeException);
         }
     }
 
@@ -108,68 +85,45 @@ public class CheckoutShippingQuoteService {
         Map<Long, ShopLocation> locations = new TreeMap<>();
         for (Long shopId : shopNames.keySet()) {
             String shopName = shopNames.get(shopId);
-            ShopLocation location =
-                    shops.findLocationByShopId(shopId)
-                            .orElseThrow(
-                                    () ->
-                                            new CheckoutException(
-                                                    "Cửa hàng "
-                                                            + shopName
-                                                            + " chưa có địa chỉ lấy hàng hợp lệ. Vui lòng chọn lại sản phẩm hoặc thử lại sau."));
+            ShopLocation location = shops.findLocationByShopId(shopId)
+                    .orElseThrow(() -> new CheckoutException("Cửa hàng " + shopName
+                            + " chưa có địa chỉ lấy hàng hợp lệ. Vui lòng chọn lại sản phẩm hoặc thử lại sau."));
             validatePickupLocation(shopId, location, shopName);
             locations.put(shopId, location);
         }
         return locations;
     }
 
-    private ShopShippingQuote quoteShop(
-            Long shopId, String shopName, ShopLocation location, Address address) {
+    private ShopShippingQuote quoteShop(Long shopId, String shopName, ShopLocation location, Address address) {
         BigDecimal distanceMeters;
         try {
-            distanceMeters =
-                    vietMap.motorcycleRoadDistanceMeters(
-                            location.getLatitude(),
-                            location.getLongitude(),
-                            address.getLatitude(),
-                            address.getLongitude());
+            distanceMeters = vietMap.motorcycleRoadDistanceMeters(
+                    location.getLatitude(), location.getLongitude(), address.getLatitude(), address.getLongitude());
         } catch (ResponseStatusException exception) {
-            throw new CheckoutException(
-                    "Chưa thể tính phí vận chuyển cho cửa hàng "
-                            + shopName
-                            + ". Vui lòng thử lại sau.");
+            throw new CheckoutException("Chưa thể tính phí vận chuyển cho cửa hàng " + shopName
+                    + ". Vui lòng thử lại sau.");
         }
         validateDeliveryDistance(distanceMeters, shopName);
         BigDecimal shippingFee = shippingFees.calculateShippingFee(distanceMeters);
-        return new ShopShippingQuote(
-                shopId,
-                location.getLatitude(),
-                location.getLongitude(),
-                address.getLatitude(),
-                address.getLongitude(),
-                distanceMeters,
-                shippingFee);
+        return new ShopShippingQuote(shopId, location.getLatitude(), location.getLongitude(),
+                address.getLatitude(), address.getLongitude(), distanceMeters, shippingFee);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public BigDecimal validateForConfirmation(
-            CheckoutDraft draft, Address address, Set<Long> shopIds) {
-        if (!Objects.equals(draft.addressId(), address.getAddressId())
-                || draft.shippingFee() == null
-                || shopIds.isEmpty()
-                || !draft.shopQuotes().keySet().equals(shopIds)) {
+    public BigDecimal validateForConfirmation(CheckoutDraft draft, Address address, Set<Long> shopIds) {
+        if (!Objects.equals(draft.addressId(), address.getAddressId()) || draft.shippingFee() == null
+                || shopIds.isEmpty() || !draft.shopQuotes().keySet().equals(shopIds)) {
             throw staleQuote();
         }
         BigDecimal total = BigDecimal.ZERO;
         for (Long shopId : new TreeSet<>(shopIds)) {
             ShopShippingQuote quote = draft.shopQuotes().get(shopId);
-            if (quote == null
-                    || !shopId.equals(quote.shopId())
+            if (quote == null || !shopId.equals(quote.shopId())
                     || !sameCoordinate(quote.destinationLatitude(), address.getLatitude())
                     || !sameCoordinate(quote.destinationLongitude(), address.getLongitude())) {
                 throw staleQuote();
             }
-            ShopLocation location =
-                    shops.findLocationByShopIdForConfirmation(shopId).orElseThrow(this::staleQuote);
+            ShopLocation location = shops.findLocationByShopIdForConfirmation(shopId).orElseThrow(this::staleQuote);
             validatePickupLocation(shopId, location, String.valueOf(shopId));
             if (!sameCoordinate(quote.pickupLatitude(), location.getLatitude())
                     || !sameCoordinate(quote.pickupLongitude(), location.getLongitude())) {
@@ -177,10 +131,7 @@ public class CheckoutShippingQuoteService {
             }
             validateDeliveryDistance(quote.distanceMeters(), null);
             if (quote.shippingFee() == null
-                    || shippingFees
-                                    .calculateShippingFee(quote.distanceMeters())
-                                    .compareTo(quote.shippingFee())
-                            != 0) {
+                    || shippingFees.calculateShippingFee(quote.distanceMeters()).compareTo(quote.shippingFee()) != 0) {
                 throw staleQuote();
             }
             total = total.add(money(quote.shippingFee()));
@@ -193,27 +144,23 @@ public class CheckoutShippingQuoteService {
 
     private void validateDeliveryDistance(BigDecimal distanceMeters, String shopName) {
         if (distanceMeters == null || distanceMeters.signum() < 0) {
-            throw new CheckoutException(
-                    "Khoảng cách giao hàng không hợp lệ. Vui lòng tính lại phí giao hàng.");
+            throw new CheckoutException("Khoảng cách giao hàng không hợp lệ. Vui lòng tính lại phí giao hàng.");
         }
         if (distanceMeters.compareTo(MAX_DELIVERY_DISTANCE_METERS) > 0) {
             String shopLabel = shopName == null ? "" : "Cửa hàng " + shopName + ": ";
-            throw new DeliveryRangeException(
-                    shopLabel
-                            + "Địa chỉ nhận hàng nằm ngoài phạm vi giao hàng tối đa 15 km của cửa hàng. "
-                            + "Vui lòng thay đổi địa chỉ nhận hàng hoặc chọn sản phẩm từ cửa hàng gần hơn.");
+            throw new DeliveryRangeException(shopLabel
+                    + "Địa chỉ nhận hàng nằm ngoài phạm vi giao hàng tối đa 15 km của cửa hàng. "
+                    + "Vui lòng thay đổi địa chỉ nhận hàng hoặc chọn sản phẩm từ cửa hàng gần hơn.");
         }
     }
 
     public BigDecimal distanceSnapshot(BigDecimal distanceMeters) {
         if (distanceMeters == null || distanceMeters.signum() < 0) {
-            throw new CheckoutException(
-                    "Khoảng cách giao hàng không hợp lệ. Vui lòng tính lại phí giao hàng.");
+            throw new CheckoutException("Khoảng cách giao hàng không hợp lệ. Vui lòng tính lại phí giao hàng.");
         }
         BigDecimal snapshot = distanceMeters.setScale(1, RoundingMode.HALF_UP);
         if (snapshot.precision() > 12) {
-            throw new CheckoutException(
-                    "Khoảng cách giao hàng vượt giới hạn lưu trữ DECIMAL(12,1). Hiện chưa thể đặt đơn.");
+            throw new CheckoutException("Khoảng cách giao hàng vượt giới hạn lưu trữ DECIMAL(12,1). Hiện chưa thể đặt đơn.");
         }
         return snapshot;
     }
@@ -223,23 +170,11 @@ public class CheckoutShippingQuoteService {
             throw staleQuote();
         }
         try {
-            shops.validatePickupLocation(
-                    new VietMapPlaceResponse(
-                            location.getProvinceId(),
-                            location.getProvince(),
-                            location.getDistrictId(),
-                            location.getDistrict(),
-                            location.getWardId(),
-                            location.getWard(),
-                            location.getAddressLine(),
-                            location.getFormattedAddress(),
-                            location.getLatitude(),
-                            location.getLongitude()));
+            shops.validatePickupLocation(new VietMapPlaceResponse(location.getProvinceId(), location.getProvince(),
+                    location.getDistrictId(), location.getDistrict(), location.getWardId(), location.getWard(),
+                    location.getAddressLine(), location.getFormattedAddress(), location.getLatitude(), location.getLongitude()));
         } catch (IllegalArgumentException exception) {
-            throw new CheckoutException(
-                    "Cửa hàng "
-                            + shopName
-                            + " chưa có địa chỉ lấy hàng hợp lệ. Vui lòng thử lại sau.");
+            throw new CheckoutException("Cửa hàng " + shopName + " chưa có địa chỉ lấy hàng hợp lệ. Vui lòng thử lại sau.");
         }
     }
 
@@ -256,7 +191,6 @@ public class CheckoutShippingQuoteService {
     }
 
     private CheckoutException staleQuote() {
-        return new CheckoutException(
-                "Phí giao hàng hoặc thông tin giao hàng đã thay đổi. Vui lòng xem lại đơn và tính lại phí giao hàng trước khi xác nhận.");
+        return new CheckoutException("Phí giao hàng hoặc thông tin giao hàng đã thay đổi. Vui lòng xem lại đơn và tính lại phí giao hàng trước khi xác nhận.");
     }
 }

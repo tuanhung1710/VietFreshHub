@@ -20,13 +20,11 @@ public class ShippingFeeService {
             throw new CheckoutException("Khoảng cách giao hàng không được âm.");
         }
 
-        BigDecimal additionalMeters =
-                distanceMeters.subtract(INCLUDED_DISTANCE_METERS).max(BigDecimal.ZERO);
+        BigDecimal additionalMeters = distanceMeters.subtract(INCLUDED_DISTANCE_METERS).max(BigDecimal.ZERO);
         BigDecimal rawFee = BASE_FEE.add(additionalMeters.multiply(ADDITIONAL_FEE_PER_METER));
-        BigDecimal finalFee =
-                rawFee.divide(ROUNDING_UNIT, 0, RoundingMode.HALF_UP)
-                        .multiply(ROUNDING_UNIT)
-                        .setScale(2, RoundingMode.UNNECESSARY);
+        BigDecimal finalFee = rawFee.divide(ROUNDING_UNIT, 0, RoundingMode.HALF_UP)
+                .multiply(ROUNDING_UNIT)
+                .setScale(2, RoundingMode.UNNECESSARY);
         if (finalFee.precision() > 18) {
             throw new CheckoutException("Phí giao hàng vượt giới hạn lưu trữ DECIMAL(18,2).");
         }

@@ -47,91 +47,56 @@ public class OrderNotificationService {
     }
 
     private void notifyActionableOrder(Order order, boolean paidOnline) {
-        String paymentMessage =
-                paidOnline ? "Đã thanh toán qua VNPAY." : "Thanh toán khi nhận hàng (COD).";
+        String paymentMessage = paidOnline ? "Đã thanh toán qua VNPAY." : "Thanh toán khi nhận hàng (COD).";
         var children = shopOrderRepository.findForOrderNotification(order.getOrderId());
         for (ShopOrder shopOrder : children) {
             if (!"PENDING".equals(shopOrder.getStatus())
                     || (paidOnline && !"PAID".equals(shopOrder.getPaymentStatus()))) {
                 continue;
             }
-            notificationService.createInApp(
-                    order.getCustomer().getUserId(),
-                    "ORDER_PLACED",
+            notificationService.createInApp(order.getCustomer().getUserId(), "ORDER_PLACED",
                     paidOnline ? "Thanh toán đơn hàng thành công" : "Đặt hàng thành công",
-                    "Lượt đặt hàng gồm "
-                            + children.size()
-                            + " đơn cửa hàng. Đơn #"
-                            + shopOrder.getShopOrderCode()
-                            + " tại "
-                            + shopOrder.getShop().getShopName()
-                            + " đã được ghi nhận. "
-                            + paymentMessage,
-                    "SHOP_ORDER",
-                    shopOrder.getShopOrderId());
+                    "Lượt đặt hàng gồm " + children.size() + " đơn cửa hàng. Đơn #" + shopOrder.getShopOrderCode()
+                            + " tại " + shopOrder.getShop().getShopName() + " đã được ghi nhận. " + paymentMessage,
+                    "SHOP_ORDER", shopOrder.getShopOrderId());
             for (Long managerId : shopService.findActiveManagerUserIds(shopOrder.getShopId())) {
-                notificationService.createInApp(
-                        managerId,
-                        "NEW_SHOP_ORDER",
-                        "Bạn có đơn hàng mới",
-                        "Đơn hàng #"
-                                + shopOrder.getShopOrderCode()
-                                + " đang chờ cửa hàng xác nhận. "
-                                + paymentMessage,
-                        "SHOP_ORDER",
-                        shopOrder.getShopOrderId());
+                notificationService.createInApp(managerId, "NEW_SHOP_ORDER", "Bạn có đơn hàng mới",
+                        "Đơn hàng #" + shopOrder.getShopOrderCode() + " đang chờ cửa hàng xác nhận. "
+                                + paymentMessage, "SHOP_ORDER", shopOrder.getShopOrderId());
             }
         }
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void notifyConfirmed(ShopOrder shopOrder) {
-        notifyCustomer(
-                shopOrder,
-                "SHOP_ORDER_CONFIRMED",
-                "Cửa hàng đã xác nhận đơn hàng",
+        notifyCustomer(shopOrder, "SHOP_ORDER_CONFIRMED", "Cửa hàng đã xác nhận đơn hàng",
                 " đã được cửa hàng xác nhận.");
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void notifyPreparing(ShopOrder shopOrder) {
-        notifyCustomer(
-                shopOrder,
-                "SHOP_ORDER_PREPARING",
-                "Cửa hàng đang chuẩn bị đơn hàng",
+        notifyCustomer(shopOrder, "SHOP_ORDER_PREPARING", "Cửa hàng đang chuẩn bị đơn hàng",
                 " đang được cửa hàng chuẩn bị.");
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void notifyReady(ShopOrder shopOrder) {
-        notifyCustomer(
-                shopOrder,
-                "SHOP_ORDER_READY",
-                "Đơn hàng đã sẵn sàng giao",
+        notifyCustomer(shopOrder, "SHOP_ORDER_READY", "Đơn hàng đã sẵn sàng giao",
                 " đã sẵn sàng để nhân viên giao hàng đến lấy.");
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void notifyCancelledByCustomer(ShopOrder shopOrder) {
         for (Long managerId : shopService.findActiveManagerUserIds(shopOrder.getShopId())) {
-            notificationService.createInApp(
-                    managerId,
-                    "SHOP_ORDER_CANCELLED",
-                    "Khách hàng đã hủy đơn hàng",
+            notificationService.createInApp(managerId, "SHOP_ORDER_CANCELLED", "Khách hàng đã hủy đơn hàng",
                     "Khách hàng đã hủy đơn #" + shopOrder.getShopOrderCode() + ".",
-                    "SHOP_ORDER",
-                    shopOrder.getShopOrderId());
+                    "SHOP_ORDER", shopOrder.getShopOrderId());
         }
     }
 
     private void notifyCustomer(ShopOrder shopOrder, String type, String title, String message) {
-        notificationService.createInApp(
-                shopOrder.getOrder().getCustomer().getUserId(),
-                type,
-                title,
-                "Đơn hàng #" + shopOrder.getShopOrderCode() + message,
-                "SHOP_ORDER",
-                shopOrder.getShopOrderId());
+        notificationService.createInApp(shopOrder.getOrder().getCustomer().getUserId(), type, title,
+                "Đơn hàng #" + shopOrder.getShopOrderCode() + message, "SHOP_ORDER", shopOrder.getShopOrderId());
     }
 
     @Transactional(readOnly = true)
@@ -140,32 +105,24 @@ public class OrderNotificationService {
         if (!notification.hasDetail()) {
             throw unavailable();
         }
-        if ("ORDER".equals(notification.entityType())
-                && "ORDER_PLACED".equals(notification.type())
+        if ("ORDER".equals(notification.entityType()) && "ORDER_PLACED".equals(notification.type())
                 && hasRole(authentication, "ROLE_CUSTOMER")) {
-            orderRepository
-                    .findByOrderIdAndCustomerUserId(notification.entityId(), userId)
+            orderRepository.findByOrderIdAndCustomerUserId(notification.entityId(), userId)
                     .orElseThrow(this::unavailable);
             return "/customer/orders";
         }
         if ("SHOP_ORDER".equals(notification.entityType())) {
-            boolean forSeller =
-                    "NEW_SHOP_ORDER".equals(notification.type())
-                            || "SHOP_ORDER_CANCELLED".equals(notification.type());
+            boolean forSeller = "NEW_SHOP_ORDER".equals(notification.type()) || "SHOP_ORDER_CANCELLED".equals(notification.type());
             if (forSeller && hasRole(authentication, "ROLE_STORE_MANAGER")) {
                 Long shopId = shopService.getManagedShopId(authentication);
-                ShopOrder shopOrder =
-                        shopOrderRepository
-                                .findByShopOrderIdAndShopId(notification.entityId(), shopId)
-                                .orElseThrow(this::unavailable);
+                ShopOrder shopOrder = shopOrderRepository.findByShopOrderIdAndShopId(notification.entityId(), shopId)
+                        .orElseThrow(this::unavailable);
                 return "/seller/orders/" + shopOrder.getShopOrderId();
             }
             if (!forSeller && hasRole(authentication, "ROLE_CUSTOMER")) {
-                ShopOrder shopOrder =
-                        shopOrderRepository
-                                .findByShopOrderIdAndOrderCustomerUserId(
-                                        notification.entityId(), userId)
-                                .orElseThrow(this::unavailable);
+                ShopOrder shopOrder = shopOrderRepository
+                        .findByShopOrderIdAndOrderCustomerUserId(notification.entityId(), userId)
+                        .orElseThrow(this::unavailable);
                 return "/customer/orders/" + shopOrder.getShopOrderId();
             }
         }
@@ -173,13 +130,11 @@ public class OrderNotificationService {
     }
 
     private boolean hasRole(Authentication authentication, String role) {
-        return authentication.getAuthorities().stream()
-                .anyMatch(authority -> role.equals(authority.getAuthority()));
+        return authentication.getAuthorities().stream().anyMatch(authority -> role.equals(authority.getAuthority()));
     }
 
     private ResponseStatusException unavailable() {
-        return new ResponseStatusException(
-                HttpStatus.NOT_FOUND,
+        return new ResponseStatusException(HttpStatus.NOT_FOUND,
                 "Chi tiết thông báo không còn khả dụng hoặc bạn không có quyền xem.");
     }
 }

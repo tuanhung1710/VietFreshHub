@@ -45,17 +45,12 @@ public class CustomerOrderController {
     private final CustomerOrderQueryService readOrders;
 
     @GetMapping
-    public String history(
-            @Valid @ModelAttribute("filter") CustomerOrderFilterRequest filter,
-            BindingResult errors,
-            Authentication authentication,
-            Model model) {
+    public String history(@Valid @ModelAttribute("filter") CustomerOrderFilterRequest filter,
+                           BindingResult errors, Authentication authentication, Model model) {
         Long customerId = currentCustomer.requireCustomerId(authentication);
         model.addAttribute("invalidFilter", errors.hasErrors());
         if (errors.hasErrors()) {
-            model.addAttribute(
-                    "filterError",
-                    "Bộ lọc không hợp lệ. Vui lòng sửa các thông tin bên dưới rồi lọc lại.");
+            model.addAttribute("filterError", "Bộ lọc không hợp lệ. Vui lòng sửa các thông tin bên dưới rồi lọc lại.");
             model.addAttribute("filterMessages", filterMessages(errors));
             model.addAttribute("orderPage", Page.empty());
             model.addAttribute("orderSummaries", Map.of());
@@ -69,11 +64,7 @@ public class CustomerOrderController {
             }
             model.addAttribute("orderSummaries", orders.historySummaries(customerId, orderIds));
             if (requestedPage != result.getNumber() + 1) {
-                model.addAttribute(
-                        "pageNotice",
-                        "Trang yêu cầu không còn tồn tại. Đang hiển thị trang "
-                                + (result.getNumber() + 1)
-                                + ".");
+                model.addAttribute("pageNotice", "Trang yêu cầu không còn tồn tại. Đang hiển thị trang " + (result.getNumber() + 1) + ".");
             }
         }
         model.addAttribute("cartBadgeTotal", readOrders.getCartBadgeTotal(customerId));
@@ -101,15 +92,9 @@ public class CustomerOrderController {
 
     private Map<String, String> statusOptions() {
         Map<String, String> options = new LinkedHashMap<>();
-        List<CustomerOrderStage> stages =
-                List.of(
-                        CustomerOrderStage.WAITING_PAYMENT,
-                        CustomerOrderStage.WAITING_CONFIRMATION,
-                        CustomerOrderStage.PREPARING,
-                        CustomerOrderStage.AWAITING_DELIVERY,
-                        CustomerOrderStage.SHIPPING,
-                        CustomerOrderStage.COMPLETED,
-                        CustomerOrderStage.CANCELLED);
+        List<CustomerOrderStage> stages = List.of(CustomerOrderStage.WAITING_PAYMENT, CustomerOrderStage.WAITING_CONFIRMATION,
+                CustomerOrderStage.PREPARING, CustomerOrderStage.AWAITING_DELIVERY, CustomerOrderStage.SHIPPING,
+                CustomerOrderStage.COMPLETED, CustomerOrderStage.CANCELLED);
         for (CustomerOrderStage stage : stages) {
             options.put(stage.name(), stage.label());
         }
@@ -125,12 +110,8 @@ public class CustomerOrderController {
     }
 
     @PostMapping("/{orderId}/cancel")
-    public String cancel(
-            @PathVariable Long orderId,
-            @Valid @ModelAttribute("cancelForm") OrderCancelRequest form,
-            BindingResult errors,
-            Authentication authentication,
-            RedirectAttributes flash) {
+    public String cancel(@PathVariable Long orderId, @Valid @ModelAttribute("cancelForm") OrderCancelRequest form,
+                          BindingResult errors, Authentication authentication, RedirectAttributes flash) {
         Long customerId = currentCustomer.requireCustomerId(authentication);
         readOrders.getDetails(customerId, orderId);
         flash.addFlashAttribute("errorMessage", "Vui lòng chọn đơn cửa hàng để hủy.");
@@ -138,21 +119,14 @@ public class CustomerOrderController {
     }
 
     @PostMapping("/{orderId}/reorder")
-    public String reorder(
-            @PathVariable Long orderId, Authentication authentication, RedirectAttributes flash) {
+    public String reorder(@PathVariable Long orderId, Authentication authentication, RedirectAttributes flash) {
         Long customerId = currentCustomer.requireCustomerId(authentication);
         try {
             ReorderResult result = orders.reorder(customerId, orderId);
             if (result.addedLines() > 0) {
-                flash.addFlashAttribute(
-                        "successMessage",
-                        "Đã thêm "
-                                + result.addedLines()
-                                + " phân loại vào giỏ theo giá hiện tại. Vui lòng kiểm tra trước khi đặt hàng.");
+                flash.addFlashAttribute("successMessage", "Đã thêm " + result.addedLines() + " phân loại vào giỏ theo giá hiện tại. Vui lòng kiểm tra trước khi đặt hàng.");
             } else {
-                flash.addFlashAttribute(
-                        "errorMessage",
-                        "Chưa thêm được sản phẩm nào từ đơn này. Xem các sản phẩm không khả dụng bên dưới.");
+                flash.addFlashAttribute("errorMessage", "Chưa thêm được sản phẩm nào từ đơn này. Xem các sản phẩm không khả dụng bên dưới.");
             }
             flash.addFlashAttribute("reorderSkipped", result.skipped());
             return "redirect:/cart";

@@ -11,7 +11,8 @@ import java.math.BigDecimal;
 import java.util.List;
 
 public final class CartViewMapper {
-    private CartViewMapper() {}
+    private CartViewMapper() {
+    }
 
     public static CartDto emptyCart(Long userId) {
         return CartDto.builder()
@@ -48,8 +49,7 @@ public final class CartViewMapper {
                 .build();
     }
 
-    public static CartItemDto toCartItem(
-            CartItem item, int availableStock, boolean catalogPurchasable) {
+    public static CartItemDto toCartItem(CartItem item, int availableStock, boolean catalogPurchasable) {
         CatalogVariant variant = item.getVariant();
         BigDecimal currentPrice = variant.getPrice();
         BigDecimal previousPrice = item.getUnitPriceSnapshot();
@@ -57,8 +57,7 @@ public final class CartViewMapper {
         boolean priceChanged = currentPrice.compareTo(previousPrice) != 0;
         boolean quantityEditable = catalogPurchasable && availableStock > 0;
         boolean purchasable = quantityEditable && item.getQuantity() <= availableStock;
-        String availabilityMessage =
-                availabilityMessage(catalogPurchasable, availableStock, item.getQuantity());
+        String availabilityMessage = availabilityMessage(catalogPurchasable, availableStock, item.getQuantity());
 
         return CartItemDto.builder()
                 .cartItemId(item.getCartItemId())
@@ -81,10 +80,8 @@ public final class CartViewMapper {
                 .build();
     }
 
-    public static AddToCartResponse toAddResponse(
-            Cart cart, CartItem savedItem, CatalogVariant variant) {
-        BigDecimal itemSubtotal =
-                variant.getPrice().multiply(BigDecimal.valueOf(savedItem.getQuantity()));
+    public static AddToCartResponse toAddResponse(Cart cart, CartItem savedItem, CatalogVariant variant) {
+        BigDecimal itemSubtotal = variant.getPrice().multiply(BigDecimal.valueOf(savedItem.getQuantity()));
         return AddToCartResponse.builder()
                 .cartItemId(savedItem.getCartItemId())
                 .cartId(cart.getCartId())
@@ -97,8 +94,7 @@ public final class CartViewMapper {
                 .build();
     }
 
-    private static String availabilityMessage(
-            boolean catalogPurchasable, int availableStock, int quantity) {
+    private static String availabilityMessage(boolean catalogPurchasable, int availableStock, int quantity) {
         if (!catalogPurchasable) {
             return "Sản phẩm hoặc cửa hàng hiện không nhận đơn.";
         }

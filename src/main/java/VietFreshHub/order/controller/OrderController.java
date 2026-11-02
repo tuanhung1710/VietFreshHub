@@ -27,113 +27,63 @@ public class OrderController {
     private final OrderService orderService;
 
     @GetMapping("/seller/incoming-orders")
-    public String incomingOrders(
-            @ModelAttribute("filter") OrderFilterRequest filter,
-            @RequestParam(defaultValue = "0") int page,
-            Authentication authentication,
-            Model model) {
-        return showOrders(
-                orderService.getIncomingOrders(authentication, filter, page),
-                "Đơn hàng mới",
-                "Hiện không có đơn hàng mới.",
-                "/seller/incoming-orders",
-                "incoming",
-                false,
-                model);
+    public String incomingOrders(@ModelAttribute("filter") OrderFilterRequest filter,
+                                 @RequestParam(defaultValue = "0") int page,
+                                 Authentication authentication, Model model) {
+        return showOrders(orderService.getIncomingOrders(authentication, filter, page), "Đơn hàng mới",
+                "Hiện không có đơn hàng mới.", "/seller/incoming-orders", "incoming", false, model);
     }
 
     @GetMapping("/seller/orders")
-    public String allOrders(
-            @ModelAttribute("filter") OrderFilterRequest filter,
-            @RequestParam(defaultValue = "0") int page,
-            Authentication authentication,
-            Model model) {
-        return showOrders(
-                orderService.getAllOrders(authentication, filter, page),
-                "Tất cả đơn",
-                "Hiện không có đơn hàng.",
-                "/seller/orders",
-                "all",
-                true,
-                model);
+    public String allOrders(@ModelAttribute("filter") OrderFilterRequest filter,
+                            @RequestParam(defaultValue = "0") int page,
+                            Authentication authentication, Model model) {
+        return showOrders(orderService.getAllOrders(authentication, filter, page), "Tất cả đơn",
+                "Hiện không có đơn hàng.", "/seller/orders", "all", true, model);
     }
 
     @GetMapping("/seller/confirmed-orders")
-    public String confirmedOrders(
-            @ModelAttribute("filter") OrderFilterRequest filter,
-            @RequestParam(defaultValue = "0") int page,
-            Authentication authentication,
-            Model model) {
-        return showOrders(
-                orderService.getConfirmedOrders(authentication, filter, page),
-                "Đã xác nhận",
-                "Hiện không có đơn hàng đã xác nhận.",
-                "/seller/confirmed-orders",
-                "confirmed",
-                false,
-                model);
+    public String confirmedOrders(@ModelAttribute("filter") OrderFilterRequest filter,
+                                  @RequestParam(defaultValue = "0") int page,
+                                  Authentication authentication, Model model) {
+        return showOrders(orderService.getConfirmedOrders(authentication, filter, page), "Đã xác nhận",
+                "Hiện không có đơn hàng đã xác nhận.", "/seller/confirmed-orders", "confirmed", false, model);
     }
 
     @GetMapping("/seller/preparing-orders")
-    public String preparingOrders(
-            @ModelAttribute("filter") OrderFilterRequest filter,
-            @RequestParam(defaultValue = "0") int page,
-            Authentication authentication,
-            Model model) {
-        return showOrders(
-                orderService.getPreparingOrders(authentication, filter, page),
-                "Đang chuẩn bị",
-                "Hiện không có đơn hàng đang chuẩn bị.",
-                "/seller/preparing-orders",
-                "preparing",
-                false,
-                model);
+    public String preparingOrders(@ModelAttribute("filter") OrderFilterRequest filter,
+                                  @RequestParam(defaultValue = "0") int page,
+                                  Authentication authentication, Model model) {
+        return showOrders(orderService.getPreparingOrders(authentication, filter, page), "Đang chuẩn bị",
+                "Hiện không có đơn hàng đang chuẩn bị.", "/seller/preparing-orders", "preparing", false, model);
     }
 
     @GetMapping("/seller/ready-orders")
-    public String readyOrders(
-            @ModelAttribute("filter") OrderFilterRequest filter,
-            @RequestParam(defaultValue = "0") int page,
-            Authentication authentication,
-            Model model) {
-        return showOrders(
-                orderService.getReadyOrders(authentication, filter, page),
-                "Sẵn sàng giao",
-                "Hiện không có đơn hàng sẵn sàng giao.",
-                "/seller/ready-orders",
-                "ready",
-                false,
-                model);
+    public String readyOrders(@ModelAttribute("filter") OrderFilterRequest filter,
+                              @RequestParam(defaultValue = "0") int page,
+                              Authentication authentication, Model model) {
+        return showOrders(orderService.getReadyOrders(authentication, filter, page), "Sẵn sàng giao",
+                "Hiện không có đơn hàng sẵn sàng giao.", "/seller/ready-orders", "ready", false, model);
     }
 
     @GetMapping({"/seller/completed-orders", "/seller/processed-orders"})
-    public String completedOrders(
-            @ModelAttribute("filter") OrderFilterRequest filter,
-            @RequestParam(defaultValue = "0") int page,
-            Authentication authentication,
-            Model model) {
-        return showOrders(
-                orderService.getCompletedOrders(authentication, filter, page),
-                "Đơn đã hoàn thành",
-                "Hiện không có đơn hàng đã hoàn thành.",
-                "/seller/completed-orders",
-                "completed",
-                false,
-                model);
+    public String completedOrders(@ModelAttribute("filter") OrderFilterRequest filter,
+                                  @RequestParam(defaultValue = "0") int page,
+                                  Authentication authentication, Model model) {
+        return showOrders(orderService.getCompletedOrders(authentication, filter, page), "Đơn đã hoàn thành",
+                "Hiện không có đơn hàng đã hoàn thành.", "/seller/completed-orders", "completed", false, model);
     }
 
     @GetMapping("/seller/orders/filter-count")
-    public ResponseEntity<Long> filterCount(
-            @RequestParam String view,
-            @ModelAttribute OrderFilterRequest filter,
-            Authentication authentication) {
+    public ResponseEntity<Long> filterCount(@RequestParam String view,
+                                            @ModelAttribute OrderFilterRequest filter,
+                                            Authentication authentication) {
         long count = orderService.countFilteredOrders(authentication, filter, view);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(count);
     }
 
     @GetMapping("/seller/orders/{shopOrderId}")
-    public String orderDetail(
-            @PathVariable Long shopOrderId, Authentication authentication, Model model) {
+    public String orderDetail(@PathVariable Long shopOrderId, Authentication authentication, Model model) {
         model.addAttribute("orderDetail", orderService.getOrderDetail(shopOrderId, authentication));
         model.addAttribute("shopOrderId", shopOrderId);
         return "store_manager/order-detail";
@@ -141,8 +91,7 @@ public class OrderController {
 
     @GetMapping("/seller/orders/{shopOrderId}/delivery-tracking")
     public String trackDelivery(@PathVariable Long shopOrderId, Authentication authentication) {
-        Long deliveryId =
-                orderService.getDeliveryIdForManagedShopOrder(shopOrderId, authentication);
+        Long deliveryId = orderService.getDeliveryIdForManagedShopOrder(shopOrderId, authentication);
         return "redirect:/seller/deliveries/" + deliveryId;
     }
 
@@ -164,14 +113,9 @@ public class OrderController {
         return "redirect:/seller/orders/" + shopOrderId;
     }
 
-    private String showOrders(
-            Page<IncomingOrderResponse> orders,
-            String pageTitle,
-            String emptyMessage,
-            String filterAction,
-            String orderView,
-            boolean showStatusFilter,
-            Model model) {
+    private String showOrders(Page<IncomingOrderResponse> orders, String pageTitle,
+                              String emptyMessage, String filterAction, String orderView,
+                              boolean showStatusFilter, Model model) {
         model.addAttribute("orders", orders.getContent());
         model.addAttribute("ordersPage", orders);
         addPageAttributes(orders, model);

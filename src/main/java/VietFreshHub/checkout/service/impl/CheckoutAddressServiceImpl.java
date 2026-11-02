@@ -26,8 +26,7 @@ public class CheckoutAddressServiceImpl implements CheckoutAddressService {
         }
         try {
             customerAddresses.validateDeliveryLocation(place);
-            return customerAddresses.createCheckoutAddress(
-                    customerId, form.getRecipientName(), form.getPhone(), place);
+            return customerAddresses.createCheckoutAddress(customerId, form.getRecipientName(), form.getPhone(), place);
         } catch (IllegalArgumentException ex) {
             throw new CheckoutException(ex.getMessage());
         }

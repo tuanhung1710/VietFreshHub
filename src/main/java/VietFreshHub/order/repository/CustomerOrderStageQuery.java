@@ -11,13 +11,11 @@ package VietFreshHub.order.repository;
 public final class CustomerOrderStageQuery {
     private CustomerOrderStageQuery() {}
 
-    private static final String TRANSPORT_STARTED =
-            """
+    private static final String TRANSPORT_STARTED = """
             exists (select d.deliveryId from OrderDeliveryView d where d.shopOrder = s
                 and d.status in ('PICKED_UP','OUT_FOR_DELIVERY','DELIVERED','FAILED','REDELIVERY_SCHEDULED'))
             """;
-    public static final String EXPRESSION =
-            """
+    public static final String EXPRESSION = """
             case
               when exists (select s.shopOrderId from ShopOrder s where s.order = o)
                 and not exists (select s.shopOrderId from ShopOrder s where s.order = o and s.status <> 'CANCELLED')
@@ -33,9 +31,7 @@ public final class CustomerOrderStageQuery {
                 and not exists (select p.paymentId from Payment p where p.order = o and p.status in ('PAID','REFUNDED','PARTIALLY_REFUNDED'))
                 and not exists (select s.shopOrderId from ShopOrder s where s.order = o
                     and (s.status not in ('PENDING','CONFIRMED','CANCELLED') or
-            """
-                    + TRANSPORT_STARTED
-                    + """
+            """ + TRANSPORT_STARTED + """
                     ))
                 and exists (select p.paymentId from Payment p where p.order = o
                     and p.paymentMethod.methodCode <> 'COD' and p.status in ('PENDING','PROCESSING','FAILED')
@@ -43,28 +39,20 @@ public final class CustomerOrderStageQuery {
                 then 'WAITING_PAYMENT'
               when exists (select s.shopOrderId from ShopOrder s where s.order = o
                     and s.status = 'PENDING' and not
-            """
-                    + TRANSPORT_STARTED
-                    + """
+            """ + TRANSPORT_STARTED + """
                     ) then 'WAITING_CONFIRMATION'
               when exists (select s.shopOrderId from ShopOrder s where s.order = o
                     and s.status in ('CONFIRMED','PREPARING') and not
-            """
-                    + TRANSPORT_STARTED
-                    + """
+            """ + TRANSPORT_STARTED + """
                     ) then 'PREPARING'
               when exists (select s.shopOrderId from ShopOrder s where s.order = o
                     and s.status = 'READY_FOR_DELIVERY' and not
-            """
-                    + TRANSPORT_STARTED
-                    + """
+            """ + TRANSPORT_STARTED + """
                     ) then 'AWAITING_DELIVERY'
               when exists (select s.shopOrderId from ShopOrder s where s.order = o
                     and s.status not in ('COMPLETED','CANCELLED')
                     and (s.status = 'OUT_FOR_DELIVERY' or
-            """
-                    + TRANSPORT_STARTED
-                    + """
+            """ + TRANSPORT_STARTED + """
                     )) then 'SHIPPING'
               when o.status = 'PENDING' then 'WAITING_CONFIRMATION'
               else 'PREPARING'

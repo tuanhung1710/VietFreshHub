@@ -20,11 +20,10 @@ public class CheckoutDraftStore {
     private static final int MAX_DRAFTS = 8;
 
     public CheckoutDraft issue(HttpSession session, Long customerId, CheckoutPreview preview) {
-        return issue(session, customerId, preview, false);
+        return issue(session,customerId,preview,false);
     }
 
-    public CheckoutDraft issue(
-            HttpSession session, Long customerId, CheckoutPreview preview, boolean fresh) {
+    public CheckoutDraft issue(HttpSession session, Long customerId, CheckoutPreview preview, boolean fresh) {
         Map<String, CheckoutDraft> drafts = store(session);
         List<Long> selectedItemIds = selectedItemIds(preview);
 
@@ -37,22 +36,11 @@ public class CheckoutDraftStore {
             }
 
             String token = UUID.randomUUID().toString().replace("-", "");
-            CheckoutDraft draft =
-                    new CheckoutDraft(
-                            token,
-                            customerId,
-                            preview.cart().getCartId(),
-                            preview.fingerprint(),
-                            preview.addressId(),
-                            preview.shopQuotes(),
-                            preview.shippingFee(),
-                            selectedItemIds,
-                            "BUY_NOW".equals(preview.cart().getStatus())
-                                    ? preview.cart().getItems().getFirst().getVariantId()
-                                    : null,
-                            "BUY_NOW".equals(preview.cart().getStatus())
-                                    ? preview.cart().getItems().getFirst().getQuantity()
-                                    : null);
+            CheckoutDraft draft = new CheckoutDraft(
+                    token, customerId, preview.cart().getCartId(), preview.fingerprint(),
+                    preview.addressId(), preview.shopQuotes(), preview.shippingFee(), selectedItemIds,
+                    "BUY_NOW".equals(preview.cart().getStatus()) ? preview.cart().getItems().getFirst().getVariantId() : null,
+                    "BUY_NOW".equals(preview.cart().getStatus()) ? preview.cart().getItems().getFirst().getQuantity() : null);
             drafts.put(token, draft);
 
             while (drafts.size() > MAX_DRAFTS) {
@@ -63,13 +51,10 @@ public class CheckoutDraftStore {
         }
     }
 
-    public CheckoutDraft issueBuyNow(
-            HttpSession session, Long customerId, CheckoutPreview preview, String previousToken) {
+    public CheckoutDraft issueBuyNow(HttpSession session, Long customerId, CheckoutPreview preview, String previousToken) {
         CheckoutDraft previous = find(session, previousToken, customerId);
-        if (previous != null
-                && matchesPreview(previous, customerId, preview, selectedItemIds(preview)))
-            return previous;
-        return issue(session, customerId, preview, true);
+        if (previous != null && matchesPreview(previous,customerId,preview,selectedItemIds(preview))) return previous;
+        return issue(session,customerId,preview,true);
     }
 
     public CheckoutDraft find(HttpSession session, String token, Long customerId) {
@@ -95,11 +80,8 @@ public class CheckoutDraftStore {
         return List.copyOf(itemIds);
     }
 
-    private boolean matchesPreview(
-            CheckoutDraft draft,
-            Long customerId,
-            CheckoutPreview preview,
-            List<Long> selectedItemIds) {
+    private boolean matchesPreview(CheckoutDraft draft, Long customerId,
+                                   CheckoutPreview preview, List<Long> selectedItemIds) {
         return draft.buyNow() == "BUY_NOW".equals(preview.cart().getStatus())
                 && customerId.equals(draft.customerId())
                 && Objects.equals(preview.cart().getCartId(), draft.cartId())

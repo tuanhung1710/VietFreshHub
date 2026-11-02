@@ -12,18 +12,16 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface CheckoutInventoryBatchRepository
-        extends JpaRepository<CheckoutInventoryBatch, Long> {
+public interface CheckoutInventoryBatchRepository extends JpaRepository<CheckoutInventoryBatch, Long> {
     boolean existsByVariantVariantId(Long variantId);
 
     /**
      * Calculates real-time available stock for a product variant.
      * Available stock = SUM(quantity_on_hand) - SUM(reserved_quantity)
      */
-    @Query(
-            "SELECT COALESCE(SUM(CAST(b.quantityOnHand AS long) - b.reservedQuantity), 0) "
-                    + "FROM CheckoutInventoryBatch b WHERE b.variant.variantId = :variantId "
-                    + "AND b.status = 'ACTIVE' AND (b.expiryDate IS NULL OR b.expiryDate >= :today)")
+    @Query("SELECT COALESCE(SUM(CAST(b.quantityOnHand AS long) - b.reservedQuantity), 0) " +
+           "FROM CheckoutInventoryBatch b WHERE b.variant.variantId = :variantId " +
+           "AND b.status = 'ACTIVE' AND (b.expiryDate IS NULL OR b.expiryDate >= :today)")
     Long findAvailableStock(@Param("variantId") Long variantId, @Param("today") LocalDate today);
 
     default Integer getAvailableStockByVariantId(Long variantId) {
@@ -35,12 +33,11 @@ public interface CheckoutInventoryBatchRepository
         return (int) Math.min(stock, Integer.MAX_VALUE);
     }
 
-    @Query(
-            "SELECT b.variant.variantId, SUM(CAST(b.quantityOnHand AS long) - b.reservedQuantity) FROM CheckoutInventoryBatch b "
-                    + "WHERE b.variant.variantId IN :variantIds AND b.status = 'ACTIVE' AND (b.expiryDate IS NULL OR b.expiryDate >= :today) "
-                    + "GROUP BY b.variant.variantId")
-    List<Object[]> findAvailableStockForVariants(
-            @Param("variantIds") List<Long> variantIds, @Param("today") LocalDate today);
+    @Query("SELECT b.variant.variantId, SUM(CAST(b.quantityOnHand AS long) - b.reservedQuantity) FROM CheckoutInventoryBatch b "
+            + "WHERE b.variant.variantId IN :variantIds AND b.status = 'ACTIVE' AND (b.expiryDate IS NULL OR b.expiryDate >= :today) "
+            + "GROUP BY b.variant.variantId")
+    List<Object[]> findAvailableStockForVariants(@Param("variantIds") List<Long> variantIds,
+                                                @Param("today") LocalDate today);
 
     default Map<Long, Integer> getAvailableStocks(List<Long> variantIds) {
         if (variantIds.isEmpty()) {
