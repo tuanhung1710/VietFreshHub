@@ -49,14 +49,20 @@ import VietFreshHub.product.service.ProductCatalogReader;
 import VietFreshHub.product.service.ProductService;
 import VietFreshHub.product.util.CatalogPagination;
 import VietFreshHub.product.validator.CategoryValidator;
+import VietFreshHub.shop.repository.ShopRepository;
 import VietFreshHub.shop.service.ShopService;
+import VietFreshHub.subscription.entity.PlanStatus;
+import VietFreshHub.subscription.services.ShopSubscriptionService;
+import VietFreshHub.subscription.services.SubscriptionPlanService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.LocalDate;
@@ -87,6 +93,9 @@ public class ProductServiceImpl implements ProductService {
     private final InventoryJournalService inventoryJournalService;
     private final InventoryLockHelper inventoryLockHelper;
     private final ShopService shopService;
+    private final ShopRepository shopRepository;
+    private final ShopSubscriptionService shopSubscriptionService;
+    private final SubscriptionPlanService subscriptionPlanService;
     private final AuthService authService;
     private final CategoryValidator categoryValidator;
     private final ProductAvailabilityService productAvailabilityService;
@@ -522,6 +531,7 @@ public class ProductServiceImpl implements ProductService {
     public Long create(Authentication authentication, ProductRequest form) {
         // Kiểm tra toàn bộ sản phẩm và phân loại trước khi bắt đầu ghi dữ liệu liên quan.
         Long shopId = shopService.getManagedShopId(authentication);
+        enforceProductQuota(shopId);
         Long actorId = authService.getCurrentUserId(authentication);
         validateProductFields(form);
         validateUniqueName(shopId, form.getName(), null);
@@ -551,6 +561,44 @@ public class ProductServiceImpl implements ProductService {
         inventoryJournalService.audit(
                 actorId, "CREATE", "PRODUCT", product.getProductId(), "Tạo sản phẩm; mở bán và chờ hậu kiểm.");
         return product.getProductId();
+    }
+
+    void enforceProductQuota(Long shopId) {
+        shopRepository.findByShopIdForUpdate(shopId)
+                .orElseThrow(() -> new AccessDeniedException("Không xác định được cửa hàng."));
+        int maxProducts = shopSubscriptionService.getCurrentSubscription(shopId)
+                .map(subscription -> requireProductLimit(subscription.maxProducts(), "Gói đăng ký hiện tại"))
+                .orElseGet(this::freePlanProductLimit);
+        long currentProducts = productRepository.countByShopIdAndStatusNot(shopId, ProductStatus.DELETED);
+        ensureProductCapacity(currentProducts, maxProducts);
+    }
+
+    static void ensureProductCapacity(long currentProducts, int maxProducts) {
+        if (currentProducts >= maxProducts) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Đã đạt giới hạn sản phẩm của gói đăng ký.");
+        }
+    }
+
+    private int freePlanProductLimit() {
+        try {
+            var freePlan = subscriptionPlanService.getFreePlan();
+            if (freePlan.status() != PlanStatus.ACTIVE
+                    || freePlan.price() == null || freePlan.price().signum() != 0) {
+                throw new IllegalStateException("Gói Free phải hoạt động và có giá bằng 0.");
+            }
+            return requireProductLimit(freePlan.maxProducts(), "Gói Free");
+        } catch (IllegalStateException ex) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    "Gói Free chưa được cấu hình hợp lệ; không thể tạo sản phẩm.", ex);
+        }
+    }
+
+    private int requireProductLimit(Integer maxProducts, String planName) {
+        if (maxProducts == null || maxProducts <= 0) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                    planName + " chưa có giới hạn sản phẩm hợp lệ.");
+        }
+        return maxProducts;
     }
 
     /** Kiểm tra từ 1 đến 20 phân loại mới và tồn ban đầu; máy chủ cấp SKU sau khi có ID. */
