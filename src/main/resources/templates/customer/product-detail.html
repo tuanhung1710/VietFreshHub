@@ -4,6 +4,7 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title th:text="${product.name} + ' | VietFresh Hub'">Chi tiết sản phẩm | VietFresh Hub</title>
   <link rel="stylesheet" th:href="@{/css/product-detail.css}">
+  <link rel="stylesheet" th:href="@{/css/discount-pricing.css}">
   <th:block th:replace="~{fragments/account-menu :: assets}"></th:block>
   <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
   <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
@@ -34,13 +35,25 @@
     <div class="info">
       <h1 th:text="${product.name}"></h1>
       <div class="ratingline"><span>★ <strong th:text="${product.rating == null ? '0.0' : #numbers.formatDecimal(product.rating,1,1)}"></strong> / 5</span><span><strong th:text="${details.reviewCount}"></strong> đánh giá</span><span>Đã bán <strong th:text="${product.sales}"></strong></span></div>
-      <div class="pricebox"><div class="price" id="currentPrice" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'POINT')} + ' VND'"></div><div class="muted" style="font-size:12px;margin-top:5px">Giá theo quy cách đã chọn</div></div>
+      <div class="pricebox" aria-live="polite">
+        <div class="price-line">
+          <div class="price" id="currentPrice" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'POINT')} + ' VND'"></div>
+          <span class="discount-pricing">
+            <del class="compare-price" id="compareAtPrice" aria-label="Giá trước giảm"
+                 th:hidden="${product.selectedVariant.discountPercent == null}"
+                 th:text="${product.selectedVariant.discountPercent != null ? #numbers.formatInteger(product.selectedVariant.compareAtPrice,0,'POINT') + ' VND' : ''}"></del>
+            <span class="discount-badge" id="discountPercent" th:hidden="${product.selectedVariant.discountPercent == null}"
+                  th:text="${product.selectedVariant.discountPercent == null ? '' : (product.selectedVariant.discountPercent == 0 ? 'Giảm dưới 1%' : '-' + product.selectedVariant.discountPercent + '%')}"></span>
+          </span>
+        </div>
+        <div class="muted" style="font-size:12px;margin-top:5px">Giá theo quy cách đã chọn</div>
+      </div>
       <form id="productPurchase" th:action="@{/cart/add}" method="post">
         <div class="rowline"><div class="fieldname" id="variantLabel">Quy cách</div><div>
           <div class="optionrow" role="radiogroup" aria-labelledby="variantLabel">
             <label th:each="variant : ${product.variants}" class="variant" th:classappend="${variant.variantId == product.selectedVariant.variantId ? 'selected' : ''}">
               <input type="radio" name="variantId" th:value="${variant.variantId}" th:checked="${variant.variantId == product.selectedVariant.variantId}"
-                     th:attr="data-price=${variant.price},data-stock=${variant.availableStock},data-name=${variant.variantName},data-image=${variant.imageUrl}">
+                     th:attr="data-price=${variant.price},data-compare-at-price=${variant.compareAtPrice},data-discount-percent=${variant.discountPercent},data-stock=${variant.availableStock},data-name=${variant.variantName},data-image=${variant.imageUrl}">
               <span th:text="${variant.variantName}"></span>
             </label>
           </div><div id="variantNote" class="muted" style="font-size:12px;margin-top:10px" aria-live="polite"></div>
@@ -59,7 +72,12 @@
   </section>
   <section class="section"><div class="sectionhead">THÔNG TIN GIAN HÀNG</div><div class="sectionbody storeblock">
     <img th:if="${!#strings.isEmpty(shop.bannerUrl)}" class="store-background" th:src="${shop.bannerUrl}" alt="" aria-hidden="true" data-shop-background>
-    <div class="storeleft"><div class="storeavatar"><img id="storeLogo" th:if="${!#strings.isEmpty(shop.logoUrl)}" th:src="${shop.logoUrl}" th:alt="'Logo ' + ${shop.shopName}"><span id="storeInitial" th:hidden="${!#strings.isEmpty(shop.logoUrl)}" th:text="${#strings.substring(shop.shopName,0,1)}"></span></div><div><h3 class="storetitle" th:text="${shop.shopName}"></h3><div class="muted" th:text="${shop.description}"></div><a class="visit-shop" th:href="@{/shops/{id}(id=${shop.shopId})}">Xem gian hàng</a></div></div>
+    <div class="storeleft"><div class="storeavatar"><img id="storeLogo" th:if="${!#strings.isEmpty(shop.logoUrl)}" th:src="${shop.logoUrl}" th:alt="'Logo ' + ${shop.shopName}"><span id="storeInitial" th:hidden="${!#strings.isEmpty(shop.logoUrl)}" th:text="${#strings.substring(shop.shopName,0,1)}"></span></div><div><h3 class="storetitle" th:text="${shop.shopName}"></h3><div class="muted" th:text="${shop.description}"></div>
+      <div class="shop-actions">
+        <a class="visit-shop" th:href="@{/shops/{id}(id=${shop.shopId})}">Xem gian hàng</a>
+        <a class="visit-shop" th:href="@{/customer/chat}">Chat</a>
+      </div>
+    </div></div>
     <div class="storemeta"><div><b>Sản phẩm</b><span th:text="${shopProductCount} + ' sản phẩm'"></span></div><div><b>Địa chỉ</b><span th:text="${formattedAddress}"></span></div><div><b>Tham gia</b><span th:text="${joinedDate != null ? #temporals.format(joinedDate,'dd/MM/yyyy') : 'Chưa cập nhật'}"></span></div></div>
   </div></section>
   <section class="section"><div class="sectionhead">CHI TIẾT SẢN PHẨM</div><div class="sectionbody">
@@ -78,7 +96,12 @@
   </div></section>
   <section class="section" style="margin-bottom:20px"><div class="sectionhead">SẢN PHẨM KHÁC CỦA SHOP</div>
     <p th:if="${#lists.isEmpty(related)}" class="sectionbody muted">Shop chưa có sản phẩm khác đang được bán.</p>
-    <div class="related"><a th:each="item : ${related}" class="productcard" th:href="@{/product-detail(productId=${item.productId})}"><div class="productphoto"><img th:src="${item.imageUrl}" th:alt="${item.name}" loading="lazy"></div><div class="productbody"><div class="name" th:text="${item.name}"></div><div class="price2" th:text="${#numbers.formatInteger(item.selectedVariant.price,0,'POINT')} + ' VND'"></div><div class="minor" th:text="'★ ' + ${item.rating == null ? '0.0' : #numbers.formatDecimal(item.rating,1,1)} + '/5 · Đã bán ' + ${item.sales}"></div></div></a></div>
+    <div class="related"><a th:each="item : ${related}" class="productcard" th:href="@{/product-detail(productId=${item.productId})}"><div class="productphoto"><img th:src="${item.imageUrl}" th:alt="${item.name}" loading="lazy">
+        <span class="discount-badge discount-badge--image" th:if="${item.selectedVariant.discountPercent != null}"
+              th:text="${item.selectedVariant.discountPercent == 0 ? 'Giảm dưới 1%' : '-' + item.selectedVariant.discountPercent + '%'}"></span>
+      </div>
+      <div class="productbody"><div class="name" th:text="${item.name}"></div><div class="price2" th:text="${#numbers.formatInteger(item.selectedVariant.price,0,'POINT')} + ' VND'"></div>
+      <div class="minor" th:text="'★ ' + ${item.rating == null ? '0.0' : #numbers.formatDecimal(item.rating,1,1)} + '/5 · Đã bán ' + ${item.sales}"></div></div></a></div>
   </section>
 </main>
 <footer class="footer"><div class="wrap"><div class="footergrid"><div><h3>VietFresh Hub</h3><p>Sàn mua sắm trái cây từ nhiều nhà bán hàng. Khám phá trái cây nội địa, nhập khẩu và sản phẩm theo mùa.</p></div><div><h3>Khám phá</h3><p><a th:href="@{/shops/{id}(id=${shop.shopId})}">Gian hàng</a><br><a th:href="@{/shops}">Danh sách gian hàng</a><br><a th:href="@{/home}">Tất cả sản phẩm</a></p></div><div><h3>Hỗ trợ &amp; chính sách</h3><p><a th:href="@{/customer/orders}">Theo dõi đơn hàng</a><br><a th:href="@{/cart}">Giỏ hàng của tôi</a></p></div></div><div class="copyright">© 2026 VietFresh Hub. All rights reserved.</div></div></footer>

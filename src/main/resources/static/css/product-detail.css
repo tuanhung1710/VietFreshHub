@@ -20,12 +20,12 @@ header{border-bottom:2px solid #111;background:#fff}.utility{border-bottom:1px s
 
 /* Connected product data and native purchase forms. */
 .mainphoto{position:relative}
-.mainphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.mainphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center}
 .thumbs{overflow-x:auto;padding:3px}
-.thumb{flex-shrink:0;padding:4px}
-.thumb img,.productphoto img{width:100%;height:100%;object-fit:contain}
+.thumb{flex-shrink:0;padding:0}
+.thumb img,.productphoto img{width:100%;height:100%;object-fit:cover;object-position:center}
 .thumb{position:relative;overflow:hidden}
-.thumb img{position:absolute;inset:4px;width:calc(100% - 8px);height:calc(100% - 8px)}
+.thumb img{position:absolute;inset:0;width:100%;height:100%}
 .related{align-items:stretch}
 .related .productcard{display:flex;flex-direction:column;overflow:hidden}
 .related .productphoto{position:relative;flex:none;height:auto;aspect-ratio:4/3;overflow:hidden}
@@ -38,6 +38,8 @@ header{border-bottom:2px solid #111;background:#fff}.utility{border-bottom:1px s
 .variant:focus-within{outline:2px solid #555;outline-offset:3px}
 .cart-button,.visit-shop,.cta-button{display:inline-block;border:1px solid #999;background:white;padding:10px 15px;white-space:nowrap}
 .visit-shop{margin-top:15px}
+.shop-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:15px}
+.shop-actions .visit-shop{margin-top:0}
 .cta .cta-button{padding:15px 22px;font-weight:bold}
 .cta .cta-button.solid{background:#111;color:white;border-color:#111}
 .utility .textlink{border:0;padding:0 3px;text-decoration:underline;font-size:inherit}
