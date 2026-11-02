@@ -17,10 +17,9 @@ public class CatalogProductResponse {
     @Getter @Builder
     public static class VariantResponse {
         private Long variantId;
-        private String variantName, sku, status;
+        private String variantName, sku, status, imageUrl;
         private BigDecimal price;
         private BigDecimal basePrice;
-        private String imageUrl;
         private String availabilityMessage;
         private int availableStock;
         private boolean purchasable;

@@ -147,6 +147,7 @@ public class CatalogServiceImpl implements CatalogService {
 
     private VariantResponse toVariant(CatalogVariant variant, Offer offer) {
         return VariantResponse.builder().variantId(variant.getVariantId()).variantName(variant.getVariantName()).sku(variant.getSku())
+                .imageUrl(variant.getDisplayImageUrl())
                 .price(offer.price()).basePrice(offer.basePrice()).status(variant.getStatus())
                 .availableStock(offer.availableStock()).purchasable(true).build();
     }

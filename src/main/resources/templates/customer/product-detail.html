@@ -36,7 +36,13 @@
       <div class="pricebox"><div class="price" id="currentPrice" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'POINT')} + ' VND'"></div><div class="muted" style="font-size:12px;margin-top:5px">Giá theo quy cách đã chọn</div></div>
       <form id="productPurchase" th:action="@{/cart/add}" method="post">
         <div class="rowline"><div class="fieldname" id="variantLabel">Quy cách</div><div>
-          <span th:text="${product.selectedVariant.variantName}"></span>
+          <div class="optionrow" role="radiogroup" aria-labelledby="variantLabel">
+            <label th:each="variant : ${product.variants}" class="variant" th:classappend="${variant.variantId == product.selectedVariant.variantId ? 'selected' : ''}">
+              <input type="radio" name="variantId" th:value="${variant.variantId}" th:checked="${variant.variantId == product.selectedVariant.variantId}"
+                     th:attr="data-price=${variant.price},data-stock=${variant.availableStock},data-name=${variant.variantName},data-image=${variant.imageUrl}">
+              <span th:text="${variant.variantName}"></span>
+            </label>
+          </div><div id="variantNote" class="muted" style="font-size:12px;margin-top:10px" aria-live="polite"></div>
         </div></div>
         <div class="rowline"><div class="fieldname">Số lượng</div><div>1 · <span id="stock" th:text="${product.selectedVariant.availableStock} + ' phần có sẵn'"></span></div></div>
         <div class="rowline"><div class="fieldname">Giao hàng từ</div><div class="shipping-place" th:text="${formattedAddress}"></div></div>
