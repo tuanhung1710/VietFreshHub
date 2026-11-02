@@ -38,7 +38,6 @@
        th:text="${isToday ? 'Hôm nay chưa có đơn hàng COD nào được giao thành công.' : 'Ngày đã chọn chưa có đơn hàng COD nào được giao thành công.'}"></p>
     <p th:if="${codSummary.unresolvedCount > 0}"
        th:text="|Có ${codSummary.unresolvedCount} hồ sơ COD chưa đủ dữ liệu xác định người hoàn tất hoặc phương thức thanh toán; chưa cộng vào tổng.|"></p>
-    <button type="button" disabled>Bàn giao tiền COD</button>
 </main>
 </body>
 </html>

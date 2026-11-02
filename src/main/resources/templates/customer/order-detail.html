@@ -6,8 +6,7 @@
 <main class="container page order-detail-page">
     <div th:replace="~{fragments/storefront :: messages}"></div>
     <p class="detail-back"><a th:href="@{/customer/order-receipts}">← Đơn hàng của tôi</a></p>
-    <section th:if="${confirmation}" class="order-success" role="status"><span class="success-check" aria-hidden="true">✓</span><div><h1>Đặt hàng thành công</h1><p>Đơn hàng đã được ghi nhận. Theo dõi tiến trình từng cửa hàng bên dưới.</p></div></section>
-    <div th:unless="${confirmation}" class="page-heading"><p class="eyebrow">Mua sắm của bạn</p><h1 class="checkout-title">Chi tiết đơn hàng</h1></div>
+    <div class="page-heading"><p class="eyebrow">Mua sắm của bạn</p><h1 class="checkout-title">Chi tiết đơn hàng</h1></div>
     <section class="panel detail-overview" aria-label="Tổng quan đơn hàng">
         <div class="detail-overview-heading"><div><span class="muted">Mã đơn hàng</span><h2 class="order-code" th:text="${order.orderCode}"></h2>
             <p class="muted" th:text="'Đặt lúc ' + ${#temporals.format(order.placedAt,'HH:mm dd/MM/yyyy')}"></p></div>
