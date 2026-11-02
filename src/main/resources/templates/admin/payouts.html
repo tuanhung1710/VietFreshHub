@@ -35,8 +35,8 @@
         <div class="table-scroll">
             <table>
                 <thead><tr>
-                    <th>Chọn</th><th>Cửa hàng / mã đơn</th><th>Phương thức thanh toán</th><th>Tiền hàng trước coupon</th><th>Coupon shop tài trợ</th>
-                    <th>Tiền tính hoa hồng</th><th>Hoa hồng sàn</th><th>Tiền chuyển cho shop</th><th>Trạng thái chi trả</th><th>Thao tác</th>
+                    <th>Chọn</th><th>Cửa hàng / mã đơn</th><th>Phương thức thanh toán</th><th>Tiền hàng</th><th>Mã giảm giá</th>
+                    <th>Tiền tính hoa hồng</th><th>Phí sàn</th><th>Tiền chuyển cho shop</th><th>Trạng thái chi trả</th><th>Thao tác</th>
                 </tr></thead>
                 <tbody>
                 <tr th:each="payout : ${payoutQueue}">
@@ -62,7 +62,7 @@
                     <td>
                         <form th:if="${payout.fundsSource == 'COD' and payout.fundsConfirmedAt == null and payout.status != 'PROCESSING'}"
                               method="post" th:action="@{/admin/payouts/{id}/confirm-cod(id=${payout.payoutId})}">
-                            <button class="button secondary" type="submit">Xác nhận đã nhận tiền COD</button>
+                            <button class="button secondary" type="submit">Xác nhận đã nhận tiền từ shipper</button>
                         </form>
                         <span th:if="${payout.status == 'PROCESSING'}" class="muted">Đã được đưa vào đợt chi trả</span>
                     </td>
@@ -112,9 +112,10 @@
                         <td>
                             <form th:if="${transfer.status == 'PENDING'}" method="post"
                                   th:action="@{/admin/payouts/batches/{batchId}/shops/{shopId}/result(batchId=${batch.batchId},shopId=${transfer.shopId})}" class="result-form">
-                                <select name="result" aria-label="Kết quả chuyển khoản"><option value="PAID">Đã chuyển khoản</option><option value="FAILED">Chuyển khoản thất bại</option></select>
-                                <input name="reference" maxlength="255" placeholder="Mã giao dịch ngân hàng">
-                                <input name="failureReason" maxlength="1000" placeholder="Lý do chuyển khoản thất bại">
+                                <input name="reference" maxlength="255" placeholder="Mã giao dịch nếu thành công"
+                                       aria-label="Mã giao dịch ngân hàng nếu chuyển khoản thành công">
+                                <input name="failureReason" maxlength="1000" placeholder="Lý do nếu thất bại"
+                                       aria-label="Lý do nếu chuyển khoản thất bại">
                                 <button class="button secondary" type="submit">Lưu kết quả</button>
                             </form>
                             <span th:if="${transfer.status != 'PENDING'}" class="muted">Đã ghi nhận</span>
