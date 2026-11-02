@@ -30,15 +30,6 @@ public class CustomerOrderDetailsController {
 
     @GetMapping("/{orderId}")
     public String detail(@PathVariable Long orderId, Authentication authentication, Model model) {
-        return render(orderId, authentication, model, false);
-    }
-
-    @GetMapping("/{orderId}/confirmation")
-    public String confirmation(@PathVariable Long orderId, Authentication authentication, Model model) {
-        return render(orderId, authentication, model, true);
-    }
-
-    private String render(Long orderId, Authentication authentication, Model model, boolean confirmation) {
         Long customerId = currentCustomer.requireCustomerId(authentication);
         OrderDetailsResponse order = orders.getDetails(customerId, orderId);
         model.addAttribute("order", order);
@@ -52,7 +43,6 @@ public class CustomerOrderDetailsController {
         }
         model.addAttribute("trackingShops", trackingShops);
         model.addAttribute("cartBadgeTotal", orders.getCartBadgeTotal(customerId));
-        model.addAttribute("confirmation", confirmation);
         model.addAttribute("actions", new VietFreshHub.order.dto.OrderActionsResponse(false, "Vui lòng mở Đơn mua để hủy theo từng cửa hàng.", ""));
         return "customer/order-detail";
     }
