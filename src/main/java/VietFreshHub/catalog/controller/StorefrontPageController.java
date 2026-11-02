@@ -49,6 +49,7 @@ public class StorefrontPageController {
         model.addAttribute("product", product);
         model.addAttribute("details", storefront.productDetails(product.getProductId()));
         model.addAttribute("shopProductCount", related.getTotalElements());
+        model.addAttribute("related", related.stream().filter(item -> !item.getProductId().equals(product.getProductId())).limit(5).toList());
         return "customer/product-detail";
     }
 

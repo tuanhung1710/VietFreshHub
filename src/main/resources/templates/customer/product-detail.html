@@ -73,7 +73,10 @@
     <article th:each="review : ${details.reviews}" class="review"><strong th:text="${review.reviewer}"></strong><div class="stars" th:text="${#strings.repeat('★',review.rating)+#strings.repeat('☆',5-review.rating)}"></div><div class="date" th:text="${#temporals.format(review.createdAt,'dd/MM/yyyy')}"></div><p th:text="${review.content}"></p></article>
     <p th:if="${details.reviewCount > #lists.size(details.reviews)}" class="reviewsnote">Hiển thị 5 đánh giá mới nhất.</p>
   </div></section>
-
+  <section class="section" style="margin-bottom:20px"><div class="sectionhead">SẢN PHẨM KHÁC CỦA SHOP</div>
+    <p th:if="${#lists.isEmpty(related)}" class="sectionbody muted">Shop chưa có sản phẩm khác đang được bán.</p>
+    <div class="related"><a th:each="item : ${related}" class="productcard" th:href="@{/product-detail(productId=${item.productId})}"><div class="productphoto"><img th:src="${item.imageUrl}" th:alt="${item.name}" loading="lazy"></div><div class="productbody"><div class="name" th:text="${item.name}"></div><div class="price2" th:text="${#numbers.formatInteger(item.selectedVariant.price,0,'POINT')} + ' VND'"></div><div class="minor" th:text="'★ ' + ${item.rating == null ? '0.0' : #numbers.formatDecimal(item.rating,1,1)} + '/5 · Đã bán ' + ${item.sales}"></div></div></a></div>
+  </section>
 </main>
 <footer class="footer"><div class="wrap"><div class="footergrid"><div><h3>VietFresh Hub</h3><p>Sàn mua sắm trái cây từ nhiều nhà bán hàng. Khám phá trái cây nội địa, nhập khẩu và sản phẩm theo mùa.</p></div><div><h3>Khám phá</h3><p><a th:href="@{/shops/{id}(id=${shop.shopId})}">Gian hàng</a><br><a th:href="@{/shops}">Danh sách gian hàng</a><br><a th:href="@{/home}">Tất cả sản phẩm</a></p></div><div><h3>Hỗ trợ &amp; chính sách</h3><p><a th:href="@{/customer/orders}">Theo dõi đơn hàng</a><br><a th:href="@{/cart}">Giỏ hàng của tôi</a></p></div></div><div class="copyright">© 2026 VietFresh Hub. All rights reserved.</div></div></footer>
 <div id="notice" class="toast hide" role="status" aria-live="polite"></div><div id="modal"></div>
