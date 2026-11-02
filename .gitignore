@@ -37,3 +37,17 @@ uploads/product/
 
 # Local document extraction, preview fixtures and review logs
 .document-analysis/
+
+# Keep local tests and documentation out of GitHub
+/src/test/
+docs/
+documentation/
+*.md
+*.doc
+*.docx
+*.pdf
+
+# Publish only the complete database schema and seed data
+/database/*
+!/database/data.sql
+!/database/vietfresh_hub_script.sql
