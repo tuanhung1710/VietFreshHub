@@ -66,12 +66,10 @@ public class SecurityConfig {
                     "/storefront/api/options", "/storefront/api/home", "/storefront/api/products", "/storefront/api/products/**", "/storefront/api/cart").permitAll();
             authorize.requestMatchers(org.springframework.http.HttpMethod.POST, "/storefront/api/cart").hasRole("CUSTOMER");
             authorize.requestMatchers(
-                    "/", "/login", "/register", "/verify-email", "/payment/vnpay/return",
-                            "/seller-onboarding/register",
-                            "/seller-onboarding/verify-email",
-                            "/seller-onboarding/verify-email/resend",
-                            "/forgot-password", "/reset-password",
-                            "/verify-email/resend", "/error",
+                    "/", "/login", "/register", "/verify-email", "/verify-email/resend", "/error",
+                    "/reviews/product/**", "/reviews/shop/**", "/payment/vnpay/return",
+                    "/seller-onboarding/register", "/seller-onboarding/verify-email",
+                    "/seller-onboarding/verify-email/resend", "/forgot-password", "/reset-password",
                     "/css/**", "/js/**", "/images/**","/oauth2/**", "/login/oauth2/**"
             ).permitAll()
                     .requestMatchers("/admin", "/admin/**")

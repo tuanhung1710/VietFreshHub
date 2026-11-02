@@ -9,15 +9,18 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
 import org.springframework.security.core.Authentication;
-import org.springframework.ui.Model;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.BindingResult;
 import org.springframework.transaction.TransactionException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import java.time.LocalDate;
 
 @Controller
 @RequiredArgsConstructor
@@ -32,8 +35,30 @@ public class ShopController {
     public String showSellerPage(Authentication authentication, Model model) {
         model.addAttribute("shopCode", shopService.getManagedShopCode(authentication));
         model.addAttribute("orderCounts", orderService.getOrderCounts(authentication));
-        model.addAttribute("inventoryAttention", productService.inventoryAttentionSummary(authentication));
+        model.addAttribute("todaySales", orderService.getShopSalesSummary(authentication, null));
+        model.addAttribute("todaysOrders", orderService.getTodaysOrders(authentication));
+        model.addAttribute("bestSellingProducts", orderService.getBestSellingProducts(authentication));
+        try {
+            model.addAttribute("inventoryAttention", productService.inventoryAttentionSummary(authentication));
+        } catch (DataAccessException exception) {
+            model.addAttribute("inventoryLoadError", true);
+        }
         return "store_manager/shop";
+    }
+
+    @GetMapping("/seller/reports")
+    public String showSellerReports(
+            Authentication authentication,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            Model model) {
+        model.addAttribute("report", orderService.getShopReport(authentication, from, to));
+        try {
+            model.addAttribute("inventoryAttention", productService.inventoryAttentionSummary(authentication));
+        } catch (DataAccessException exception) {
+            model.addAttribute("inventoryLoadError", true);
+        }
+        return "store_manager/reports";
     }
 
     @GetMapping("/seller/pickup-location")

@@ -10,6 +10,7 @@
             </a>
             <h1>Nhật ký hoạt động</h1>
             <p class="text-body-secondary mb-4">Theo dõi các thay đổi về sản phẩm và tồn kho của cửa hàng. Thời gian hiển thị theo giờ Việt Nam.</p>
+            <a class="btn btn-light mb-3" th:href="@{/seller/inventory/journal}">Xem biến động kho</a>
             <form class="card p-3 mb-4 vf-inventory-filter-form" th:action="@{/seller/inventory/audit}" method="get">
                 <input type="hidden" name="returnTo" th:value="${inventoryReturnUrl}">
                 <input type="hidden" name="size" th:value="${events.size}">

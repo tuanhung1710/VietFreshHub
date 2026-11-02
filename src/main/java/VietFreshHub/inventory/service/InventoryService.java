@@ -5,12 +5,14 @@ import VietFreshHub.inventory.dto.ActivityHistoryFilter;
 import VietFreshHub.inventory.dto.AuditResponse;
 import VietFreshHub.inventory.dto.BatchResponse;
 import VietFreshHub.inventory.dto.DisposalResult;
+import VietFreshHub.inventory.dto.JournalResponse;
 import VietFreshHub.inventory.dto.MarkdownRequest;
 import VietFreshHub.inventory.dto.StockChangeRequest;
 
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 
+import java.time.LocalDate;
 
 public interface InventoryService {
     /** Nhập lô hàng mới cho phân loại thuộc cửa hàng và ghi lịch sử kho. */
@@ -42,6 +44,9 @@ public interface InventoryService {
 
     /** Lọc lịch sử hoạt động và bổ sung tên đối tượng, người thao tác để hiển thị. */
     Page<AuditResponse> activityHistory(Authentication authentication, ActivityHistoryFilter filters, int page, int size);
+
+    Page<JournalResponse> journal(Authentication authentication, Long variantId, Long batchId, String type,
+                                   String query, LocalDate from, LocalDate to, int page, int size);
 
     /** Lấy chi tiết lô thuộc cửa hàng, kèm tồn kho, hạn sử dụng và phân bổ cho đơn. */
     BatchResponse batch(Authentication authentication, Long batchId);

@@ -11,6 +11,7 @@ import VietFreshHub.cart.service.CartService;
 import VietFreshHub.catalog.entity.CatalogProduct;
 import VietFreshHub.catalog.entity.CatalogVariant;
 import VietFreshHub.catalog.service.CatalogService;
+import VietFreshHub.coupon.services.CouponApplicationService;
 import VietFreshHub.checkout.dto.CheckoutDraft;
 import VietFreshHub.checkout.dto.CheckoutPreview;
 import VietFreshHub.checkout.dto.CheckoutRequest;
@@ -22,6 +23,7 @@ import VietFreshHub.checkout.service.CheckoutShippingQuoteService;
 import VietFreshHub.checkout.service.InventoryReservationService;
 import VietFreshHub.customer.service.CustomerAddressService;
 import VietFreshHub.exception.CheckoutException;
+import VietFreshHub.loyalty.services.LoyaltyService;
 import VietFreshHub.order.entity.Order;
 import VietFreshHub.order.repository.OrderRepository;
 import VietFreshHub.order.service.OrderPlacedEvent;
@@ -75,6 +77,8 @@ public class CheckoutServiceImpl implements CheckoutService {
     private final ApplicationEventPublisher eventPublisher;
     private final VietFreshHub.payment.repository.PaymentRepository paymentRepository;
     private final VietFreshHub.payment.vnpay.VnpayProperties vnpayProperties;
+    private final CouponApplicationService couponApplicationService;
+    private final LoyaltyService loyaltyService;
 
     @Override
     @Transactional(readOnly = true)
@@ -133,6 +137,28 @@ public class CheckoutServiceImpl implements CheckoutService {
                 entityManager.getReference(VietFreshHub.order.entity.ShopOrder.class, shopOrderId).setPaymentStatus("PENDING");
             }
         }
+
+        if (request.getCouponCode() != null && !request.getCouponCode().isBlank()) {
+            try {
+                couponApplicationService.applyToOrder(customerId, order.getOrderId(), request.getCouponCode());
+            } catch (IllegalArgumentException ex) {
+                throw new CheckoutException(ex.getMessage());
+            }
+        }
+        BigDecimal rewardAmountToUse = request.getRewardAmountToUse();
+        if (rewardAmountToUse == null || rewardAmountToUse.signum() < 0
+                || rewardAmountToUse.stripTrailingZeros().scale() > 0
+                || rewardAmountToUse.compareTo(new BigDecimal("9999999999999999")) > 0) {
+            throw new CheckoutException("Tiền thưởng phải là số đồng nguyên không âm, tối đa 16 chữ số");
+        }
+        if (rewardAmountToUse.signum() > 0) {
+            try {
+                loyaltyService.redeemToOrder(customerId, order.getOrderId(), rewardAmountToUse);
+            } catch (IllegalArgumentException ex) {
+                throw new CheckoutException(ex.getMessage());
+            }
+        }
+
         var payment = checkoutOrderService.createPendingPayment(order, paymentMethod);
         if ("BANK_TRANSFER".equals(paymentMethod.getMethodCode())) {
             payment.setProvider("VNPAY");

@@ -8,6 +8,8 @@
     <div th:replace="~{fragments/storefront :: messages}"></div>
     <form th:action="@{/customer/checkout}" th:object="${form}" method="post" id="checkout-form">
         <input type="hidden" name="checkoutToken" th:value="${form.checkoutToken}">
+        <input type="hidden" th:field="*{couponCode}">
+        <input type="hidden" th:field="*{rewardAmountToUse}">
         <div th:if="${#fields.hasGlobalErrors()}" class="notice error" role="alert"><p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p></div>
         <div class="checkout-layout">
             <div class="checkout-sections">
@@ -52,13 +54,76 @@
                 </section>
             </div>
             <aside class="panel summary"><h2>Tóm tắt đơn hàng</h2>
+                <div class="coupon-section">
+                    <label for="coupon-input">Mã giảm giá</label>
+                    <select id="coupon-input" name="couponInput" aria-describedby="coupon-help">
+                        <option value="">Không dùng coupon</option>
+                        <option th:each="coupon : ${availableCoupons}"
+                                th:value="${coupon.code}"
+                                th:selected="${coupon.code.equalsIgnoreCase(form.couponCode)}"
+                                th:text="${coupon.code + ' — Giảm ' + #numbers.formatInteger(coupon.discountAmount, 0, 'POINT') + ' ₫'}"></option>
+                    </select>
+                    <button type="submit"
+                            class="button secondary"
+                            th:formaction="@{/customer/checkout/coupon/preview}"
+                            formnovalidate>
+                        Áp dụng
+                    </button>
+                    <p id="coupon-help" class="muted"
+                       th:text="${#lists.isEmpty(availableCoupons) ? 'Chưa có coupon phù hợp với sản phẩm đã chọn.' : 'Chọn coupon của shop rồi bấm Áp dụng. Chọn Không dùng coupon để bỏ mã.'}"></p>
+                    <p th:if="${couponApplication != null}"
+                       role="status"
+                       th:text="${'Đã áp dụng mã ' + couponApplication.code}"></p>
+                    <p th:if="${couponError != null}"
+                       class="item-error"
+                       role="alert"
+                       th:text="${couponError}"></p>
+                    <p class="item-error" th:errors="*{couponCode}"></p>
+                </div>
+                <div class="loyalty-section">
+                    <h3>Tiền thưởng</h3>
+                    <p>Tiền thưởng hiện có: <strong th:text="${#numbers.formatInteger(loyaltyBalance.rewardBalance, 1, 'POINT') + ' ₫'}"></strong></p>
+                    <label for="reward-amount-input">Số tiền thưởng muốn sử dụng</label>
+                    <input id="reward-amount-input"
+                           type="number"
+                           name="rewardAmountInput"
+                           th:value="${form.rewardAmountToUse}"
+                           min="0"
+                           step="1"
+                           th:max="${loyaltyBalance.rewardBalance}">
+                    <button type="submit"
+                            class="button secondary"
+                            th:formaction="@{/customer/checkout/reward/preview}"
+                            formnovalidate>
+                        Áp dụng tiền thưởng
+                    </button>
+                    <p class="muted">Nhập 0 rồi bấm Áp dụng tiền thưởng để bỏ sử dụng tiền thưởng.</p>
+                    <p th:if="${redemption != null and redemption.rewardAmountUsed.signum() > 0}"
+                       role="status"
+                       th:text="${'Đã áp dụng ' + #numbers.formatInteger(redemption.rewardAmountUsed, 1, 'POINT')
+                               + ' ₫.'}"></p>
+                    <p th:if="${loyaltyError != null}"
+                       class="item-error"
+                       role="alert"
+                       th:text="${loyaltyError}"></p>
+                    <p th:if="${redemption != null}" th:text="${'Số dư dự kiến: ' + #numbers.formatInteger(redemption.balanceAfterAmount, 1, 'POINT') + ' ₫'}"></p>
+                    <p class="item-error" th:errors="*{rewardAmountToUse}"></p>
+                </div>
                 <div class="summary-line"><span>Tiền sản phẩm</span><strong th:text="${#numbers.formatInteger(cart.totalAmount,0,'POINT')} + ' ₫'"></strong></div>
+                <div class="summary-line" th:if="${couponDiscount.signum() > 0}">
+                    <span>Giảm giá coupon</span>
+                    <strong th:text="${'- ' + #numbers.formatInteger(couponDiscount, 0, 'POINT') + ' ₫'}"></strong>
+                </div>
+                <div class="summary-line" th:if="${loyaltyDiscount.signum() > 0}">
+                    <span>Giảm bằng tiền thưởng</span>
+                    <strong th:text="${'- ' + #numbers.formatInteger(loyaltyDiscount, 0, 'POINT') + ' ₫'}"></strong>
+                </div>
                 <div class="summary-line"><span th:text="${checkout.deliveryOutOfRange ? 'Phí vận chuyển:' : 'Phí vận chuyển (' + #maps.size(shopGroups) + ' shop)'}"></span><strong data-shipping-amount th:if="${checkout.shippingFee != null}" th:text="${#numbers.formatInteger(checkout.shippingFee,0,'POINT')} + ' ₫'"></strong><strong data-shipping-amount th:if="${checkout.deliveryOutOfRange}">Không hỗ trợ</strong></div>
                 <p th:if="${checkout.deliveryOutOfRange}" class="item-error" role="alert" data-shipping-error><strong>Không có phương thức vận chuyển phù hợp</strong></p>
                 <p th:if="${checkout.shippingError != null and !checkout.deliveryOutOfRange}" class="item-error" role="alert" data-shipping-error th:text="${checkout.shippingError}"></p>
                 <a th:if="${checkout.shippingError != null and !checkout.deliveryOutOfRange}" th:href="@{/customer/checkout(checkoutToken=${form.checkoutToken},addressId=${form.addressId})}" class="button secondary">Tính lại phí giao hàng</a>
-                <div class="summary-line summary-total"><span>Tổng thanh toán</span><strong class="price" data-grand-total th:if="${checkout.grandTotal != null}" th:text="${#numbers.formatInteger(checkout.grandTotal,0,'POINT')} + ' ₫'"></strong><strong data-grand-total th:if="${checkout.grandTotal == null}">Chưa thể xác định</strong></div>
-                <button class="button full" type="submit" th:disabled="${!checkout.canConfirm()}" data-confirm-order>Đặt hàng</button>
+                <div class="summary-line summary-total"><span>Tổng thanh toán</span><strong class="price" data-grand-total th:if="${checkoutTotal != null}" th:text="${#numbers.formatInteger(checkoutTotal,0,'POINT')} + ' ₫'"></strong><strong data-grand-total th:if="${checkoutTotal == null}">Chưa thể xác định</strong></div>
+                <button class="button full" type="submit" th:disabled="${!checkout.canConfirm() or couponError != null or loyaltyError != null}" data-confirm-order>Xác nhận đặt hàng</button>
                 <a th:href="@{/cart}" class="checkout-back">← Quay lại giỏ hàng</a>
             </aside>
         </div>

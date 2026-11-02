@@ -10,6 +10,8 @@ import VietFreshHub.order.dto.OrderCountsResponse;
 import VietFreshHub.order.dto.OrderDetailResponse;
 import VietFreshHub.order.dto.OrderFilterRequest;
 import VietFreshHub.order.dto.OrderItemResponse;
+import VietFreshHub.order.dto.SellerDashboardOrder;
+import VietFreshHub.order.dto.ShopReportSummary;
 import VietFreshHub.order.dto.OrderProcessingHistoryEntry;
 import VietFreshHub.order.entity.Order;
 import VietFreshHub.order.entity.OrderAddress;
@@ -19,8 +21,11 @@ import VietFreshHub.order.entity.OrderStatusHistory;
 import VietFreshHub.order.entity.ShopOrder;
 import VietFreshHub.order.repository.OrderAddressRepository;
 import VietFreshHub.order.repository.OrderDeliveryReadRepository;
+import VietFreshHub.order.repository.OrderItemRepository;
 import VietFreshHub.order.repository.OrderStatusHistoryRepository;
 import VietFreshHub.order.repository.ShopOrderRepository;
+import VietFreshHub.order.service.OrderService;
+import VietFreshHub.order.service.OrderLifecycleLock;
 import VietFreshHub.payment.service.PaymentService;
 import VietFreshHub.product.exception.CatalogException;
 import VietFreshHub.shop.entity.ShopLocation;
@@ -65,6 +70,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final String[] VIETNAMESE_DIGITS = {
             "không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"
@@ -74,6 +80,7 @@ public class OrderServiceImpl implements OrderService {
     private final ShopOrderRepository shopOrderRepository;
     private final OrderAddressRepository orderAddressRepository;
     private final OrderDeliveryReadRepository orderDeliveryReadRepository;
+    private final OrderItemRepository orderItemRepository;
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
     private final ShopService shopService;
     private final PaymentService paymentService;
@@ -83,6 +90,7 @@ public class OrderServiceImpl implements OrderService {
     private final StockAllocationService stockAllocationService;
     private final AuthService authService;
     private final EntityManager entityManager;
+    private final OrderLifecycleLock lifecycleLock;
 
     @Override
     @Transactional(readOnly = true)
@@ -163,6 +171,67 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<SellerDashboardOrder> getTodaysOrders(Authentication authentication) {
+        Long shopId = shopService.getManagedShopId(authentication);
+        LocalDate day = LocalDate.now(BUSINESS_ZONE);
+        LocalDateTime from = startOfBusinessDayUtc(day);
+        return shopOrderRepository
+                .findTop5ByShopIdAndOrder_PlacedAtGreaterThanEqualAndOrder_PlacedAtLessThanOrderByOrder_PlacedAtDesc(
+                        shopId, from, startOfBusinessDayUtc(day.plusDays(1)))
+                .stream()
+                .map(shopOrder -> new SellerDashboardOrder(
+                        shopOrder.getShopOrderId(), shopOrder.getOrder().getOrderCode(),
+                        shopOrder.getOrder().getCustomer().getFullName(), shopOrder.getOrder().getPlacedAt(),
+                        shopOrder.getTotalAmount(), shopOrder.getStatus()))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderItemRepository.BestSellingProduct> getBestSellingProducts(Authentication authentication) {
+        return orderItemRepository.findTopSellingProducts(shopService.getManagedShopId(authentication),
+                PageRequest.of(0, 5));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ShopReportSummary.Sales getShopSalesSummary(Authentication authentication, LocalDate date) {
+        LocalDate salesDate = date == null ? LocalDate.now(BUSINESS_ZONE) : date;
+        return salesSummary(shopService.getManagedShopId(authentication), salesDate, salesDate);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ShopReportSummary getShopReport(Authentication authentication, LocalDate from, LocalDate to) {
+        LocalDate today = LocalDate.now(BUSINESS_ZONE);
+        from = from == null ? today.minusDays(29) : from;
+        to = to == null ? today : to;
+        if (from.isAfter(to) || to.isAfter(today)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Khoảng ngày báo cáo không hợp lệ.");
+        }
+        Long shopId = shopService.getManagedShopId(authentication);
+        LocalDateTime start = startOfBusinessDayUtc(from);
+        LocalDateTime end = startOfBusinessDayUtc(to.plusDays(1));
+        return new ShopReportSummary(from, to,
+                salesSummary(shopId, from, to),
+                shopOrderRepository.getOrderCountsByStatus(shopId, start, end),
+                shopOrderRepository.countDistinctCustomers(shopId, start, end),
+                orderItemRepository.findTopSellingProductsInPeriod(shopId, start, end, PageRequest.of(0, 10)));
+    }
+
+    private ShopReportSummary.Sales salesSummary(Long shopId, LocalDate from, LocalDate to) {
+        ShopOrderRepository.SalesTotals totals = shopOrderRepository.getCompletedSalesTotals(shopId,
+                startOfBusinessDayUtc(from), startOfBusinessDayUtc(to.plusDays(1)));
+        return new ShopReportSummary.Sales(totals.getSalesAmount(), totals.getDiscounts(),
+                totals.getShippingFees(), totals.getCompletedOrders());
+    }
+
+    private LocalDateTime startOfBusinessDayUtc(LocalDate date) {
+        return date.atStartOfDay(BUSINESS_ZONE).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public OrderDetailResponse getOrderDetail(Long shopOrderId, Authentication authentication) {
         Long shopId = shopService.getManagedShopId(authentication);
         ShopOrder shopOrder = shopOrderRepository.findByShopOrderIdAndShopId(shopOrderId, shopId)
@@ -219,11 +288,10 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void lockOrderForDeliveryCompletion(Long orderId) {
-        Order order = entityManager.find(Order.class, orderId);
-        if (order == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng.");
+        Order order = lifecycleLock.lock(orderId);
+        if (order.getStatus() == Order.Status.CANCELLED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Không thể hoàn tất đơn hàng đã hủy.");
         }
-        entityManager.refresh(order, LockModeType.PESSIMISTIC_WRITE);
     }
 
     @Override
@@ -231,6 +299,8 @@ public class OrderServiceImpl implements OrderService {
     public void startShopOrderDelivery(Long shopOrderId, Long changedBy) {
         ShopOrder shopOrder = shopOrderRepository.findById(shopOrderId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng."));
+        lockOrderForDeliveryCompletion(shopOrder.getOrder().getOrderId());
+        entityManager.refresh(shopOrder, LockModeType.PESSIMISTIC_WRITE);
         if (!"READY_FOR_DELIVERY".equals(shopOrder.getStatus())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Chỉ có thể bắt đầu giao hàng cho đơn hàng sẵn sàng giao hàng.");
@@ -247,6 +317,10 @@ public class OrderServiceImpl implements OrderService {
         Order order = shopOrder.getOrder();
         lockOrderForDeliveryCompletion(order.getOrderId());
         entityManager.refresh(shopOrder, LockModeType.PESSIMISTIC_WRITE);
+        paymentService.validatePaymentForDelivery(order.getOrderId());
+        if ("CANCELLED".equals(shopOrder.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Đơn cửa hàng đã hủy, không thể hoàn tất giao hàng.");
+        }
         if (!"OUT_FOR_DELIVERY".equals(shopOrder.getStatus())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Chỉ có thể hoàn tất đơn hàng đang giao hàng.");
         }
@@ -296,12 +370,7 @@ public class OrderServiceImpl implements OrderService {
         if (!paymentService.isCodOrder(orderId)) return;
         List<ShopOrder> children = shopOrderRepository.findByOrderOrderIdOrderByShopOrderIdAsc(orderId);
         if (children.isEmpty()) return;
-        Specification<ShopOrder> returnedFailures = deliveryReturnQueryService.confirmedReturnedFailures()
-                .and((root, query, builder) -> builder.equal(root.get("order").get("orderId"), orderId));
-        Set<Long> returnedIds = shopOrderRepository.findAll(returnedFailures).stream()
-                .map(ShopOrder::getShopOrderId).collect(Collectors.toSet());
-        List<ShopOrder> remaining = children.stream()
-                .filter(child -> !"CANCELLED".equals(child.getStatus()) && !returnedIds.contains(child.getShopOrderId())).toList();
+        List<ShopOrder> remaining = deliveryReturnQueryService.collectibleCodShopOrders(orderId, children);
         if (remaining.isEmpty()) {
             paymentService.reconcileCodPayment(orderId, BigDecimal.ZERO, null, true);
             return;
