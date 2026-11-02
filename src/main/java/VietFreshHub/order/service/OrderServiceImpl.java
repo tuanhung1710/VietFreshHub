@@ -41,6 +41,7 @@ import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import VietFreshHub.common.PageSizes;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -569,7 +570,8 @@ public class OrderServiceImpl implements OrderService {
         if (filter.getSort() == null || filter.getSort().isBlank()) {
             filter.setSort("NEWEST");
         }
-        int pageSize = "all".equals(view) ? 50 : 15;
+        int pageSize = PageSizes.normalize(filter.getSize());
+        filter.setSize(pageSize);
         Pageable pageable = PageRequest.of(page, pageSize, resolveOrderSort(filter.getSort()));
         return shopOrderRepository.findAll(specification, pageable);
     }
@@ -588,12 +590,13 @@ public class OrderServiceImpl implements OrderService {
                                                             String view) {
         Long shopId = shopService.getManagedShopId(authentication);
         validateDateRange(filter);
-        String paymentStatus = "completed".equals(view) || filter.getPaymentStatus() == null
-                ? "" : filter.getPaymentStatus().trim();
-        if (!paymentStatus.isEmpty() && !OrderLabels.shopPaymentStatusOptions().containsKey(paymentStatus)) {
+        List<String> paymentStatuses = "completed".equals(view) ? List.of() : selectedFilterValues(filter.getPaymentStatus());
+        if (paymentStatuses.stream().anyMatch(value -> !OrderLabels.shopPaymentStatusOptions().containsKey(value))) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Trạng thái thanh toán không hợp lệ.");
         }
-        filter.setPaymentStatus(paymentStatus);
+        filter.setPaymentStatus(paymentStatuses);
+        filter.setPriceRange(selectedFilterValues(filter.getPriceRange()));
+        filter.setStatus(selectedFilterValues(filter.getStatus()));
         List<String> statuses = switch (view) {
             case "all" -> List.of();
             case "incoming" -> List.of("PENDING");
@@ -606,7 +609,7 @@ public class OrderServiceImpl implements OrderService {
             default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Danh sách đơn hàng không hợp lệ.");
         };
         boolean filterStatus = "all".equals(view) || "failed".equals(view);
-        String selectedStatus = "failed".equals(view) ? "DELIVERY_FAILED" : filter.getStatus();
+        List<String> selectedStatuses = "failed".equals(view) ? List.of("DELIVERY_FAILED") : filter.getStatus();
 
         return (root, query, builder) -> {
             Join<ShopOrder, Order> order = root.join("order", JoinType.LEFT);
@@ -616,21 +619,24 @@ public class OrderServiceImpl implements OrderService {
             if (!statuses.isEmpty()) {
                 predicates.add(root.get("status").in(statuses));
             }
-            if (filterStatus && selectedStatus != null && !selectedStatus.isBlank()) {
-                String status = selectedStatus.trim();
-                if ("DELIVERY_FAILED".equals(status) || "OUT_FOR_DELIVERY".equals(status)) {
-                    predicates.add(builder.equal(root.get("status"), "OUT_FOR_DELIVERY"));
-                    Subquery<Long> failedDelivery = query.subquery(Long.class);
-                    Root<OrderDeliveryView> delivery = failedDelivery.from(OrderDeliveryView.class);
-                    failedDelivery.select(delivery.get("deliveryId")).where(
-                            builder.equal(delivery.get("shopOrder").get("shopOrderId"), root.get("shopOrderId")),
-                            builder.equal(delivery.get("status"), "FAILED")
-                    );
-                    Predicate deliveryFailed = builder.exists(failedDelivery);
-                    predicates.add("DELIVERY_FAILED".equals(status) ? deliveryFailed : builder.not(deliveryFailed));
-                } else {
-                    predicates.add(builder.equal(root.get("status"), status));
+            if (filterStatus && !selectedStatuses.isEmpty()) {
+                List<Predicate> statusOptions = new ArrayList<>();
+                for (String status : selectedStatuses) {
+                    if ("DELIVERY_FAILED".equals(status) || "OUT_FOR_DELIVERY".equals(status)) {
+                        Subquery<Long> failedDelivery = query.subquery(Long.class);
+                        Root<OrderDeliveryView> delivery = failedDelivery.from(OrderDeliveryView.class);
+                        failedDelivery.select(delivery.get("deliveryId")).where(
+                                builder.equal(delivery.get("shopOrder").get("shopOrderId"), root.get("shopOrderId")),
+                                builder.equal(delivery.get("status"), "FAILED")
+                        );
+                        Predicate deliveryFailed = builder.exists(failedDelivery);
+                        statusOptions.add(builder.and(builder.equal(root.get("status"), "OUT_FOR_DELIVERY"),
+                                "DELIVERY_FAILED".equals(status) ? deliveryFailed : builder.not(deliveryFailed)));
+                    } else {
+                        statusOptions.add(builder.equal(root.get("status"), status));
+                    }
                 }
+                predicates.add(builder.or(statusOptions.toArray(Predicate[]::new)));
             }
             if (filter.getFromDate() != null) {
                 predicates.add(builder.greaterThanOrEqualTo(order.get("placedAt"), toUtcStartOfDay(filter.getFromDate())));
@@ -638,32 +644,32 @@ public class OrderServiceImpl implements OrderService {
             if (filter.getToDate() != null) {
                 predicates.add(builder.lessThan(order.get("placedAt"), toUtcStartOfDay(filter.getToDate().plusDays(1))));
             }
-            if (filter.getPriceRange() != null && !filter.getPriceRange().isBlank()) {
+            if (!filter.getPriceRange().isEmpty()) {
                 Path<BigDecimal> amount = root.get("totalAmount");
-                switch (filter.getPriceRange().trim()) {
-                    case "UNDER_100K" -> predicates.add(builder.lessThan(amount, BigDecimal.valueOf(100000)));
-                    case "FROM_100K_TO_300K" -> {
-                        predicates.add(builder.greaterThanOrEqualTo(amount, BigDecimal.valueOf(100000)));
-                        predicates.add(builder.lessThan(amount, BigDecimal.valueOf(300000)));
-                    }
-                    case "FROM_300K_TO_500K" -> {
-                        predicates.add(builder.greaterThanOrEqualTo(amount, BigDecimal.valueOf(300000)));
-                        predicates.add(builder.lessThan(amount, BigDecimal.valueOf(500000)));
-                    }
-                    case "FROM_500K_TO_1M" -> {
-                        predicates.add(builder.greaterThanOrEqualTo(amount, BigDecimal.valueOf(500000)));
-                        predicates.add(builder.lessThan(amount, BigDecimal.valueOf(1000000)));
-                    }
-                    case "FROM_1M_TO_2M" -> {
-                        predicates.add(builder.greaterThanOrEqualTo(amount, BigDecimal.valueOf(1000000)));
-                        predicates.add(builder.lessThanOrEqualTo(amount, BigDecimal.valueOf(2000000)));
-                    }
-                    case "OVER_2M" -> predicates.add(builder.greaterThan(amount, BigDecimal.valueOf(2000000)));
-                    default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Khoảng giá không hợp lệ.");
+                List<Predicate> priceOptions = new ArrayList<>();
+                for (String priceRange : filter.getPriceRange()) {
+                    priceOptions.add(switch (priceRange) {
+                        case "UNDER_100K" -> builder.lessThan(amount, BigDecimal.valueOf(100000));
+                        case "FROM_100K_TO_300K" -> builder.and(
+                                builder.greaterThanOrEqualTo(amount, BigDecimal.valueOf(100000)),
+                                builder.lessThan(amount, BigDecimal.valueOf(300000)));
+                        case "FROM_300K_TO_500K" -> builder.and(
+                                builder.greaterThanOrEqualTo(amount, BigDecimal.valueOf(300000)),
+                                builder.lessThan(amount, BigDecimal.valueOf(500000)));
+                        case "FROM_500K_TO_1M" -> builder.and(
+                                builder.greaterThanOrEqualTo(amount, BigDecimal.valueOf(500000)),
+                                builder.lessThan(amount, BigDecimal.valueOf(1000000)));
+                        case "FROM_1M_TO_2M" -> builder.and(
+                                builder.greaterThanOrEqualTo(amount, BigDecimal.valueOf(1000000)),
+                                builder.lessThanOrEqualTo(amount, BigDecimal.valueOf(2000000)));
+                        case "OVER_2M" -> builder.greaterThan(amount, BigDecimal.valueOf(2000000));
+                        default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Khoảng giá không hợp lệ.");
+                    });
                 }
+                predicates.add(builder.or(priceOptions.toArray(Predicate[]::new)));
             }
-            if (!paymentStatus.isEmpty()) {
-                predicates.add(builder.equal(root.get("paymentStatus"), paymentStatus));
+            if (!paymentStatuses.isEmpty()) {
+                predicates.add(root.get("paymentStatus").in(paymentStatuses));
             }
             if (filter.getKeyword() != null && !filter.getKeyword().isBlank()) {
                 String keyword = filter.getKeyword().trim().toLowerCase(Locale.ROOT);
@@ -698,6 +704,12 @@ public class OrderServiceImpl implements OrderService {
     private LocalDateTime toUtcStartOfDay(LocalDate date) {
         LocalDateTime utc = date.atStartOfDay(VIETNAM_ZONE).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
         return utc.getYear() < 1 ? LocalDateTime.of(1, 1, 1, 0, 0) : utc;
+    }
+
+    private List<String> selectedFilterValues(List<String> values) {
+        return values == null ? List.of() : values.stream()
+                .filter(value -> value != null && !value.isBlank())
+                .map(String::trim).distinct().toList();
     }
 
     private void validateDateRange(OrderFilterRequest filter) {

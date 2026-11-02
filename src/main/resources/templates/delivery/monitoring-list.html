@@ -38,7 +38,6 @@
         .delivery-table .date-cell, .delivery-table .detail-link { white-space: nowrap; }
         .delivery-time { color: #56655d; }
         .empty-state { margin: 0; padding: 32px 20px; color: #56655d; text-align: center; }
-        .pagination { display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 20px; font-size: 14px; }
         @media (min-width: 1301px) {
             .monitoring-filters.admin-filters { grid-template-columns: minmax(200px, 1.4fr) repeat(4, minmax(160px, 1fr)) auto; }
         }
@@ -52,9 +51,9 @@
             .filters-card { padding: 16px; }
             .monitoring-filters { grid-template-columns: 1fr; }
             .filter-actions .button { flex: 1; }
-            .pagination { justify-content: center; }
         }
     </style>
+    <link th:replace="~{fragments/pagination :: styles}">
 </head>
 <body>
 <main class="monitoring-page" th:with="sellerView=${basePath == '/seller/deliveries'}">
@@ -68,6 +67,7 @@
 
     <section class="filters-card" aria-label="Bộ lọc giao hàng">
         <form class="monitoring-filters" th:classappend="${sellerView ? '' : 'admin-filters'}" method="get" th:action="@{${basePath}}">
+            <input type="hidden" name="size" th:value="${deliveriesPage.size}">
             <div class="filter-field">
                 <label for="order-code">Tìm kiếm</label>
                 <input id="order-code" type="search" name="orderCode" th:value="${orderCode}"
@@ -154,13 +154,11 @@
         </table>
     </div>
 
-    <nav class="pagination" aria-label="Phân trang giao hàng">
-        <a th:if="${deliveriesPage.hasPrevious()}"
-           th:href="@{${basePath}(page=${deliveriesPage.number - 1},status=${selectedStatus},orderCode=${orderCode},shopId=${selectedShopId},sortBy=${sortBy},direction=${direction})}">Trang trước</a>
-        <span th:text="|Trang ${deliveriesPage.number + 1} / ${deliveriesPage.totalPages == 0 ? 1 : deliveriesPage.totalPages}|"></span>
-        <a th:if="${deliveriesPage.hasNext()}"
-           th:href="@{${basePath}(page=${deliveriesPage.number + 1},status=${selectedStatus},orderCode=${orderCode},shopId=${selectedShopId},sortBy=${sortBy},direction=${direction})}">Trang sau</a>
-    </nav>
+    <div th:replace="~{fragments/pagination :: panel(${deliveriesPage},
+        @{${basePath}(page=${deliveriesPage.number - 1},size=${deliveriesPage.size},status=${selectedStatus},orderCode=${orderCode},shopId=${selectedShopId},sortBy=${sortBy},direction=${direction})},
+        @{${basePath}(page=${deliveriesPage.number + 1},size=${deliveriesPage.size},status=${selectedStatus},orderCode=${orderCode},shopId=${selectedShopId},sortBy=${sortBy},direction=${direction})},
+        @{${basePath} }, ${ {'status': selectedStatus, 'orderCode': orderCode, 'shopId': selectedShopId, 'sortBy': sortBy, 'direction': direction} },
+        'Phân trang giao hàng', 'đơn hàng', 'Đơn hàng mỗi trang')}"></div>
 </main>
 </body>
 </html>

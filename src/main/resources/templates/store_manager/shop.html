@@ -7,6 +7,9 @@
 </head>
 <body>
 <span th:replace="~{fragments/notifications :: bell}"></span>
+<form th:action="@{/logout}" method="post">
+    <button type="submit">Đăng xuất</button>
+</form>
 <h1>SHOP</h1>
 <p><a th:href="@{/seller/announcements}">Thông báo từ hệ thống và quản trị viên</a></p>
 <p><a th:href="@{/seller/profile}">Hồ sơ cửa hàng và trạng thái nhận đơn</a></p>
@@ -14,8 +17,7 @@
 <button type="button" th:attr="data-vf-copy-code=${shopCode},aria-label=${'Sao chép mã shop '+shopCode}">Sao chép</button></p>
 <p><a th:href="@{/store_manager/chat}">Mở tin nhắn khách hàng</a></p>
 <p><a th:href="@{/seller/pickup-location}">Quản lý địa điểm lấy hàng</a></p>
-<p><a th:href="@{/seller/reports}">Báo cáo cửa hàng</a></p>
-<p><a th:href="@{/seller/payout-account}">Tài khoản nhận payout</a></p>
+<p><a th:href="@{/seller/payout-account}">Tài khoản ngân hàng</a></p>
 
 <p><a th:href="@{/seller/deliveries}">Giám sát giao hàng</a></p>
 
@@ -28,50 +30,16 @@
         <li><a th:href="@{/seller/preparing-orders}" th:text="${'Đang chuẩn bị (' + orderCounts.preparingOrders + ')'}">Đang chuẩn bị</a></li>
         <li><a th:href="@{/seller/ready-orders}" th:text="${'Sẵn sàng giao (' + orderCounts.readyOrders + ')'}">Sẵn sàng giao</a></li>
         <li><a th:href="@{/seller/completed-orders}" th:text="${'Đơn đã hoàn thành (' + orderCounts.completedOrders + ')'}">Đơn đã hoàn thành</a></li>
-        <li><a th:href="@{/seller/failed-orders}" th:text="${'Giao hàng thất bại (' + orderCounts.failedOrders + ')'}">Giao hàng thất bại</a></li>
-        <li><a th:href="@{/seller/cancelled-orders}" th:text="${'Đã hủy (' + orderCounts.cancelledOrders + ')'}">Đã hủy</a></li>
     </ul>
 </nav>
-<section aria-labelledby="today-sales-heading">
-    <h3 id="today-sales-heading">Doanh số đơn hoàn thành hôm nay</h3>
-    <dl>
-        <dt>Subtotal sản phẩm trước giảm giá</dt><dd th:text="${todaySales.productSubtotal}">0</dd>
-        <dt>Giảm giá</dt><dd th:text="${todaySales.discounts}">0</dd>
-        <dt>Phí giao hàng</dt><dd th:text="${todaySales.shippingFees}">0</dd>
-        <dt>Số đơn hoàn thành</dt><dd th:text="${todaySales.completedOrders}">0</dd>
-    </dl>
-</section>
-<section aria-labelledby="today-orders-heading">
-    <h3 id="today-orders-heading">Đơn hàng hôm nay (tối đa 5 đơn mới nhất)</h3>
-    <p th:if="${#lists.isEmpty(todaysOrders)}">Chưa có đơn hàng nào hôm nay.</p>
-    <ul th:unless="${#lists.isEmpty(todaysOrders)}">
-        <li th:each="order : ${todaysOrders}">
-            <a th:href="@{/seller/orders/{id}(id=${order.shopOrderId})}"
-               th:text="${order.orderCode + ' · ' + order.customerName + ' · ' + order.status}">Đơn hàng</a>
-        </li>
-    </ul>
-</section>
-<section aria-labelledby="best-sellers-heading">
-    <h3 id="best-sellers-heading">Sản phẩm bán chạy nhất</h3>
-    <p th:if="${#lists.isEmpty(bestSellingProducts)}">Chưa có đơn hàng hoàn thành để thống kê.</p>
-    <ol th:unless="${#lists.isEmpty(bestSellingProducts)}">
-        <li th:each="product : ${bestSellingProducts}"
-            th:text="${product.productName + ' · ' + product.unitsSold + ' sản phẩm'}">Sản phẩm</li>
-    </ol>
-</section>
 <h2>QUẢN LÝ SẢN PHẨM VÀ KHO</h2>
-<section aria-label="Kho cần chú ý">
+<section th:if="${inventoryAttention.hasAlerts()}" aria-label="Kho cần chú ý">
     <h3>Kho cần chú ý</h3>
-    <p th:if="${inventoryLoadError}">Không thể tải dữ liệu tồn kho. Vui lòng thử lại sau.</p>
-    <th:block th:unless="${inventoryLoadError}">
-        <p th:unless="${inventoryAttention.hasInventoryData()}">Chưa có dữ liệu lô tồn kho để thống kê.</p>
-        <p th:if="${inventoryAttention.hasInventoryData() and !inventoryAttention.hasAlerts()}">Có dữ liệu tồn kho và hiện không có cảnh báo.</p>
-        <ul th:if="${inventoryAttention.hasAlerts()}">
-            <li th:if="${inventoryAttention.lowVariants > 0}"><a th:href="@{/seller/inventory(stock='low')}" th:text="${inventoryAttention.lowVariants + ' phân loại sắp hết hàng'}"></a></li>
-            <li th:if="${inventoryAttention.nearBatches > 0}"><a th:href="@{/seller/inventory(expiry='near')}" th:text="${inventoryAttention.nearBatches + ' lô sắp hết hạn'}"></a></li>
-            <li th:if="${inventoryAttention.expiredBatches > 0}"><a th:href="@{/seller/inventory(expiry='expired')}" th:text="${inventoryAttention.expiredBatches + ' lô đã hết hạn'}"></a></li>
-        </ul>
-    </th:block>
+    <ul>
+        <li th:if="${inventoryAttention.lowVariants > 0}"><a th:href="@{/seller/inventory(stock='low')}" th:text="${inventoryAttention.lowVariants + ' phân loại sắp hết hàng'}"></a></li>
+        <li th:if="${inventoryAttention.nearBatches > 0}"><a th:href="@{/seller/inventory(expiry='near')}" th:text="${inventoryAttention.nearBatches + ' lô sắp hết hạn'}"></a></li>
+        <li th:if="${inventoryAttention.expiredBatches > 0}"><a th:href="@{/seller/inventory(expiry='expired')}" th:text="${inventoryAttention.expiredBatches + ' lô đã hết hạn'}"></a></li>
+    </ul>
 </section>
 <nav aria-label="Sản phẩm và kho">
     <ul>
@@ -80,18 +48,5 @@
     </ul>
 </nav>
 <script th:src="@{/js/product/module.js}" defer></script>
-<h2>QUẢN LÝ KHUYẾN MÃI</h2>
-<nav aria-label="Quản lý khuyến mãi và coupon">
-    <ul>
-        <li><a th:href="@{/seller/promotions}">Chương trình khuyến mãi</a></li>
-        <li><a th:href="@{/seller/coupons}">Coupon</a></li>
-    </ul>
-</nav>
-<h2>QUẢN LÝ GÓI DỊCH VỤ</h2>
-<nav aria-label="Quản lý gói dịch vụ">
-    <ul>
-        <li><a th:href="@{/seller/subscription}">Subscription</a></li>
-    </ul>
-</nav>
 </body>
 </html>

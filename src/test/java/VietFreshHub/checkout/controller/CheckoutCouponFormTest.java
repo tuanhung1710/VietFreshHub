@@ -5,6 +5,7 @@ import VietFreshHub.cart.dto.CartDto;
 import VietFreshHub.cart.dto.CartItemDto;
 import VietFreshHub.cart.service.CartService;
 import VietFreshHub.checkout.dto.CheckoutPreview;
+import VietFreshHub.checkout.dto.CheckoutResult;
 import VietFreshHub.checkout.dto.CheckoutRequest;
 import VietFreshHub.checkout.service.CheckoutAddressService;
 import VietFreshHub.checkout.service.CheckoutDraftStore;
@@ -268,6 +269,19 @@ class CheckoutCouponFormTest {
                 .andExpect(model().attribute("checkoutTotal", new BigDecimal("110000")));
         verify(checkout).confirm(eq(1L), any(), argThat(form -> "SAVE10".equals(form.getCouponCode())));
         verify(coupons).preview(1L, "SAVE10", List.of(20L));
+    }
+
+    @Test
+    void successfulCodCheckoutRedirectsToExistingOrderDetail() throws Exception {
+        when(checkout.confirm(eq(1L), any(), any()))
+                .thenReturn(new CheckoutResult(42L, "VF-42", new BigDecimal("120000")));
+
+        mvc.perform(post("/customer/checkout").principal(authentication).session(session)
+                        .param("checkoutToken", token).param("addressId", "42").param("paymentMethodCode", "COD"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/customer/order-receipts/42"));
+
+        verify(checkout).confirm(eq(1L), any(), argThat(form -> "COD".equals(form.getPaymentMethodCode())));
     }
 
     @Test

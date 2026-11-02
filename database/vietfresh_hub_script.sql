@@ -302,6 +302,7 @@ CREATE TABLE dbo.categories (
     name                NVARCHAR(150) NOT NULL,
     slug                VARCHAR(200) NOT NULL, /* Là chuỗi để tạo url dễ đọc: https://vietfreshhub.com/shops/trai-cay-son-fresh*/
     description         NVARCHAR(1000) NULL,
+    image_url           NVARCHAR(1000) NULL,
     status              VARCHAR(20) NOT NULL CONSTRAINT DF_categories_status DEFAULT (''ACTIVE''),
     created_at          DATETIME2(0) NOT NULL CONSTRAINT DF_categories_created_at DEFAULT (SYSUTCDATETIME()),
     updated_at          DATETIME2(0) NOT NULL CONSTRAINT DF_categories_updated_at DEFAULT (SYSUTCDATETIME()),
@@ -1600,6 +1601,9 @@ BEGIN
 IF OBJECT_ID('dbo.orders','U') IS NULL OR OBJECT_ID('dbo.shop_orders','U') IS NULL
  OR OBJECT_ID('dbo.seller_payouts','U') IS NULL OR OBJECT_ID('dbo.subscription_plans','U') IS NULL
  THROW 51500,'Unrecognized or incomplete existing VietFreshHub schema.',1;
+
+IF COL_LENGTH(N'dbo.categories', N'image_url') IS NULL
+    EXEC(N'ALTER TABLE dbo.categories ADD image_url NVARCHAR(1000) NULL;');
 
 IF COL_LENGTH(N'dbo.products', N'origin') IS NULL
     EXEC(N'ALTER TABLE dbo.products ADD origin NVARCHAR(200) NULL;');

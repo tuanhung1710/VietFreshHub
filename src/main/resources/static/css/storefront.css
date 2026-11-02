@@ -145,9 +145,6 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .shop-shipping { text-align: right; border-top: 1px dashed var(--line); padding-top: 10px; margin-bottom: 0; font-size: 12px; }
 .checkout-back { display: block; text-align: center; margin-top: 18px; font-size: 13px; }
 .notice.error p { margin-bottom: 0; }
-.order-success { display: flex; align-items: center; gap: 18px; background: #eaf5eb; border: 1px solid #cce4cc; padding: 25px; border-radius: 8px; margin-bottom: 24px; }
-.order-success h1 { font-size: 27px; margin-bottom: 6px; }.order-success p { margin-bottom: 0; color: #44694d; font-size: 14px; }
-.success-check { display: grid; place-items: center; width: 48px; height: 48px; background: var(--green); color: white; border-radius: 50%; font-size: 24px; flex: 0 0 auto; }
 .order-reference { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 22px; font-size: 13px; }
 .order-code { overflow-wrap: anywhere; }.order-state { display: inline-block; color: var(--green); background: #edf5ec; padding: 3px 9px; border-radius: 4px; font-size: 12px; }
 .order-shop-heading { display: flex; justify-content: space-between; align-items: center; gap: 14px; }.order-shop-heading h3 { margin: 0; }
@@ -158,7 +155,6 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
     .checkout-line { grid-template-columns: 55px minmax(0,1fr); gap: 12px; }.checkout-line img { width: 55px; height: 55px; }
     .checkout-line > .price { grid-column: 2; }.checkout-line strong { font-size: 13px; }.address-option,.payment-option { padding: 12px; }
     .address-edit-link { top: 12px; right: 12px; }
-    .order-success { padding: 18px; gap: 12px; }.order-success h1 { font-size: 23px; }.order-success p { font-size: 12px; }
     .order-shop-heading { flex-direction: column; align-items: flex-start; gap: 6px; }
 }
 .select-all-label { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; cursor: pointer; }

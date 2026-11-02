@@ -6,6 +6,8 @@ import lombok.Setter;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
+import java.util.List;
+import VietFreshHub.common.PageSizes;
 
 @Getter
 @Setter
@@ -20,8 +22,9 @@ public class OrderFilterRequest {
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate toDate;
 
-    private String priceRange;
-    private String status;
-    private String paymentStatus;
+    private List<String> priceRange = List.of();
+    private List<String> status = List.of();
+    private List<String> paymentStatus = List.of();
     private String sort;
+    private int size = PageSizes.DEFAULT;
 }
