@@ -159,6 +159,7 @@ public class ShopCustomerOrderServiceImpl implements ShopCustomerOrderService {
         User buyer=lockCustomer(customerId);
         var shop=shopOrders.findByShopOrderIdAndOrderCustomerUserId(shopOrderId,customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng của bạn."));
+        if (!"CANCELLED".equals(shop.getStatus())) throw new CustomerOrderException("Chỉ có thể mua lại đơn hàng đã hủy.");
         var lines=shop.getItems();
         Map<Long,Long> quantities=new TreeMap<>(); Map<Long,OrderItem> original=new HashMap<>();
         lines.forEach(line -> { Long id=line.getVariant().getVariantId(); quantities.merge(id,line.getQuantity().longValue(),Long::sum); original.putIfAbsent(id,line); });

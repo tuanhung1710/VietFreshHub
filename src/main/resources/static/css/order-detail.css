@@ -106,3 +106,5 @@ body:has(.storefront-header) main.order-detail-page .detail-actions .button{min-
 @media(max-width:1250px){.mockup-rebuy-cards{grid-template-columns:1fr}.mockup-rebuy-cards img{width:56px;height:56px}}
 @media(max-width:960px){.mockup-bottom{grid-template-columns:1fr}.mockup-rebuy-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:600px){.mockup-steps li{padding:0 3px}.mockup-steps strong{font-size:9px}.mockup-steps small{font-size:9px}.step-circle{width:30px;height:30px;font-size:17px}.mockup-steps li:not(:last-child):after{left:calc(50% + 18px);right:calc(-50% + 18px);top:14px;height:3px}.mockup-rebuy-cards{grid-template-columns:1fr}}
+
+.mockup-bottom:not(:has(.mockup-rebuy)){grid-template-columns:minmax(0,1fr)}

@@ -14,6 +14,7 @@ public record OrderDetailsResponse(Long orderId,String orderCode,String statusLa
         shops=List.copyOf(shops); payments=List.copyOf(payments);
     }
     public boolean cod() { return !payments.isEmpty() && payments.stream().allMatch(p -> "COD".equals(p.methodCode())); }
+    public boolean reorderable() { return hasItems() && !shops.isEmpty() && shops.stream().allMatch(shop -> "CANCELLED".equals(shop.statusCode())); }
     public boolean hasItems() { return shops.stream().anyMatch(shop -> !shop.items().isEmpty()); }
     public boolean hasCancelledShops() { return shops.stream().anyMatch(shop -> "CANCELLED".equals(shop.statusCode())); }
     // Preserve checkout/confirmation consumers of the original TV3 DTO contract.

@@ -110,7 +110,7 @@ class CustomerOrderHistorySummaryTest {
             assertEquals("Loại lúc mua",cod.products().getFirst().variantName());
             assertEquals("/fruit.png",cod.products().getFirst().imageUrl());
             assertEquals("Chờ thu COD",cod.payments().getFirst().statusLabel());
-            assertTrue(cod.cancellable()); assertTrue(cod.reorderable()); assertTrue(cod.trackable());
+            assertTrue(cod.cancellable()); assertFalse(cod.reorderable()); assertTrue(cod.trackable());
             var mixed = cards.get(11L);
             assertEquals(2,mixed.shops().size());
             assertEquals("Hoàn thành",mixed.shops().getFirst().fulfillmentLabel());

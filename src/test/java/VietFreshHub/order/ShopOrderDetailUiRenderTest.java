@@ -74,11 +74,13 @@ class ShopOrderDetailUiRenderTest {
             var order=orders.getDetails(7L,1L); model.addAttribute("order",order);model.addAttribute("receipt",order);model.addAttribute("shopOrderId",10L);model.addAttribute("canRetryVnpayPayment",true);model.addAttribute("actions",new OrderActionsResponse(true,"",""));return "customer/shop-order-detail";
         }
     }
-    @Test void rendersExistingReceiptDataAndActions() throws Exception {
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings={"PENDING","CANCELLED"})
+    void rendersExistingReceiptDataAndActions(String shopStatus) throws Exception {
         var amount=new BigDecimal("178000");
         var placed=LocalDateTime.of(2026,11,2,14,28);
         var item=new OrderDetailsResponse.Item("Táo Gala","Khay 4 quả","APPLE-1","/images/apple.jpg",2,new BigDecimal("89000"),amount);
-        var shop=new OrderDetailsResponse.ShopGroup(10L,"Cửa hàng trái cây","Chờ xác nhận",BigDecimal.ZERO,amount,List.of(item),amount,BigDecimal.ZERO,"PENDING",null);
+        var shop=new OrderDetailsResponse.ShopGroup(10L,"Cửa hàng trái cây","Chờ xác nhận",BigDecimal.ZERO,amount,List.of(item),amount,BigDecimal.ZERO,shopStatus,null);
         var payment=new OrderDetailsResponse.PaymentInfo(1L,"Thanh toán khi nhận hàng","COD","PENDING","Chưa thanh toán",amount,null);
         var order=new OrderDetailsResponse(1L,"VFH-001","Chờ xác nhận","Chưa thanh toán","Nguyễn An","0901234567","Địa chỉ nhận hàng",amount,BigDecimal.ZERO,BigDecimal.ZERO,amount,placed,List.of(shop),List.of(payment));
         when(orders.getDetails(7L,1L)).thenReturn(order);
@@ -86,10 +88,11 @@ class ShopOrderDetailUiRenderTest {
         var response=mvc.perform(get("/preview").principal(auth)).andReturn().getResponse();
         assertEquals(200,response.getStatus());
         String html=response.getContentAsString();
-        for(String expected:List.of("178.000","Nguyễn An","Chờ xác nhận","Chưa thanh toán","receipt-info-grid","/customer/orders/shops/10/reorder","/customer/orders/10/tracking")) assertTrue(html.contains(expected),expected);
+        for(String expected:List.of("178.000","Nguyễn An","Chờ xác nhận","Chưa thanh toán","receipt-info-grid","/customer/orders/10/tracking")) assertTrue(html.contains(expected),expected);
         assertTrue(html.contains("action=\"/customer/orders/shops/10/cancel\""));
         assertTrue(html.contains("/customer/orders/1/retry-payment"));
-        assertTrue(html.contains("mockup-steps"));
+        assertFalse(html.contains("mockup-steps"));
+        assertEquals("CANCELLED".equals(shopStatus),html.contains("/reorder"));
         java.nio.file.Files.createDirectories(java.nio.file.Path.of("target/ui-preview"));
         java.nio.file.Files.writeString(java.nio.file.Path.of("target/ui-preview/shop-order-detail.html"),html);
     }
