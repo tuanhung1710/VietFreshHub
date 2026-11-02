@@ -44,7 +44,11 @@
             </label>
           </div><div id="variantNote" class="muted" style="font-size:12px;margin-top:10px" aria-live="polite"></div>
         </div></div>
-        <div class="rowline"><div class="fieldname">Số lượng</div><div>1 · <span id="stock" th:text="${product.selectedVariant.availableStock} + ' phần có sẵn'"></span></div></div>
+        <div class="rowline"><label class="fieldname" for="quantity">Số lượng</label><div class="qtyrow">
+          <button id="minus" type="button" aria-label="Giảm số lượng" disabled>−</button>
+          <input id="quantity" name="quantity" type="number" min="1" step="1" required th:max="${product.selectedVariant.availableStock}" th:value="${requestedQuantity != null ? requestedQuantity : 1}" aria-label="Số lượng mua">
+          <button id="plus" type="button" aria-label="Tăng số lượng">+</button><span class="stock" id="stock" th:text="${product.selectedVariant.availableStock} + ' phần có sẵn'"></span>
+        </div></div>
         <div class="rowline"><div class="fieldname">Giao hàng từ</div><div class="shipping-place" th:text="${formattedAddress}"></div></div>
       </form>
       <p class="summarysmall">Giá và tổng tiền cập nhật theo quy cách, số lượng đã chọn. Sản phẩm đã có trong giỏ được cộng dồn số lượng. Giá và tồn kho được kiểm tra lại khi thêm vào giỏ và đặt hàng.</p>
