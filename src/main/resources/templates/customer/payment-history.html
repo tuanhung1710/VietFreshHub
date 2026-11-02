@@ -10,8 +10,8 @@
         <a class="button secondary" th:href="@{/customer/order-receipts}">Đơn hàng của tôi <span aria-hidden="true">↗</span></a>
     </div>
     <div class="notice info payments-explanation">
-        <strong>Mỗi bản ghi có một trạng thái thanh toán riêng.</strong>
-        <p>Khoản chờ thanh toán, thất bại hoặc đã hủy không phải số tiền đã thu. Số tiền của từng bản ghi không phải tổng tiền đã thu của đơn hàng.</p>
+        <strong>Mỗi đơn cửa hàng có trạng thái thanh toán riêng.</strong>
+        <p>Khoản chờ thanh toán, thất bại hoặc đã hủy không phải số tiền đã thu. Một giao dịch online có thể thanh toán nhiều đơn cửa hàng; số tiền bên dưới là giá trị của từng đơn.</p>
     </div>
     <p th:if="${filterError != null}" class="notice error" role="alert" th:text="${filterError}"></p>
     <p th:if="${pageNotice != null}" class="notice info" role="status" th:text="${pageNotice}"></p>
@@ -27,8 +27,8 @@
         <button class="button" type="submit">Lọc thanh toán</button>
         <a class="filter-reset" th:href="@{/customer/payments}">Xóa bộ lọc</a>
     </form>
-    <div th:unless="${invalidFilter}" class="payments-result-heading"><h2>Các bản ghi thanh toán</h2>
-        <span class="muted" th:text="${paymentPage.totalElements} + ' bản ghi thanh toán'" aria-live="polite"></span></div>
+    <div th:unless="${invalidFilter}" class="payments-result-heading"><h2>Thanh toán theo đơn cửa hàng</h2>
+        <span class="muted" th:text="${paymentPage.totalElements} + ' mục thanh toán theo đơn'" aria-live="polite"></span></div>
     <section th:if="${!invalidFilter and paymentPage.empty}" class="panel empty">
         <h2 th:text="${filter.hasFilters()} ? 'Không tìm thấy thanh toán phù hợp' : 'Bạn chưa có lịch sử thanh toán'"></h2>
         <p class="muted" th:text="${filter.hasFilters()} ? 'Thử đổi mã đơn, trạng thái hoặc khoảng ngày để tìm lại bản ghi.' : 'Các bản ghi thanh toán sẽ xuất hiện sau khi bạn đặt hàng.'"></p>
@@ -36,21 +36,21 @@
         <a th:unless="${filter.hasFilters()}" class="button" th:href="@{/customer/order-receipts}">Xem đơn hàng của tôi</a>
     </section>
     <section class="order-list" aria-label="Danh sách bản ghi thanh toán">
-        <article th:each="payment : ${paymentPage.content}" class="panel history-order payment-history-record" th:attr="data-payment-id=${payment.paymentId}">
+        <article th:each="payment : ${paymentPage.content}" class="panel history-order payment-history-record" th:attr="data-payment-id=${payment.paymentId},data-shop-order-id=${payment.shopOrderId}">
             <div class="history-order-top">
                 <div><span class="muted payment-created" th:text="'Tạo lúc ' + ${#temporals.format(payment.createdAtLocal(),'HH:mm dd/MM/yyyy')}"></span>
-                    <h2 class="payment-record-title" th:text="'Bản ghi #' + ${payment.paymentId}"></h2></div>
-                <span class="order-state payment-status" th:attr="data-payment-status=${payment.status}" th:text="${payment.statusLabel()}"></span>
+                    <h2 class="payment-record-title" th:text="${payment.shopOrderId != null ? payment.orders[0].orderCode() : 'Bản ghi #' + payment.paymentId}"></h2><span th:if="${payment.shopOrderId != null}" class="muted" th:text="'Bản ghi thanh toán #' + ${payment.paymentId}"></span></div>
+                <span class="order-state payment-status" th:attr="data-payment-status=${payment.displayStatus}" th:text="${payment.statusLabel()}"></span>
             </div>
             <dl class="payment-record-data">
                 <div><dt>Đơn hàng liên quan</dt><dd><div th:each="reference : ${payment.orders}"><a class="order-code" th:href="@{/customer/orders/{id}(id=${reference.shopOrderId})}" th:text="${reference.orderCode()}"></a></div><a th:if="${#lists.isEmpty(payment.orders)}" th:href="@{/customer/order-receipts/{id}(id=${payment.orderId})}" th:text="'Lượt mua: ' + ${payment.orderCode}"></a></dd></div>
                 <div><dt>Phương thức thanh toán</dt><dd th:text="${payment.methodName}"></dd></div>
-                <div th:if="${payment.paidAt != null}"><dt>Thời điểm ghi nhận thanh toán</dt><dd th:text="${#temporals.format(payment.paidAtLocal(),'HH:mm dd/MM/yyyy')}"></dd></div>
+                <div th:if="${payment.paidAt != null and payment.methodCode != 'COD'}"><dt>Thời điểm ghi nhận thanh toán</dt><dd th:text="${#temporals.format(payment.paidAtLocal(),'HH:mm dd/MM/yyyy')}"></dd></div>
                 <div th:if="${payment.transactionReference != null}" class="payment-reference"><dt>Mã tham chiếu thanh toán</dt><dd th:text="${payment.transactionReference}"></dd></div>
             </dl>
-            <p th:if="${payment.pendingCod()}" class="payment-cod-note">Thanh toán khi nhận hàng. Hệ thống chưa xác nhận đã thu tiền COD cho bản ghi này.</p>
+            <p th:if="${payment.displayStatus == 'REFUND_PROCESSING'}" class="payment-cod-note">Khoản thanh toán đang được xử lý hoàn tiền. Thời gian khách thực tế nhận lại tiền không được theo dõi trên hệ thống.</p><p th:if="${payment.pendingCod()}" class="payment-cod-note">Thanh toán khi nhận hàng. Hệ thống chưa xác nhận đã thu tiền COD cho đơn cửa hàng này.</p>
             <div class="history-order-bottom">
-                <div><span class="muted">Số tiền của bản ghi</span><strong class="price" th:text="${#numbers.formatDecimal(payment.amount,1,'POINT',payment.amount.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></strong></div>
+                <div><span class="muted">Giá trị đơn cửa hàng</span><strong class="price" th:text="${#numbers.formatDecimal(payment.displayedAmount(),1,'POINT',payment.amount.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></strong></div>
                 <a th:if="${#lists.size(payment.orders) == 1}" class="button secondary" th:href="@{/customer/orders/{id}(id=${payment.orders[0].shopOrderId})}">Xem đơn hàng <span aria-hidden="true">↗</span></a><a th:unless="${#lists.size(payment.orders) == 1}" class="button secondary" th:href="@{/customer/order-receipts/{id}(id=${payment.orderId})}">Xem lượt mua <span aria-hidden="true">↗</span></a>
             </div>
         </article>

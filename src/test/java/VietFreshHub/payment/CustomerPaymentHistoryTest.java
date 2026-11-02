@@ -27,9 +27,9 @@ class CustomerPaymentHistoryTest {
     @Test void bindsCustomerAndInclusiveVietnamDatesWithStablePaging() {
         empty(); filter.setFromDate(LocalDate.of(2026,10,20)); filter.setToDate(LocalDate.of(2026,10,20));
         filter.setKeyword(" VF-10 "); filter.setStatus("PAID"); service.history(7L, filter);
-        verify(payments).findHistory(eq(7L), eq(Payment.Status.PAID), eq("VF-10"),
+        verify(payments).findHistory(eq(7L), eq("PAID"), eq("VF-10"),
                 eq(LocalDateTime.of(2026,10,19,17,0)), eq(LocalDateTime.of(2026,10,20,17,0)),
-                argThat(p -> p.getPageSize()==10 && p.getSort().equals(Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("paymentId")))));
+                argThat(p -> p.getPageSize()==10 && p.getSort().equals(Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("paymentId"), Sort.Order.desc("s.shopOrderId")))));
     }
     @Test void databaseDateExtremesDoNotBindUnsupportedYears() {
         empty(); filter.setFromDate(LocalDate.of(1,1,1)); filter.setToDate(LocalDate.of(9999,12,31)); service.history(7L, filter);
@@ -62,7 +62,7 @@ class CustomerPaymentHistoryTest {
                 .thenReturn(new PageImpl<>(List.of(), PageRequest.of(998,10), 11), last);
         assertSame(last, service.history(7L, filter));
     }
-    @ParameterizedTest @ValueSource(strings={"CANCELLED","REFUNDED","PARTIALLY_REFUNDED","WAITING_PAYMENT","WAITING_CONFIRMATION","PREPARING","SHIPPING","AWAITING_DELIVERY","COMPLETED","RETURN_REFUND"})
+    @ParameterizedTest @ValueSource(strings={"PROCESSING","REFUNDED","PARTIALLY_REFUNDED","WAITING_PAYMENT","WAITING_CONFIRMATION","PREPARING","SHIPPING","AWAITING_DELIVERY","COMPLETED","RETURN_REFUND"})
     void orderStagesAreNotPaymentFilters(String status) {
         filter.setStatus(status);
         assertThrows(IllegalArgumentException.class, () -> service.history(7L, filter));
@@ -70,14 +70,14 @@ class CustomerPaymentHistoryTest {
     }
     @Test void paymentLabelsFollowTheRecordAndActualMethod() {
         var labels = java.util.Map.of(
-                Payment.Status.PENDING, "Chờ thanh toán", Payment.Status.PROCESSING, "Đang xử lý",
+                Payment.Status.PENDING, "Chưa thanh toán", Payment.Status.PROCESSING, "Chưa thanh toán",
                 Payment.Status.PAID, "Đã thanh toán", Payment.Status.FAILED, "Thanh toán thất bại",
-                Payment.Status.CANCELLED, "Đã hủy giao dịch", Payment.Status.REFUNDED, "Đã hoàn tiền",
-                Payment.Status.PARTIALLY_REFUNDED, "Hoàn tiền một phần");
+                Payment.Status.CANCELLED, "Thanh toán bị hủy", Payment.Status.REFUNDED, "Đang xử lý hoàn tiền",
+                Payment.Status.PARTIALLY_REFUNDED, "Đang xử lý hoàn tiền");
         for (var status : Payment.Status.values()) {
             var online = new PaymentHistoryRow(1L,10L,"VF-10","Online","VNPAY",BigDecimal.TEN,status,null,null);
             assertEquals(labels.get(status), online.statusLabel());
-            assertEquals(status==Payment.Status.PENDING ? "Chờ thu COD" : labels.get(status), row(status).statusLabel());
+            assertEquals(status==Payment.Status.PENDING ? "Chưa thanh toán" : labels.get(status), row(status).statusLabel());
         }
     }
     @Test void blankOptionalReferenceIsOmittedAndCodNoteUsesActualMethod() {
@@ -87,7 +87,7 @@ class CustomerPaymentHistoryTest {
         assertFalse(online.pendingCod()); assertFalse(row(Payment.Status.PAID).pendingCod());
     }
     @Test void codPendingDoesNotClaimMoneyWasCollected() {
-        assertEquals("Chờ thu COD", row(Payment.Status.PENDING).transactionStatusLabel());
+        assertEquals("Chưa thanh toán", row(Payment.Status.PENDING).transactionStatusLabel());
         assertEquals("Đã thanh toán", row(Payment.Status.PAID).transactionStatusLabel());
         assertEquals(LocalDateTime.of(2026,10,20,10,0), row(Payment.Status.PENDING).createdAtLocal());
         assertNull(row(Payment.Status.PENDING).paidAtLocal());

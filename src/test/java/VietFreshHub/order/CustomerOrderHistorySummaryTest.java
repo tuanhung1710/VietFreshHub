@@ -281,9 +281,61 @@ class CustomerOrderHistorySummaryTest {
             var page=service.history(7L,filter);
             assertEquals(1,page.getTotalElements());
             assertEquals(11L,page.getContent().getFirst().orderId());
-            assertEquals(List.of("VFH-000110","VFH-000111"),page.getContent().getFirst().orders().stream().map(VietFreshHub.payment.dto.PaymentHistoryRow.OrderReference::orderCode).toList());
+            assertEquals(List.of("VFH-000111"),page.getContent().getFirst().orders().stream().map(VietFreshHub.payment.dto.PaymentHistoryRow.OrderReference::orderCode).toList());
             filter.setKeyword("VFH-000120");assertTrue(service.history(7L,filter).isEmpty());
-            filter.setKeyword("VF-11");assertEquals(1,service.history(7L,filter).getTotalElements());
+            filter.setKeyword("VF-11");assertEquals(2,service.history(7L,filter).getTotalElements());
+        }
+    }
+    @Test void paymentDisplayFiltersUseStoredEvidenceWithoutWritingStatuses() {
+        try (var session=factory.openSession()) {
+            var tx=session.beginTransaction();
+            try {
+                var repository=new JpaRepositoryFactory(session).getRepository(VietFreshHub.payment.repository.CustomerPaymentReadRepository.class);
+                var service=new VietFreshHub.payment.service.impl.CustomerPaymentHistoryServiceImpl(repository);
+                var filter=new VietFreshHub.payment.dto.PaymentHistoryFilter();filter.setKeyword("VF-11");
+                assertEquals("PAID",service.history(7L,filter).getContent().getFirst().displayStatus());
+                session.createNativeMutationQuery("update dbo.shop_orders set status='CANCELLED',cancelled_at=current_timestamp,payment_status='PAID' where shop_order_id=110").executeUpdate();
+                assertEquals("PAID",service.history(7L,filter).getContent().getFirst().displayStatus());
+                session.createNativeMutationQuery("update dbo.shop_orders set status='CANCELLED',cancelled_at=current_timestamp,payment_status='PAID' where shop_order_id=111").executeUpdate();
+                filter.setStatus("REFUND_PROCESSING");
+                var row=service.history(7L,filter).getContent().getFirst();
+                assertEquals(Payment.Status.PAID,row.status());assertEquals("Đang xử lý hoàn tiền",row.statusLabel());
+                filter.setStatus("PAID");assertTrue(service.history(7L,filter).isEmpty());
+                filter.setStatus("");filter.setKeyword("VF-10");
+                assertEquals("PENDING",service.history(7L,filter).getContent().getFirst().displayStatus());
+                session.createNativeMutationQuery("update dbo.shop_orders set status='CANCELLED',cancelled_at=current_timestamp where shop_order_id=100").executeUpdate();
+                filter.setStatus("CANCELLED");assertEquals(Payment.Status.PENDING,service.history(7L,filter).getContent().getFirst().status());
+                session.createNativeMutationQuery("update dbo.payments set status='PAID' where payment_id=1").executeUpdate();
+                session.createNativeMutationQuery("update dbo.shop_orders set payment_status='PAID' where shop_order_id=100").executeUpdate();
+                filter.setStatus("PAID");assertEquals("PAID",service.history(7L,filter).getContent().getFirst().displayStatus());
+            } finally { tx.rollback(); }
+        }
+    }
+    @Test void paymentHistorySeparatesShopCollectionAndRefundStates() {
+        try (var session=factory.openSession()) {
+            var tx=session.beginTransaction();
+            try {
+                var repository=new JpaRepositoryFactory(session).getRepository(VietFreshHub.payment.repository.CustomerPaymentReadRepository.class);
+                var service=new VietFreshHub.payment.service.impl.CustomerPaymentHistoryServiceImpl(repository);
+                var filter=new VietFreshHub.payment.dto.PaymentHistoryFilter();filter.setKeyword("VF-11");
+                session.createNativeMutationQuery("update dbo.payments set payment_method_id=1,status='PENDING',paid_at=null where payment_id=2").executeUpdate();
+                session.createNativeMutationQuery("update dbo.shop_orders set payment_status='PAID' where shop_order_id=110").executeUpdate();
+                session.createNativeMutationQuery("update dbo.shop_orders set payment_status='UNPAID' where shop_order_id=111").executeUpdate();
+                var page=service.history(7L,filter);assertEquals(2,page.getTotalElements());
+                var byShop=page.getContent().stream().collect(java.util.stream.Collectors.toMap(VietFreshHub.payment.dto.PaymentHistoryRow::shopOrderId,r->r));
+                assertEquals("PAID",byShop.get(110L).displayStatus());assertEquals("PENDING",byShop.get(111L).displayStatus());
+                assertEquals(Payment.Status.PENDING,byShop.get(110L).status());
+                assertEquals(0,new BigDecimal("197000").compareTo(byShop.get(110L).displayedAmount()));
+                assertEquals(0,new BigDecimal("184000").compareTo(byShop.get(111L).displayedAmount()));
+                filter.setStatus("PAID");assertEquals(1,service.history(7L,filter).getTotalElements());
+                filter.setStatus("");filter.setKeyword("VFH-000111");assertEquals(111L,service.history(7L,filter).getContent().getFirst().shopOrderId());assertEquals(1,service.history(7L,filter).getTotalElements());
+                session.createNativeMutationQuery("update dbo.payments set payment_method_id=2,status='PAID' where payment_id=2").executeUpdate();
+                session.createNativeMutationQuery("update dbo.shop_orders set payment_status='PAID',status='CANCELLED',cancelled_at=current_timestamp where shop_order_id=111").executeUpdate();
+                filter.setKeyword("VF-11");filter.setStatus("REFUND_PROCESSING");
+                var refund=service.history(7L,filter);assertEquals(1,refund.getTotalElements());assertEquals(111L,refund.getContent().getFirst().shopOrderId());
+                filter.setStatus("PAID");assertEquals(110L,service.history(7L,filter).getContent().getFirst().shopOrderId());
+                assertEquals("PAID",session.createNativeQuery("select status from dbo.payments where payment_id=2",String.class).getSingleResult());
+            } finally {tx.rollback();}
         }
     }
 }

@@ -77,9 +77,9 @@ class CustomerPaymentHistoryControllerTest {
         when(payments.history(eq(7L), any())).thenReturn(new PageImpl<>(List.of(row()), PageRequest.of(0,10), 11));
         String html = mvc.perform(get("/customer/payments").principal(auth).param("keyword", "VF-10")
                 .param("status", "PENDING").param("fromDate", "2026-10-20")).andReturn().getResponse().getContentAsString();
-        for (String label : List.of("Tất cả", "Chờ thanh toán / Chờ thu COD", "Đang xử lý", "Đã thanh toán", "Thanh toán thất bại")) assertTrue(html.contains(label));
-        for (String status : List.of("CANCELLED", "REFUNDED", "PARTIALLY_REFUNDED")) assertFalse(html.contains("value=\"" + status + "\""));
-        assertTrue(html.contains("Chờ thu COD")); assertTrue(html.contains("10:00 20/10/2026"));
+        for (String label : List.of("Tất cả", "Chưa thanh toán", "Đang xử lý hoàn tiền", "Thanh toán bị hủy", "Đã thanh toán", "Thanh toán thất bại")) assertTrue(html.contains(label));
+        for (String status : List.of("PROCESSING", "REFUNDED", "PARTIALLY_REFUNDED")) assertFalse(html.contains("value=\"" + status + "\""));
+        assertTrue(html.contains("Chưa thanh toán")); assertTrue(html.contains("10:00 20/10/2026"));
         assertTrue(html.contains("&lt;script&gt;")); assertFalse(html.contains("<script>alert(1)</script>"));
         assertTrue(html.contains("/customer/order-receipts/10")); assertTrue(html.contains("page=2"));
         assertTrue(html.contains("fromDate=2026-10-20")); assertTrue(html.contains("keyword=VF-10"));
@@ -105,13 +105,13 @@ class CustomerPaymentHistoryControllerTest {
     }
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.CsvSource({
-        "COD,PENDING,Chờ thu COD", "VNPAY,PENDING,Chờ thanh toán", "VNPAY,PROCESSING,Đang xử lý",
-        "VNPAY,PAID,Đã thanh toán", "VNPAY,FAILED,Thanh toán thất bại", "COD,CANCELLED,Đã hủy giao dịch",
-        "VNPAY,REFUNDED,Đã hoàn tiền", "VNPAY,PARTIALLY_REFUNDED,Hoàn tiền một phần"})
+        "COD,PENDING,Chưa thanh toán", "VNPAY,PENDING,Chưa thanh toán", "VNPAY,PROCESSING,Chưa thanh toán",
+        "VNPAY,PAID,Đã thanh toán", "VNPAY,FAILED,Thanh toán thất bại", "COD,CANCELLED,Thanh toán bị hủy",
+        "VNPAY,REFUNDED,Đang xử lý hoàn tiền", "VNPAY,PARTIALLY_REFUNDED,Đang xử lý hoàn tiền"})
     void eachBadgeDescribesOnlyItsPayment(String method, Payment.Status status, String expected) throws Exception {
         when(payments.history(eq(7L),any())).thenReturn(new PageImpl<>(List.of(record(1L,method,status,null,null))));
         String html = render(); String payment = card(html,1L);
-        assertTrue(payment.contains("data-payment-status=\""+status.name()+"\""));
+        assertTrue(payment.contains("data-payment-status=\""+record(1L,method,status,null,null).displayStatus()+"\""));
         assertTrue(payment.contains(expected));
         assertEquals(method.equals("COD") && status==Payment.Status.PENDING,payment.contains("Hệ thống chưa xác nhận đã thu tiền COD"));
         assertFalse(payment.contains("Thời điểm ghi nhận thanh toán"));
@@ -143,7 +143,7 @@ class CustomerPaymentHistoryControllerTest {
         assertFalse(html.contains("data-payment-id="));
     }
     @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.CsvSource({"status,SHIPPING","status,CANCELLED","status,REFUNDED","status,PARTIALLY_REFUNDED","page,0","fromDate,not-a-date"})
+    @org.junit.jupiter.params.provider.CsvSource({"status,SHIPPING","status,PROCESSING","status,REFUNDED","status,PARTIALLY_REFUNDED","page,0","fromDate,not-a-date"})
     void invalidFiltersDoNotCallThePaymentService(String key, String value) throws Exception {
         String html = mvc.perform(get("/customer/payments").principal(auth).param(key,value)).andReturn().getResponse().getContentAsString();
         assertTrue(html.contains("Bộ lọc không hợp lệ")); verifyNoInteractions(payments);
@@ -171,5 +171,17 @@ class CustomerPaymentHistoryControllerTest {
         assertTrue(html.contains("/customer/orders/73"));assertTrue(html.contains("/customer/orders/91"));
         assertTrue(html.contains("/customer/order-receipts/10"));
         assertEquals(1,html.split("data-payment-id=",-1).length-1);
+    }
+    @Test void rendersIndependentCodShopCardsWithoutRepeatingReceiptAmount() throws Exception {
+        var created=LocalDateTime.of(2026,11,3,1,0);
+        var first=new PaymentHistoryRow(105L,90L,"Receipt90","COD","COD",new BigDecimal("555000"),Payment.Status.PENDING,created,null,null,"PAID",105L,new BigDecimal("200000"));
+        var second=new PaymentHistoryRow(105L,90L,"Receipt90","COD","COD",new BigDecimal("555000"),Payment.Status.PENDING,created,null,null,"PENDING",106L,new BigDecimal("355000"));
+        when(payments.history(eq(7L),any())).thenReturn(new PageImpl<>(List.of(first,second)));
+        var html=render();
+        assertTrue(html.contains("VFH-000105"));assertTrue(html.contains("VFH-000106"));
+        assertTrue(html.contains("200.000"));assertTrue(html.contains("355.000"));assertFalse(html.contains("555.000"));
+        assertTrue(html.contains("Đã thanh toán"));assertTrue(html.contains("Chưa thanh toán"));
+        assertTrue(html.contains("/customer/orders/105"));assertTrue(html.contains("/customer/orders/106"));
+        assertEquals(2,html.split("data-shop-order-id=",-1).length-1);
     }
 }

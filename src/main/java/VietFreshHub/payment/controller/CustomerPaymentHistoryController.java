@@ -40,7 +40,7 @@ public class CustomerPaymentHistoryController {
                 model.addAttribute("pageNotice", "Đang hiển thị trang " + (result.getNumber() + 1) + ".");
             }
         }
-        model.addAttribute("statusOptions", OrderLabels.paymentStatusOptions());
+        model.addAttribute("statusOptions", VietFreshHub.payment.dto.PaymentHistoryDisplay.options());
         model.addAttribute("cartBadgeTotal", orders.getCartBadgeTotal(customerId));
         return "customer/payment-history";
     }

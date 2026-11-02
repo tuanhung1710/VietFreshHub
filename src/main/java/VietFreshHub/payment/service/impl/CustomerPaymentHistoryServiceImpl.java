@@ -32,13 +32,13 @@ public class CustomerPaymentHistoryServiceImpl implements CustomerPaymentHistory
         if (filter.getStatus() != null) {
             statusText = filter.getStatus().trim();
         }
-        Payment.Status status = parseStatus(statusText);
+        String status = parseStatus(statusText);
         filter.setStatus(statusText);
         filter.setKeyword(filter.getKeyword().trim());
 
         LocalDateTime from = startDate(filter.getFromDate());
         LocalDateTime until = endDateExclusive(filter.getToDate());
-        Sort sort = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("paymentId"));
+        Sort sort = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("paymentId"), Sort.Order.desc("s.shopOrderId"));
         PageRequest requestedPage = PageRequest.of(filter.getPage() - 1, 10, sort);
         Page<PaymentHistoryRow> result = payments.findHistory(
                 customerId, status, filter.getKeyword(), from, until, requestedPage);
@@ -55,7 +55,7 @@ public class CustomerPaymentHistoryServiceImpl implements CustomerPaymentHistory
 
     private Page<PaymentHistoryRow> attachOrderReferences(Long customerId, Page<PaymentHistoryRow> page) {
         var orderIds = page.getContent().stream().map(PaymentHistoryRow::orderId).distinct().toList();
-        if (orderIds.isEmpty()) return page;
+        if (orderIds.isEmpty() || page.getContent().stream().allMatch(row -> row.shopOrderId() != null)) return page;
         var references = payments.findOrderReferences(customerId, orderIds).stream().collect(
                 java.util.stream.Collectors.groupingBy(CustomerPaymentReadRepository.OrderReference::getOrderId,
                         java.util.stream.Collectors.mapping(reference -> new PaymentHistoryRow.OrderReference(
@@ -72,15 +72,15 @@ public class CustomerPaymentHistoryServiceImpl implements CustomerPaymentHistory
         }
     }
 
-    private Payment.Status parseStatus(String statusText) {
+    private String parseStatus(String statusText) {
         try {
             if (statusText.isEmpty()) {
                 return null;
             }
-            if (!OrderLabels.paymentStatusOptions().containsKey(statusText)) {
+            if (!VietFreshHub.payment.dto.PaymentHistoryDisplay.options().containsKey(statusText)) {
                 throw new IllegalArgumentException();
             }
-            return Payment.Status.valueOf(statusText);
+            return statusText;
         } catch (IllegalArgumentException exception) {
             throw new IllegalArgumentException("Trạng thái thanh toán không hợp lệ.");
         }

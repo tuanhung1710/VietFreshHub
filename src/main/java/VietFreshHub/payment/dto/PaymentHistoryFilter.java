@@ -12,7 +12,7 @@ public class PaymentHistoryFilter {
     private int page = 1;
     @NotNull @Size(max=100, message="Mã đơn tối đa 100 ký tự.")
     private String keyword = "";
-    @Pattern(regexp="|PENDING|PROCESSING|PAID|FAILED", message="Trạng thái thanh toán không hợp lệ.")
+    @Pattern(regexp="|PENDING|PAID|FAILED|CANCELLED|REFUND_PROCESSING", message="Trạng thái thanh toán không hợp lệ.")
     private String status = "";
     @DateTimeFormat(iso=DateTimeFormat.ISO.DATE)
     private LocalDate fromDate;
