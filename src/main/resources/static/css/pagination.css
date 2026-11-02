@@ -1,0 +1,52 @@
+/* Inventory pagination styling, scoped to these list footers. */
+.vf-pagination-panel {
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;
+    margin-top:16px; padding:20px; border:1px solid #e2e8f0; border-radius:12px; background:#fff;
+    color:#334155; font:12px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+.vf-pagination-panel, .vf-pagination-panel * { box-sizing:border-box; }
+.vf-pagination-panel .vf-pagination {
+    display:grid; grid-template-columns:36px minmax(0,1fr) 36px; align-items:center; gap:12px;
+    width:240px; max-width:100%; margin:0; padding:0; font-size:12px;
+}
+.vf-pagination-panel .btn {
+    display:inline-flex; align-items:center; justify-content:center;
+    border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#475569;
+    padding:6px 10px; font:550 12px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
+    text-decoration:none; white-space:nowrap; cursor:pointer;
+}
+.vf-pagination-panel .vf-pagination > .btn { width:36px; height:36px; padding:0; }
+.vf-pagination-panel .vf-pagination > .btn:hover { border-color:#bbdfc5; background:#f0fdf4; color:#15803d; }
+.vf-pagination-panel .vf-pagination > .btn.disabled {
+    border-color:#f1f5f9; background:#f8fafc; color:#cbd5e1; opacity:1; pointer-events:none; cursor:default;
+}
+.vf-pagination-panel .vf-page-previous { justify-self:start; }
+.vf-pagination-panel .vf-page-next { justify-self:end; }
+.vf-pagination-panel .vf-icon {
+    width:15px; height:15px; flex-shrink:0; vertical-align:middle;
+    fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;
+}
+.vf-pagination-panel .vf-page-previous .vf-icon { transform:rotate(180deg); }
+.vf-pagination-panel .vf-page-summary { min-width:0; text-align:center; overflow-wrap:anywhere; color:#64748b; }
+.vf-pagination-panel .vf-page-summary > span { display:block; color:#334155; font-weight:600; }
+.vf-pagination-panel .vf-page-summary small { display:block; margin-top:2px; color:#64748b; font-size:11px; }
+.vf-pagination-panel .vf-page-size {
+    display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0; padding:0;
+    border:0; font-size:12px; white-space:nowrap;
+}
+.vf-pagination-panel .vf-page-size label { display:inline; margin:0; color:#334155; font-size:12px; font-weight:400; }
+.vf-pagination-panel .vf-page-size .form-select {
+    appearance:none; width:66px; min-height:32px; margin:0; padding:4px 28px 4px 8px;
+    border:1px solid #cbd5e1; border-radius:8px; color:#334155; font:12px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
+    background:#f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23334155' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center/12px 12px;
+}
+.vf-pagination-panel .btn-light { min-height:32px; border-color:#f1f5f9; background:#f1f5f9; }
+.vf-pagination-panel .btn-light:hover { background:#e2e8f0; }
+.vf-pagination-panel :is(a,button,select):focus-visible { outline:2px solid #15803d; outline-offset:3px; }
+@media(max-width:767px) { .vf-pagination-panel { justify-content:center; gap:10px; } }
+@media(max-width:575px) {
+    .vf-pagination-panel { padding-right:16px; padding-left:16px; }
+    .vf-pagination-panel .vf-pagination { font-size:11px; }
+    .vf-pagination-panel .vf-pagination > .btn { font-size:12px; }
+    .vf-pagination-panel .vf-page-size { justify-content:center; white-space:normal; }
+}

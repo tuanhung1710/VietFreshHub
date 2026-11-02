@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Yêu cầu hoàn tiền · VietFresh Hub</title>
     <link rel="stylesheet" th:href="@{/css/admin-accounts.css}">
+    <link th:replace="~{fragments/pagination :: styles}">
 </head>
 <body>
 <div class="app-shell">
@@ -28,6 +29,7 @@
         </section>
         <section class="accounts-panel">
             <form method="get" th:action="@{/admin/refund-requests}" class="filter-bar">
+                <input type="hidden" name="size" th:value="${refundsPage.size}">
                 <label for="from">Từ ngày/giờ</label>
                 <input type="datetime-local" id="from" name="from" step="1" th:value="${period.start.toString()}"
                        th:max="${period.latestSelectableTime.toString()}" min="0001-01-02T00:00:00" required>
@@ -60,7 +62,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="request : ${period.requests}">
+                    <tr th:each="request : ${refundsPage.content}">
                         <td th:text="${request.refundRequestId}"></td>
                         <td th:text="${request.orderCode}"></td>
                         <td th:text="${request.bankName}"></td>
@@ -72,6 +74,11 @@
                 </table>
             </div>
         </section>
+        <div th:replace="~{fragments/pagination :: panel(${refundsPage},
+            @{/admin/refund-requests(page=${refundsPage.number},size=${refundsPage.size},from=${period.start.toString()},to=${period.end.toString()})},
+            @{/admin/refund-requests(page=${refundsPage.number + 2},size=${refundsPage.size},from=${period.start.toString()},to=${period.end.toString()})},
+            @{/admin/refund-requests}, ${ {'from': period.start.toString(), 'to': period.end.toString()} },
+            'Phân trang yêu cầu hoàn tiền', 'yêu cầu', 'Yêu cầu mỗi trang')}"></div>
     </main>
 </div>
 </body>

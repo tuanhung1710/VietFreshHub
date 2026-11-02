@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <link th:fragment="styles" rel="stylesheet" th:href="@{/css/pagination.css}">
+</head>
+<body>
+<div th:fragment="panel(pageData, previousUrl, nextUrl, actionUrl, filters, label, unit, sizeLabel)"
+     class="vf-pagination-panel">
+    <svg style="display:none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <symbol id="vf-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+    </svg>
+    <nav th:replace="~{fragments/product-inventory :: pagination(${pageData}, ${previousUrl}, ${nextUrl}, ${label}, ${unit})}"></nav>
+    <form class="vf-page-size" method="get" th:action="${actionUrl}">
+        <th:block th:each="field : ${filters}">
+            <input th:each="value : ${field.value}" th:if="${value != null}" type="hidden"
+                   th:name="${field.key}" th:value="${value}">
+        </th:block>
+        <th:block th:replace="~{fragments/product-inventory :: pageSize(${pageData}, 'list-page-size', ${sizeLabel})}"></th:block>
+    </form>
+</div>
+</body>
+</html>
