@@ -3,11 +3,17 @@
 <head th:fragment="head(title)"><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title th:text="${title} + ' | VietFresh Hub'"></title><link rel="stylesheet" th:href="@{/css/customer-shop.css}">
 <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}"><meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
+<th:block th:replace="~{fragments/account-menu :: assets}"></th:block>
 <script type="module" th:src="@{/js/storefront/storefront.js}"></script></head>
 <body>
 <header th:fragment="header">
   <div class="container">
-    <div class="utility"><span>VietFresh Hub · Sàn trái cây đa nhà bán hàng</span><span th:fragment="accountLinks">Trợ giúp | Đăng nhập / Đăng ký</span></div>
+    <div class="utility">
+      <span>VietFresh Hub · Sàn trái cây đa nhà bán hàng</span>
+      <th:block th:fragment="accountLinks">
+      <th:block th:replace="~{fragments/account-menu :: menu}"></th:block>
+      </th:block>
+    </div>
     <div class="headmain">
       <button class="brand" data-home>VietFresh Hub</button>
       <div class="search"><input id="search" placeholder="Tìm trái cây trên toàn sàn..." aria-label="Tìm sản phẩm"><button id="searchGo">TÌM</button></div>

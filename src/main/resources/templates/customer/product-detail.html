@@ -4,6 +4,7 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title th:text="${product.name} + ' | VietFresh Hub'">Chi tiết sản phẩm | VietFresh Hub</title>
   <link rel="stylesheet" th:href="@{/css/product-detail.css}">
+  <th:block th:replace="~{fragments/account-menu :: assets}"></th:block>
   <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
   <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
   <script type="module" th:src="@{/js/storefront/product-detail.js}"></script>
@@ -51,7 +52,7 @@
         </div></div>
         <div class="rowline"><div class="fieldname">Giao hàng từ</div><div class="shipping-place" th:text="${formattedAddress}"></div></div>
         <div class="cta" th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}"><button type="submit" name="redirect" value="detail" id="addCart">+ Thêm vào giỏ hàng</button><button type="submit" name="redirect" value="checkout" class="solid" id="buyNow">Mua ngay</button></div>
-        <div class="cta" th:unless="${#authorization.expression('hasRole(''CUSTOMER'')')}"><a class="cta-button" data-customer-login th:href="@{/login}">+ Thêm vào giỏ hàng</a><a class="cta-button solid" data-customer-login th:href="@{/login}">Mua ngay</a></div>
+        <div class="cta" th:unless="${#authorization.expression('hasRole(''CUSTOMER'')')}"><a class="cta-button" data-customer-login th:href="@{/login(returnTo=${'/product-detail/'+product.selectedVariant.variantId})}">+ Thêm vào giỏ hàng</a><a class="cta-button solid" data-customer-login th:href="@{/login(returnTo=${'/product-detail/'+product.selectedVariant.variantId})}">Mua ngay</a></div>
       </form>
       <p class="summarysmall">Giá và tổng tiền cập nhật theo quy cách, số lượng đã chọn. Sản phẩm đã có trong giỏ được cộng dồn số lượng. Giá và tồn kho được kiểm tra lại khi thêm vào giỏ và đặt hàng.</p>
     </div>
