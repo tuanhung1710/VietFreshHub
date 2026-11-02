@@ -38,6 +38,7 @@ export function notice(message) {
 
 export function show(view) {
     for (const id of ['home', 'catalog', 'shopspage', 'shopdetail']) $(id).classList.toggle('hide', id !== view);
+    $('headcats')?.classList.toggle('hide', view === 'catalog');
     $('notice').classList.add('hide');
     $('modal').replaceChildren();
     window.scrollTo(0, 0);
