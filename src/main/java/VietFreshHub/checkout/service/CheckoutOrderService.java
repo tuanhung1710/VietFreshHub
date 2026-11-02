@@ -36,7 +36,12 @@ public class CheckoutOrderService {
     private final EntityManager entityManager;
     private final CheckoutShippingQuoteService shippingQuoteService;
 
-    public Order createOrder(User buyer, String orderCode, BigDecimal subtotal, BigDecimal shippingFee, Address address) {
+    public Order createOrder(
+            User buyer,
+            String orderCode,
+            BigDecimal subtotal,
+            BigDecimal shippingFee,
+            Address address) {
         Order order = new Order();
         order.setCustomer(buyer);
         order.setOrderCode(orderCode);
@@ -48,8 +53,11 @@ public class CheckoutOrderService {
         return order;
     }
 
-    public CreatedShopOrders createShopOrders(Order order, User buyer, Map<Long, List<CartItem>> itemsByShopId,
-                                               Map<Long, ShopShippingQuote> quotesByShopId) {
+    public CreatedShopOrders createShopOrders(
+            Order order,
+            User buyer,
+            Map<Long, List<CartItem>> itemsByShopId,
+            Map<Long, ShopShippingQuote> quotesByShopId) {
         List<InventoryReservationService.Reservation> reservations = new ArrayList<>();
         List<Long> shopOrderIds = new ArrayList<>();
         for (List<CartItem> shopItems : itemsByShopId.values()) {
@@ -58,20 +66,25 @@ public class CheckoutOrderService {
             shopOrderIds.add(shopOrder.getShopOrderId());
             for (CartItem cartItem : shopItems) {
                 OrderItem orderItem = createOrderItem(shopOrder, cartItem);
-                reservations.add(new InventoryReservationService.Reservation(
-                        orderItem.getOrderItemId(), cartItem.getVariant().getVariantId(), cartItem.getQuantity()));
+                reservations.add(
+                        new InventoryReservationService.Reservation(
+                                orderItem.getOrderItemId(),
+                                cartItem.getVariant().getVariantId(),
+                                cartItem.getQuantity()));
             }
             recordPlacedHistory(shopOrder, buyer);
         }
         return new CreatedShopOrders(shopOrderIds, reservations);
     }
 
-    private ShopOrder createShopOrder(Order order, List<CartItem> shopItems, ShopShippingQuote shippingQuote) {
+    private ShopOrder createShopOrder(
+            Order order, List<CartItem> shopItems, ShopShippingQuote shippingQuote) {
         ShopOrder shopOrder = new ShopOrder();
         shopOrder.setOrder(order);
         shopOrder.setShop(shopItems.getFirst().getVariant().getProduct().getShop());
         BigDecimal shippingFee = shippingQuote.shippingFee();
-        shopOrder.setShippingDistanceMeters(shippingQuoteService.distanceSnapshot(shippingQuote.distanceMeters()));
+        shopOrder.setShippingDistanceMeters(
+                shippingQuoteService.distanceSnapshot(shippingQuote.distanceMeters()));
         BigDecimal subtotal = calculateSubtotal(shopItems);
         shopOrder.setSubtotal(normalizeMoney(subtotal));
         shopOrder.setShippingFee(shippingFee);
@@ -132,8 +145,5 @@ public class CheckoutOrderService {
     }
 
     public record CreatedShopOrders(
-            List<Long> shopOrderIds,
-            List<InventoryReservationService.Reservation> reservations
-    ) {
-    }
+            List<Long> shopOrderIds, List<InventoryReservationService.Reservation> reservations) {}
 }

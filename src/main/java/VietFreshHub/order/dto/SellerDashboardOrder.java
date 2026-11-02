@@ -9,5 +9,4 @@ public record SellerDashboardOrder(
         String customerName,
         LocalDateTime placedAt,
         BigDecimal totalAmount,
-        String status
-) {}
+        String status) {}

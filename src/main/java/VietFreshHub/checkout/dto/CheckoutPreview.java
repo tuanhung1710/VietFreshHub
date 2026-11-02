@@ -19,12 +19,32 @@ public record CheckoutPreview(
         boolean vnpayAvailable,
         String fingerprint,
         String shippingError,
-        boolean deliveryOutOfRange
-) {
-    public CheckoutPreview(CartDto cart,List<AddressOption> addresses,Long addressId,Map<Long,ShopShippingQuote> shopQuotes,
-                           BigDecimal shippingFee,BigDecimal grandTotal,boolean codAvailable,String fingerprint,String shippingError,boolean deliveryOutOfRange) {
-        this(cart,addresses,addressId,shopQuotes,shippingFee,grandTotal,codAvailable,false,fingerprint,shippingError,deliveryOutOfRange);
+        boolean deliveryOutOfRange) {
+    public CheckoutPreview(
+            CartDto cart,
+            List<AddressOption> addresses,
+            Long addressId,
+            Map<Long, ShopShippingQuote> shopQuotes,
+            BigDecimal shippingFee,
+            BigDecimal grandTotal,
+            boolean codAvailable,
+            String fingerprint,
+            String shippingError,
+            boolean deliveryOutOfRange) {
+        this(
+                cart,
+                addresses,
+                addressId,
+                shopQuotes,
+                shippingFee,
+                grandTotal,
+                codAvailable,
+                false,
+                fingerprint,
+                shippingError,
+                deliveryOutOfRange);
     }
+
     public CheckoutPreview {
         shopQuotes = Map.copyOf(shopQuotes);
     }
@@ -35,9 +55,7 @@ public record CheckoutPreview(
             String phone,
             String addressText,
             boolean defaultAddress,
-            boolean locationComplete
-    ) {
-    }
+            boolean locationComplete) {}
 
     public boolean canConfirm() {
         if (cart.getItems().isEmpty() || cart.isHasUnavailableItems()) {
@@ -46,7 +64,11 @@ public record CheckoutPreview(
         if (!hasValidDeliveryAddress()) {
             return false;
         }
-        if (deliveryOutOfRange || shippingError != null || shippingFee == null || grandTotal == null || (!codAvailable && !vnpayAvailable)) {
+        if (deliveryOutOfRange
+                || shippingError != null
+                || shippingFee == null
+                || grandTotal == null
+                || (!codAvailable && !vnpayAvailable)) {
             return false;
         }
 

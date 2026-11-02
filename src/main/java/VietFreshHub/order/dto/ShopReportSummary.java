@@ -13,8 +13,10 @@ public record ShopReportSummary(
         Sales sales,
         List<StatusCount> ordersByStatus,
         long distinctCustomers,
-        List<BestSellingProduct> bestSellingProducts
-) {
-    public record Sales(BigDecimal productSubtotal, BigDecimal discounts,
-                        BigDecimal shippingFees, Long completedOrders) {}
+        List<BestSellingProduct> bestSellingProducts) {
+    public record Sales(
+            BigDecimal productSubtotal,
+            BigDecimal discounts,
+            BigDecimal shippingFees,
+            Long completedOrders) {}
 }

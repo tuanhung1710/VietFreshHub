@@ -53,17 +53,34 @@ public class CustomerCartViewController {
         model.addAttribute("cart", cart);
         model.addAttribute("selectableCount", selectableCount);
         model.addAttribute("shopGroups", shopGroups);
-        model.addAttribute("cartSuggestions", catalogService.listProducts(1).getContent().stream()
-                .filter(product -> product.getSelectedVariant() != null && product.getSelectedVariant().isPurchasable())
-                .filter(product -> cart.getItems().stream().noneMatch(item -> item.getVariantId().equals(product.getSelectedVariant().getVariantId())))
-                .limit(4).toList());
+        model.addAttribute(
+                "cartSuggestions",
+                catalogService.listProducts(1).getContent().stream()
+                        .filter(
+                                product ->
+                                        product.getSelectedVariant() != null
+                                                && product.getSelectedVariant().isPurchasable())
+                        .filter(
+                                product ->
+                                        cart.getItems().stream()
+                                                .noneMatch(
+                                                        item ->
+                                                                item.getVariantId()
+                                                                        .equals(
+                                                                                product.getSelectedVariant()
+                                                                                        .getVariantId())))
+                        .limit(4)
+                        .toList());
         return "customer/cart";
     }
 
     @PostMapping("/cart/add")
-    public String handleAddToCart(@Valid @ModelAttribute("form") AddToCartRequest form,
-                                  BindingResult errors, Authentication authentication,
-                                  @RequestParam(required = false) String redirect, RedirectAttributes flash) {
+    public String handleAddToCart(
+            @Valid @ModelAttribute("form") AddToCartRequest form,
+            BindingResult errors,
+            Authentication authentication,
+            @RequestParam(required = false) String redirect,
+            RedirectAttributes flash) {
         if (errors.hasErrors()) {
             flash.addFlashAttribute("errorMessage", validationMessage(errors));
             flash.addFlashAttribute("requestedQuantity", form.getQuantity());
@@ -71,36 +88,49 @@ public class CustomerCartViewController {
             try {
                 if ("checkout".equals(redirect)) {
                     currentCustomer.requireCustomerId(authentication);
-                    return "redirect:/customer/checkout?buyNowVariantId=" + form.getVariantId() + "&buyNowQuantity=" + form.getQuantity();
+                    return "redirect:/customer/checkout?buyNowVariantId="
+                            + form.getVariantId()
+                            + "&buyNowQuantity="
+                            + form.getQuantity();
                 }
                 cartService.addToCart(currentCustomer.requireCustomerId(authentication), form);
                 flash.addFlashAttribute("successMessage", "Đã thêm sản phẩm vào giỏ hàng.");
-            } catch (OutOfStockException | ResourceNotFoundException | IllegalArgumentException ex) {
+            } catch (OutOfStockException
+                    | ResourceNotFoundException
+                    | IllegalArgumentException ex) {
                 flash.addFlashAttribute("errorMessage", ex.getMessage());
                 flash.addFlashAttribute("requestedQuantity", form.getQuantity());
             }
         }
-        if (("detail".equals(redirect) || "checkout".equals(redirect)) && form.getVariantId() != null && form.getVariantId() > 0) {
+        if (("detail".equals(redirect) || "checkout".equals(redirect))
+                && form.getVariantId() != null
+                && form.getVariantId() > 0) {
             return "redirect:/product-detail/" + form.getVariantId();
         }
         return "redirect:/cart";
     }
 
     @PostMapping("/cart/update")
-    public String handleUpdateQuantity(@Valid @ModelAttribute("form") UpdateCartQuantityRequest form,
-                                       BindingResult errors, Authentication authentication, RedirectAttributes flash) {
+    public String handleUpdateQuantity(
+            @Valid @ModelAttribute("form") UpdateCartQuantityRequest form,
+            BindingResult errors,
+            Authentication authentication,
+            RedirectAttributes flash) {
         if (errors.hasErrors()) {
             flash.addFlashAttribute("errorMessage", validationMessage(errors));
         } else {
             try {
                 Long customerId = currentCustomer.requireCustomerId(authentication);
-                cartService.updateCartItemQuantity(customerId, form.getVariantId(), form.getQuantity());
+                cartService.updateCartItemQuantity(
+                        customerId, form.getVariantId(), form.getQuantity());
                 String successMessage = "Đã cập nhật số lượng.";
                 if (form.getQuantity() == 0) {
                     successMessage = "Đã xóa sản phẩm khỏi giỏ hàng.";
                 }
                 flash.addFlashAttribute("successMessage", successMessage);
-            } catch (OutOfStockException | ResourceNotFoundException | IllegalArgumentException exception) {
+            } catch (OutOfStockException
+                    | ResourceNotFoundException
+                    | IllegalArgumentException exception) {
                 flash.addFlashAttribute("errorMessage", exception.getMessage());
             }
         }
@@ -108,8 +138,8 @@ public class CustomerCartViewController {
     }
 
     @PostMapping("/cart/remove")
-    public String handleRemoveItem(@RequestParam Long variantId, Authentication authentication,
-                                   RedirectAttributes flash) {
+    public String handleRemoveItem(
+            @RequestParam Long variantId, Authentication authentication, RedirectAttributes flash) {
         Long customerId = currentCustomer.requireCustomerId(authentication);
         cartService.removeCartItem(customerId, variantId);
         flash.addFlashAttribute("successMessage", "Đã xóa sản phẩm khỏi giỏ hàng.");
@@ -138,10 +168,7 @@ public class CustomerCartViewController {
             Long customerId = currentCustomer.requireCustomerId(authentication);
             return cartService.getActiveCart(customerId);
         }
-        return CartDto.builder()
-                .totalItems(0)
-                .totalAmount(BigDecimal.ZERO)
-                .build();
+        return CartDto.builder().totalItems(0).totalAmount(BigDecimal.ZERO).build();
     }
 
     private boolean isCustomer(Authentication authentication) {
@@ -179,7 +206,8 @@ public class CustomerCartViewController {
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public String unavailableProduct(ResourceNotFoundException exception, RedirectAttributes flash) {
+    public String unavailableProduct(
+            ResourceNotFoundException exception, RedirectAttributes flash) {
         flash.addFlashAttribute("errorMessage", exception.getMessage());
         return "redirect:/home";
     }

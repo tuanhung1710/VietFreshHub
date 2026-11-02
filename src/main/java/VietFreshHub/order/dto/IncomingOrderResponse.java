@@ -18,6 +18,7 @@ public class IncomingOrderResponse {
     private String orderStatus;
     private String orderStatusLabel;
     private String paymentStatus;
+
     public String getShopOrderCode() {
         return orderCode;
     }

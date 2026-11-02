@@ -42,35 +42,62 @@ public class CustomerOrderQueryServiceImpl implements CustomerOrderQueryService 
         if (customerId == null || orderId == null || orderId < 1) {
             throw notFound();
         }
-        Order order = orders.findByOrderIdAndCustomerUserId(orderId, customerId).orElseThrow(this::notFound);
+        Order order =
+                orders.findByOrderIdAndCustomerUserId(orderId, customerId)
+                        .orElseThrow(this::notFound);
         OrderAddress address = addresses.findByOrderOrderId(orderId).orElseThrow(this::notFound);
 
         // Giữ số query cố định: lấy theo nhóm, không đọc DB riêng cho từng sản phẩm.
         Map<Long, List<OrderDetailsResponse.Item>> itemsByShop = groupItems(customerId, orderId);
-        Map<Long, DeliverySummary> deliveriesByShop = reads.findDeliveries(customerId, orderId).stream()
-                .collect(Collectors.toMap(DeliverySummary::getShopOrderId, row -> row));
-        List<OrderDetailsResponse.ShopGroup> shopGroups = readShopGroups(customerId, orderId, itemsByShop, deliveriesByShop);
+        Map<Long, DeliverySummary> deliveriesByShop =
+                reads.findDeliveries(customerId, orderId).stream()
+                        .collect(Collectors.toMap(DeliverySummary::getShopOrderId, row -> row));
+        List<OrderDetailsResponse.ShopGroup> shopGroups =
+                readShopGroups(customerId, orderId, itemsByShop, deliveriesByShop);
         List<OrderDetailsResponse.PaymentInfo> paymentInfos = readPayments(customerId, orderId);
-        String stageCode = orders.findCustomerStage(orderId, customerId).orElseThrow(this::notFound);
+        String stageCode =
+                orders.findCustomerStage(orderId, customerId).orElseThrow(this::notFound);
         String stageLabel = CustomerOrderStage.valueOf(stageCode).label();
 
         return new OrderDetailsResponse(
-                orderId, order.getOrderCode(), stageLabel,
-                OrderLabels.payment(order.getPaymentStatus()), address.getRecipientName(), address.getPhone(),
-                addressText(address), order.getSubtotal(), order.getDiscountTotal(), order.getShippingFee(),
-                order.getGrandTotal(), OrderLabels.local(order.getPlacedAt()), shopGroups, paymentInfos);
+                orderId,
+                order.getOrderCode(),
+                stageLabel,
+                OrderLabels.payment(order.getPaymentStatus()),
+                address.getRecipientName(),
+                address.getPhone(),
+                addressText(address),
+                order.getSubtotal(),
+                order.getDiscountTotal(),
+                order.getShippingFee(),
+                order.getGrandTotal(),
+                OrderLabels.local(order.getPlacedAt()),
+                shopGroups,
+                paymentInfos);
     }
 
-    private List<OrderDetailsResponse.ShopGroup> readShopGroups(Long customerId, Long orderId,
-            Map<Long, List<OrderDetailsResponse.Item>> itemsByShop, Map<Long, DeliverySummary> deliveriesByShop) {
+    private List<OrderDetailsResponse.ShopGroup> readShopGroups(
+            Long customerId,
+            Long orderId,
+            Map<Long, List<OrderDetailsResponse.Item>> itemsByShop,
+            Map<Long, DeliverySummary> deliveriesByShop) {
         List<OrderDetailsResponse.ShopGroup> groups = new ArrayList<>();
         for (ShopSummary shop : reads.findShops(customerId, orderId)) {
-            List<OrderDetailsResponse.Item> shopItems = List.copyOf(itemsByShop.getOrDefault(shop.getShopOrderId(), List.of()));
+            List<OrderDetailsResponse.Item> shopItems =
+                    List.copyOf(itemsByShop.getOrDefault(shop.getShopOrderId(), List.of()));
             DeliverySummary delivery = deliveriesByShop.get(shop.getShopOrderId());
-            OrderDetailsResponse.ShopGroup group = new OrderDetailsResponse.ShopGroup(
-                    shop.getShopOrderId(), shop.getShopName(), OrderLabels.shop(shop.getStatus()),
-                    shop.getShippingFee(), shop.getTotalAmount(), shopItems,
-                    shop.getSubtotal(), shop.getDiscountTotal(), shop.getStatus(), deliveryInfo(delivery));
+            OrderDetailsResponse.ShopGroup group =
+                    new OrderDetailsResponse.ShopGroup(
+                            shop.getShopOrderId(),
+                            shop.getShopName(),
+                            OrderLabels.shop(shop.getStatus()),
+                            shop.getShippingFee(),
+                            shop.getTotalAmount(),
+                            shopItems,
+                            shop.getSubtotal(),
+                            shop.getDiscountTotal(),
+                            shop.getStatus(),
+                            deliveryInfo(delivery));
             groups.add(group);
         }
         return List.copyOf(groups);
@@ -79,11 +106,18 @@ public class CustomerOrderQueryServiceImpl implements CustomerOrderQueryService 
     private List<OrderDetailsResponse.PaymentInfo> readPayments(Long customerId, Long orderId) {
         List<OrderDetailsResponse.PaymentInfo> result = new ArrayList<>();
         for (PaymentSummary payment : reads.findPayments(customerId, orderId)) {
-            OrderDetailsResponse.PaymentInfo info = new OrderDetailsResponse.PaymentInfo(
-                    payment.getPaymentId(), payment.getMethodName(), payment.getMethodCode(),
-                    payment.getStatus().name(), OrderLabels.paymentTransaction(payment.getStatus(), payment.getMethodCode()),
-                    payment.getAmount(), OrderLabels.local(payment.getPaidAt()),
-                    OrderLabels.local(payment.getCreatedAt()), payment.getTransactionReference());
+            OrderDetailsResponse.PaymentInfo info =
+                    new OrderDetailsResponse.PaymentInfo(
+                            payment.getPaymentId(),
+                            payment.getMethodName(),
+                            payment.getMethodCode(),
+                            payment.getStatus().name(),
+                            OrderLabels.paymentTransaction(
+                                    payment.getStatus(), payment.getMethodCode()),
+                            payment.getAmount(),
+                            OrderLabels.local(payment.getPaidAt()),
+                            OrderLabels.local(payment.getCreatedAt()),
+                            payment.getTransactionReference());
             result.add(info);
         }
         return List.copyOf(result);
@@ -93,19 +127,27 @@ public class CustomerOrderQueryServiceImpl implements CustomerOrderQueryService 
         if (row == null) {
             return null;
         }
-        String label = switch (row.getStatus()) {
-            case "FAILED" -> "Giao hàng thất bại";
-            case "REDELIVERY_SCHEDULED" -> "Chờ giao lại";
-            case "DELIVERED" -> "Đã giao hàng";
-            default -> OrderLabels.delivery(row.getStatus());
-        };
+        String label =
+                switch (row.getStatus()) {
+                    case "FAILED" -> "Giao hàng thất bại";
+                    case "REDELIVERY_SCHEDULED" -> "Chờ giao lại";
+                    case "DELIVERED" -> "Đã giao hàng";
+                    default -> OrderLabels.delivery(row.getStatus());
+                };
         String reason = null;
-        if ("FAILED".equals(row.getStatus()) && row.getFailureReason() != null && !row.getFailureReason().isBlank()) {
+        if ("FAILED".equals(row.getStatus())
+                && row.getFailureReason() != null
+                && !row.getFailureReason().isBlank()) {
             reason = row.getFailureReason().strip();
         }
-        return new OrderDetailsResponse.DeliveryInfo(row.getStatus(), label, OrderLabels.local(row.getAssignedAt()),
-                OrderLabels.local(row.getPickedUpAt()), OrderLabels.local(row.getDeliveredAt()),
-                OrderLabels.local(row.getRedeliveryScheduledAt()), reason);
+        return new OrderDetailsResponse.DeliveryInfo(
+                row.getStatus(),
+                label,
+                OrderLabels.local(row.getAssignedAt()),
+                OrderLabels.local(row.getPickedUpAt()),
+                OrderLabels.local(row.getDeliveredAt()),
+                OrderLabels.local(row.getRedeliveryScheduledAt()),
+                reason);
     }
 
     private Map<Long, List<OrderDetailsResponse.Item>> groupItems(Long customerId, Long orderId) {
@@ -115,9 +157,16 @@ public class CustomerOrderQueryServiceImpl implements CustomerOrderQueryService 
             if (image == null || image.isBlank()) {
                 image = null;
             }
-            OrderDetailsResponse.Item item = new OrderDetailsResponse.Item(
-                    row.getProductName(), row.getVariantName(), row.getSku(), image,
-                    row.getQuantity(), row.getUnitPrice(), row.getTotalAmount(), row.getDiscountAmount());
+            OrderDetailsResponse.Item item =
+                    new OrderDetailsResponse.Item(
+                            row.getProductName(),
+                            row.getVariantName(),
+                            row.getSku(),
+                            image,
+                            row.getQuantity(),
+                            row.getUnitPrice(),
+                            row.getTotalAmount(),
+                            row.getDiscountAmount());
             List<OrderDetailsResponse.Item> shopItems = itemsByShop.get(row.getShopOrderId());
             if (shopItems == null) {
                 shopItems = new ArrayList<>();

@@ -18,9 +18,7 @@ public class CartDto {
     private Long cartId;
     private Long userId;
     private String status;
-    @Builder.Default
-    private List<CartItemDto> items = new ArrayList<>();
-
+    @Builder.Default private List<CartItemDto> items = new ArrayList<>();
 
     private long totalItems;
 

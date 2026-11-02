@@ -91,27 +91,47 @@ public class CheckoutServiceImpl implements CheckoutService {
     @Override
     @Transactional(readOnly = true)
     public CheckoutPreview preview(Long customerId, List<Long> selectedItemIds) {
-        CartDto selectedCart = selectCartItems(cartService.getActiveCart(customerId), selectedItemIds);
+        CartDto selectedCart =
+                selectCartItems(cartService.getActiveCart(customerId), selectedItemIds);
         return previewForSelection(customerId, selectedCart);
     }
 
     private CheckoutPreview previewForSelection(Long customerId, CartDto selectedCart) {
         List<CheckoutPreview.AddressOption> addressOptions = new ArrayList<>();
-        for (Address address : checkoutAddressRepository.findByUserUserIdOrderByIsDefaultDescAddressIdAsc(customerId)) {
-            addressOptions.add(new CheckoutPreview.AddressOption(
-                    address.getAddressId(), address.getRecipientName(), address.getPhone(),
-                    formatAddress(address), address.getIsDefault(),
-                    customerAddressService.isDeliveryLocationComplete(address)
-            ));
+        for (Address address :
+                checkoutAddressRepository.findByUserUserIdOrderByIsDefaultDescAddressIdAsc(
+                        customerId)) {
+            addressOptions.add(
+                    new CheckoutPreview.AddressOption(
+                            address.getAddressId(),
+                            address.getRecipientName(),
+                            address.getPhone(),
+                            formatAddress(address),
+                            address.getIsDefault(),
+                            customerAddressService.isDeliveryLocationComplete(address)));
         }
-        boolean codAvailable = paymentMethodRepository.findByMethodCodeAndStatus("COD", "ACTIVE").isPresent();
+        boolean codAvailable =
+                paymentMethodRepository.findByMethodCodeAndStatus("COD", "ACTIVE").isPresent();
         // Phí giao hàng sẽ được bổ sung sau khi khách chọn địa chỉ nhận hàng.
-        return new CheckoutPreview(selectedCart, List.copyOf(addressOptions), null, Map.of(), null, null,
-                codAvailable, vnpayProperties.isReady() && paymentMethodRepository.findByMethodCodeAndStatus("BANK_TRANSFER", "ACTIVE").isPresent(), createCartFingerprint(selectedCart), null, false);
+        return new CheckoutPreview(
+                selectedCart,
+                List.copyOf(addressOptions),
+                null,
+                Map.of(),
+                null,
+                null,
+                codAvailable,
+                vnpayProperties.isReady()
+                        && paymentMethodRepository
+                                .findByMethodCodeAndStatus("BANK_TRANSFER", "ACTIVE")
+                                .isPresent(),
+                createCartFingerprint(selectedCart),
+                null,
+                false);
     }
 
     @Override
-    @Transactional(readOnly=true)
+    @Transactional(readOnly = true)
     public CheckoutPreview previewBuyNow(Long customerId, Long variantId, Integer quantity) {
         CartItem item = buyNowItem(variantId, quantity);
         return previewForSelection(customerId, buyNowCart(customerId, item));
@@ -120,17 +140,32 @@ public class CheckoutServiceImpl implements CheckoutService {
     private CartItem buyNowItem(Long variantId, Integer quantity) {
         if (variantId == null || variantId < 1 || quantity == null || quantity < 1)
             throw new CheckoutException("Sản phẩm hoặc số lượng mua ngay không hợp lệ.");
-        var variant=buyNowVariants.findById(variantId).orElseThrow(() -> new CheckoutException("Sản phẩm không còn tồn tại."));
-        var item=new CartItem(); item.setCartItemId(variantId); item.setVariant(variant);
-        item.setQuantity(quantity); item.setUnitPriceSnapshot(variant.getPrice());
+        var variant =
+                buyNowVariants
+                        .findById(variantId)
+                        .orElseThrow(() -> new CheckoutException("Sản phẩm không còn tồn tại."));
+        var item = new CartItem();
+        item.setCartItemId(variantId);
+        item.setVariant(variant);
+        item.setQuantity(quantity);
+        item.setUnitPriceSnapshot(variant.getPrice());
         return item;
     }
 
     private CartDto buyNowCart(Long customerId, CartItem item) {
-        var dto=VietFreshHub.cart.service.CartViewMapper.toCartItem(item,
-                buyNowStock.getAvailableStockByVariantId(item.getVariant().getVariantId()), catalogService.isPurchasable(item.getVariant()));
-        return CartDto.builder().userId(customerId).status("BUY_NOW").items(List.of(dto))
-                .totalItems(item.getQuantity()).totalAmount(dto.getItemSubtotal()).hasUnavailableItems(!dto.isPurchasable()).build();
+        var dto =
+                VietFreshHub.cart.service.CartViewMapper.toCartItem(
+                        item,
+                        buyNowStock.getAvailableStockByVariantId(item.getVariant().getVariantId()),
+                        catalogService.isPurchasable(item.getVariant()));
+        return CartDto.builder()
+                .userId(customerId)
+                .status("BUY_NOW")
+                .items(List.of(dto))
+                .totalItems(item.getQuantity())
+                .totalAmount(dto.getItemSubtotal())
+                .hasUnavailableItems(!dto.isPurchasable())
+                .build();
     }
 
     @Override
@@ -140,7 +175,8 @@ public class CheckoutServiceImpl implements CheckoutService {
         validateDraft(customerId, draft, request);
         User buyer = lockBuyer(customerId);
         String orderCode = "VF-" + draft.token();
-        Optional<Order> existingOrder = orderRepository.findByOrderCodeAndCustomerUserId(orderCode, customerId);
+        Optional<Order> existingOrder =
+                orderRepository.findByOrderCodeAndCustomerUserId(orderCode, customerId);
         if (existingOrder.isPresent()) {
             return toCheckoutResult(existingOrder.get());
         }
@@ -149,36 +185,50 @@ public class CheckoutServiceImpl implements CheckoutService {
         PaymentMethod paymentMethod = requirePaymentMethod(request.getPaymentMethodCode());
         Address deliveryAddress = lockAddress(customerId, request.getAddressId());
         Cart cart = draft.buyNow() ? null : requireActiveCart(customerId, draft.cartId());
-        List<CartItem> selectedItems = draft.buyNow() ? List.of(buyNowItem(draft.buyNowVariantId(), draft.buyNowQuantity())) : requireSelectedItems(cart, draft.selectedItemIds());
+        List<CartItem> selectedItems =
+                draft.buyNow()
+                        ? List.of(buyNowItem(draft.buyNowVariantId(), draft.buyNowQuantity()))
+                        : requireSelectedItems(cart, draft.selectedItemIds());
         validateCurrentItems(customerId, draft, selectedItems);
         Map<Long, List<CartItem>> itemsByShopId = groupItemsByShop(selectedItems);
         BigDecimal subtotal = calculateSubtotal(selectedItems);
-        BigDecimal shippingFee = shippingQuoteService.validateForConfirmation(
-                draft, deliveryAddress, itemsByShopId.keySet());
+        BigDecimal shippingFee =
+                shippingQuoteService.validateForConfirmation(
+                        draft, deliveryAddress, itemsByShopId.keySet());
 
         // 3. Tạo đơn tổng, đơn từng shop, giữ kho và ghi nhận payment theo phương thức đã chọn.
-        Order order = checkoutOrderService.createOrder(buyer, orderCode, subtotal, shippingFee, deliveryAddress);
-        if ("BANK_TRANSFER".equals(paymentMethod.getMethodCode())) order.setPaymentStatus("PENDING");
-        CheckoutOrderService.CreatedShopOrders createdShopOrders = checkoutOrderService.createShopOrders(order, buyer, itemsByShopId, draft.shopQuotes());
+        Order order =
+                checkoutOrderService.createOrder(
+                        buyer, orderCode, subtotal, shippingFee, deliveryAddress);
+        if ("BANK_TRANSFER".equals(paymentMethod.getMethodCode()))
+            order.setPaymentStatus("PENDING");
+        CheckoutOrderService.CreatedShopOrders createdShopOrders =
+                checkoutOrderService.createShopOrders(
+                        order, buyer, itemsByShopId, draft.shopQuotes());
         inventoryReservationService.reserve(createdShopOrders.reservations(), customerId);
         if ("BANK_TRANSFER".equals(paymentMethod.getMethodCode())) {
             for (Long shopOrderId : createdShopOrders.shopOrderIds()) {
-                entityManager.getReference(VietFreshHub.order.entity.ShopOrder.class, shopOrderId).setPaymentStatus("PENDING");
+                entityManager
+                        .getReference(VietFreshHub.order.entity.ShopOrder.class, shopOrderId)
+                        .setPaymentStatus("PENDING");
             }
         }
 
         if (request.getCouponCode() != null && !request.getCouponCode().isBlank()) {
             try {
-                couponApplicationService.applyToOrder(customerId, order.getOrderId(), request.getCouponCode());
+                couponApplicationService.applyToOrder(
+                        customerId, order.getOrderId(), request.getCouponCode());
             } catch (IllegalArgumentException ex) {
                 throw new CheckoutException(ex.getMessage());
             }
         }
         BigDecimal rewardAmountToUse = request.getRewardAmountToUse();
-        if (rewardAmountToUse == null || rewardAmountToUse.signum() < 0
+        if (rewardAmountToUse == null
+                || rewardAmountToUse.signum() < 0
                 || rewardAmountToUse.stripTrailingZeros().scale() > 0
                 || rewardAmountToUse.compareTo(new BigDecimal("9999999999999999")) > 0) {
-            throw new CheckoutException("Tiền thưởng phải là số đồng nguyên không âm, tối đa 16 chữ số");
+            throw new CheckoutException(
+                    "Tiền thưởng phải là số đồng nguyên không âm, tối đa 16 chữ số");
         }
         if (rewardAmountToUse.signum() > 0) {
             try {
@@ -203,29 +253,44 @@ public class CheckoutServiceImpl implements CheckoutService {
         }
         // flush chưa phải commit; consumer gửi thông báo cần xử lý AFTER_COMMIT.
         entityManager.flush();
-        eventPublisher.publishEvent(new OrderPlacedEvent(
-                order.getOrderId(), customerId, List.copyOf(createdShopOrders.shopOrderIds())));
-        return new CheckoutResult(order.getOrderId(), order.getOrderCode(), order.getGrandTotal(),
-                payment.getPaymentId(), paymentMethod.getMethodCode());
+        eventPublisher.publishEvent(
+                new OrderPlacedEvent(
+                        order.getOrderId(),
+                        customerId,
+                        List.copyOf(createdShopOrders.shopOrderIds())));
+        return new CheckoutResult(
+                order.getOrderId(),
+                order.getOrderCode(),
+                order.getGrandTotal(),
+                payment.getPaymentId(),
+                paymentMethod.getMethodCode());
     }
 
     // Kiểm tra và khóa dữ liệu trước khi tạo đơn.
 
     private void validateDraft(Long customerId, CheckoutDraft draft, CheckoutRequest request) {
-        if (customerId == null || draft == null || request == null || !customerId.equals(draft.customerId())
-                || !Objects.equals(draft.token(), request.getCheckoutToken()) || draft.token() == null
+        if (customerId == null
+                || draft == null
+                || request == null
+                || !customerId.equals(draft.customerId())
+                || !Objects.equals(draft.token(), request.getCheckoutToken())
+                || draft.token() == null
                 || !draft.token().matches("[0-9a-f]{32}")) {
             throw new CheckoutException("Phiên đặt hàng không hợp lệ. Vui lòng tải lại trang.");
         }
-        if (request.getAddressId() == null || !Objects.equals(request.getAddressId(), draft.addressId())) {
-            throw new CheckoutException("Địa chỉ nhận hàng khác với báo giá. Vui lòng tính lại phí giao hàng trước khi xác nhận.");
+        if (request.getAddressId() == null
+                || !Objects.equals(request.getAddressId(), draft.addressId())) {
+            throw new CheckoutException(
+                    "Địa chỉ nhận hàng khác với báo giá. Vui lòng tính lại phí giao hàng trước khi xác nhận.");
         }
     }
 
     private User lockBuyer(Long customerId) {
         // Khóa user để các yêu cầu của cùng một khách không sửa giỏ/đặt đơn đồng thời.
-        User buyer = userRepository.findByUserIdForUpdate(customerId)
-                .orElseThrow(() -> new CheckoutException("Tài khoản không hợp lệ."));
+        User buyer =
+                userRepository
+                        .findByUserIdForUpdate(customerId)
+                        .orElseThrow(() -> new CheckoutException("Tài khoản không hợp lệ."));
         entityManager.refresh(buyer, LockModeType.PESSIMISTIC_WRITE);
         if (!"ACTIVE".equals(buyer.getStatus())) {
             throw new CheckoutException("Tài khoản không còn được phép đặt hàng.");
@@ -234,13 +299,21 @@ public class CheckoutServiceImpl implements CheckoutService {
     }
 
     private PaymentMethod requirePaymentMethod(String methodCode) {
-        if(methodCode==null || !Set.of("COD","BANK_TRANSFER").contains(methodCode)) throw new CheckoutException("Vui lòng chọn phương thức thanh toán hợp lệ.");
-        if("BANK_TRANSFER".equals(methodCode) && !vnpayProperties.isReady())
-            throw new CheckoutException("Chuyển khoản qua VNPAY chưa được cấu hình. Vui lòng chọn COD hoặc thử lại sau.");
-        var method=paymentMethodRepository.findByMethodCodeAndStatus(methodCode,"ACTIVE")
-                .orElseThrow(() -> new CheckoutException("Phương thức thanh toán hiện chưa khả dụng."));
-        entityManager.refresh(method,LockModeType.PESSIMISTIC_READ);
-        if(!"ACTIVE".equals(method.getStatus())) throw new CheckoutException("Phương thức thanh toán hiện chưa khả dụng.");
+        if (methodCode == null || !Set.of("COD", "BANK_TRANSFER").contains(methodCode))
+            throw new CheckoutException("Vui lòng chọn phương thức thanh toán hợp lệ.");
+        if ("BANK_TRANSFER".equals(methodCode) && !vnpayProperties.isReady())
+            throw new CheckoutException(
+                    "Chuyển khoản qua VNPAY chưa được cấu hình. Vui lòng chọn COD hoặc thử lại sau.");
+        var method =
+                paymentMethodRepository
+                        .findByMethodCodeAndStatus(methodCode, "ACTIVE")
+                        .orElseThrow(
+                                () ->
+                                        new CheckoutException(
+                                                "Phương thức thanh toán hiện chưa khả dụng."));
+        entityManager.refresh(method, LockModeType.PESSIMISTIC_READ);
+        if (!"ACTIVE".equals(method.getStatus()))
+            throw new CheckoutException("Phương thức thanh toán hiện chưa khả dụng.");
         return method;
     }
 
@@ -256,16 +329,23 @@ public class CheckoutServiceImpl implements CheckoutService {
             throw new CheckoutException("Địa chỉ nhận hàng không hợp lệ.");
         }
         if (!customerAddressService.isDeliveryLocationComplete(address)) {
-            throw new CheckoutException("Địa chỉ nhận hàng chưa đủ thông tin vị trí. Vui lòng cập nhật địa chỉ bằng cách chọn gợi ý VietMap trong mục Địa chỉ giao hàng.");
+            throw new CheckoutException(
+                    "Địa chỉ nhận hàng chưa đủ thông tin vị trí. Vui lòng cập nhật địa chỉ bằng cách chọn gợi ý VietMap trong mục Địa chỉ giao hàng.");
         }
         return address;
     }
 
     private Cart requireActiveCart(Long customerId, Long cartId) {
-        Cart cart = cartRepository.findByUserUserIdAndStatus(customerId,"ACTIVE")
-                .orElseThrow(() -> new CheckoutException("Giỏ hàng đang trống hoặc đã được đặt hàng."));
+        Cart cart =
+                cartRepository
+                        .findByUserUserIdAndStatus(customerId, "ACTIVE")
+                        .orElseThrow(
+                                () ->
+                                        new CheckoutException(
+                                                "Giỏ hàng đang trống hoặc đã được đặt hàng."));
         if (!Objects.equals(cart.getCartId(), cartId) || cart.getItems().isEmpty()) {
-            throw new CheckoutException("Giỏ hàng đã thay đổi. Vui lòng xem lại trước khi đặt hàng.");
+            throw new CheckoutException(
+                    "Giỏ hàng đã thay đổi. Vui lòng xem lại trước khi đặt hàng.");
         }
         return cart;
     }
@@ -287,18 +367,28 @@ public class CheckoutServiceImpl implements CheckoutService {
         return selected;
     }
 
-    private void validateCurrentItems(Long customerId, CheckoutDraft draft, List<CartItem> selectedItems) {
+    private void validateCurrentItems(
+            Long customerId, CheckoutDraft draft, List<CartItem> selectedItems) {
         lockCatalog(selectedItems);
         for (CartItem item : selectedItems) {
-            if (item.getQuantity() == null || item.getQuantity() < 1 || !catalogService.isPurchasable(item.getVariant())) {
-                throw new CheckoutException(item.getVariant().getProduct().getName() + " — "
-                        + item.getVariant().getVariantName()
-                        + ": sản phẩm hoặc cửa hàng không còn nhận đơn. Vui lòng kiểm tra lại giỏ.");
+            if (item.getQuantity() == null
+                    || item.getQuantity() < 1
+                    || !catalogService.isPurchasable(item.getVariant())) {
+                throw new CheckoutException(
+                        item.getVariant().getProduct().getName()
+                                + " — "
+                                + item.getVariant().getVariantName()
+                                + ": sản phẩm hoặc cửa hàng không còn nhận đơn. Vui lòng kiểm tra lại giỏ.");
             }
         }
-        CartDto currentSelection = draft.buyNow() ? buyNowCart(customerId, selectedItems.getFirst()) : selectCartItems(cartService.getActiveCart(customerId), draft.selectedItemIds());
+        CartDto currentSelection =
+                draft.buyNow()
+                        ? buyNowCart(customerId, selectedItems.getFirst())
+                        : selectCartItems(
+                                cartService.getActiveCart(customerId), draft.selectedItemIds());
         if (!createCartFingerprint(currentSelection).equals(draft.fingerprint())) {
-            throw new CheckoutException("Giá hoặc số lượng trong giỏ vừa thay đổi. Vui lòng xem lại đơn và xác nhận lần nữa.");
+            throw new CheckoutException(
+                    "Giá hoặc số lượng trong giỏ vừa thay đổi. Vui lòng xem lại đơn và xác nhận lần nữa.");
         }
     }
 
@@ -330,7 +420,8 @@ public class CheckoutServiceImpl implements CheckoutService {
             }
         }
         for (Long applicationId : applicationIds) {
-            SellerApplication application = entityManager.getReference(SellerApplication.class, applicationId);
+            SellerApplication application =
+                    entityManager.getReference(SellerApplication.class, applicationId);
             entityManager.refresh(application, LockModeType.PESSIMISTIC_READ);
         }
         for (CatalogProduct product : productsById.values()) {
@@ -343,27 +434,51 @@ public class CheckoutServiceImpl implements CheckoutService {
         // Quan hệ shop/product có thể đã đổi trước khi lấy khóa.
         for (CatalogProduct product : productsById.values()) {
             if (!shopsById.containsKey(product.getShop().getShopId())) {
-                throw new CheckoutException("Sản phẩm vừa thay đổi cửa hàng. Vui lòng kiểm tra lại giỏ.");
+                throw new CheckoutException(
+                        "Sản phẩm vừa thay đổi cửa hàng. Vui lòng kiểm tra lại giỏ.");
             }
         }
         for (CatalogVariant variant : variantsById.values()) {
             if (!productsById.containsKey(variant.getProduct().getProductId())) {
-                throw new CheckoutException("Sản phẩm vừa thay đổi cửa hàng. Vui lòng kiểm tra lại giỏ.");
+                throw new CheckoutException(
+                        "Sản phẩm vừa thay đổi cửa hàng. Vui lòng kiểm tra lại giỏ.");
             }
         }
     }
 
     private CheckoutResult toCheckoutResult(Order order) {
-        Payment payment=paymentRepository.findTopByOrderOrderIdAndProviderOrderByPaymentIdDesc(order.getOrderId(),"VNPAY")
-                .or(() -> paymentRepository.findTopByOrderOrderIdAndPaymentMethodMethodCodeOrderByPaymentIdDesc(order.getOrderId(),"VNPAY"))
-                .orElseGet(() -> paymentRepository.findByOrderOrderIdOrderByPaymentIdAsc(order.getOrderId()).stream().findFirst()
-                        .orElseThrow(() -> new CheckoutException("Không tìm thấy bản ghi thanh toán của đơn hàng.")));
-        return result(order,payment);
+        Payment payment =
+                paymentRepository
+                        .findTopByOrderOrderIdAndProviderOrderByPaymentIdDesc(
+                                order.getOrderId(), "VNPAY")
+                        .or(
+                                () ->
+                                        paymentRepository
+                                                .findTopByOrderOrderIdAndPaymentMethodMethodCodeOrderByPaymentIdDesc(
+                                                        order.getOrderId(), "VNPAY"))
+                        .orElseGet(
+                                () ->
+                                        paymentRepository
+                                                .findByOrderOrderIdOrderByPaymentIdAsc(
+                                                        order.getOrderId())
+                                                .stream()
+                                                .findFirst()
+                                                .orElseThrow(
+                                                        () ->
+                                                                new CheckoutException(
+                                                                        "Không tìm thấy bản ghi thanh toán của đơn hàng.")));
+        return result(order, payment);
     }
-    private CheckoutResult result(Order order,Payment payment) {
-        return new CheckoutResult(order.getOrderId(),order.getOrderCode(),order.getGrandTotal(),payment.getPaymentId(),
+
+    private CheckoutResult result(Order order, Payment payment) {
+        return new CheckoutResult(
+                order.getOrderId(),
+                order.getOrderCode(),
+                order.getGrandTotal(),
+                payment.getPaymentId(),
                 payment.getPaymentMethod().getMethodCode());
     }
+
     private String formatAddress(Address address) {
         if (address.getFormattedAddress() != null && !address.getFormattedAddress().isBlank()) {
             return address.getFormattedAddress();
@@ -377,7 +492,8 @@ public class CheckoutServiceImpl implements CheckoutService {
                 }
             }
         }
-        for (String part : Arrays.asList(address.getWard(), address.getDistrict(), address.getProvince())) {
+        for (String part :
+                Arrays.asList(address.getWard(), address.getDistrict(), address.getProvince())) {
             if (part == null || part.isBlank()) {
                 continue;
             }
@@ -395,5 +511,4 @@ public class CheckoutServiceImpl implements CheckoutService {
         }
         return String.join(", ", parts);
     }
-
 }

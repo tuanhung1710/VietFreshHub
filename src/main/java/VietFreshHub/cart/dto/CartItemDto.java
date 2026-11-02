@@ -26,7 +26,6 @@ public class CartItemDto {
     private String shopName;
     private String productName;
 
-
     private boolean purchasable;
 
     private boolean quantityEditable;

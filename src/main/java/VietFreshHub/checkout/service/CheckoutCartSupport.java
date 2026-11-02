@@ -20,8 +20,7 @@ import java.util.TreeMap;
 
 /** Các phép tính và thao tác trên giỏ, không đọc hoặc ghi cơ sở dữ liệu. */
 public final class CheckoutCartSupport {
-    private CheckoutCartSupport() {
-    }
+    private CheckoutCartSupport() {}
 
     public static Map<Long, List<CartItem>> groupItemsByShop(List<CartItem> selectedItems) {
         Map<Long, List<CartItem>> itemsByShopId = new TreeMap<>();
@@ -106,11 +105,16 @@ public final class CheckoutCartSupport {
         sortedItems.sort(Comparator.comparing(CartItemDto::getCartItemId));
         StringBuilder cartSignature = new StringBuilder(String.valueOf(cart.getCartId()));
         for (CartItemDto item : sortedItems) {
-            cartSignature.append('|')
-                    .append(item.getCartItemId()).append(':')
-                    .append(item.getVariantId()).append(':')
-                    .append(item.getQuantity()).append(':')
-                    .append(item.getUnitPriceSnapshot().stripTrailingZeros().toPlainString()).append(':')
+            cartSignature
+                    .append('|')
+                    .append(item.getCartItemId())
+                    .append(':')
+                    .append(item.getVariantId())
+                    .append(':')
+                    .append(item.getQuantity())
+                    .append(':')
+                    .append(item.getUnitPriceSnapshot().stripTrailingZeros().toPlainString())
+                    .append(':')
                     .append(item.getShopId());
         }
         try {

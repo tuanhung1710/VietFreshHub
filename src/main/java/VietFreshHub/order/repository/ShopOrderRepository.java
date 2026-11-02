@@ -22,21 +22,27 @@ import java.util.Optional;
 import java.time.LocalDateTime;
 
 @Repository
-public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, JpaSpecificationExecutor<ShopOrder> {
+public interface ShopOrderRepository
+        extends JpaRepository<ShopOrder, Long>, JpaSpecificationExecutor<ShopOrder> {
 
     interface SalesTotals {
         java.math.BigDecimal getSalesAmount();
+
         java.math.BigDecimal getDiscounts();
+
         java.math.BigDecimal getShippingFees();
+
         Long getCompletedOrders();
     }
 
     interface StatusCount {
         String getStatus();
+
         Long getOrderCount();
     }
 
-    @Query("""
+    @Query(
+            """
             select coalesce(sum(s.subtotal), 0) as salesAmount,
                    coalesce(sum(s.discountTotal), 0) as discounts,
                    coalesce(sum(s.shippingFee), 0) as shippingFees,
@@ -45,55 +51,77 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, Jpa
             where s.shopId = :shopId and s.status = 'COMPLETED'
               and s.completedAt >= :from and s.completedAt < :to
             """)
-    SalesTotals getCompletedSalesTotals(@Param("shopId") Long shopId,
-                                       @Param("from") LocalDateTime from,
-                                       @Param("to") LocalDateTime to);
+    SalesTotals getCompletedSalesTotals(
+            @Param("shopId") Long shopId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
 
-    @Query("""
+    @Query(
+            """
             select s.status as status, count(s) as orderCount
             from ShopOrder s join s.order o
             where s.shopId = :shopId and o.placedAt >= :from and o.placedAt < :to
             group by s.status order by s.status
             """)
-    List<StatusCount> getOrderCountsByStatus(@Param("shopId") Long shopId,
-                                             @Param("from") LocalDateTime from,
-                                             @Param("to") LocalDateTime to);
+    List<StatusCount> getOrderCountsByStatus(
+            @Param("shopId") Long shopId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
 
-    @Query("""
+    @Query(
+            """
             select count(distinct o.customer.userId)
             from ShopOrder s join s.order o
             where s.shopId = :shopId and o.placedAt >= :from and o.placedAt < :to
             """)
-    long countDistinctCustomers(@Param("shopId") Long shopId,
-                                @Param("from") LocalDateTime from,
-                                @Param("to") LocalDateTime to);
-    String CUSTOMER_HISTORY_FROM = "from ShopOrder s join s.order o left join OrderDeliveryView d on d.shopOrder = s "
-            + "where o.customer.userId = :customerId "
-            + "and (:status = '' or (" + OrderRepository.CUSTOMER_SHOP_STATUS + ") = :status) "
-            + "and (:keyword = '' or s.shopOrderId = :referenceId "
-            + "or (:referenceId is null and concat('vfh-', case when length(cast(s.shopOrderId as String)) < 6 "
-            + "then substring(concat('000000', cast(s.shopOrderId as String)), length(cast(s.shopOrderId as String)) + 1, 6) "
-            + "else cast(s.shopOrderId as String) end) like :keywordPattern escape '!') "
-            + "or locate(lower(:keyword),lower(o.orderCode)) > 0) "
-            + "and (:fromDate is null or o.placedAt >= :fromDate) "
-            + "and (:untilDate is null or o.placedAt < :untilDate) ";
+    long countDistinctCustomers(
+            @Param("shopId") Long shopId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
 
-    @Query(value = "select new VietFreshHub.order.dto.ShopOrderListRow(s.shopOrderId,o.orderId,"
-            + "s.shop.shopName," + OrderRepository.CUSTOMER_SHOP_STATUS + ",s.paymentStatus,s.totalAmount,o.placedAt) "
-            + CUSTOMER_HISTORY_FROM + "order by o.placedAt desc,s.shopOrderId desc",
+    String CUSTOMER_HISTORY_FROM =
+            "from ShopOrder s join s.order o left join OrderDeliveryView d on d.shopOrder = s "
+                    + "where o.customer.userId = :customerId "
+                    + "and (:status = '' or ("
+                    + OrderRepository.CUSTOMER_SHOP_STATUS
+                    + ") = :status) "
+                    + "and (:keyword = '' or s.shopOrderId = :referenceId "
+                    + "or (:referenceId is null and concat('vfh-', case when length(cast(s.shopOrderId as String)) < 6 "
+                    + "then substring(concat('000000', cast(s.shopOrderId as String)), length(cast(s.shopOrderId as String)) + 1, 6) "
+                    + "else cast(s.shopOrderId as String) end) like :keywordPattern escape '!') "
+                    + "or locate(lower(:keyword),lower(o.orderCode)) > 0) "
+                    + "and (:fromDate is null or o.placedAt >= :fromDate) "
+                    + "and (:untilDate is null or o.placedAt < :untilDate) ";
+
+    @Query(
+            value =
+                    "select new VietFreshHub.order.dto.ShopOrderListRow(s.shopOrderId,o.orderId,"
+                            + "s.shop.shopName,"
+                            + OrderRepository.CUSTOMER_SHOP_STATUS
+                            + ",s.paymentStatus,s.totalAmount,o.placedAt) "
+                            + CUSTOMER_HISTORY_FROM
+                            + "order by o.placedAt desc,s.shopOrderId desc",
             countQuery = "select count(s.shopOrderId) " + CUSTOMER_HISTORY_FROM)
-    Page<ShopOrderListRow> findCustomerHistory(@Param("customerId") Long customerId, @Param("status") String status,
-            @Param("keyword") String keyword, @Param("keywordPattern") String keywordPattern, @Param("referenceId") Long referenceId,
-            @Param("fromDate") LocalDateTime fromDate, @Param("untilDate") LocalDateTime untilDate, Pageable pageable);
+    Page<ShopOrderListRow> findCustomerHistory(
+            @Param("customerId") Long customerId,
+            @Param("status") String status,
+            @Param("keyword") String keyword,
+            @Param("keywordPattern") String keywordPattern,
+            @Param("referenceId") Long referenceId,
+            @Param("fromDate") LocalDateTime fromDate,
+            @Param("untilDate") LocalDateTime untilDate,
+            Pageable pageable);
 
     @EntityGraph(attributePaths = {"order", "shop"})
     Optional<ShopOrder> findByShopOrderIdAndOrderCustomerUserId(Long shopOrderId, Long customerId);
 
-    @Query("select new VietFreshHub.order.dto.CustomerShopOrderStatus(s.order.orderId,s.shopOrderId,s.shop.shopName,"
-            + OrderRepository.CUSTOMER_SHOP_STATUS + ") from ShopOrder s left join OrderDeliveryView d on d.shopOrder = s "
-            + "where s.order.customer.userId = :customerId and s.shopOrderId in :shopOrderIds order by s.shopOrderId")
-    List<CustomerShopOrderStatus> findCustomerStatuses(@Param("customerId") Long customerId,
-            @Param("shopOrderIds") List<Long> shopOrderIds);
+    @Query(
+            "select new VietFreshHub.order.dto.CustomerShopOrderStatus(s.order.orderId,s.shopOrderId,s.shop.shopName,"
+                    + OrderRepository.CUSTOMER_SHOP_STATUS
+                    + ") from ShopOrder s left join OrderDeliveryView d on d.shopOrder = s "
+                    + "where s.order.customer.userId = :customerId and s.shopOrderId in :shopOrderIds order by s.shopOrderId")
+    List<CustomerShopOrderStatus> findCustomerStatuses(
+            @Param("customerId") Long customerId, @Param("shopOrderIds") List<Long> shopOrderIds);
 
     @Override
     @EntityGraph(attributePaths = {"order", "order.customer"})
@@ -107,12 +135,14 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, Jpa
     List<ShopOrder> findByOrderOrderIdOrderByShopOrderIdAsc(Long orderId);
 
     // Page IDs are already paginated; fetch one collection only, never paginate a collection fetch.
-    @org.springframework.data.jpa.repository.Query("select distinct s from ShopOrder s join fetch s.shop "
-            + "left join fetch s.items i left join fetch i.variant "
-            + "where s.order.customer.userId=:customerId and s.order.orderId in :orderIds order by s.shopOrderId")
+    @org.springframework.data.jpa.repository.Query(
+            "select distinct s from ShopOrder s join fetch s.shop "
+                    + "left join fetch s.items i left join fetch i.variant "
+                    + "where s.order.customer.userId=:customerId and s.order.orderId in :orderIds order by s.shopOrderId")
     List<ShopOrder> findCustomerHistoryShops(
             @org.springframework.data.repository.query.Param("customerId") Long customerId,
             @org.springframework.data.repository.query.Param("orderIds") List<Long> orderIds);
+
     @Query("select s from ShopOrder s where s.order.orderId = :orderId order by s.shopOrderId")
     List<ShopOrder> findForOrderNotification(@Param("orderId") Long orderId);
 
@@ -130,10 +160,12 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, Jpa
     @EntityGraph(attributePaths = {"order", "order.customer"})
     List<ShopOrder> findByShopIdAndStatus(Long shopId, String status);
 
-    List<ShopOrder> findByOrder_Customer_UserIdAndShopIdAndStatus(Long userId, Long shopId, String status);
+    List<ShopOrder> findByOrder_Customer_UserIdAndShopIdAndStatus(
+            Long userId, Long shopId, String status);
 
     @EntityGraph(attributePaths = {"order", "order.customer"})
-    List<ShopOrder> findByShopIdAndStatusInOrderByOrderPlacedAtDesc(Long shopId, Collection<String> statuses);
+    List<ShopOrder> findByShopIdAndStatusInOrderByOrderPlacedAtDesc(
+            Long shopId, Collection<String> statuses);
 
     @EntityGraph(attributePaths = {"order", "order.customer", "shop", "items"})
     Optional<ShopOrder> findByShopOrderIdAndShopId(Long shopOrderId, Long shopId);
@@ -142,6 +174,7 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, Jpa
     Optional<ShopOrder> findForUpdateByShopOrderIdAndShopId(Long shopOrderId, Long shopId);
 
     @EntityGraph(attributePaths = {"order", "order.customer"})
-    List<ShopOrder> findTop5ByShopIdAndOrder_PlacedAtGreaterThanEqualAndOrder_PlacedAtLessThanOrderByOrder_PlacedAtDesc(
-            Long shopId, LocalDateTime from, LocalDateTime to);
+    List<ShopOrder>
+            findTop5ByShopIdAndOrder_PlacedAtGreaterThanEqualAndOrder_PlacedAtLessThanOrderByOrder_PlacedAtDesc(
+                    Long shopId, LocalDateTime from, LocalDateTime to);
 }

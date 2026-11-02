@@ -1,4 +1,5 @@
 package VietFreshHub.order.entity;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,21 +9,51 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Nationalized;
 import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
+
 /** Read-only mapping for TV3 tracking; fulfillment mutations belong to TV4. */
-@Entity @Table(schema="dbo",name="deliveries") @Immutable
-@Getter @Setter @NoArgsConstructor
+@Entity
+@Table(schema = "dbo", name = "deliveries")
+@Immutable
+@Getter
+@Setter
+@NoArgsConstructor
 public class OrderDeliveryView {
-    @Id @GeneratedValue(strategy=GenerationType.IDENTITY) @Column(name="delivery_id") private Long deliveryId;
-    @ManyToOne(fetch=FetchType.LAZY,optional=false) @JoinColumn(name="shop_order_id",nullable=false,unique=true) private ShopOrder shopOrder;
-    @Column(nullable=false,length=30) private String status;
-    @Column(name="assigned_at") private LocalDateTime assignedAt;
-    @Column(name="picked_up_at") private LocalDateTime pickedUpAt;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "delivery_id")
+    private Long deliveryId;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "shop_order_id", nullable = false, unique = true)
+    private ShopOrder shopOrder;
+
+    @Column(nullable = false, length = 30)
+    private String status;
+
+    @Column(name = "assigned_at")
+    private LocalDateTime assignedAt;
+
+    @Column(name = "picked_up_at")
+    private LocalDateTime pickedUpAt;
+
     @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
-    @Column(name="delivered_at") private LocalDateTime deliveredAt;
-    @Nationalized @Column(name="failure_reason",length=1000) private String failureReason;
-    @Column(name="redelivery_requested_at") private LocalDateTime redeliveryRequestedAt;
+    @Column(name = "delivered_at")
+    private LocalDateTime deliveredAt;
+
+    @Nationalized
+    @Column(name = "failure_reason", length = 1000)
+    private String failureReason;
+
+    @Column(name = "redelivery_requested_at")
+    private LocalDateTime redeliveryRequestedAt;
+
     @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
-    @Column(name="redelivery_scheduled_at") private LocalDateTime redeliveryScheduledAt;
-    @Column(name="created_at",nullable=false) private LocalDateTime createdAt;
-    @Column(name="updated_at",nullable=false) private LocalDateTime updatedAt;
+    @Column(name = "redelivery_scheduled_at")
+    private LocalDateTime redeliveryScheduledAt;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 }

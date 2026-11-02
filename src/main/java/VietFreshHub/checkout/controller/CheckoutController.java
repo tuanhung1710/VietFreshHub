@@ -61,23 +61,25 @@ public class CheckoutController {
     private final CouponApplicationService couponApplicationService;
     private final LoyaltyService loyaltyService;
     private final VnpayPaymentService vnpayPayments;
+
     @InitBinder("addressForm")
     public void bindAddressForm(WebDataBinder binder) {
         binder.setAllowedFields("recipientName", "phone", "refId", "searchText", "checkoutToken");
     }
 
     @GetMapping
-    public String show(Authentication authentication,
-                       HttpSession session,
-                       Model model,
-                       @RequestParam(required = false) List<Long> itemIds,
-                       @RequestParam(defaultValue = "false") boolean selectionSubmitted,
-                       @RequestParam(required = false) String checkoutToken,
-                       @RequestParam(required = false) Long addressId,
-                       @RequestParam(required = false) Long buyNowVariantId,
-                       @RequestParam(required = false) Integer buyNowQuantity,
-                       @RequestParam(required = false) String couponCode,
-                       @RequestParam(defaultValue = "0") BigDecimal rewardAmountToUse) {
+    public String show(
+            Authentication authentication,
+            HttpSession session,
+            Model model,
+            @RequestParam(required = false) List<Long> itemIds,
+            @RequestParam(defaultValue = "false") boolean selectionSubmitted,
+            @RequestParam(required = false) String checkoutToken,
+            @RequestParam(required = false) Long addressId,
+            @RequestParam(required = false) Long buyNowVariantId,
+            @RequestParam(required = false) Integer buyNowQuantity,
+            @RequestParam(required = false) String couponCode,
+            @RequestParam(defaultValue = "0") BigDecimal rewardAmountToUse) {
         Long customerId = currentCustomer.requireCustomerId(authentication);
         CheckoutRequest form = new CheckoutRequest();
         form.setCouponCode(couponCode);
@@ -106,15 +108,22 @@ public class CheckoutController {
             selectedAddressId = draft.addressId();
         }
         preview = shippingQuotes.quote(customerId, preview, selectedAddressId);
-        populate(customerId, form, preview, session, model, draft == null && buyNowVariantId != null);
+        populate(
+                customerId,
+                form,
+                preview,
+                session,
+                model,
+                draft == null && buyNowVariantId != null);
         return "customer/checkout";
     }
 
     @GetMapping("/address/new")
-    public String newAddress(@RequestParam(required = false) String checkoutToken,
-                       Authentication authentication,
-                       HttpSession session,
-                       Model model) {
+    public String newAddress(
+            @RequestParam(required = false) String checkoutToken,
+            Authentication authentication,
+            HttpSession session,
+            Model model) {
         Long customerId = currentCustomer.requireCustomerId(authentication);
         CheckoutDraft draft = requireCheckoutDraft(session, checkoutToken, customerId);
         previewDraft(customerId, draft);
@@ -126,11 +135,12 @@ public class CheckoutController {
     }
 
     @GetMapping("/address/{addressId}/edit")
-    public String editAddress(@PathVariable Long addressId,
-                       @RequestParam(required = false) String checkoutToken,
-                       Authentication authentication,
-                       HttpSession session,
-                       Model model) {
+    public String editAddress(
+            @PathVariable Long addressId,
+            @RequestParam(required = false) String checkoutToken,
+            Authentication authentication,
+            HttpSession session,
+            Model model) {
         Long customerId = currentCustomer.requireCustomerId(authentication);
         CheckoutDraft draft = requireCheckoutDraft(session, checkoutToken, customerId);
         previewDraft(customerId, draft);
@@ -141,22 +151,29 @@ public class CheckoutController {
     }
 
     @PostMapping
-    public String confirm(@Valid @ModelAttribute("form") CheckoutRequest form,
-                       BindingResult errors,
-                       Authentication authentication,
-                       HttpSession session,
-                       Model model,
-                       HttpServletResponse response, HttpServletRequest request, RedirectAttributes flash) {
+    public String confirm(
+            @Valid @ModelAttribute("form") CheckoutRequest form,
+            BindingResult errors,
+            Authentication authentication,
+            HttpSession session,
+            Model model,
+            HttpServletResponse response,
+            HttpServletRequest request,
+            RedirectAttributes flash) {
         Long customerId = currentCustomer.requireCustomerId(authentication);
         CheckoutDraft draft = drafts.find(session, form.getCheckoutToken(), customerId);
         if (draft == null) {
-            throw new CheckoutException("Phiên đặt hàng không hợp lệ. Vui lòng chọn lại sản phẩm trước khi xác nhận.");
+            throw new CheckoutException(
+                    "Phiên đặt hàng không hợp lệ. Vui lòng chọn lại sản phẩm trước khi xác nhận.");
         }
         if (!errors.hasErrors()) {
             try {
                 CheckoutResult order = checkout.confirm(customerId, draft, form);
-                if ("BANK_TRANSFER".equals(order.paymentMethodCode()) || "VNPAY".equals(order.paymentMethodCode())) {
-                    var start = vnpayPayments.startInitialPayment(order.paymentId(), customerId, request.getRemoteAddr());
+                if ("BANK_TRANSFER".equals(order.paymentMethodCode())
+                        || "VNPAY".equals(order.paymentMethodCode())) {
+                    var start =
+                            vnpayPayments.startInitialPayment(
+                                    order.paymentId(), customerId, request.getRemoteAddr());
                     if (start.started()) return "redirect:" + start.paymentUrl();
                     flash.addFlashAttribute("errorMessage", start.message());
                     return "redirect:/customer/orders";
@@ -166,7 +183,10 @@ public class CheckoutController {
             } catch (CheckoutException ex) {
                 errors.reject("checkout", ex.getMessage());
             } catch (TransientDataAccessException | TransactionException ex) {
-                log.warn("Checkout outcome needs verification for customerId={}, errorType={}", customerId, ex.getClass().getSimpleName());
+                log.warn(
+                        "Checkout outcome needs verification for customerId={}, errorType={}",
+                        customerId,
+                        ex.getClass().getSimpleName());
                 response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 // A connection/commit failure may leave the outcome unknown. Keep the original
                 // idempotency token and avoid another database/provider call on the error path.
@@ -175,7 +195,11 @@ public class CheckoutController {
                 return "customer/checkout-unavailable";
             }
         }
-        CheckoutPreview preview = draft.buyNow() ? checkout.previewBuyNow(customerId, draft.buyNowVariantId(), draft.buyNowQuantity()) : checkout.preview(customerId, draft.selectedItemIds());
+        CheckoutPreview preview =
+                draft.buyNow()
+                        ? checkout.previewBuyNow(
+                                customerId, draft.buyNowVariantId(), draft.buyNowQuantity())
+                        : checkout.preview(customerId, draft.selectedItemIds());
         Long selectedAddressId = form.getAddressId();
         if (selectedAddressId == null) {
             selectedAddressId = draft.addressId();
@@ -186,21 +210,26 @@ public class CheckoutController {
     }
 
     @PostMapping("/address")
-    public String addAddress(@Valid @ModelAttribute("addressForm") CheckoutAddressRequest addressForm,
-                       BindingResult errors,
-                       Authentication authentication,
-                       HttpSession session,
-                       Model model,
-                       RedirectAttributes flash) {
+    public String addAddress(
+            @Valid @ModelAttribute("addressForm") CheckoutAddressRequest addressForm,
+            BindingResult errors,
+            Authentication authentication,
+            HttpSession session,
+            Model model,
+            RedirectAttributes flash) {
         Long customerId = currentCustomer.requireCustomerId(authentication);
-        CheckoutDraft draft = requireCheckoutDraft(session, addressForm.getCheckoutToken(), customerId);
+        CheckoutDraft draft =
+                requireCheckoutDraft(session, addressForm.getCheckoutToken(), customerId);
         previewDraft(customerId, draft);
         if (!errors.hasErrors()) {
             VietMapPlaceResponse place = null;
             try {
                 place = vietMapService.place(addressForm.getRefId());
             } catch (ResponseStatusException ex) {
-                errors.rejectValue("refId", "address.provider", "Không thể xác minh địa chỉ. Vui lòng thử lại.");
+                errors.rejectValue(
+                        "refId",
+                        "address.provider",
+                        "Không thể xác minh địa chỉ. Vui lòng thử lại.");
             }
             if (!errors.hasErrors()) {
                 draft = requireCheckoutDraft(session, addressForm.getCheckoutToken(), customerId);
@@ -208,11 +237,15 @@ public class CheckoutController {
                 try {
                     Long addressId = checkoutAddresses.create(customerId, addressForm, place);
                     flash.addFlashAttribute("successMessage", "Đã lưu địa chỉ nhận hàng.");
-                    return "redirect:/customer/checkout?checkoutToken=" + draft.token() + "&selectionSubmitted=true&addressId=" + addressId;
+                    return "redirect:/customer/checkout?checkoutToken="
+                            + draft.token()
+                            + "&selectionSubmitted=true&addressId="
+                            + addressId;
                 } catch (CheckoutException ex) {
                     errors.reject("address.invalid", ex.getMessage());
                 } catch (DataAccessException | TransactionException ex) {
-                    errors.reject("address.saveFailed", "Không thể lưu địa chỉ. Vui lòng thử lại sau.");
+                    errors.reject(
+                            "address.saveFailed", "Không thể lưu địa chỉ. Vui lòng thử lại sau.");
                 }
             }
         }
@@ -221,14 +254,15 @@ public class CheckoutController {
     }
 
     @PostMapping("/address/{addressId}/edit")
-    public String saveAddress(@PathVariable Long addressId,
-                       @Valid @ModelAttribute("addressForm") CustomerAddressRequest addressForm,
-                       BindingResult errors,
-                       @RequestParam(required = false) String checkoutToken,
-                       Authentication authentication,
-                       HttpSession session,
-                       Model model,
-                       RedirectAttributes flash) {
+    public String saveAddress(
+            @PathVariable Long addressId,
+            @Valid @ModelAttribute("addressForm") CustomerAddressRequest addressForm,
+            BindingResult errors,
+            @RequestParam(required = false) String checkoutToken,
+            Authentication authentication,
+            HttpSession session,
+            Model model,
+            RedirectAttributes flash) {
         Long customerId = currentCustomer.requireCustomerId(authentication);
         CheckoutDraft draft = requireCheckoutDraft(session, checkoutToken, customerId);
         previewDraft(customerId, draft);
@@ -238,15 +272,20 @@ public class CheckoutController {
         if (!errors.hasErrors()) {
             VietMapPlaceResponse place = null;
             try {
-                if (customerAddresses.requiresLocationVerification(authentication.getName(), addressForm)) {
+                if (customerAddresses.requiresLocationVerification(
+                        authentication.getName(), addressForm)) {
                     if (addressForm.getRefId() == null || addressForm.getRefId().isBlank()) {
-                        throw new IllegalArgumentException("Vui lòng chọn địa chỉ từ danh sách gợi ý.");
+                        throw new IllegalArgumentException(
+                                "Vui lòng chọn địa chỉ từ danh sách gợi ý.");
                     }
                     place = vietMapService.place(addressForm.getRefId());
                     customerAddresses.validateDeliveryLocation(place);
                 }
             } catch (ResponseStatusException ex) {
-                errors.rejectValue("refId", "address.provider", "Không thể xác minh địa chỉ. Vui lòng thử lại.");
+                errors.rejectValue(
+                        "refId",
+                        "address.provider",
+                        "Không thể xác minh địa chỉ. Vui lòng thử lại.");
             } catch (IllegalArgumentException ex) {
                 errors.rejectValue("refId", "address.invalid", ex.getMessage());
             }
@@ -256,11 +295,15 @@ public class CheckoutController {
                 try {
                     customerAddresses.saveAddress(authentication.getName(), addressForm, place);
                     flash.addFlashAttribute("successMessage", "Đã lưu địa chỉ.");
-                    return "redirect:/customer/checkout?checkoutToken=" + draft.token() + "&selectionSubmitted=true&addressId=" + addressId;
+                    return "redirect:/customer/checkout?checkoutToken="
+                            + draft.token()
+                            + "&selectionSubmitted=true&addressId="
+                            + addressId;
                 } catch (IllegalArgumentException ex) {
                     errors.reject("address.invalid", ex.getMessage());
                 } catch (DataAccessException | TransactionException ex) {
-                    errors.reject("address.saveFailed", "Không thể lưu địa chỉ. Vui lòng thử lại sau.");
+                    errors.reject(
+                            "address.saveFailed", "Không thể lưu địa chỉ. Vui lòng thử lại sau.");
                 }
             }
         }
@@ -283,8 +326,13 @@ public class CheckoutController {
     }
 
     private CheckoutPreview previewDraft(Long customerId, CheckoutDraft draft) {
-        CheckoutPreview preview = draft.buyNow() ? checkout.previewBuyNow(customerId, draft.buyNowVariantId(), draft.buyNowQuantity()) : checkout.preview(customerId, draft.selectedItemIds());
-        if (!Objects.equals(preview.cart().getCartId(), draft.cartId()) || !Objects.equals(preview.fingerprint(), draft.fingerprint())) {
+        CheckoutPreview preview =
+                draft.buyNow()
+                        ? checkout.previewBuyNow(
+                                customerId, draft.buyNowVariantId(), draft.buyNowQuantity())
+                        : checkout.preview(customerId, draft.selectedItemIds());
+        if (!Objects.equals(preview.cart().getCartId(), draft.cartId())
+                || !Objects.equals(preview.fingerprint(), draft.fingerprint())) {
             throw new CheckoutException("Giỏ hàng đã thay đổi. Vui lòng chọn lại sản phẩm.");
         }
         return preview;
@@ -308,25 +356,45 @@ public class CheckoutController {
         model.addAttribute("cartBadgeTotal", carts.countActiveUnits(customerId));
     }
 
-    private void populateEditAddressPage(Long customerId, String checkoutToken, CustomerAddressRequest address, Model model) {
+    private void populateEditAddressPage(
+            Long customerId, String checkoutToken, CustomerAddressRequest address, Model model) {
         populateAddressPage(customerId, checkoutToken, model);
         model.addAttribute("checkoutAddressEditing", true);
         model.addAttribute("addressFormTitle", "Sửa địa chỉ nhận hàng");
         model.addAttribute("addressSubmitLabel", "Lưu và quay lại đặt hàng");
-        model.addAttribute("addressFormAction", "/customer/checkout/address/" + address.getAddressId() + "/edit");
+        model.addAttribute(
+                "addressFormAction",
+                "/customer/checkout/address/" + address.getAddressId() + "/edit");
         model.addAttribute("currentAddress", address);
     }
 
-    private void populate(Long customerId, CheckoutRequest form, CheckoutPreview preview, HttpSession session, Model model) {
-        populate(customerId,form,preview,session,model,false);
+    private void populate(
+            Long customerId,
+            CheckoutRequest form,
+            CheckoutPreview preview,
+            HttpSession session,
+            Model model) {
+        populate(customerId, form, preview, session, model, false);
     }
 
-    private void populate(Long customerId, CheckoutRequest form, CheckoutPreview preview, HttpSession session, Model model, boolean fresh) {
-        CheckoutDraft draft = "BUY_NOW".equals(preview.cart().getStatus())
-                ? drafts.issueBuyNow(session, customerId, preview, fresh ? null : form.getCheckoutToken())
-                : drafts.issue(session, customerId, preview);
+    private void populate(
+            Long customerId,
+            CheckoutRequest form,
+            CheckoutPreview preview,
+            HttpSession session,
+            Model model,
+            boolean fresh) {
+        CheckoutDraft draft =
+                "BUY_NOW".equals(preview.cart().getStatus())
+                        ? drafts.issueBuyNow(
+                                session,
+                                customerId,
+                                preview,
+                                fresh ? null : form.getCheckoutToken())
+                        : drafts.issue(session, customerId, preview);
         form.setCheckoutToken(draft.token());
-        if (!preview.codAvailable() && preview.vnpayAvailable()) form.setPaymentMethodCode("BANK_TRANSFER");
+        if (!preview.codAvailable() && preview.vnpayAvailable())
+            form.setPaymentMethodCode("BANK_TRANSFER");
         form.setAddressId(preview.addressId());
         model.addAttribute("form", form);
         model.addAttribute("checkout", preview);
@@ -346,22 +414,28 @@ public class CheckoutController {
         model.addAttribute("redemption", null);
         model.addAttribute("loyaltyError", null);
         model.addAttribute("loyaltyBalance", loyaltyService.getBalance(customerId));
-        model.addAttribute("availableCoupons", draft.buyNow()
-                ? couponApplicationService.getAvailableBuyNowCoupons(customerId, draft.buyNowVariantId(), draft.buyNowQuantity())
-                : couponApplicationService.getAvailableCoupons(customerId, draft.selectedItemIds()));
+        model.addAttribute(
+                "availableCoupons",
+                draft.buyNow()
+                        ? couponApplicationService.getAvailableBuyNowCoupons(
+                                customerId, draft.buyNowVariantId(), draft.buyNowQuantity())
+                        : couponApplicationService.getAvailableCoupons(
+                                customerId, draft.selectedItemIds()));
 
         boolean couponValid = true;
         String couponCode = form.getCouponCode();
 
         if (couponCode != null && !couponCode.isBlank()) {
             try {
-                var application = draft.buyNow()
-                        ? couponApplicationService.previewBuyNow(customerId, couponCode, draft.buyNowVariantId(), draft.buyNowQuantity())
-                        : couponApplicationService.preview(
-                        customerId,
-                        couponCode,
-                        draft.selectedItemIds()
-                );
+                var application =
+                        draft.buyNow()
+                                ? couponApplicationService.previewBuyNow(
+                                        customerId,
+                                        couponCode,
+                                        draft.buyNowVariantId(),
+                                        draft.buyNowQuantity())
+                                : couponApplicationService.preview(
+                                        customerId, couponCode, draft.selectedItemIds());
 
                 couponDiscount = application.discountAmount();
                 model.addAttribute("couponApplication", application);
@@ -372,16 +446,13 @@ public class CheckoutController {
         }
 
         if (couponValid) {
-            BigDecimal goodsAmountAfterCoupon = preview.cart()
-                    .getTotalAmount()
-                    .subtract(couponDiscount);
+            BigDecimal goodsAmountAfterCoupon =
+                    preview.cart().getTotalAmount().subtract(couponDiscount);
 
             try {
-                var redemption = loyaltyService.previewRedemption(
-                        customerId,
-                        form.getRewardAmountToUse(),
-                        goodsAmountAfterCoupon
-                );
+                var redemption =
+                        loyaltyService.previewRedemption(
+                                customerId, form.getRewardAmountToUse(), goodsAmountAfterCoupon);
                 loyaltyDiscount = redemption.discountAmount();
                 model.addAttribute("redemption", redemption);
             } catch (IllegalArgumentException ex) {
@@ -395,8 +466,7 @@ public class CheckoutController {
                 "checkoutTotal",
                 preview.grandTotal() == null
                         ? null
-                        : preview.grandTotal().subtract(couponDiscount).subtract(loyaltyDiscount)
-        );
+                        : preview.grandTotal().subtract(couponDiscount).subtract(loyaltyDiscount));
     }
 
     @PostMapping("/reward/preview")
@@ -405,19 +475,20 @@ public class CheckoutController {
             @RequestParam(defaultValue = "0") BigDecimal rewardAmountInput,
             Authentication authentication,
             HttpSession session,
-            Model model
-    ) {
+            Model model) {
         Long customerId = currentCustomer.requireCustomerId(authentication);
         var draft = drafts.find(session, form.getCheckoutToken(), customerId);
         if (draft == null) {
-            throw new CheckoutException(
-                    "Phiên đặt hàng đã hết hạn. Vui lòng chọn lại sản phẩm."
-            );
+            throw new CheckoutException("Phiên đặt hàng đã hết hạn. Vui lòng chọn lại sản phẩm.");
         }
 
         form.setRewardAmountToUse(rewardAmountInput);
         var preview = previewDraft(customerId, draft);
-        preview = shippingQuotes.quote(customerId, preview, form.getAddressId() == null ? draft.addressId() : form.getAddressId());
+        preview =
+                shippingQuotes.quote(
+                        customerId,
+                        preview,
+                        form.getAddressId() == null ? draft.addressId() : form.getAddressId());
         populate(customerId, form, preview, session, model);
         return "customer/checkout";
     }
@@ -428,28 +499,24 @@ public class CheckoutController {
             @RequestParam(defaultValue = "") String couponInput,
             Authentication authentication,
             HttpSession session,
-            Model model
-    ) {
-        Long customerId =
-                currentCustomer.requireCustomerId(authentication);
+            Model model) {
+        Long customerId = currentCustomer.requireCustomerId(authentication);
 
-        var draft = drafts.find(
-                session,
-                form.getCheckoutToken(),
-                customerId
-        );
+        var draft = drafts.find(session, form.getCheckoutToken(), customerId);
 
         if (draft == null) {
-            throw new CheckoutException(
-                    "Phiên đặt hàng đã hết hạn. Vui lòng chọn lại sản phẩm."
-            );
+            throw new CheckoutException("Phiên đặt hàng đã hết hạn. Vui lòng chọn lại sản phẩm.");
         }
 
         form.setCouponCode(couponInput.strip());
 
         var preview = previewDraft(customerId, draft);
 
-        preview = shippingQuotes.quote(customerId, preview, form.getAddressId() == null ? draft.addressId() : form.getAddressId());
+        preview =
+                shippingQuotes.quote(
+                        customerId,
+                        preview,
+                        form.getAddressId() == null ? draft.addressId() : form.getAddressId());
         populate(customerId, form, preview, session, model);
 
         return "customer/checkout";

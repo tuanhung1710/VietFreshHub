@@ -30,36 +30,61 @@ public class OrderLifecycleLock {
     public List<Order> lockAll(Collection<Long> orderIds) {
         var owners = new TreeMap<Long, Long>();
         for (Long orderId : new TreeSet<>(orderIds)) {
-            Long customerId = em.createQuery("select o.customer.userId from Order o where o.orderId = :id", Long.class)
-                    .setParameter("id", orderId).getResultStream().findFirst()
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng."));
+            Long customerId =
+                    em.createQuery(
+                                    "select o.customer.userId from Order o where o.orderId = :id",
+                                    Long.class)
+                            .setParameter("id", orderId)
+                            .getResultStream()
+                            .findFirst()
+                            .orElseThrow(
+                                    () ->
+                                            new ResponseStatusException(
+                                                    HttpStatus.NOT_FOUND,
+                                                    "Không tìm thấy đơn hàng."));
             owners.put(orderId, customerId);
         }
         for (Long customerId : new TreeSet<>(owners.values())) {
             refreshOnce(em.getReference(User.class, customerId));
         }
-        return owners.entrySet().stream().map(entry -> {
-            Order order = em.find(Order.class, entry.getKey());
-            if (order == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng.");
-            refreshOnce(order);
-            if (!entry.getValue().equals(order.getCustomer().getUserId())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Khách hàng của đơn vừa thay đổi.");
-            }
-            return order;
-        }).toList();
+        return owners.entrySet().stream()
+                .map(
+                        entry -> {
+                            Order order = em.find(Order.class, entry.getKey());
+                            if (order == null)
+                                throw new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng.");
+                            refreshOnce(order);
+                            if (!entry.getValue().equals(order.getCustomer().getUserId())) {
+                                throw new ResponseStatusException(
+                                        HttpStatus.CONFLICT, "Khách hàng của đơn vừa thay đổi.");
+                            }
+                            return order;
+                        })
+                .toList();
     }
 
     public void lockForDelivery(Long deliveryId) {
-        Long orderId = em.createQuery("select d.shopOrder.order.orderId from Delivery d where d.deliveryId = :id", Long.class)
-                .setParameter("id", deliveryId).getResultStream().findFirst()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy thông tin giao hàng."));
+        Long orderId =
+                em.createQuery(
+                                "select d.shopOrder.order.orderId from Delivery d where d.deliveryId = :id",
+                                Long.class)
+                        .setParameter("id", deliveryId)
+                        .getResultStream()
+                        .findFirst()
+                        .orElseThrow(
+                                () ->
+                                        new ResponseStatusException(
+                                                HttpStatus.NOT_FOUND,
+                                                "Không tìm thấy thông tin giao hàng."));
         lock(orderId);
     }
 
     private void refreshOnce(Object entity) {
         // Reentrant calls must not discard changes made earlier in this transaction.
         LockModeType mode = em.getLockMode(entity);
-        if (mode != LockModeType.PESSIMISTIC_WRITE && mode != LockModeType.PESSIMISTIC_FORCE_INCREMENT) {
+        if (mode != LockModeType.PESSIMISTIC_WRITE
+                && mode != LockModeType.PESSIMISTIC_FORCE_INCREMENT) {
             em.refresh(entity, LockModeType.PESSIMISTIC_WRITE);
         }
     }
