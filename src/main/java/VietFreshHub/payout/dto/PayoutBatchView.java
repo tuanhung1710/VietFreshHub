@@ -8,9 +8,9 @@ public record PayoutBatchView(
         Long batchId,
         String scheduledSlot,
         LocalDateTime scheduledAt,
+        LocalDateTime createdAt,
         BigDecimal totalAmount,
         int payoutCount,
         int shopCount,
-        String status,
         List<PayoutBatchShopTransfer> shopTransfers
 ) {}

@@ -32,10 +32,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -51,6 +52,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SellerPayoutServiceImpl implements SellerPayoutService {
 
+    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final List<SellerPayout.Status> BATCHABLE_STATUSES =
             List.of(SellerPayout.Status.PENDING, SellerPayout.Status.FAILED);
 
@@ -120,14 +122,14 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
                 .map(SellerPayout::getShopId).collect(Collectors.toSet());
         if (candidateShopIds.isEmpty()) return false;
 
-        Map<Long, ShopPayoutAccount> verifiedAccounts = accounts.findByShopIdInAndVerifiedTrue(candidateShopIds)
+        Map<Long, ShopPayoutAccount> payoutAccounts = accounts.findByShopIdIn(candidateShopIds)
                 .stream().collect(Collectors.toMap(ShopPayoutAccount::getShopId, Function.identity()));
-        if (verifiedAccounts.isEmpty()) return false;
+        if (payoutAccounts.isEmpty()) return false;
 
-        List<SellerPayout> eligible = payouts.lockEligibleForBatch(BATCHABLE_STATUSES, now, verifiedAccounts.keySet());
+        List<SellerPayout> eligible = payouts.lockEligibleForBatch(BATCHABLE_STATUSES, now, payoutAccounts.keySet());
         if (eligible.isEmpty()) return false;
 
-        createBatch(eligible, verifiedAccounts, scheduledUtc, scheduledSlot);
+        createBatch(eligible, payoutAccounts, scheduledUtc, scheduledSlot);
         return true;
     }
 
@@ -161,20 +163,20 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
         }
 
         Set<Long> selectedShopIds = selected.stream().map(SellerPayout::getShopId).collect(Collectors.toSet());
-        Map<Long, ShopPayoutAccount> verifiedAccounts = accounts.findByShopIdInAndVerifiedTrue(selectedShopIds)
+        Map<Long, ShopPayoutAccount> payoutAccounts = accounts.findByShopIdIn(selectedShopIds)
                 .stream().collect(Collectors.toMap(ShopPayoutAccount::getShopId, Function.identity()));
-        if (selectedShopIds.stream().anyMatch(shopId -> !verifiedAccounts.containsKey(shopId))) {
+        if (selectedShopIds.stream().anyMatch(shopId -> !payoutAccounts.containsKey(shopId))) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Mỗi cửa hàng được chọn cần có tài khoản ngân hàng đã xác minh.");
+                    "Mỗi cửa hàng được chọn cần khai báo tài khoản nhận tiền.");
         }
 
         String manualSlot = "MANUAL-" + UUID.randomUUID().toString().replace("-", "");
-        SellerPayoutBatch batch = createBatch(selected, verifiedAccounts, now, manualSlot);
+        SellerPayoutBatch batch = createBatch(selected, payoutAccounts, now, manualSlot);
         return batch.getBatchId();
     }
 
     private SellerPayoutBatch createBatch(List<SellerPayout> eligible,
-                                          Map<Long, ShopPayoutAccount> verifiedAccounts,
+                                          Map<Long, ShopPayoutAccount> payoutAccounts,
                                           LocalDateTime scheduledAt, String scheduledSlot) {
         SellerPayoutBatch batch = new SellerPayoutBatch();
         batch.setScheduledSlot(scheduledSlot);
@@ -187,7 +189,7 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
 
         List<SellerPayoutBatchItem> newItems = new ArrayList<>(eligible.size());
         for (SellerPayout payout : eligible) {
-            ShopPayoutAccount account = verifiedAccounts.get(payout.getShopId());
+            ShopPayoutAccount account = payoutAccounts.get(payout.getShopId());
             SellerPayoutBatchItem item = new SellerPayoutBatchItem();
             item.setBatch(batch);
             item.setPayout(payout);
@@ -209,23 +211,22 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
     @Override
     @Transactional(readOnly = true)
     public List<AdminPayoutRow> getQueue() {
-        Map<Long, ShopPayoutAccount> verifiedByShop = accounts.findAll().stream()
-                .filter(ShopPayoutAccount::isVerified)
+        Map<Long, ShopPayoutAccount> accountsByShop = accounts.findAll().stream()
                 .collect(Collectors.toMap(ShopPayoutAccount::getShopId, Function.identity()));
         return payouts.findByStatusInOrderByEligibleAtAscPayoutIdAsc(
-                        List.of(SellerPayout.Status.PENDING, SellerPayout.Status.PROCESSING, SellerPayout.Status.FAILED))
+                        List.of(SellerPayout.Status.PENDING, SellerPayout.Status.FAILED))
                 .stream().map(payout -> {
-                    boolean hasVerifiedAccount = verifiedByShop.containsKey(payout.getShopId());
+                    boolean hasPayoutAccount = accountsByShop.containsKey(payout.getShopId());
                     boolean canManualBatch = BATCHABLE_STATUSES.contains(payout.getStatus())
                             && payout.getEligibleAt() != null
-                            && payout.getFundsConfirmedAt() != null && hasVerifiedAccount;
+                            && payout.getFundsConfirmedAt() != null && hasPayoutAccount;
                     return new AdminPayoutRow(
                             payout.getPayoutId(), payout.getShopId(), payout.getShop().getShopName(),
                             payout.getShopOrder().getShopOrderId(), payout.getShopOrder().getOrder().getOrderCode(),
                             payout.getFundsSource().name(), payout.getShopOrder().getSubtotal(),
                             payout.getShopOrder().getDiscountTotal(), payout.getGrossAmount(),
                             payout.getCommissionAmount(), payout.getNetAmount(), payout.getStatus().name(),
-                            payout.getEligibleAt(), payout.getFundsConfirmedAt(), hasVerifiedAccount, canManualBatch);
+                            payout.getEligibleAt(), payout.getFundsConfirmedAt(), hasPayoutAccount, canManualBatch);
                 })
                 .toList();
     }
@@ -240,7 +241,7 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
             return new ShopPayoutAccountView(shop.getShopId(), shop.getShopName(),
                     account == null ? null : account.getBankName(),
                     account == null ? null : account.getAccountNumber(),
-                    account == null ? null : account.getAccountHolder(), account != null && account.isVerified());
+                    account == null ? null : account.getAccountHolder());
         }).toList();
     }
 
@@ -255,28 +256,33 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
                 account == null ? "" : account.getBankName(),
                 account == null ? "" : account.getAccountNumber(),
                 account == null ? "" : account.getAccountHolder(),
-                account != null && account.isVerified(), account != null);
+                account != null);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<PayoutBatchView> getRecentBatches() {
-        return batches.findAllByOrderByScheduledAtDesc(PageRequest.of(0, 30)).stream().map(batch -> {
+    public List<PayoutBatchView> getBatchesCreatedBetween(LocalDate fromDate, LocalDate toDate) {
+        LocalDateTime fromUtc = fromDate == null ? null : fromDate.atStartOfDay(VIETNAM_ZONE)
+                .withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
+        LocalDateTime toUtcExclusive = toDate == null ? null : toDate.plusDays(1).atStartOfDay(VIETNAM_ZONE)
+                .withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
+        List<SellerPayoutBatch> selectedBatches = fromDate == null && toDate == null
+                ? batches.findAllByOrderByCreatedAtDesc(PageRequest.of(0, 30))
+                : batches.findCreatedAtRange(fromUtc, toUtcExclusive);
+        return selectedBatches.stream().map(batch -> {
             Map<Long, List<SellerPayoutBatchItem>> byShop = batchItems.findForBatch(batch.getBatchId()).stream()
                     .collect(Collectors.groupingBy(SellerPayoutBatchItem::getShopId, LinkedHashMap::new, Collectors.toList()));
             List<PayoutBatchShopTransfer> transfers = byShop.entrySet().stream().map(entry -> {
                 List<SellerPayoutBatchItem> items = entry.getValue();
                 SellerPayoutBatchItem first = items.getFirst();
-                String status = aggregateItemStatus(items);
-                String reference = items.stream().map(SellerPayoutBatchItem::getTransferReference)
-                        .filter(value -> value != null && !value.isBlank()).findFirst().orElse(null);
                 BigDecimal amount = items.stream().map(SellerPayoutBatchItem::getTransferAmount)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
-                return new PayoutBatchShopTransfer(entry.getKey(), first.getShopNameSnapshot(), amount,
-                        items.size(), status, reference);
+                return new PayoutBatchShopTransfer(first.getShopNameSnapshot(), items.size(), amount);
             }).toList();
+            LocalDateTime createdAtVietnam = batch.getCreatedAt().atZone(ZoneOffset.UTC)
+                    .withZoneSameInstant(VIETNAM_ZONE).toLocalDateTime();
             return new PayoutBatchView(batch.getBatchId(), batch.getScheduledSlot(), batch.getScheduledAt(),
-                    batch.getTotalAmount(), batch.getPayoutCount(), batch.getShopCount(), batch.getStatus().name(), transfers);
+                    createdAtVietnam, batch.getTotalAmount(), batch.getPayoutCount(), batch.getShopCount(), transfers);
         }).toList();
     }
 
@@ -306,28 +312,13 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
             created.setShopId(shopId);
             return created;
         });
-        boolean detailsChanged = !normalizedCode.equals(account.getBankCode())
-                || !normalizedBankName.equals(account.getBankName())
-                || !normalizedNumber.equals(account.getAccountNumber())
-                || !normalizedHolder.equals(account.getAccountHolder());
         account.setShop(shops.getReferenceById(shopId));
         account.setBankCode(normalizedCode);
         account.setBankName(normalizedBankName);
         account.setAccountNumber(normalizedNumber);
         account.setAccountHolder(normalizedHolder);
-        if (detailsChanged) account.setVerified(false);
         account.setUpdatedBy(changedBy);
         if (isNewAccount) entityManager.persist(account);
-    }
-
-    @Override
-    @Transactional
-    public void setAccountVerified(Long shopId, boolean verified, Long changedBy) {
-        ShopPayoutAccount account = accounts.findByShopId(shopId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "Shop chưa khai báo tài khoản payout."));
-        account.setVerified(verified);
-        account.setUpdatedBy(changedBy);
     }
 
     @Override
@@ -349,38 +340,6 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
     }
 
     @Override
-    @Transactional
-    public void recordTransferResult(Long batchId, Long shopId, boolean successful,
-                                    String reference, String failureReason, Long changedBy) {
-        SellerPayoutBatch batch = batches.findByBatchId(batchId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đợt chi trả."));
-        List<SellerPayoutBatchItem> items = batchItems.findByBatchAndShop(batchId, shopId);
-        if (items.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy cửa hàng trong đợt chi trả.");
-        if (items.stream().anyMatch(item -> item.getStatus() != SellerPayoutBatchItem.Status.PENDING)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Kết quả chuyển khoản cho cửa hàng này đã được cập nhật.");
-        }
-        String normalizedReference = reference == null ? "" : reference.strip();
-        String normalizedReason = failureReason == null ? "" : failureReason.strip();
-        if (successful && normalizedReference.isBlank()) throw badRequest("Vui lòng nhập mã giao dịch ngân hàng.");
-        if (!successful && normalizedReason.isBlank()) throw badRequest("Vui lòng nhập lý do chuyển khoản thất bại.");
-        if (normalizedReference.length() > 255 || normalizedReason.length() > 1000) throw badRequest("Thông tin kết quả quá dài. Vui lòng kiểm tra lại.");
-
-        LocalDateTime now = utcNow();
-        for (SellerPayoutBatchItem item : items) {
-            item.setStatus(successful ? SellerPayoutBatchItem.Status.PAID : SellerPayoutBatchItem.Status.FAILED);
-            item.setTransferReference(successful ? normalizedReference : null);
-            item.setFailureReason(successful ? null : normalizedReason);
-            item.setPaidAt(successful ? now : null);
-            item.setResultBy(changedBy);
-            SellerPayout payout = item.getPayout();
-            payout.setStatus(successful ? SellerPayout.Status.PAID : SellerPayout.Status.FAILED);
-            payout.setProcessedAt(successful ? now : null);
-            payout.setTransactionReference(successful ? normalizedReference : null);
-        }
-        refreshBatchStatus(batch, batchItems.findForBatch(batchId));
-    }
-
-    @Override
     @Transactional(readOnly = true)
     public PayoutBatchExport getBatchExport(Long batchId) {
         SellerPayoutBatch batch = batches.findByBatchId(batchId)
@@ -392,7 +351,7 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
                     item.getBankCodeSnapshot(), item.getAccountNumberSnapshot(), item.getAccountHolderSnapshot(),
                     shopOrder.getShopOrderId(), shopOrder.getOrder().getOrderCode(), shopOrder.getSubtotal(),
                     payout.getGrossAmount(), shopOrder.getDiscountTotal(), payout.getCommissionAmount(),
-                    item.getTransferAmount(), item.getStatus().name(), item.getTransferReference());
+                    item.getTransferAmount());
         }).toList();
         return new PayoutBatchExport(batch.getBatchId(), batch.getScheduledSlot(), batch.getScheduledAt(),
                 batch.getTotalAmount(), items);
@@ -448,20 +407,6 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
                 || commissionRate.compareTo(BigDecimal.ONE) > 0) {
             throw new IllegalStateException("app.payout.commission-rate phải nằm trong khoảng từ 0 đến 1.");
         }
-    }
-
-    private void refreshBatchStatus(SellerPayoutBatch batch, List<SellerPayoutBatchItem> items) {
-        long paid = items.stream().filter(item -> item.getStatus() == SellerPayoutBatchItem.Status.PAID).count();
-        long failed = items.stream().filter(item -> item.getStatus() == SellerPayoutBatchItem.Status.FAILED).count();
-        if (paid == items.size()) batch.setStatus(SellerPayoutBatch.Status.PAID);
-        else if (failed == items.size()) batch.setStatus(SellerPayoutBatch.Status.FAILED);
-        else if (paid + failed == items.size()) batch.setStatus(SellerPayoutBatch.Status.PARTIAL);
-        if (paid + failed == items.size()) batch.setCompletedAt(utcNow());
-    }
-
-    private String aggregateItemStatus(Collection<SellerPayoutBatchItem> items) {
-        Set<SellerPayoutBatchItem.Status> statuses = items.stream().map(SellerPayoutBatchItem::getStatus).collect(Collectors.toSet());
-        return statuses.size() == 1 ? statuses.iterator().next().name() : "PARTIAL";
     }
 
     private String required(String value, int maxLength, String field) {

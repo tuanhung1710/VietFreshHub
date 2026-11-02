@@ -51,7 +51,11 @@
             <a th:href="@{/customer/payments}"><span class="material-symbols-outlined" aria-hidden="true">payments</span>Lịch sử thanh toán</a>
             <a th:href="@{/customer/chat}"><span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>Tin nhắn với cửa hàng</a>
             <a th:href="@{/cart}"><span class="material-symbols-outlined" aria-hidden="true">shopping_cart</span>Giỏ hàng</a>
+            <a th:href="@{/customer/seller-applications}"><span class="material-symbols-outlined" aria-hidden="true">assignment</span>Đăng ký bán hàng / Hồ sơ của tôi</a>
           </div>
+          <a th:if="${#authorization.expression('hasRole(&quot;STORE_MANAGER&quot;)')}" th:href="@{/seller}">
+            <span class="material-symbols-outlined" aria-hidden="true">storefront</span>Quản lý cửa hàng
+          </a>
           <a th:href="@{/notifications}"><span class="material-symbols-outlined" aria-hidden="true">notifications</span>Thông báo</a>
           <form th:action="@{/logout}" method="post">
             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">

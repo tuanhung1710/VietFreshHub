@@ -32,11 +32,12 @@
                 <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
             </div>
 
-            <div class="mb-space-lg flex flex-wrap items-center gap-4">
+            <div id="avatarPreviewContainer" class="mb-space-lg flex flex-wrap items-center gap-4">
                 <img th:if="${profile.avatarUrl != null and !#strings.isEmpty(profile.avatarUrl)}"
-                     th:src="${profile.avatarUrl}" alt="Ảnh đại diện hiện tại"
+                     id="avatarPreview" th:src="${profile.avatarUrl}" alt="Ảnh đại diện hiện tại"
                      class="h-20 w-20 rounded-full border border-outline-variant object-cover">
                 <span th:unless="${profile.avatarUrl != null and !#strings.isEmpty(profile.avatarUrl)}"
+                      id="avatarFallback"
                       class="grid h-20 w-20 place-items-center rounded-full bg-surface-container text-2xl font-bold text-primary"
                       th:text="${#strings.substring(profile.fullName, 0, 1)}">A</span>
                 <div>
@@ -82,5 +83,42 @@
 </main>
 
 <div th:replace="~{fragments/footer :: footer}"></div>
+<script>
+    (() => {
+        const avatarInput = document.getElementById('avatarFile');
+        const previewContainer = document.getElementById('avatarPreviewContainer');
+        const fallback = document.getElementById('avatarFallback');
+        let previewUrl = null;
+
+        if (!avatarInput || !previewContainer) return;
+
+        avatarInput.addEventListener('change', () => {
+            const file = avatarInput.files && avatarInput.files[0];
+            if (!file) return;
+
+            const nextPreviewUrl = URL.createObjectURL(file);
+            let preview = document.getElementById('avatarPreview');
+
+            if (!preview) {
+                preview = document.createElement('img');
+                preview.id = 'avatarPreview';
+                preview.alt = 'Ảnh đại diện xem trước';
+                preview.className = 'h-20 w-20 rounded-full border border-outline-variant object-cover';
+                previewContainer.prepend(preview);
+            }
+
+            preview.src = nextPreviewUrl;
+            preview.alt = 'Ảnh đại diện xem trước';
+            if (fallback) fallback.classList.add('hidden');
+
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+            previewUrl = nextPreviewUrl;
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+        });
+    })();
+</script>
 </body>
 </html>

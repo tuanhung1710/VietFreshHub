@@ -229,13 +229,8 @@
                   <span class="material-symbols-outlined">badge</span>
                 </div>
                 <div>
-                  <h2 class="font-headline-sm text-headline-sm text-on-surface">1. Thông Tin Tài Khoản Đăng Ký</h2>
-                  <p class="font-label-md text-label-md text-on-surface-variant">Dữ liệu định danh được đồng bộ trực tiếp từ phiên đăng nhập an toàn</p>
+                  <h2 class="font-headline-sm text-headline-sm text-on-surface">1. Thông tin tài khoản</h2>
                 </div>
-              </div>
-              <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-low text-on-surface-variant text-label-sm font-label-sm w-fit">
-                <span class="material-symbols-outlined text-[16px] text-outline">lock</span>
-                <span class="">Chế độ đọc (Read-only)</span>
               </div>
             </div>
             <!-- Alert Box -->
@@ -251,7 +246,6 @@
                   <input class="w-full h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-title-md text-title-md cursor-not-allowed select-none opacity-90 focus:outline-none" disabled="" readonly="" type="text" th:value="${applicant.fullName}">
                   <span class="material-symbols-outlined text-outline absolute right-3 top-3 text-[18px]">verified</span>
                 </div>
-                <span class="font-label-sm text-label-sm text-outline">Tự động trích xuất từ tài khoản hiện tại</span>
               </div>
               <!-- Email -->
               <div class="flex flex-col gap-1.5">
@@ -263,7 +257,6 @@
                   <input class="w-full h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-title-md text-title-md cursor-not-allowed select-none opacity-90 focus:outline-none" disabled="" readonly="" type="email" th:value="${applicant.email}">
                   <span class="material-symbols-outlined text-outline absolute right-3 top-3 text-[18px]">mail</span>
                 </div>
-                <span class="font-label-sm text-label-sm text-outline">Nhận thông báo xét duyệt hồ sơ</span>
               </div>
               <!-- Phone -->
               <div class="flex flex-col gap-1.5">
@@ -275,7 +268,6 @@
                   <input class="w-full h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-title-md text-title-md cursor-not-allowed select-none opacity-90 focus:outline-none" disabled="" readonly="" type="tel" th:value="${applicant.phone}">
                   <span class="material-symbols-outlined text-primary absolute right-3 top-3 text-[18px]">check_circle</span>
                 </div>
-                <span class="font-label-sm text-label-sm text-secondary font-medium">Đã xác thực OTP</span>
               </div>
             </div>
           </div>
@@ -294,7 +286,7 @@
                 <label
                         class="font-title-md text-title-md text-on-surface flex items-center gap-1"
                         for="businessName">
-                  <span>Tên cơ sở kinh doanh / HTX</span>
+                  <span>Tên cửa hàng / cơ sở kinh doanh</span>
                   <span class="text-error font-bold">*</span>
                 </label>
 
@@ -336,7 +328,7 @@
                 <label
                         class="font-title-md text-title-md text-on-surface flex items-center gap-2"
                         for="taxCode">
-                  <span>Mã số thuế doanh nghiệp (MST)</span>
+                  <span>Mã số thuế</span>
                   <span class="font-label-sm text-[11px] text-on-surface-variant font-normal">
         (Tùy chọn)
       </span>
@@ -389,13 +381,13 @@
                   <span class="material-symbols-outlined">folder_shared</span>
                 </div>
                 <div>
-                  <h2 class="font-headline-sm text-headline-sm text-on-surface">3. Tài Liệu Xác Minh Năng Lực &amp; Pháp Lý</h2>
+                  <h2 class="font-headline-sm text-headline-sm text-on-surface">3. Giấy tờ xác minh</h2>
 
                 </div>
               </div>
               <div class="flex items-center gap-1.5 font-label-sm text-label-sm text-outline">
                 <span class="material-symbols-outlined text-[16px]">info</span>
-                <span class="">Chấp nhận: PDF, JPG, PNG (Tối đa 10MB/tài liệu)</span>
+                <span>PDF, JPG hoặc PNG · tối đa 10 MB/tài liệu</span>
               </div>
             </div>
             <div class="flex flex-col gap-space-lg">
@@ -407,9 +399,7 @@
                     <span class="font-title-md text-title-md text-on-surface font-semibold">Giấy tờ tùy thân người đại diện </span>
                     <span class="text-error font-bold">*</span>
                   </div>
-                  <span class="font-label-sm text-label-sm text-secondary bg-secondary-fixed/50 px-2 py-0.5 rounded">CCCD / Hộ chiếu 2 mặt</span>
                 </div>
-                <p class="font-body-md text-body-md text-on-surface-variant">Bản chụp sắc nét rõ 4 góc, không lóa sáng hoặc mất thông tin số định danh.</p>
                 <!-- Uploaded Item Sample -->
                 <!--              <label for="identityCard">CCCD / Hộ chiếu</label>-->
                 <!--              <input type="file"-->
@@ -421,9 +411,11 @@
                   <input type="file"
                          th:field="*{identityCard}"
                          id="identityCard"
+                         data-document-type="IDENTITY_CARD"
                          class="visually-hidden-input js-preview-file"
-                         accept="image/*"
-                         required>
+                         accept="image/jpeg,image/png">
+                  <input id="identityCardUploadToken" name="identityCardUploadToken" type="hidden"
+                         th:value="${identityCardUploadToken}">
 
                   <p id="identityCardRequiredError"
                      class="field-error"
@@ -446,7 +438,8 @@
     </span>
                     </label>
 
-                    <div id="identityCard-preview" class="preview-list"></div>
+                    <div id="identityCard-preview" class="preview-list"
+                         th:attr="data-preview-url=${identityCardPreviewUrl},data-file-name=${identityCardFileName},data-content-type=${identityCardContentType}"></div>
 
                   </div>
                   <p class="field-error"
@@ -460,12 +453,11 @@
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2">
                     <span class="w-6 h-6 rounded-full bg-primary text-on-primary font-label-sm text-label-sm flex items-center justify-center font-bold">B</span>
-                    <span class="font-title-md text-title-md text-on-surface font-semibold">Giấy phép Đăng Ký Kinh Doanh </span>
+                    <span class="font-title-md text-title-md text-on-surface font-semibold">Giấy tờ đăng ký kinh doanh</span>
                     <span class="text-error font-bold">*</span>
                   </div>
                   <span class="font-label-sm text-label-sm text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded">Tài liệu bắt buộc</span>
                 </div>
-                <p class="font-body-md text-body-md text-on-surface-variant">Giấy phép đăng ký kinh doanh, chứng nhận VietGAP, GlobalGAP, OCOP hoặc Giấy chứng nhận đủ điều kiện ATTP còn hạn hiệu lực.</p>
                 <!-- Uploaded Progress State Item -->
                 <!--              <label for="businessLicense">Giấy phép kinh doanh / VietGAP</label>-->
                 <!--              <input type="file"-->
@@ -477,9 +469,11 @@
                   <input type="file"
                          th:field="*{businessLicense}"
                          id="businessLicense"
+                         data-document-type="BUSINESS_LICENSE"
                          class="visually-hidden-input js-preview-file"
-                         accept="image/*,.pdf"
-                         required>
+                         accept="image/jpeg,image/png,application/pdf">
+                  <input id="businessLicenseUploadToken" name="businessLicenseUploadToken" type="hidden"
+                         th:value="${businessLicenseUploadToken}">
 
                   <p id="businessLicenseRequiredError"
                      class="field-error"
@@ -502,7 +496,8 @@
     </span>
                     </label>
 
-                    <div id="businessLicense-preview" class="preview-list"></div>
+                    <div id="businessLicense-preview" class="preview-list"
+                         th:attr="data-preview-url=${businessLicensePreviewUrl},data-file-name=${businessLicenseFileName},data-content-type=${businessLicenseContentType}"></div>
                   </div>
 
                   <p class="field-error"
@@ -532,8 +527,7 @@
                 <span class="material-symbols-outlined">gavel</span>
               </div>
               <div>
-                <h2 class="font-headline-sm text-headline-sm text-on-surface">4. Điều Khoản Hoạt Động &amp; Cam Kết Nông Sản Sạch</h2>
-                <p class="font-label-md text-label-md text-on-surface-variant">Xác nhận tuân thủ quy chuẩn kinh doanh nông sản có trách nhiệm</p>
+                <h2 class="font-headline-sm text-headline-sm text-on-surface">4. Cam kết và điều khoản</h2>
               </div>
             </div>
             <!-- Pending Status System Alert -->
@@ -541,33 +535,22 @@
             <!-- Legal Agreement Checkboxes -->
             <div class="flex flex-col gap-space-sm pt-space-xs">
               <label class="flex items-start gap-space-sm cursor-pointer p-space-sm rounded-lg hover:bg-surface-container-low transition-colors">
-                <input class="w-5 h-5 mt-0.5 accent-primary shrink-0 rounded" th:field="*{legalAgree}" required type="checkbox">
+                <input class="w-5 h-5 mt-0.5 accent-primary shrink-0 rounded" th:field="*{termsAgree}" required type="checkbox">
                 <span class="font-body-md text-body-md text-on-surface leading-snug">
-                Tôi cam kết nguồn gốc xuất xứ nông sản minh bạch, đạt tiêu chuẩn an toàn thực phẩm hoặc tiêu chuẩn hữu cơ công bố; chịu trách nhiệm pháp lý cao nhất về tính xác thực của các giấy tờ đính kèm.
+                Tôi cam kết nông sản có nguồn gốc rõ ràng, đáp ứng tiêu chuẩn an toàn thực phẩm hoặc hữu cơ đã công bố; thông tin, giấy tờ cung cấp là chính xác và tôi chịu trách nhiệm về nội dung này. Tôi đã đọc và đồng ý với <a class="text-primary underline font-medium" href="#">Quy chế hoạt động VietFresh Hub</a> và <a class="text-primary underline font-medium" href="#">Chính sách thu hộ COD, chiết khấu đối tác</a>.
               </span>
               </label>
-              <p class="text-error text-sm" th:if="${#fields.hasErrors('legalAgree')}" th:errors="*{legalAgree}"></p>
-              <label class="flex items-start gap-space-sm cursor-pointer p-space-sm rounded-lg hover:bg-surface-container-low transition-colors">
-                <input class="w-5 h-5 mt-0.5 accent-primary shrink-0 rounded" th:field="*{policyAgree}" required type="checkbox">
-                <span class="font-body-md text-body-md text-on-surface leading-snug">
-                Tôi đã đọc, hiểu rõ và đồng ý toàn bộ <a class="text-primary underline font-medium" href="#">Quy chế hoạt động sàn giao dịch VietFresh Hub</a> cùng <a class="text-primary underline font-medium" href="#">Chính sách thu hộ COD &amp; chiết khấu đối tác</a>.
-              </span>
-              </label>
-              <p class="text-error text-sm" th:if="${#fields.hasErrors('policyAgree')}" th:errors="*{policyAgree}"></p>
+              <p class="text-error text-sm" th:if="${#fields.hasErrors('termsAgree')}" th:errors="*{termsAgree}"></p>
             </div>
             <!-- Action Buttons Bar -->
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-md border-t border-surface-container-low">
-              <button class="w-full sm:w-auto px-space-lg py-3 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-title-md text-title-md flex items-center justify-center gap-space-xs transition-colors" type="button">
-                <span class="material-symbols-outlined text-[20px]">drafts</span>
-                <span class="">Lưu hồ sơ nháp</span>
-              </button>
+            <div class="flex flex-col sm:flex-row items-center justify-end gap-space-md pt-space-md border-t border-surface-container-low">
               <div class="w-full sm:w-auto flex items-center gap-space-sm">
                 <a class="w-1/2 sm:w-auto px-space-md py-3 rounded-lg text-on-surface-variant hover:text-on-surface font-title-md text-title-md text-center transition-colors" data-path="trang-chu" href="#">
                   Hủy bỏ
                 </a>
                 <button class="w-full sm:w-auto px-8 py-3.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-title-md text-title-md font-bold flex items-center justify-center gap-space-sm shadow-md transition-all transform active:scale-95" type="submit">
                   <span class="material-symbols-outlined text-[22px]">send</span>
-                  <span class="">Nộp Hồ Sơ Đăng Ký Đối Tác</span>
+                  <span class="">Nộp hồ sơ đăng ký bán hàng</span>
                 </button>
                 <div id="uploadProgressPanel"
                      class="hidden rounded-xl bg-surface-container-low p-4">
@@ -610,112 +593,178 @@
   <!-- Client Script for Interactive UX -->
   <script>
     const MAX_SELLER_DOCUMENT_SIZE = 5 * 1024 * 1024;
+    const applicationForm = document.getElementById("sellerApplicationForm");
+    const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+
+    function getDocumentsEndpoint() {
+      const endpoint = new URL(applicationForm.action, window.location.href);
+      endpoint.pathname = endpoint.pathname.replace(/\/$/, "") + "/documents";
+      return endpoint;
+    }
+
+    function csrfHeaders() {
+      const headers = {};
+      if (csrfToken && csrfHeader) headers[csrfHeader] = csrfToken;
+      return headers;
+    }
 
     document.querySelectorAll(".js-preview-file").forEach(input => {
+      const preview = document.getElementById(input.id + "-preview");
+      const uploadTokenInput = document.getElementById(input.id + "UploadToken");
+      const error = document.getElementById(input.id + "RequiredError");
+      let localPreviewUrl = null;
+      let stagedDocument = uploadTokenInput.value ? {
+        uploadToken: uploadTokenInput.value,
+        previewUrl: preview.dataset.previewUrl,
+        fileName: preview.dataset.fileName,
+        contentType: preview.dataset.contentType
+      } : null;
 
-        const preview = document.getElementById(input.id + "-preview");
-        let selectedFiles = [];
-        let objectUrls = [];
+      function renderPreview(stage, localFile = null, uploading = false) {
+        if (localPreviewUrl) {
+          URL.revokeObjectURL(localPreviewUrl);
+          localPreviewUrl = null;
+        }
+        preview.replaceChildren();
+        if (!stage && !localFile) return;
 
-        function syncInputFiles() {
-            const dataTransfer = new DataTransfer();
-            selectedFiles.forEach(file => dataTransfer.items.add(file));
-            input.files = dataTransfer.files;
+        const item = document.createElement("div");
+        item.className = "preview-item";
+        const fileName = stage?.fileName || localFile?.name || "Tài liệu";
+        const contentType = stage?.contentType || localFile?.type || "";
+        const previewUrl = stage?.previewUrl || "";
+
+        if (contentType.startsWith("image/")) {
+          const img = document.createElement("img");
+          if (localFile) {
+            localPreviewUrl = URL.createObjectURL(localFile);
+            img.src = localPreviewUrl;
+          } else if (previewUrl) {
+            img.src = previewUrl;
+          }
+          img.alt = fileName;
+          item.appendChild(img);
+        } else {
+          const fileLabel = document.createElement("div");
+          fileLabel.className = "preview-file";
+          fileLabel.textContent = contentType === "application/pdf" ? "PDF" : "Tệp";
+          item.appendChild(fileLabel);
         }
 
-        function renderPreview() {
-            objectUrls.forEach(url => URL.revokeObjectURL(url));
-            objectUrls = [];
-            preview.replaceChildren();
+        const name = document.createElement("div");
+        name.className = "preview-name";
+        name.textContent = fileName;
+        item.appendChild(name);
 
-            selectedFiles.forEach((file, index) => {
-                const item = document.createElement("div");
-                item.className = "preview-item";
+        if (uploading) {
+          const status = document.createElement("div");
+          status.className = "preview-name";
+          status.textContent = "Đang tải lên Cloudinary riêng tư...";
+          item.appendChild(status);
+        } else {
+          if (previewUrl) {
+            const link = document.createElement("a");
+            link.href = previewUrl;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            link.className = "preview-name text-primary underline";
+            link.textContent = "Xem tài liệu đã tải lên";
+            item.appendChild(link);
+          }
 
-                if (file.type.startsWith("image/")) {
-                    const img = document.createElement("img");
-                    const url = URL.createObjectURL(file);
+          const removeButton = document.createElement("button");
+          removeButton.type = "button";
+          removeButton.className = "preview-remove";
+          removeButton.textContent = "Xóa";
+          removeButton.addEventListener("click", () => {
+            const uploadToken = uploadTokenInput.value;
+            uploadTokenInput.value = "";
+            stagedDocument = null;
+            renderPreview(null);
+            if (error) {
+              error.hidden = true;
+              error.textContent = "";
+            }
 
-                    objectUrls.push(url);
-                    img.src = url;
-                    img.alt = file.name;
-                    item.appendChild(img);
-                } else {
-                    const fileLabel = document.createElement("div");
-                    fileLabel.className = "preview-file";
-                    fileLabel.textContent =
-                        file.type === "application/pdf" ? "PDF" : "Tệp";
-                    item.appendChild(fileLabel);
-                }
-
-                const name = document.createElement("div");
-                name.className = "preview-name";
-                name.textContent = file.name;
-                item.appendChild(name);
-
-                const removeButton = document.createElement("button");
-                removeButton.type = "button";
-                removeButton.className = "preview-remove";
-                removeButton.textContent = "Xóa";
-                removeButton.addEventListener("click", () => {
-                    selectedFiles.splice(index, 1);
-                    syncInputFiles();
-                    renderPreview();
-                });
-                item.appendChild(removeButton);
-
-                preview.appendChild(item);
-            });
+            if (uploadToken) {
+              const endpoint = getDocumentsEndpoint();
+              endpoint.searchParams.set("uploadToken", uploadToken);
+              endpoint.searchParams.set("documentType", input.dataset.documentType);
+              fetch(endpoint, {
+                method: "DELETE",
+                headers: csrfHeaders(),
+                credentials: "same-origin"
+              }).catch(() => {});
+            }
+          });
+          item.appendChild(removeButton);
         }
 
-        input.addEventListener("change", () => {
-    const error = document.getElementById(input.id + "RequiredError");
+        preview.appendChild(item);
+      }
 
-    if (error && input.files.length > 0) {
-      error.hidden = true;
-      error.textContent = "";
-    }
-            const newlySelectedFiles = Array.from(input.files || []);
+      if (stagedDocument?.fileName) renderPreview(stagedDocument);
 
-            const oversizedFile = newlySelectedFiles.find(
-                file => file.size > MAX_SELLER_DOCUMENT_SIZE
-            );
+      input.addEventListener("change", async () => {
+        const file = input.files && input.files[0];
+        if (!file) return;
 
-            if (oversizedFile) {
-                input.value = "";
-                selectedFiles = input.multiple ? selectedFiles : [];
-                syncInputFiles();
-                renderPreview();
+        if (error) {
+          error.hidden = true;
+          error.textContent = "";
+        }
 
-                if (error) {
-                    error.textContent = "Mỗi giấy tờ không được vượt quá 5 MB.";
-                    error.hidden = false;
-                }
-                return;
-            }
+        if (file.size > MAX_SELLER_DOCUMENT_SIZE) {
+          input.value = "";
+          renderPreview(stagedDocument);
+          if (error) {
+            error.textContent = "Mỗi giấy tờ không được vượt quá 5 MB.";
+            error.hidden = false;
+          }
+          return;
+        }
 
-            // Trường multiple thì cộng file mới vào danh sách cũ.
-            // Trường chỉ nhận một file thì thay bằng file vừa chọn.
-            let files = input.multiple
-                ? [...selectedFiles, ...newlySelectedFiles]
-                : newlySelectedFiles;
+        input.dataset.uploading = "true";
+        input.disabled = true;
+        renderPreview(stagedDocument, file, true);
 
-            const maxFiles = input.multiple
-                ? Number(input.dataset.maxFiles || 5)
-                : 1;
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("documentType", input.dataset.documentType);
+        if (uploadTokenInput.value) {
+          formData.append("previousUploadToken", uploadTokenInput.value);
+        }
 
-            if (files.length > maxFiles) {
-                alert(`Trường này chỉ cho phép tối đa ${maxFiles} file.`);
-                files = files.slice(0, maxFiles);
-            }
+        try {
+          const response = await fetch(getDocumentsEndpoint(), {
+            method: "POST",
+            headers: csrfHeaders(),
+            body: formData,
+            credentials: "same-origin"
+          });
+          const result = await response.json();
+          if (!response.ok) {
+            throw new Error(result.message || "Không thể tải tài liệu lên.");
+          }
 
-            selectedFiles = files;
-            syncInputFiles();
-            renderPreview();
-        });
+          stagedDocument = result;
+          uploadTokenInput.value = result.uploadToken;
+          input.value = "";
+          renderPreview(stagedDocument);
+        } catch (uploadError) {
+          input.value = "";
+          renderPreview(stagedDocument);
+          if (error) {
+            error.textContent = uploadError.message || "Không thể tải tài liệu lên. Vui lòng thử lại.";
+            error.hidden = false;
+          }
+        } finally {
+          delete input.dataset.uploading;
+          input.disabled = false;
+        }
+      });
     });
-     const applicationForm =
-      document.getElementById("sellerApplicationForm");
 
   if (applicationForm) {
     applicationForm.addEventListener("submit", function (event) {
@@ -791,18 +840,30 @@ if (firstInvalidInput) {
   const requiredFiles = [
     {
       input: document.getElementById("identityCard"),
+      token: document.getElementById("identityCardUploadToken"),
       error: document.getElementById("identityCardRequiredError"),
       message: "Vui lòng tải giấy tờ tùy thân."
     },
     {
       input: document.getElementById("businessLicense"),
+      token: document.getElementById("businessLicenseUploadToken"),
       error: document.getElementById("businessLicenseRequiredError"),
       message: "Vui lòng tải giấy phép kinh doanh hoặc chứng nhận."
     }
   ];
 
+  const uploadingFile = requiredFiles.find(
+    item => item.input.dataset.uploading === "true"
+  );
+  if (uploadingFile) {
+    event.preventDefault();
+    uploadingFile.error.textContent = "Đang tải tài liệu lên, vui lòng đợi.";
+    uploadingFile.error.hidden = false;
+    return;
+  }
+
   const missingFile = requiredFiles.find(
-    item => !item.input.files || item.input.files.length === 0
+    item => !item.token.value
   );
 
   if (missingFile) {
@@ -853,26 +914,26 @@ if (firstInvalidInput) {
 
       const xhr = new XMLHttpRequest();
       xhr.open("POST", applicationForm.action);
+      if (csrfHeader && csrfToken) {
+        xhr.setRequestHeader(csrfHeader, csrfToken);
+      }
 
-      // Phần trăm này đo trình duyệt gửi dữ liệu tới Spring Boot.
       xhr.upload.addEventListener("progress", function (e) {
         if (!e.lengthComputable) {
-          status.textContent = "Đang gửi file lên Spring Boot...";
+          status.textContent = "Đang gửi hồ sơ...";
           return;
         }
 
         const percent = Math.floor((e.loaded / e.total) * 100);
         progress.value = percent;
         status.textContent =
-            `Đang gửi file lên Spring Boot: ${percent}%`;
+            `Đang gửi hồ sơ: ${percent}%`;
       });
 
-      // 100% ở đây mới chỉ có nghĩa Spring đã nhận request.
-      // Spring vẫn cần upload các file lên Cloudinary.
       xhr.upload.addEventListener("load", function () {
         progress.removeAttribute("value");
         status.textContent =
-            "Đã gửi file đến máy chủ. Đang tải giấy tờ lên kho lưu trữ an toàn; vui lòng giữ trang này mở.";
+            "Đã gửi hồ sơ. Đang xử lý, vui lòng giữ trang này mở.";
       });
 
       xhr.onload = function () {
@@ -909,7 +970,7 @@ if (firstInvalidInput) {
         submitButton.disabled = false;
       };
 
-      // FormData giữ nguyên file multipart và token CSRF có trong form.
+      // FormData gửi thông tin hồ sơ cùng token tham chiếu các tài liệu đã tải riêng tư.
       xhr.send(new FormData(applicationForm));
     });
   }
