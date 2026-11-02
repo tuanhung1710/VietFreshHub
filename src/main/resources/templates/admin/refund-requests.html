@@ -31,14 +31,14 @@
             <form method="get" th:action="@{/admin/refund-requests}" class="filter-bar">
                 <input type="hidden" name="size" th:value="${refundsPage.size}">
                 <label for="from">Từ ngày/giờ</label>
-                <input type="datetime-local" id="from" name="from" step="1" th:value="${period.start.toString()}"
+                <input type="datetime-local" id="from" name="from" step="1" th:value="${period.start}"
                        th:max="${period.latestSelectableTime.toString()}" min="0001-01-02T00:00:00" required>
                 <label for="to">Đến ngày/giờ</label>
-                <input type="datetime-local" id="to" name="to" step="1" th:value="${period.end.toString()}"
+                <input type="datetime-local" id="to" name="to" step="1" th:value="${period.end}"
                        th:max="${period.latestSelectableTime.toString()}" min="0001-01-02T00:00:00" required>
                 <button type="submit">Xem danh sách</button>
             </form>
-            <div class="panel-heading">
+            <div th:if="${period.start != null}" class="panel-heading">
                 <div>
                     <p th:unless="${period.completed}" role="status">Chưa đến mốc kết thúc đã chọn, danh sách có thể tiếp tục thay đổi. Có thể xuất Excel khi mốc kết thúc đã qua.</p>
                     <p>Số yêu cầu: <strong th:text="${#lists.size(period.requests)}"></strong></p>
@@ -48,7 +48,8 @@
                 </div>
                 <a th:if="${period.completed}" th:href="@{/admin/refund-requests/export(from=${period.start.toString()},to=${period.end.toString()})}">Xuất Excel</a>
             </div>
-            <p th:if="${#lists.isEmpty(period.requests)}" class="empty-state">Không có yêu cầu hoàn tiền trong khoảng thời gian đã chọn.</p>
+            <p th:if="${period.start == null}" class="empty-state">Vui lòng chọn khoảng thời gian để xem danh sách yêu cầu hoàn tiền.</p>
+            <p th:if="${period.start != null and #lists.isEmpty(period.requests)}" class="empty-state">Không có yêu cầu hoàn tiền trong khoảng thời gian đã chọn.</p>
             <div th:unless="${#lists.isEmpty(period.requests)}" class="table-wrap">
                 <table>
                     <thead>
@@ -74,11 +75,13 @@
                 </table>
             </div>
         </section>
-        <div th:replace="~{fragments/pagination :: panel(${refundsPage},
-            @{/admin/refund-requests(page=${refundsPage.number},size=${refundsPage.size},from=${period.start.toString()},to=${period.end.toString()})},
-            @{/admin/refund-requests(page=${refundsPage.number + 2},size=${refundsPage.size},from=${period.start.toString()},to=${period.end.toString()})},
-            @{/admin/refund-requests}, ${ {'from': period.start.toString(), 'to': period.end.toString()} },
-            'Phân trang yêu cầu hoàn tiền', 'yêu cầu', 'Yêu cầu mỗi trang')}"></div>
+        <th:block th:if="${period.start != null}">
+            <div th:replace="~{fragments/pagination :: panel(${refundsPage},
+                @{/admin/refund-requests(page=${refundsPage.number},size=${refundsPage.size},from=${period.start.toString()},to=${period.end.toString()})},
+                @{/admin/refund-requests(page=${refundsPage.number + 2},size=${refundsPage.size},from=${period.start.toString()},to=${period.end.toString()})},
+                @{/admin/refund-requests}, ${ {'from': period.start.toString(), 'to': period.end.toString()} },
+                'Phân trang yêu cầu hoàn tiền', 'yêu cầu', 'Yêu cầu mỗi trang')}"></div>
+        </th:block>
     </main>
 </div>
 </body>
