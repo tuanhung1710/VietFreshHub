@@ -32,7 +32,7 @@ public class ShopBrowseController {
     @GetMapping("/{shopId}/products")
     public String products(@PathVariable Long shopId) {
         shops.profile(shopId);
-        return "redirect:/home?shopId=" + shopId;
+        return "redirect:/shops/" + shopId + "?tab=all";
     }
 
     @GetMapping("/{shopId}/offers")

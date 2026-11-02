@@ -21,11 +21,14 @@ function readLocation() {
     state.q = (query.get('keyword') || '').slice(0, 100);
     state.categoryId = Number(query.get('categoryId')) || null;
     state.sort = ['popular', 'latest', 'sales', 'asc', 'desc'].includes(query.get('sort')) ? query.get('sort') : 'popular';
+    state.page = Math.min(10000, Math.max(1, Math.floor(Number(query.get('page')) || 1)));
+    state.pageSize = options.pageSizes.includes(Number(query.get('pageSize'))) ? Number(query.get('pageSize')) : options.defaultPageSize;
     state.tab = query.get('tab') === 'all' || ['categoryId', 'keyword', 'sort', 'page', 'pageSize'].some(key => query.has(key)) ? 'all' : 'home';
 }
 
 function syncControls() {
     $('q').value = state.q;
+    $('size').value = state.pageSize;
     $('priceSort').value = ['asc', 'desc'].includes(state.sort) ? state.sort : 'popular';
     document.querySelectorAll('[data-sort]').forEach(button => button.classList.toggle('active', state.sort === button.dataset.sort));
     document.querySelectorAll('[data-shop-category]').forEach(button => {
@@ -58,16 +61,22 @@ async function catalog(push = true) {
     if (push) saveLocation();
     $('results').innerHTML = '';
     $('results').setAttribute('aria-busy', 'true');
+    $('prev').disabled = $('next').disabled = true;
     try {
         const page = await request(shopProductsPath(shopId, state));
         if (current !== revision) return;
         state.page = page.page;
         $('results').innerHTML = page.items.map(product => shopProductCard(product)).join('') || empty;
         $('matchCount').textContent = `${page.total} sản phẩm`;
+        $('pageLabel').textContent = `Trang ${page.page} / ${page.pages}`;
+        $('totalLabel').textContent = `${page.total} sản phẩm`;
+        $('prev').disabled = page.page <= 1;
+        $('next').disabled = page.page >= page.pages;
         saveLocation(true);
     } catch (error) {
         if (current !== revision) return;
         $('matchCount').textContent = 'Chưa tải được sản phẩm';
+        $('totalLabel').textContent = '';
         notice(error.message);
     } finally {
         if (current === revision) $('results').removeAttribute('aria-busy');
@@ -109,6 +118,8 @@ function clicked(event) {
         return catalog();
     }
     if (data.sort !== undefined) { state.sort = data.sort; state.page = 1; return catalog(); }
+    if (button.id === 'prev' || button.id === 'next') { state.page += button.id === 'prev' ? -1 : 1; return catalog(); }
+    if (button.id === 'apply') { state.pageSize = Number($('size').value); state.page = 1; return catalog(); }
 }
 
 async function start() {
@@ -127,6 +138,7 @@ async function start() {
         `<button data-shop-category="${Number(category.id)}">${html(category.name)}</button>`).join('');
     $('footerCategories').innerHTML = options.categories.slice(0, 3).map(category =>
         `<p><button class="textlink" data-shop-category="${Number(category.id)}">${html(category.name)}</button></p>`).join('');
+    $('size').innerHTML = options.pageSizes.map(size => `<option value="${size}">${size}</option>`).join('');
     readLocation();
     document.addEventListener('click', event => {
         handle(() => clicked(event));
