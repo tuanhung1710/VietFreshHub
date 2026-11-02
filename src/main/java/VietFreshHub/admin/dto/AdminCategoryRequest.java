@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.web.multipart.MultipartFile;
 
 @Getter
 @Setter
@@ -31,6 +32,10 @@ public class AdminCategoryRequest {
 
     @Positive(message = "Danh mục cha không hợp lệ.")
     private Long parentCategoryId;
+
+    private MultipartFile imageFile;
+
+    private boolean removeImage;
 
     public static AdminCategoryRequest from(Category category) {
         AdminCategoryRequest request = new AdminCategoryRequest();
