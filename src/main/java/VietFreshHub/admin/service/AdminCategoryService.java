@@ -4,9 +4,12 @@ import VietFreshHub.product.entity.Category;
 import VietFreshHub.product.enums.CategoryStatus;
 import VietFreshHub.product.repository.CategoryRepository;
 import VietFreshHub.admin.dto.AdminCategoryRequest;
+import VietFreshHub.sellerapplication.service.CloudinaryStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
@@ -32,6 +35,7 @@ public class AdminCategoryService {
             .thenComparing(Category::getCategoryId, Comparator.nullsLast(Long::compareTo));
 
     private final CategoryRepository categoryRepository;
+    private final CloudinaryStorageService cloudinaryStorageService;
 
     @Transactional(readOnly = true)
     public List<CategoryRow> list(String keyword, String requestedStatus) {
@@ -66,7 +70,21 @@ public class AdminCategoryService {
         Category category = new Category();
         applyForm(category, request, null);
         category.setStatus(CategoryStatus.ACTIVE);
-        return categoryRepository.save(category);
+        CloudinaryStorageService.UploadedCategoryImage uploadedImage = null;
+        try {
+            if (hasImageFile(request)) {
+                uploadedImage = cloudinaryStorageService.uploadPublicCategoryImage(request.getImageFile());
+                category.setImageUrl(uploadedImage.secureUrl());
+            }
+            Category savedCategory = categoryRepository.save(category);
+            registerImageCleanup(uploadedImage, null);
+            return savedCategory;
+        } catch (RuntimeException exception) {
+            if (uploadedImage != null) {
+                cloudinaryStorageService.deleteUploadedCategoryImage(uploadedImage.publicId());
+            }
+            throw exception;
+        }
     }
 
     @Transactional
@@ -76,7 +94,51 @@ public class AdminCategoryService {
         validateParent(request.getParentCategoryId(), categoryId);
 
         applyForm(category, request, categoryId);
-        return categoryRepository.save(category);
+        String previousImageUrl = category.getImageUrl();
+        CloudinaryStorageService.UploadedCategoryImage uploadedImage = null;
+        try {
+            if (hasImageFile(request)) {
+                uploadedImage = cloudinaryStorageService.uploadPublicCategoryImage(request.getImageFile());
+                category.setImageUrl(uploadedImage.secureUrl());
+            } else if (request.isRemoveImage()) {
+                category.setImageUrl(null);
+            }
+            Category savedCategory = categoryRepository.save(category);
+            if (uploadedImage != null || (request.isRemoveImage() && previousImageUrl != null)) {
+                registerImageCleanup(uploadedImage, previousImageUrl);
+            }
+            return savedCategory;
+        } catch (RuntimeException exception) {
+            if (uploadedImage != null) {
+                cloudinaryStorageService.deleteUploadedCategoryImage(uploadedImage.publicId());
+            }
+            throw exception;
+        }
+    }
+
+    private boolean hasImageFile(AdminCategoryRequest request) {
+        return request.getImageFile() != null && !request.getImageFile().isEmpty();
+    }
+
+    private void registerImageCleanup(
+            CloudinaryStorageService.UploadedCategoryImage uploadedImage,
+            String previousImageUrl
+    ) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                if (status == STATUS_COMMITTED) {
+                    if (previousImageUrl != null) {
+                        cloudinaryStorageService.deleteManagedCategoryImageByUrl(previousImageUrl);
+                    }
+                } else if (uploadedImage != null) {
+                    cloudinaryStorageService.deleteUploadedCategoryImage(uploadedImage.publicId());
+                }
+            }
+        });
     }
 
     @Transactional

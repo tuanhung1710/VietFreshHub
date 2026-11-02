@@ -47,6 +47,10 @@ public class Category {
     @Column(name = "description", length = 1000)
     private String description;
 
+    @Nationalized
+    @Column(name = "image_url", length = 1000)
+    private String imageUrl;
+
     @Column(name = "status", nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     private CategoryStatus status = CategoryStatus.ACTIVE;
