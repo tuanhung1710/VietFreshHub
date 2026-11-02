@@ -156,7 +156,8 @@ public class CheckoutController {
                     flash.addFlashAttribute("errorMessage", start.message());
                     return "redirect:/customer/orders";
                 }
-                return "redirect:/customer/order-receipts/" + order.orderId();
+                flash.addFlashAttribute("successMessage", "Đặt hàng thành công.");
+                return "redirect:/customer/orders";
             } catch (CheckoutException ex) {
                 errors.reject("checkout", ex.getMessage());
             } catch (TransientDataAccessException | TransactionException ex) {
