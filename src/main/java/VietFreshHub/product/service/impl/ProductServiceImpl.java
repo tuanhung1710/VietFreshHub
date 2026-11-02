@@ -318,6 +318,8 @@ public class ProductServiceImpl implements ProductService {
         require(
                 name != null && !name.isBlank() && name.trim().length() <= 250,
                 "Nhập tên sản phẩm, tối đa 250 ký tự.");
+        require(form.getOrigin() != null && !form.getOrigin().isBlank() && form.getOrigin().length() <= 200,
+                "Nhập xuất xứ sản phẩm, tối đa 200 ký tự.");
         require(
                 form.getCategoryId() != null
                         && categoryValidator.isActiveCategoryChain(form.getCategoryId()),
@@ -436,6 +438,7 @@ public class ProductServiceImpl implements ProductService {
     private void applyProductFields(Product product, ProductRequest form) {
         product.setName(form.getName().trim());
         product.setDescription(form.getDescription());
+        product.setOrigin(form.getOrigin().strip());
         product.setExpiryWarningDays(form.getExpiryWarningDays());
         product.setRequiresPreparationCheck(form.isRequiresPreparationCheck());
         product.setPreparationNote(null);
@@ -712,6 +715,7 @@ public class ProductServiceImpl implements ProductService {
         String previousPreparationNote = Boolean.TRUE.equals(product.getRequiresPreparationCheck())
                 ? product.getPreparationNote() : null;
         return !Objects.equals(product.getName(), form.getName().trim())
+                || !Objects.equals(emptyToNull(product.getOrigin()), form.getOrigin())
                 || !Objects.equals(emptyToNull(product.getDescription()), emptyToNull(form.getDescription()))
                 || !Objects.equals(category, form.getCategoryId())
                 || !Objects.equals(productImageUrl(product.getProductId()), form.getImageUrl().trim())
@@ -1061,6 +1065,7 @@ public class ProductServiceImpl implements ProductService {
         ProductRequest form = new ProductRequest();
         form.setName(product.getName());
         form.setDescription(product.getDescription());
+        form.setOrigin(product.getOrigin());
         form.setExpiryWarningDays(product.getExpiryWarningDays());
         form.setImageUrl(response.getImageUrl());
         form.setRequiresPreparationCheck(

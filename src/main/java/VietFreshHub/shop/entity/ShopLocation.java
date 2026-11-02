@@ -70,6 +70,10 @@ public class ShopLocation {
         this.shopId = shopId;
     }
 
+    public String getDisplayAddress() {
+        return VietFreshHub.shop.util.ShopAddressFormatter.format(formattedAddress, addressLine, ward, district, province);
+    }
+
     public void updateLocation(Integer provinceId, String province, Integer districtId, String district,
                                Integer wardId, String ward, String addressLine, String formattedAddress,
                                BigDecimal latitude, BigDecimal longitude) {

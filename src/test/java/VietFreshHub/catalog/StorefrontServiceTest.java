@@ -20,7 +20,7 @@ class StorefrontServiceTest {
     @Test
     void homeKeepsItsOwnPagingAndQueriesTopFiveSeparately() {
         var catalog = mock(CatalogService.class);
-        var service = new StorefrontService(catalog, mock(StorefrontShopRepository.class));
+        var service = new StorefrontService(catalog, mock(StorefrontShopRepository.class), mock(VietFreshHub.catalog.repository.CatalogDetailRepository.class));
         var variant = CatalogProductResponse.VariantResponse.builder().variantId(9L).price(BigDecimal.TEN)
                 .availableStock(3).build();
         var product = CatalogProductResponse.builder().productId(7L).name("Xoài").selectedVariant(variant).build();
@@ -47,7 +47,7 @@ class StorefrontServiceTest {
         when(catalog.categories()).thenReturn(List.of());
         var shops = mock(StorefrontShopRepository.class);
         when(shops.list()).thenReturn(List.of());
-        var options = new StorefrontService(catalog, shops).options();
+        var options = new StorefrontService(catalog, shops, mock(VietFreshHub.catalog.repository.CatalogDetailRepository.class)).options();
         assertEquals(PageSizes.OPTIONS, options.pageSizes());
         assertEquals(PageSizes.DEFAULT, options.defaultPageSize());
     }

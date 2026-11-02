@@ -1,7 +1,6 @@
 package VietFreshHub.catalog;
 
 import VietFreshHub.common.PageSizes;
-import VietFreshHub.delivery.scheduler.UnassignedDeliveryRetryScheduler;
 import VietFreshHub.payment.vnpay.VnpayPaymentTimeoutScheduler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterAll;
@@ -22,7 +21,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class StorefrontDatabaseReadTest {
     @Autowired MockMvc mvc;
-    @MockitoBean UnassignedDeliveryRetryScheduler deliveryScheduler;
+    @Autowired org.springframework.jdbc.core.JdbcTemplate jdbc;
+    @Autowired VietFreshHub.catalog.service.CatalogService catalog;
+
     @MockitoBean VnpayPaymentTimeoutScheduler paymentScheduler;
     @MockitoBean VietFreshHub.vietmap.service.VietMapService vietMap;
     @MockitoBean VietFreshHub.payment.vnpay.VnpayQueryClient vnpay;
@@ -41,9 +42,44 @@ class StorefrontDatabaseReadTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.items[*].rating",everyItem(greaterThanOrEqualTo(4.0))));
     }
 
+    @Test
+    void shopPagesDisplayTheStoredFormattedAddress() throws Exception {
+        var locations = jdbc.queryForList("""
+                SELECT s.shop_id,l.formatted_address,l.address_line,l.ward,l.district,l.province
+                FROM dbo.shops s LEFT JOIN dbo.shop_locations l ON l.shop_id=s.shop_id
+                WHERE s.status='ACTIVE' AND s.availability_status='OPEN'
+                """);
+        org.junit.jupiter.api.Assertions.assertFalse(locations.isEmpty());
+        for (var location : locations) {
+            String address = VietFreshHub.shop.util.ShopAddressFormatter.format((String) location.get("formatted_address"),
+                    (String) location.get("address_line"),(String) location.get("ward"),
+                    (String) location.get("district"),(String) location.get("province"));
+            String expected = address == null || address.isBlank() ? "Chưa cập nhật địa chỉ" : address;
+            mvc.perform(get("/shops/" + location.get("shop_id"))).andExpect(status().isOk())
+                    .andExpect(view().name("shop/detail"))
+                    .andExpect(model().attribute("formattedAddress", expected));
+        }
+    }
+
+    @Test
+    void productDetailRendersRealVariantsImagesAndApprovedReviews() throws Exception {
+        var product = catalog.listProducts(new VietFreshHub.catalog.dto.CatalogBrowseFilter()).getContent().getFirst();
+        mvc.perform(get("/product-detail/" + product.getSelectedVariant().getVariantId()))
+                .andExpect(status().isOk()).andExpect(view().name("customer/product-detail"))
+                .andExpect(content().string(containsString("/css/product-detail.css")))
+                .andExpect(content().string(containsString("name=\"variantId\"")))
+                .andExpect(content().string(containsString("name=\"quantity\"")));
+    }
+
     @AfterAll
     static void keepPreviewAvailable() throws InterruptedException {
-        if (Boolean.getBoolean("storefront.preview")) new java.util.concurrent.CountDownLatch(1)
-                .await(Integer.getInteger("storefront.preview.seconds",55),java.util.concurrent.TimeUnit.SECONDS);
+        if (!Boolean.getBoolean("storefront.preview")) return;
+        String stopFile = System.getProperty("storefront.preview.stop-file");
+        long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(
+                Integer.getInteger("storefront.preview.seconds",55));
+        while (System.nanoTime() < deadline) {
+            if (stopFile != null && java.nio.file.Files.exists(java.nio.file.Path.of(stopFile))) break;
+            Thread.sleep(250);
+        }
     }
 }

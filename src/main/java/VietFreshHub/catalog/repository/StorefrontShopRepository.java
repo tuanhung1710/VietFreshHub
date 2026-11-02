@@ -5,6 +5,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
+import VietFreshHub.shop.util.ShopAddressFormatter;
 
 @Repository
 @RequiredArgsConstructor
@@ -14,15 +15,13 @@ public class StorefrontShopRepository {
 
     public Optional<String> formattedAddress(Long shopId) {
         return jdbc.query("""
-                SELECT TOP (1) a.formatted_address
+                SELECT location.formatted_address,location.address_line,location.ward,location.district,location.province
                 FROM dbo.shops s
-                JOIN dbo.shop_members m ON m.shop_id=s.shop_id
-                    AND m.member_role='OWNER' AND m.status='ACTIVE'
-                JOIN dbo.addresses a ON a.user_id=m.user_id
+                JOIN dbo.shop_locations location ON location.shop_id=s.shop_id
                 WHERE s.shop_id=? AND s.status='ACTIVE' AND s.availability_status='OPEN'
-                  AND NULLIF(LTRIM(RTRIM(a.formatted_address)),'') IS NOT NULL
-                ORDER BY a.is_default DESC,a.address_id
-                """, (row, index) -> row.getString("formatted_address"), shopId).stream().findFirst();
+                """, (row, index) -> ShopAddressFormatter.format(row.getString("formatted_address"),
+                row.getString("address_line"),row.getString("ward"),row.getString("district"),row.getString("province")),
+                shopId).stream().filter(address -> address != null && !address.isBlank()).findFirst();
     }
 
     public List<ShopOption> list() {

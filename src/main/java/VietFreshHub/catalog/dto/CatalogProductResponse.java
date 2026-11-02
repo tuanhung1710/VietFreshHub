@@ -9,6 +9,7 @@ public class CatalogProductResponse {
     private Long productId;
     private Long shopId;
     private String name, slug, description, imageUrl, shopName;
+    private String origin;
     private String shopPlace, categoryName;
     private Long categoryId;
     private BigDecimal rating;

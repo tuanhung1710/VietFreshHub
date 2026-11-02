@@ -53,6 +53,7 @@ class StorefrontDiscountTest {
         var product = new CatalogProduct();
         product.setProductId(1L);
         product.setName("Xoài");
+        product.setOrigin("Tiền Giang, Việt Nam");
         product.setImageUrl("/images/xoai-cat.png");
         product.setStatus("ACTIVE");
         product.setShop(shop);
@@ -71,6 +72,7 @@ class StorefrontDiscountTest {
                 4L, new CatalogPricingService.Offer(regular.getPrice(), regular.getPrice(), 7)));
 
         var response = service.getProduct(null, 1L, null);
+        assertEquals("Tiền Giang, Việt Nam", response.getOrigin());
         var card = StorefrontProduct.from(response);
         assertEquals(new BigDecimal("100000"), card.compareAtPrice());
         assertEquals(new BigDecimal("65000"), card.price());

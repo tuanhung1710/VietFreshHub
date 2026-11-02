@@ -6,7 +6,6 @@ import VietFreshHub.auth.repository.UserRoleRepository;
 import VietFreshHub.cart.service.CartService;
 import VietFreshHub.catalog.dto.CatalogProductResponse;
 import VietFreshHub.catalog.service.CatalogService;
-import VietFreshHub.delivery.scheduler.UnassignedDeliveryRetryScheduler;
 import VietFreshHub.payment.vnpay.VnpayPaymentTimeoutScheduler;
 import VietFreshHub.shop.entity.Shop;
 import VietFreshHub.shop.repository.ShopOfferRepository;
@@ -56,7 +55,8 @@ class CustomerShopPagesTest {
     @MockitoBean ShopFavoriteService favorites;
     @MockitoBean UserRepository users;
     @MockitoBean UserRoleRepository roles;
-    @MockitoBean UnassignedDeliveryRetryScheduler deliveryScheduler;
+    @MockitoBean VietFreshHub.notification.service.NotificationService notifications;
+
     @MockitoBean VnpayPaymentTimeoutScheduler paymentScheduler;
     @MockitoBean VietFreshHub.vietmap.service.VietMapService vietMap;
     @MockitoBean VietFreshHub.payment.vnpay.VnpayQueryClient vnpayQueryClient;
@@ -71,6 +71,8 @@ class CustomerShopPagesTest {
         shop.setEmail("vuonson@example.com");
         when(shops.profile(1L)).thenReturn(shop);
         when(shops.location(1L)).thenReturn(Optional.empty());
+        when(storefront.shopAddress(1L)).thenReturn(Optional.empty());
+        when(storefront.productDetails(anyLong())).thenReturn(new VietFreshHub.catalog.repository.CatalogDetailRepository.Details(List.of(),0,List.of()));
         when(shops.list(anyInt(), anyString())).thenReturn(new PageImpl<>(List.of(shop), PageRequest.of(0, 12), 1));
         var variant = CatalogProductResponse.VariantResponse.builder().variantId(3L).variantName("Hộp 1 kg")
                 .price(new BigDecimal("65000")).basePrice(new BigDecimal("80000")).availableStock(20).purchasable(true).build();
@@ -90,9 +92,55 @@ class CustomerShopPagesTest {
                 BigDecimal.TEN, new BigDecimal("50000"), new BigDecimal("200000"), 1, LocalDateTime.of(2026, 11, 15, 23, 59)))));
         User user = new User();
         user.setUserId(5L);
+        user.setEmail("customer@example.com");
+        user.setFullName("Trần Quốc Bảo");
         user.setStatus("ACTIVE");
         when(users.findByEmailIgnoreCase("customer@example.com")).thenReturn(Optional.of(user));
         when(roles.findRoleNamesByUserId(5L)).thenReturn(List.of("ROLE_CUSTOMER"));
+        when(carts.getActiveCart(5L)).thenReturn(VietFreshHub.cart.dto.CartDto.builder()
+                .userId(5L).totalItems(0).totalAmount(BigDecimal.ZERO).build());
+    }
+
+    @Test
+    @WithMockUser(username = "customer@example.com", roles = "CUSTOMER")
+    void sharedAccountMenuUsesTheCustomersNameAcrossAllHeaderLayouts() throws Exception {
+        String[][] pages = {{"/home", "home"}, {"/shops/1", "shop"}, {"/product-detail/3", "product"},
+                {"/cart", "cart"}, {"/customer/profile", "profile"}};
+        for (String[] page : pages) {
+            var response = mvc.perform(get(page[0])).andExpect(status().isOk())
+                    .andExpect(content().string(containsString("/css/header-account.css")))
+                    .andExpect(content().string(containsString("/js/header-account.js")))
+                    .andExpect(content().string(containsString("Trần Quốc Bảo")))
+                    .andExpect(content().string(containsString("data-header-account")))
+                    .andExpect(content().string(containsString("href=\"/customer/addresses\"")))
+                    .andExpect(content().string(containsString("href=\"/customer/chat\"")))
+                    .andExpect(content().string(containsString("href=\"/customer/payments\"")))
+                    .andExpect(content().string(containsString("action=\"/logout\"")))
+                    .andExpect(content().string(containsString("name=\"_csrf\"")))
+                    .andReturn().getResponse();
+            var directory = Path.of("target/account-menu-preview");
+            Files.createDirectories(directory);
+            Files.writeString(directory.resolve(page[1] + ".html"), response.getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+        }
+    }
+
+    @Test
+    void guestAccountLinksDoNotShowTheAuthenticatedMenu() throws Exception {
+        mvc.perform(get("/home")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("href=\"/login\"")))
+                .andExpect(content().string(containsString("href=\"/register\"")))
+                .andExpect(content().string(not(containsString("data-header-account"))))
+                .andExpect(content().string(not(containsString("action=\"/logout\""))));
+    }
+
+    @Test
+    @WithMockUser(username = "customer@example.com", roles = "CUSTOMER")
+    void accountNameIsEscapedWhenRenderedInTheMenu() throws Exception {
+        var user = users.findByEmailIgnoreCase("customer@example.com").orElseThrow();
+        user.setFullName("<script>alert('name')</script>");
+        mvc.perform(get("/home")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("&lt;script&gt;")))
+                .andExpect(content().string(not(containsString("<script>alert('name')</script>"))));
     }
 
     @Test
@@ -101,7 +149,8 @@ class CustomerShopPagesTest {
                 {"/shops/1", "shop"}, {"/shops/1/reviews", "reviews"}, {"/shops/1/offers", "offers"}};
         for (String[] entry : paths) {
             var response = mvc.perform(get(entry[0])).andExpect(status().isOk())
-                    .andExpect(content().string(containsString("/css/customer-shop.css")))
+                    .andExpect(content().string(containsString(entry[0].startsWith("/product-detail") ? "/css/product-detail.css"
+                            : entry[0].matches("/shops/\\d+") ? "/css/shop-view.css" : "/css/customer-shop.css")))
                     .andExpect(content().string(not(containsString("Chưa nhận đơn"))))
                     .andExpect(content().string(not(containsString("Chưa khả dụng"))))
                     .andReturn().getResponse();
@@ -109,6 +158,46 @@ class CustomerShopPagesTest {
             Files.createDirectories(directory);
             Files.writeString(directory.resolve(entry[1] + ".html"), response.getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
         }
+    }
+
+    @Test
+    void shopInformationUsesFormattedAddressAndTheShopJoiningDate() throws Exception {
+        var location = new VietFreshHub.shop.entity.ShopLocation(1L);
+        location.updateLocation(null, "Tỉnh không dùng để thay địa chỉ", null, null, null, null,
+                "Địa chỉ tách riêng không dùng", "126 Lũy Bán Bích, Phường Tân Phú, TP Hồ Chí Minh", null, null);
+        when(storefront.shopAddress(1L)).thenReturn(Optional.of(location.getFormattedAddress()));
+        shops.profile(1L).setCreatedAt(LocalDateTime.of(2025, 3, 11, 19, 0));
+        mvc.perform(get("/shops/1")).andExpect(status().isOk()).andExpect(view().name("shop/detail"))
+                .andExpect(content().string(containsString("126 Lũy Bán Bích, Phường Tân Phú, TP Hồ Chí Minh")))
+                .andExpect(content().string(containsString("12/03/2025")))
+                .andExpect(content().string(not(containsString(location.getAddressLine()))))
+                .andExpect(content().string(not(containsString(location.getProvince()))));
+        mvc.perform(get("/shops/1/products")).andExpect(redirectedUrl("/shops/1?tab=all"));
+    }
+
+    @Test
+    void missingFormattedAddressDoesNotFallBackToSeparateAddressComponents() throws Exception {
+        var location = new VietFreshHub.shop.entity.ShopLocation(1L);
+        location.updateLocation(null, "Không lấy tỉnh làm địa chỉ", null, null, null, null,
+                "Không ghép địa chỉ này", null, null, null);
+        when(shops.location(1L)).thenReturn(Optional.of(location));
+        mvc.perform(get("/shops/1")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("Chưa cập nhật địa chỉ")))
+                .andExpect(content().string(not(containsString(location.getAddressLine()))))
+                .andExpect(content().string(not(containsString(location.getProvince()))));
+    }
+
+    @Test
+    @WithMockUser(username = "customer@example.com", roles = "CUSTOMER")
+    void productDetailsRenderTheRealPurchaseFormAndOnlyRelatedProductsFromThisShop() throws Exception {
+        mvc.perform(get("/product-detail/3")).andExpect(status().isOk())
+                .andExpect(view().name("customer/product-detail"))
+                .andExpect(content().string(containsString("action=\"/cart/add\"")))
+                .andExpect(content().string(containsString("name=\"variantId\"")))
+                .andExpect(content().string(containsString("name=\"quantity\"")))
+                .andExpect(content().string(containsString("value=\"checkout\"")))
+                .andExpect(content().string(containsString("name=\"_csrf\"")));
+        verify(catalog).listProducts(argThat((VietFreshHub.catalog.dto.CatalogBrowseFilter filter) -> Long.valueOf(1L).equals(filter.getShopId())));
     }
 
     @Test

@@ -52,6 +52,8 @@ class StorefrontDiscountPagesTest {
     @MockitoBean VnpayPaymentTimeoutScheduler paymentScheduler;
     @MockitoBean VietFreshHub.vietmap.service.VietMapService vietMap;
     @MockitoBean VietFreshHub.payment.vnpay.VnpayQueryClient vnpayQueryClient;
+    @MockitoBean VietFreshHub.product.service.ProductService sellerProducts;
+    @MockitoBean VietFreshHub.shop.service.ShopService sellerShops;
 
     @BeforeEach
     void setUp() {
@@ -66,6 +68,7 @@ class StorefrontDiscountPagesTest {
                 .price(new BigDecimal("65000")).basePrice(new BigDecimal("80000"))
                 .compareAtPrice(new BigDecimal("100000")).availableStock(20).purchasable(true).build();
         var product = CatalogProductResponse.builder().productId(1L).shopId(1L).name("Xoài")
+                .origin("Tiền Giang, Việt Nam")
                 .imageUrl("/images/xoai-cat.png").variants(List.of(variant)).selectedVariant(variant).build();
         var related = CatalogProductResponse.builder().productId(2L).shopId(1L).name("Bưởi")
                 .imageUrl("/images/buoi-da-xanh.jpg").variants(List.of(variant)).selectedVariant(variant).build();
@@ -102,6 +105,7 @@ class StorefrontDiscountPagesTest {
 
     private void assertProductDiscountIsRendered() throws Exception {
         mvc.perform(get("/product-detail/3")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("<th>Xuất xứ</th><td>Tiền Giang, Việt Nam</td>")))
                 .andExpect(content().string(matchesPattern("(?s).*id=\"currentPrice\"[^>]*>65\\.000 VND</div>.*")))
                 .andExpect(content().string(matchesPattern("(?s).*id=\"compareAtPrice\"(?![^>]*hidden)[^>]*>100\\.000 VND</del>.*")))
                 .andExpect(content().string(matchesPattern("(?s).*id=\"discountPercent\"(?![^>]*hidden)[^>]*>-35%</span>.*")))
@@ -119,8 +123,44 @@ class StorefrontDiscountPagesTest {
                 .variants(List.of(variant)).selectedVariant(variant).build();
         when(catalog.getProduct(any(), any(), any())).thenReturn(product);
         mvc.perform(get("/product-detail/3")).andExpect(status().isOk())
+                .andExpect(content().string(containsString("<th>Xuất xứ</th><td>Chưa cập nhật</td>")))
                 .andExpect(content().string(matchesPattern("(?s).*id=\"compareAtPrice\"[^>]*hidden[^>]*></del>.*")))
                 .andExpect(content().string(matchesPattern("(?s).*id=\"discountPercent\"[^>]*hidden[^>]*></span>.*")));
+    }
+
+    @Test
+    @WithMockUser(username = "customer@example.com", roles = "STORE_MANAGER")
+    void sellerCreationFormIncludesARequiredOriginField() throws Exception {
+        when(roles.findRoleNamesByUserId(5L)).thenReturn(List.of("ROLE_STORE_MANAGER"));
+        var response = mvc.perform(get("/seller/products/new")).andExpect(status().isOk())
+                .andExpect(content().string(matchesPattern("(?s).*<input[^>]*id=\"origin\"[^>]*required[^>]*>.*")))
+                .andReturn().getResponse();
+        java.nio.file.Files.writeString(java.nio.file.Path.of("target/product-origin-form-preview.html"),
+                response.getContentAsString(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    @Test
+    @WithMockUser(username = "customer@example.com", roles = "STORE_MANAGER")
+    void sellerCannotSaveAProductWithoutItsOrigin() throws Exception {
+        when(roles.findRoleNamesByUserId(5L)).thenReturn(List.of("ROLE_STORE_MANAGER"));
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/seller/products")
+                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                .param("name", "Xoài").param("categoryId", "1").param("imageUrl", "/images/xoai-cat.png"))
+                .andExpect(status().isOk()).andExpect(view().name("product/form"))
+                .andExpect(model().attributeHasFieldErrors("form", "origin"));
+        org.mockito.Mockito.verify(sellerProducts, org.mockito.Mockito.never()).create(any(), any());
+    }
+
+    @Test
+    @WithMockUser(username = "customer@example.com", roles = "STORE_MANAGER")
+    void sellerEditFormDisplaysTheStoredOrigin() throws Exception {
+        when(roles.findRoleNamesByUserId(5L)).thenReturn(List.of("ROLE_STORE_MANAGER"));
+        var form = new VietFreshHub.product.dto.ProductRequest();
+        form.setName("Xoài");
+        form.setOrigin("Tiền Giang, Việt Nam");
+        when(sellerProducts.editForm(any(), eq(1L))).thenReturn(form);
+        mvc.perform(get("/seller/products/1/edit")).andExpect(status().isOk())
+                .andExpect(content().string(matchesPattern("(?s).*<input[^>]*id=\"origin\"[^>]*value=\"Tiền Giang, Việt Nam\"[^>]*>.*")));
     }
 
 }
