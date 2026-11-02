@@ -35,13 +35,14 @@
       <div><h1 th:text="${shop.shopName}"></h1><p th:text="${#strings.isEmpty(shop.description) ? 'Shop chưa cập nhật giới thiệu.' : shop.description}"></p></div>
     </div>
     <div class="stats">
+      <div class="stat"><strong>Sản phẩm</strong><span id="productCount" aria-live="polite">Đang tải…</span></div>
       <div class="stat"><strong>Địa chỉ</strong><span id="address" th:text="${formattedAddress}"></span></div>
       <div class="stat"><strong>Tham gia</strong><span id="joined" th:text="${joinedDate != null ? #temporals.format(joinedDate,'dd/MM/yyyy') : 'Chưa cập nhật'}"></span></div>
     </div>
   </section>
   <nav hidden class="nav" id="topnav" aria-label="Danh mục sản phẩm trong shop"></nav>
   <div id="notice" class="note hide" role="status" aria-live="polite"></div>
-  <div id="shopHome" hidden>
+  <div id="shopHome">
     <section class="section"><div class="sectionhead"><h2>ĐỀ XUẤT CHO BẠN</h2><button data-shop-all>Xem tất cả →</button></div><div class="products" id="recommended" aria-busy="true"></div></section>
     <section class="section" hidden><div class="sectionhead"><h2>TOP PRODUCTS</h2><button data-shop-all>Xem tất cả →</button></div><div class="products" id="topProducts" aria-busy="true"></div></section>
   </div>
