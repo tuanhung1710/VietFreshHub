@@ -48,8 +48,11 @@ public class ShopProfileController {
     @PostMapping
     public String update(Authentication authentication,
                          @Valid @ModelAttribute("profileForm") ShopProfileRequest form,
-                         BindingResult errors, RedirectAttributes flash) {
-        if (errors.hasErrors()) return "store_manager/profile-form";
+                         BindingResult errors, Model model, RedirectAttributes flash) {
+        if (errors.hasErrors()) {
+            preparePage(profiles.getManagedProfile(authentication), model);
+            return "store_manager/profile-form";
+        }
         profiles.update(authentication, form);
         flash.addFlashAttribute("successMessage", "Đã cập nhật hồ sơ cửa hàng.");
         return "redirect:/seller/profile";
