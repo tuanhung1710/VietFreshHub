@@ -1,6 +1,8 @@
 package VietFreshHub.shop.controller;
 
 import VietFreshHub.shop.service.ShopProfileService;
+import VietFreshHub.shop.service.ShopService;
+import VietFreshHub.shop.entity.Shop;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -20,16 +22,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping("/seller/profile")
 public class ShopProfileController {
     private final ShopProfileService profiles;
+    private final ShopService shops;
 
     @GetMapping
     public String profile(Authentication authentication, Model model) {
-        model.addAttribute("shop", profiles.getManagedProfile(authentication));
+        preparePage(profiles.getManagedProfile(authentication), model);
         return "store_manager/profile";
     }
 
     @GetMapping("/edit")
     public String edit(Authentication authentication, Model model) {
         var shop = profiles.getManagedProfile(authentication);
+        preparePage(shop, model);
         var form = new ShopProfileRequest();
         form.setShopName(shop.getShopName());
         form.setDescription(shop.getDescription());
@@ -49,6 +53,11 @@ public class ShopProfileController {
         profiles.update(authentication, form);
         flash.addFlashAttribute("successMessage", "Đã cập nhật hồ sơ cửa hàng.");
         return "redirect:/seller/profile";
+    }
+
+    private void preparePage(Shop shop, Model model) {
+        model.addAttribute("shop", shop);
+        model.addAttribute("pickupLocation", shops.findLocationByShopId(shop.getShopId()).orElse(null));
     }
 
     @PostMapping("/availability")
