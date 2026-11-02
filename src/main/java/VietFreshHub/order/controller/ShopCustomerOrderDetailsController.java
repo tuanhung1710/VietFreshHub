@@ -18,6 +18,7 @@ public class ShopCustomerOrderDetailsController {
     private final ShopCustomerOrderQueryService orders;
     private final VietFreshHub.order.service.ShopCustomerOrderService lifecycle;
     private final VnpayPaymentService vnpayPayments;
+    private final VietFreshHub.refund.service.RefundRequestService refunds;
     @GetMapping(value="/{shopOrderId}",params="!shopOrderId")
     public String detail(@PathVariable Long shopOrderId,
                          Authentication authentication,Model model) {
@@ -30,6 +31,8 @@ public class ShopCustomerOrderDetailsController {
         model.addAttribute("shopOrderId",shopOrderId);
         model.addAttribute("canRetryVnpayPayment",vnpayPayments.canRetry(order.orderId(),customerId));
         model.addAttribute("actions",lifecycle.shopActions(customerId,shopOrderId));
+        model.addAttribute("refund",refunds.getCustomerShopState(shopOrderId,authentication));
+        model.addAttribute("receiptRefund",refunds.getCustomerState(order.orderId(),authentication));
         return "customer/shop-order-detail";
     }
     @GetMapping(value="/{orderId}",params="shopOrderId")

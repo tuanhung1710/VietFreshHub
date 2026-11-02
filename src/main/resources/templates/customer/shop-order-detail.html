@@ -55,6 +55,18 @@
             </form>
             <a class="button secondary full" th:href="@{/home}">Tiếp tục mua sắm</a>
             <a th:if="${shopOrderId != null}" class="button secondary full" th:href="@{/customer/orders/{id}/tracking(id=${shopOrderId})}">Theo dõi đơn hàng</a>
+            <a th:if="${shopOrderId != null and refund != null and refund.eligible}" class="button secondary full"
+               th:href="@{/customer/orders/shops/{id}/refund-information(id=${shopOrderId})}">Nhập thông tin hoàn tiền</a>
+            <p th:if="${refund != null and refund.submittedAt != null}" class="muted">
+                <span>Đã gửi yêu cầu hoàn tiền đơn này: </span>
+                <strong th:text="${#numbers.formatInteger(refund.refundAmount,1,'POINT')} + ' ₫'"></strong>
+                <span th:text="' lúc ' + ${#temporals.format(refund.submittedAt,'HH:mm dd/MM/yyyy')}"></span>. Thông tin đã được ghi nhận để xử lý hoàn tiền thủ công.
+            </p>
+            <p th:if="${receiptRefund != null and receiptRefund.submittedAt != null}" class="muted">
+                <span>Yêu cầu hoàn tiền toàn lượt đặt hàng đã gửi trước đây: </span>
+                <strong th:text="${#numbers.formatInteger(receiptRefund.refundAmount,1,'POINT')} + ' ₫'"></strong>
+                <span th:text="' lúc ' + ${#temporals.format(receiptRefund.submittedAt,'HH:mm dd/MM/yyyy')}"></span>. Thông tin đã được ghi nhận để xử lý hoàn tiền thủ công.
+            </p>
             <form th:if="${shopOrderId != null}" th:action="@{/customer/orders/shops/{id}/reorder(id=${shopOrderId})}" method="post" class="order-action-form"><button type="submit" class="button secondary full">Mua lại</button></form>
             <details th:if="${shopOrderId != null and actions != null and actions.cancellable}" class="cancel-order"><summary class="button danger full">Hủy đơn</summary>
                 <form th:action="@{/customer/orders/shops/{id}/cancel(id=${shopOrderId})}" method="post">
