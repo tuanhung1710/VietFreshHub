@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 public class VnpayProperties {
     private boolean enabled = true;
     private String tmnCode = "6CBHNFW9";
-    private String hashSecret = "OAFFBSOXOTCJOFEDUYHDYZSPOEGSCOBC";
+    private String hashSecret;
     private String paymentUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
     private String queryUrl = "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
     private String queryIpAddress = "127.0.0.1";

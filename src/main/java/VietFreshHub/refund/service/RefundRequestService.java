@@ -29,6 +29,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -103,16 +104,15 @@ public class RefundRequestService {
     @Transactional(readOnly = true)
     public RefundPeriod getAdminPeriod(String from, String to) {
         LocalDateTime now = LocalDateTime.now(VIETNAM).withNano(0);
-        LocalDateTime start = now.minusDays(1);
-        LocalDateTime end = now;
-        if (from != null || to != null) {
-            if (from == null || to == null || from.isBlank() || to.isBlank()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Vui lòng chọn cả thời gian bắt đầu và kết thúc.");
-            }
-            start = parseDateTime(from);
-            end = parseDateTime(to);
+        if ((from == null || from.isBlank()) && (to == null || to.isBlank())) {
+            return new RefundPeriod(null, null, now, List.of(), BigDecimal.ZERO);
         }
+        if (from == null || to == null || from.isBlank() || to.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Vui lòng chọn cả thời gian bắt đầu và kết thúc.");
+        }
+        LocalDateTime start = parseDateTime(from);
+        LocalDateTime end = parseDateTime(to);
         if (!start.isBefore(end)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Thời gian bắt đầu phải trước thời gian kết thúc.");

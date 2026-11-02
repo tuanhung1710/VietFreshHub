@@ -9,6 +9,7 @@ import VietFreshHub.delivery.repository.DeliveryRepository;
 import VietFreshHub.notification.dto.NotificationRow;
 import VietFreshHub.notification.service.NotificationService;
 import VietFreshHub.order.entity.Order;
+import VietFreshHub.order.repository.OrderRepository;
 import VietFreshHub.shop.service.ShopService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,6 +30,7 @@ public class DeliveryNotificationService {
     private final AuthService authService;
     private final DeliveryRepository deliveryRepository;
     private final DeliveryAssignmentRepository deliveryAssignmentRepository;
+    private final OrderRepository orderRepository;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void notifyClaimed(DeliveryAssignment assignment) {
@@ -95,6 +97,13 @@ public class DeliveryNotificationService {
         Long userId = authService.getCurrentUserId(authentication);
         if (!notification.hasDetail()) {
             throw unavailable();
+        }
+        if ("REVIEW_REMINDER".equals(notification.type())) {
+            if (!hasRole(authentication, "ROLE_CUSTOMER")
+                    || orderRepository.findByOrderIdAndCustomerUserId(notification.entityId(), userId).isEmpty()) {
+                throw unavailable();
+            }
+            return "/customer/orders/" + notification.entityId();
         }
         if ("DELIVERY_ASSIGNMENT".equals(notification.entityType())) {
             authService.getCurrentDeliveryStaffId(authentication);

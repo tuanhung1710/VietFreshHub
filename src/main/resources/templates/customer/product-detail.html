@@ -35,6 +35,7 @@
     <div class="info">
       <h1 th:text="${product.name}"></h1>
       <div class="ratingline"><span>★ <strong th:text="${product.rating == null ? '0.0' : #numbers.formatDecimal(product.rating,1,1)}"></strong> / 5</span><span><strong th:text="${details.reviewCount}"></strong> đánh giá</span><span>Đã bán <strong th:text="${product.sales}"></strong></span></div>
+      <p><a th:href="@{/reviews/product/{id}(id=${product.productId})}">Xem đánh giá và xếp hạng</a> · <a th:href="@{/reviews/shop/{id}(id=${shop.shopId})}">Xem đánh giá cửa hàng</a></p>
       <div class="pricebox" aria-live="polite">
         <div class="price-line">
           <div class="price" id="currentPrice" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'POINT')} + ' VND'"></div>
@@ -84,7 +85,7 @@
     <table class="desctable"><tbody>
       <tr><th>Danh mục</th><td th:text="${product.categoryName}"></td></tr><tr><th>Tên sản phẩm</th><td th:text="${product.name}"></td></tr>
       <tr><th>Quy cách</th><td><th:block th:each="variant,iter : ${product.variants}"><span th:text="${variant.variantName}"></span><span th:unless="${iter.last}"> · </span></th:block></td></tr>
-      <tr><th>Xuất xứ</th><td>Chưa cập nhật</td></tr><tr><th>Nhà bán hàng</th><td th:text="${shop.shopName}"></td></tr>
+      <tr><th>Xuất xứ</th><td th:text="${#strings.isEmpty(product.origin) ? 'Chưa cập nhật' : product.origin}"></td></tr><tr><th>Nhà bán hàng</th><td th:text="${shop.shopName}"></td></tr>
     </tbody></table>
     <div class="desc"><h3 style="margin-top:26px">Mô tả sản phẩm</h3><p th:text="${#strings.isEmpty(product.description) ? 'Nhà bán hàng chưa cập nhật mô tả.' : product.description}"></p></div>
   </div></section>

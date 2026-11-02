@@ -7,6 +7,9 @@
 </head>
 <body>
 <span th:replace="~{fragments/notifications :: bell}"></span>
+<form th:action="@{/logout}" method="post">
+    <button type="submit">Đăng xuất</button>
+</form>
 <h1>SHOP</h1>
 <p th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}"><a th:href="@{/home}">← Quay lại mua sắm</a></p>
 <p><a th:href="@{/seller/announcements}">Thông báo từ hệ thống và quản trị viên</a></p>
@@ -15,7 +18,7 @@
 <button type="button" th:attr="data-vf-copy-code=${shopCode},aria-label=${'Sao chép mã shop '+shopCode}">Sao chép</button></p>
 <p><a th:href="@{/store_manager/chat}">Mở tin nhắn khách hàng</a></p>
 <p><a th:href="@{/seller/pickup-location}">Quản lý địa điểm lấy hàng</a></p>
-<p><a th:href="@{/seller/payout-account}">Tài khoản nhận payout</a></p>
+<p><a th:href="@{/seller/payout-account}">Tài khoản ngân hàng</a></p>
 
 <p><a th:href="@{/seller/deliveries}">Giám sát giao hàng</a></p>
 
@@ -28,8 +31,6 @@
         <li><a th:href="@{/seller/preparing-orders}" th:text="${'Đang chuẩn bị (' + orderCounts.preparingOrders + ')'}">Đang chuẩn bị</a></li>
         <li><a th:href="@{/seller/ready-orders}" th:text="${'Sẵn sàng giao (' + orderCounts.readyOrders + ')'}">Sẵn sàng giao</a></li>
         <li><a th:href="@{/seller/completed-orders}" th:text="${'Đơn đã hoàn thành (' + orderCounts.completedOrders + ')'}">Đơn đã hoàn thành</a></li>
-        <li><a th:href="@{/seller/failed-orders}" th:text="${'Giao hàng thất bại (' + orderCounts.failedOrders + ')'}">Giao hàng thất bại</a></li>
-        <li><a th:href="@{/seller/cancelled-orders}" th:text="${'Đã hủy (' + orderCounts.cancelledOrders + ')'}">Đã hủy</a></li>
     </ul>
 </nav>
 <h2>QUẢN LÝ SẢN PHẨM VÀ KHO</h2>

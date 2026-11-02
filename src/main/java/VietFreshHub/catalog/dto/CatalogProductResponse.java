@@ -6,9 +6,9 @@ import lombok.Builder;
 import lombok.Getter;
 @Getter @Builder
 public class CatalogProductResponse {
-    private Long productId;
-    private Long shopId;
+    private Long productId, shopId;
     private String name, slug, description, imageUrl, shopName;
+    private String origin;
     private String shopPlace, categoryName;
     private Long categoryId;
     private BigDecimal rating;

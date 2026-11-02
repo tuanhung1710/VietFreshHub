@@ -10,6 +10,8 @@ import VietFreshHub.order.dto.OrderCountsResponse;
 import VietFreshHub.order.dto.OrderDetailResponse;
 import VietFreshHub.order.dto.OrderFilterRequest;
 import VietFreshHub.order.dto.OrderItemResponse;
+import VietFreshHub.order.dto.SellerDashboardOrder;
+import VietFreshHub.order.dto.ShopReportSummary;
 import VietFreshHub.order.dto.OrderProcessingHistoryEntry;
 import VietFreshHub.order.entity.Order;
 import VietFreshHub.order.entity.OrderAddress;
@@ -19,8 +21,11 @@ import VietFreshHub.order.entity.OrderStatusHistory;
 import VietFreshHub.order.entity.ShopOrder;
 import VietFreshHub.order.repository.OrderAddressRepository;
 import VietFreshHub.order.repository.OrderDeliveryReadRepository;
+import VietFreshHub.order.repository.OrderItemRepository;
 import VietFreshHub.order.repository.OrderStatusHistoryRepository;
 import VietFreshHub.order.repository.ShopOrderRepository;
+import VietFreshHub.order.service.OrderService;
+import VietFreshHub.order.service.OrderLifecycleLock;
 import VietFreshHub.payment.service.PaymentService;
 import VietFreshHub.product.exception.CatalogException;
 import VietFreshHub.shop.entity.ShopLocation;
@@ -36,6 +41,7 @@ import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import VietFreshHub.common.PageSizes;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -64,6 +70,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final String[] VIETNAMESE_DIGITS = {
             "không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"
@@ -73,6 +80,7 @@ public class OrderServiceImpl implements OrderService {
     private final ShopOrderRepository shopOrderRepository;
     private final OrderAddressRepository orderAddressRepository;
     private final OrderDeliveryReadRepository orderDeliveryReadRepository;
+    private final OrderItemRepository orderItemRepository;
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
     private final ShopService shopService;
     private final PaymentService paymentService;
@@ -82,6 +90,7 @@ public class OrderServiceImpl implements OrderService {
     private final StockAllocationService stockAllocationService;
     private final AuthService authService;
     private final EntityManager entityManager;
+    private final OrderLifecycleLock lifecycleLock;
 
     @Override
     @Transactional(readOnly = true)
@@ -162,6 +171,67 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<SellerDashboardOrder> getTodaysOrders(Authentication authentication) {
+        Long shopId = shopService.getManagedShopId(authentication);
+        LocalDate day = LocalDate.now(BUSINESS_ZONE);
+        LocalDateTime from = startOfBusinessDayUtc(day);
+        return shopOrderRepository
+                .findTop5ByShopIdAndOrder_PlacedAtGreaterThanEqualAndOrder_PlacedAtLessThanOrderByOrder_PlacedAtDesc(
+                        shopId, from, startOfBusinessDayUtc(day.plusDays(1)))
+                .stream()
+                .map(shopOrder -> new SellerDashboardOrder(
+                        shopOrder.getShopOrderId(), shopOrder.getOrder().getOrderCode(),
+                        shopOrder.getOrder().getCustomer().getFullName(), shopOrder.getOrder().getPlacedAt(),
+                        shopOrder.getTotalAmount(), shopOrder.getStatus()))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<OrderItemRepository.BestSellingProduct> getBestSellingProducts(Authentication authentication) {
+        return orderItemRepository.findTopSellingProducts(shopService.getManagedShopId(authentication),
+                PageRequest.of(0, 5));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ShopReportSummary.Sales getShopSalesSummary(Authentication authentication, LocalDate date) {
+        LocalDate salesDate = date == null ? LocalDate.now(BUSINESS_ZONE) : date;
+        return salesSummary(shopService.getManagedShopId(authentication), salesDate, salesDate);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ShopReportSummary getShopReport(Authentication authentication, LocalDate from, LocalDate to) {
+        LocalDate today = LocalDate.now(BUSINESS_ZONE);
+        from = from == null ? today.minusDays(29) : from;
+        to = to == null ? today : to;
+        if (from.isAfter(to) || to.isAfter(today)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Khoảng ngày báo cáo không hợp lệ.");
+        }
+        Long shopId = shopService.getManagedShopId(authentication);
+        LocalDateTime start = startOfBusinessDayUtc(from);
+        LocalDateTime end = startOfBusinessDayUtc(to.plusDays(1));
+        return new ShopReportSummary(from, to,
+                salesSummary(shopId, from, to),
+                shopOrderRepository.getOrderCountsByStatus(shopId, start, end),
+                shopOrderRepository.countDistinctCustomers(shopId, start, end),
+                orderItemRepository.findTopSellingProductsInPeriod(shopId, start, end, PageRequest.of(0, 10)));
+    }
+
+    private ShopReportSummary.Sales salesSummary(Long shopId, LocalDate from, LocalDate to) {
+        ShopOrderRepository.SalesTotals totals = shopOrderRepository.getCompletedSalesTotals(shopId,
+                startOfBusinessDayUtc(from), startOfBusinessDayUtc(to.plusDays(1)));
+        return new ShopReportSummary.Sales(totals.getSalesAmount(), totals.getDiscounts(),
+                totals.getShippingFees(), totals.getCompletedOrders());
+    }
+
+    private LocalDateTime startOfBusinessDayUtc(LocalDate date) {
+        return date.atStartOfDay(BUSINESS_ZONE).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public OrderDetailResponse getOrderDetail(Long shopOrderId, Authentication authentication) {
         Long shopId = shopService.getManagedShopId(authentication);
         ShopOrder shopOrder = shopOrderRepository.findByShopOrderIdAndShopId(shopOrderId, shopId)
@@ -218,11 +288,10 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void lockOrderForDeliveryCompletion(Long orderId) {
-        Order order = entityManager.find(Order.class, orderId);
-        if (order == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng.");
+        Order order = lifecycleLock.lock(orderId);
+        if (order.getStatus() == Order.Status.CANCELLED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Không thể hoàn tất đơn hàng đã hủy.");
         }
-        entityManager.refresh(order, LockModeType.PESSIMISTIC_WRITE);
     }
 
     @Override
@@ -230,6 +299,8 @@ public class OrderServiceImpl implements OrderService {
     public void startShopOrderDelivery(Long shopOrderId, Long changedBy) {
         ShopOrder shopOrder = shopOrderRepository.findById(shopOrderId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng."));
+        lockOrderForDeliveryCompletion(shopOrder.getOrder().getOrderId());
+        entityManager.refresh(shopOrder, LockModeType.PESSIMISTIC_WRITE);
         if (!"READY_FOR_DELIVERY".equals(shopOrder.getStatus())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Chỉ có thể bắt đầu giao hàng cho đơn hàng sẵn sàng giao hàng.");
@@ -246,6 +317,10 @@ public class OrderServiceImpl implements OrderService {
         Order order = shopOrder.getOrder();
         lockOrderForDeliveryCompletion(order.getOrderId());
         entityManager.refresh(shopOrder, LockModeType.PESSIMISTIC_WRITE);
+        paymentService.validatePaymentForDelivery(order.getOrderId());
+        if ("CANCELLED".equals(shopOrder.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Đơn cửa hàng đã hủy, không thể hoàn tất giao hàng.");
+        }
         if (!"OUT_FOR_DELIVERY".equals(shopOrder.getStatus())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Chỉ có thể hoàn tất đơn hàng đang giao hàng.");
         }
@@ -295,12 +370,7 @@ public class OrderServiceImpl implements OrderService {
         if (!paymentService.isCodOrder(orderId)) return;
         List<ShopOrder> children = shopOrderRepository.findByOrderOrderIdOrderByShopOrderIdAsc(orderId);
         if (children.isEmpty()) return;
-        Specification<ShopOrder> returnedFailures = deliveryReturnQueryService.confirmedReturnedFailures()
-                .and((root, query, builder) -> builder.equal(root.get("order").get("orderId"), orderId));
-        Set<Long> returnedIds = shopOrderRepository.findAll(returnedFailures).stream()
-                .map(ShopOrder::getShopOrderId).collect(Collectors.toSet());
-        List<ShopOrder> remaining = children.stream()
-                .filter(child -> !"CANCELLED".equals(child.getStatus()) && !returnedIds.contains(child.getShopOrderId())).toList();
+        List<ShopOrder> remaining = deliveryReturnQueryService.collectibleCodShopOrders(orderId, children);
         if (remaining.isEmpty()) {
             paymentService.reconcileCodPayment(orderId, BigDecimal.ZERO, null, true);
             return;
@@ -500,7 +570,8 @@ public class OrderServiceImpl implements OrderService {
         if (filter.getSort() == null || filter.getSort().isBlank()) {
             filter.setSort("NEWEST");
         }
-        int pageSize = "all".equals(view) ? 50 : 15;
+        int pageSize = PageSizes.normalize(filter.getSize());
+        filter.setSize(pageSize);
         Pageable pageable = PageRequest.of(page, pageSize, resolveOrderSort(filter.getSort()));
         return shopOrderRepository.findAll(specification, pageable);
     }
@@ -519,12 +590,13 @@ public class OrderServiceImpl implements OrderService {
                                                             String view) {
         Long shopId = shopService.getManagedShopId(authentication);
         validateDateRange(filter);
-        String paymentStatus = "completed".equals(view) || filter.getPaymentStatus() == null
-                ? "" : filter.getPaymentStatus().trim();
-        if (!paymentStatus.isEmpty() && !OrderLabels.shopPaymentStatusOptions().containsKey(paymentStatus)) {
+        List<String> paymentStatuses = "completed".equals(view) ? List.of() : selectedFilterValues(filter.getPaymentStatus());
+        if (paymentStatuses.stream().anyMatch(value -> !OrderLabels.shopPaymentStatusOptions().containsKey(value))) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Trạng thái thanh toán không hợp lệ.");
         }
-        filter.setPaymentStatus(paymentStatus);
+        filter.setPaymentStatus(paymentStatuses);
+        filter.setPriceRange(selectedFilterValues(filter.getPriceRange()));
+        filter.setStatus(selectedFilterValues(filter.getStatus()));
         List<String> statuses = switch (view) {
             case "all" -> List.of();
             case "incoming" -> List.of("PENDING");
@@ -537,7 +609,7 @@ public class OrderServiceImpl implements OrderService {
             default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Danh sách đơn hàng không hợp lệ.");
         };
         boolean filterStatus = "all".equals(view) || "failed".equals(view);
-        String selectedStatus = "failed".equals(view) ? "DELIVERY_FAILED" : filter.getStatus();
+        List<String> selectedStatuses = "failed".equals(view) ? List.of("DELIVERY_FAILED") : filter.getStatus();
 
         return (root, query, builder) -> {
             Join<ShopOrder, Order> order = root.join("order", JoinType.LEFT);
@@ -547,21 +619,24 @@ public class OrderServiceImpl implements OrderService {
             if (!statuses.isEmpty()) {
                 predicates.add(root.get("status").in(statuses));
             }
-            if (filterStatus && selectedStatus != null && !selectedStatus.isBlank()) {
-                String status = selectedStatus.trim();
-                if ("DELIVERY_FAILED".equals(status) || "OUT_FOR_DELIVERY".equals(status)) {
-                    predicates.add(builder.equal(root.get("status"), "OUT_FOR_DELIVERY"));
-                    Subquery<Long> failedDelivery = query.subquery(Long.class);
-                    Root<OrderDeliveryView> delivery = failedDelivery.from(OrderDeliveryView.class);
-                    failedDelivery.select(delivery.get("deliveryId")).where(
-                            builder.equal(delivery.get("shopOrder").get("shopOrderId"), root.get("shopOrderId")),
-                            builder.equal(delivery.get("status"), "FAILED")
-                    );
-                    Predicate deliveryFailed = builder.exists(failedDelivery);
-                    predicates.add("DELIVERY_FAILED".equals(status) ? deliveryFailed : builder.not(deliveryFailed));
-                } else {
-                    predicates.add(builder.equal(root.get("status"), status));
+            if (filterStatus && !selectedStatuses.isEmpty()) {
+                List<Predicate> statusOptions = new ArrayList<>();
+                for (String status : selectedStatuses) {
+                    if ("DELIVERY_FAILED".equals(status) || "OUT_FOR_DELIVERY".equals(status)) {
+                        Subquery<Long> failedDelivery = query.subquery(Long.class);
+                        Root<OrderDeliveryView> delivery = failedDelivery.from(OrderDeliveryView.class);
+                        failedDelivery.select(delivery.get("deliveryId")).where(
+                                builder.equal(delivery.get("shopOrder").get("shopOrderId"), root.get("shopOrderId")),
+                                builder.equal(delivery.get("status"), "FAILED")
+                        );
+                        Predicate deliveryFailed = builder.exists(failedDelivery);
+                        statusOptions.add(builder.and(builder.equal(root.get("status"), "OUT_FOR_DELIVERY"),
+                                "DELIVERY_FAILED".equals(status) ? deliveryFailed : builder.not(deliveryFailed)));
+                    } else {
+                        statusOptions.add(builder.equal(root.get("status"), status));
+                    }
                 }
+                predicates.add(builder.or(statusOptions.toArray(Predicate[]::new)));
             }
             if (filter.getFromDate() != null) {
                 predicates.add(builder.greaterThanOrEqualTo(order.get("placedAt"), toUtcStartOfDay(filter.getFromDate())));
@@ -569,32 +644,32 @@ public class OrderServiceImpl implements OrderService {
             if (filter.getToDate() != null) {
                 predicates.add(builder.lessThan(order.get("placedAt"), toUtcStartOfDay(filter.getToDate().plusDays(1))));
             }
-            if (filter.getPriceRange() != null && !filter.getPriceRange().isBlank()) {
+            if (!filter.getPriceRange().isEmpty()) {
                 Path<BigDecimal> amount = root.get("totalAmount");
-                switch (filter.getPriceRange().trim()) {
-                    case "UNDER_100K" -> predicates.add(builder.lessThan(amount, BigDecimal.valueOf(100000)));
-                    case "FROM_100K_TO_300K" -> {
-                        predicates.add(builder.greaterThanOrEqualTo(amount, BigDecimal.valueOf(100000)));
-                        predicates.add(builder.lessThan(amount, BigDecimal.valueOf(300000)));
-                    }
-                    case "FROM_300K_TO_500K" -> {
-                        predicates.add(builder.greaterThanOrEqualTo(amount, BigDecimal.valueOf(300000)));
-                        predicates.add(builder.lessThan(amount, BigDecimal.valueOf(500000)));
-                    }
-                    case "FROM_500K_TO_1M" -> {
-                        predicates.add(builder.greaterThanOrEqualTo(amount, BigDecimal.valueOf(500000)));
-                        predicates.add(builder.lessThan(amount, BigDecimal.valueOf(1000000)));
-                    }
-                    case "FROM_1M_TO_2M" -> {
-                        predicates.add(builder.greaterThanOrEqualTo(amount, BigDecimal.valueOf(1000000)));
-                        predicates.add(builder.lessThanOrEqualTo(amount, BigDecimal.valueOf(2000000)));
-                    }
-                    case "OVER_2M" -> predicates.add(builder.greaterThan(amount, BigDecimal.valueOf(2000000)));
-                    default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Khoảng giá không hợp lệ.");
+                List<Predicate> priceOptions = new ArrayList<>();
+                for (String priceRange : filter.getPriceRange()) {
+                    priceOptions.add(switch (priceRange) {
+                        case "UNDER_100K" -> builder.lessThan(amount, BigDecimal.valueOf(100000));
+                        case "FROM_100K_TO_300K" -> builder.and(
+                                builder.greaterThanOrEqualTo(amount, BigDecimal.valueOf(100000)),
+                                builder.lessThan(amount, BigDecimal.valueOf(300000)));
+                        case "FROM_300K_TO_500K" -> builder.and(
+                                builder.greaterThanOrEqualTo(amount, BigDecimal.valueOf(300000)),
+                                builder.lessThan(amount, BigDecimal.valueOf(500000)));
+                        case "FROM_500K_TO_1M" -> builder.and(
+                                builder.greaterThanOrEqualTo(amount, BigDecimal.valueOf(500000)),
+                                builder.lessThan(amount, BigDecimal.valueOf(1000000)));
+                        case "FROM_1M_TO_2M" -> builder.and(
+                                builder.greaterThanOrEqualTo(amount, BigDecimal.valueOf(1000000)),
+                                builder.lessThanOrEqualTo(amount, BigDecimal.valueOf(2000000)));
+                        case "OVER_2M" -> builder.greaterThan(amount, BigDecimal.valueOf(2000000));
+                        default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Khoảng giá không hợp lệ.");
+                    });
                 }
+                predicates.add(builder.or(priceOptions.toArray(Predicate[]::new)));
             }
-            if (!paymentStatus.isEmpty()) {
-                predicates.add(builder.equal(root.get("paymentStatus"), paymentStatus));
+            if (!paymentStatuses.isEmpty()) {
+                predicates.add(root.get("paymentStatus").in(paymentStatuses));
             }
             if (filter.getKeyword() != null && !filter.getKeyword().isBlank()) {
                 String keyword = filter.getKeyword().trim().toLowerCase(Locale.ROOT);
@@ -629,6 +704,12 @@ public class OrderServiceImpl implements OrderService {
     private LocalDateTime toUtcStartOfDay(LocalDate date) {
         LocalDateTime utc = date.atStartOfDay(VIETNAM_ZONE).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
         return utc.getYear() < 1 ? LocalDateTime.of(1, 1, 1, 0, 0) : utc;
+    }
+
+    private List<String> selectedFilterValues(List<String> values) {
+        return values == null ? List.of() : values.stream()
+                .filter(value -> value != null && !value.isBlank())
+                .map(String::trim).distinct().toList();
     }
 
     private void validateDateRange(OrderFilterRequest filter) {

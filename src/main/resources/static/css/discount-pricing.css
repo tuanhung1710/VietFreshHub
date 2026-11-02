@@ -176,3 +176,7 @@
         padding: 12px;
     }
 }
+
+#results.products {
+    padding: 0;
+}

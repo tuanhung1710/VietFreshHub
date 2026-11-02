@@ -48,6 +48,10 @@ public class Product {
     @Column(name = "description", length = 20000)
     private String description;
 
+    @Nationalized
+    @Column(name = "origin", length = 200)
+    private String origin;
+
     @Column(name = "status", length = 30)
     @Enumerated(EnumType.STRING)
     private ProductStatus status;

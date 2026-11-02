@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${editing ? 'Sửa gói dịch vụ' : 'Tạo gói dịch vụ'}">Gói dịch vụ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
+          rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+          crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --bs-body-font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --bs-primary: #006b2c;
+            --bs-primary-rgb: 0, 107, 44;
+            --bs-success: #006b2c;
+            --bs-success-rgb: 0, 107, 44;
+        }
+
+        body {
+            font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8f9ff;
+            color: #0b1c30;
+        }
+
+        .btn-success {
+            background-color: #006b2c;
+            border-color: #006b2c;
+        }
+
+        .btn-success:hover, .btn-success:focus {
+            background-color: #005320;
+            border-color: #005320;
+        }
+
+        .btn-outline-success {
+            color: #006b2c;
+            border-color: #006b2c;
+        }
+
+        .btn-outline-success:hover {
+            background-color: #006b2c;
+            border-color: #006b2c;
+            color: #fff;
+        }
+
+        .text-success {
+            color: #006b2c !important;
+        }
+
+        .card {
+            border: 1px solid #e5eeff;
+        }
+    </style>
+</head>
+<body class="bg-light">
+<main class="container py-4" style="max-width: 900px;">
+    <a th:href="@{/admin/subscription-plans}"
+       class="btn btn-outline-secondary mb-3 d-inline-flex align-items-center gap-1 shadow-sm">
+        <i class="bi bi-arrow-left"></i>
+        <span>Quay lại danh sách</span>
+    </a>
+
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-body p-4">
+            <h1 class="h4 mb-4 fw-bold text-dark"
+                th:text="${pageTitle != null ? pageTitle : (editing ? 'Sửa gói dịch vụ' : 'Tạo gói dịch vụ')}">
+            </h1>
+
+            <form th:action="${editing}
+                      ? @{/admin/subscription-plans/{planId}/update(planId=${planId})}
+                      : @{/admin/subscription-plans}"
+                  th:object="${form}"
+                  method="post">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+                <div class="alert alert-danger"
+                     role="alert"
+                     th:if="${#fields.hasAnyErrors()}">
+                    <strong>Vui lòng kiểm tra lại:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li th:each="error : ${#fields.allErrors()}"
+                            th:text="${error}"></li>
+                    </ul>
+                </div>
+
+                <div class="mb-3">
+                    <label for="name" class="form-label fw-semibold">
+                        Tên gói dịch vụ <span class="text-danger">*</span>
+                    </label>
+                    <input id="name"
+                           type="text"
+                           class="form-control"
+                           th:field="*{name}"
+                           th:errorclass="is-invalid"
+                           placeholder="Ví dụ: Gói Hợp Tác Xã Tiêu Chuẩn"
+                           maxlength="100"
+                           required>
+                    <div class="invalid-feedback"
+                         th:errors="*{name}"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label fw-semibold">
+                        Mô tả ngắn
+                    </label>
+                    <textarea id="description"
+                              class="form-control"
+                              th:field="*{description}"
+                              th:errorclass="is-invalid"
+                              maxlength="1000"
+                              rows="3"
+                              placeholder="Mô tả tóm tắt giá trị của gói khi giới thiệu đến Store Manager..."></textarea>
+                    <div class="invalid-feedback"
+                         th:errors="*{description}"></div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="price" class="form-label fw-semibold">
+                            Giá cước (VND) <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group has-validation">
+                            <input id="price"
+                                   type="number"
+                                   class="form-control"
+                                   th:field="*{price}"
+                                   th:errorclass="is-invalid"
+                                   min="0"
+                                   step="0.01"
+                                   placeholder="199000"
+                                   required>
+                            <span class="input-group-text">VND</span>
+                            <div class="invalid-feedback"
+                                 th:errors="*{price}"></div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="billingPeriod" class="form-label fw-semibold">
+                            Chu kỳ thanh toán <span class="text-danger">*</span>
+                        </label>
+                        <select id="billingPeriod"
+                                class="form-select"
+                                th:field="*{billingPeriod}"
+                                th:errorclass="is-invalid"
+                                required>
+                            <option value="">-- Chọn chu kỳ --</option>
+                            <option th:each="period : ${billingPeriods}"
+                                    th:value="${period.name()}"
+                                    th:text="${period.name() == 'MONTHLY' ? 'Hàng tháng (Monthly)' : (period.name() == 'QUARTERLY' ? 'Hàng quý (Quarterly)' : 'Hàng năm (Yearly)')}">
+                            </option>
+                        </select>
+                        <div class="invalid-feedback"
+                             th:errors="*{billingPeriod}"></div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="maxProducts" class="form-label fw-semibold">
+                            Giới hạn sản phẩm niêm yết (Public) <span class="text-danger">*</span>
+                        </label>
+                        <input id="maxProducts"
+                               type="number"
+                               class="form-control"
+                               th:field="*{maxProducts}"
+                               th:errorclass="is-invalid"
+                               min="1"
+                               step="1"
+                               placeholder="50"
+                               required>
+                        <div class="invalid-feedback"
+                             th:errors="*{maxProducts}"></div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="status" class="form-label fw-semibold">
+                            Trạng thái hoạt động <span class="text-danger">*</span>
+                        </label>
+                        <select id="status"
+                                class="form-select"
+                                th:field="*{status}"
+                                th:errorclass="is-invalid"
+                                required>
+                            <option th:each="st : ${planStatuses}"
+                                    th:value="${st.name()}"
+                                    th:text="${st.name() == 'ACTIVE' ? 'Đang hoạt động (Hiển thị)' : 'Đang tắt (Ẩn)'}">
+                            </option>
+                        </select>
+                        <div class="invalid-feedback"
+                             th:errors="*{status}"></div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label for="benefits" class="form-label fw-semibold mb-0">
+                            Quyền lợi của gói
+                        </label>
+                        <span class="badge bg-light text-secondary border">Mỗi dòng 1 quyền lợi</span>
+                    </div>
+                    <textarea id="benefits"
+                              class="form-control font-monospace"
+                              th:field="*{benefits}"
+                              th:errorclass="is-invalid"
+                              rows="5"
+                              placeholder="Chứng nhận chuẩn VietGAP ưu tiên&#10;Hỗ trợ tư vấn pháp lý 24/7&#10;Báo cáo phân tích doanh thu nâng cao&#10;Miễn phí nhãn QR truy xuất nguồn gốc"></textarea>
+                    <div class="invalid-feedback"
+                         th:errors="*{benefits}"></div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 border-top pt-3">
+                    <a th:href="@{/admin/subscription-plans}"
+                       class="btn btn-outline-secondary">
+                        Hủy
+                    </a>
+                    <button type="submit"
+                            class="btn btn-success"
+                            th:text="${editing} ? 'Lưu thay đổi' : 'Tạo gói dịch vụ'">
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+</body>
+</html>

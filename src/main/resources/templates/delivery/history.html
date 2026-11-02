@@ -22,6 +22,7 @@
         nav { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; }
         .error { color: #b91c1c; }
     </style>
+    <link th:replace="~{fragments/pagination :: styles}">
 </head>
 <body>
 <header>
@@ -36,6 +37,7 @@
     <p th:if="${errorMessage != null}" class="error" role="alert" th:text="${errorMessage}"></p>
     <form class="search-form" method="get" th:action="@{/delivery/history}" th:object="${filter}" aria-label="Tìm kiếm lịch sử giao hàng">
         <input type="hidden" name="page" value="0">
+        <input type="hidden" name="size" th:value="${filter.size}">
         <input type="hidden" name="status" th:value="${filter.status}">
         <input type="hidden" name="period" th:value="${filter.period}">
         <th:block th:if="${filter.period == 'CUSTOM'}">
@@ -56,6 +58,7 @@
     <form class="filter-form" method="get" th:action="@{/delivery/history}" th:object="${filter}" aria-labelledby="filters-heading">
         <h2 id="filters-heading">Bộ lọc</h2>
         <input type="hidden" name="page" value="0">
+        <input type="hidden" name="size" th:value="${filter.size}">
         <input type="hidden" name="keyword" th:value="${filter.keyword}">
         <input type="hidden" name="sort" th:value="${filter.sort}">
         <div class="filters">
@@ -117,6 +120,7 @@
     </form>
     <form class="sort-form" method="get" th:action="@{/delivery/history}" th:object="${filter}" aria-label="Sắp xếp lịch sử giao hàng">
         <input type="hidden" name="page" value="0">
+        <input type="hidden" name="size" th:value="${filter.size}">
         <input type="hidden" name="keyword" th:value="${filter.keyword}">
         <input type="hidden" name="status" th:value="${filter.status}">
         <input type="hidden" name="period" th:value="${filter.period}">
@@ -163,11 +167,11 @@
                 </tr></tbody>
             </table>
         </div>
-        <nav aria-label="Phân trang lịch sử giao hàng" th:if="${page.totalPages > 0}">
-            <a th:if="${page.hasPrevious()}" th:href="@{/delivery/history(page=${page.number - 1},keyword=${filter.keyword},status=${filter.status},period=${filter.period},fromDate=${filter.fromDate},toDate=${filter.toDate},shopId=${filter.shopId},paymentMethod=${filter.paymentMethod},minAmount=${filter.minAmount},maxAmount=${filter.maxAmount},returnStatus=${filter.returnStatus},sort=${filter.sort})}">← Trước</a>
-            <span th:text="|Trang ${page.number + 1} / ${page.totalPages}|"></span>
-            <a th:if="${page.hasNext()}" th:href="@{/delivery/history(page=${page.number + 1},keyword=${filter.keyword},status=${filter.status},period=${filter.period},fromDate=${filter.fromDate},toDate=${filter.toDate},shopId=${filter.shopId},paymentMethod=${filter.paymentMethod},minAmount=${filter.minAmount},maxAmount=${filter.maxAmount},returnStatus=${filter.returnStatus},sort=${filter.sort})}">Sau →</a>
-        </nav>
+        <div th:replace="~{fragments/pagination :: panel(${page},
+            @{/delivery/history(page=${page.number - 1},size=${page.size},keyword=${filter.keyword},status=${filter.status},period=${filter.period},fromDate=${filter.fromDate},toDate=${filter.toDate},shopId=${filter.shopId},paymentMethod=${filter.paymentMethod},minAmount=${filter.minAmount},maxAmount=${filter.maxAmount},returnStatus=${filter.returnStatus},sort=${filter.sort})},
+            @{/delivery/history(page=${page.number + 1},size=${page.size},keyword=${filter.keyword},status=${filter.status},period=${filter.period},fromDate=${filter.fromDate},toDate=${filter.toDate},shopId=${filter.shopId},paymentMethod=${filter.paymentMethod},minAmount=${filter.minAmount},maxAmount=${filter.maxAmount},returnStatus=${filter.returnStatus},sort=${filter.sort})},
+            @{/delivery/history}, ${ {'keyword': filter.keyword, 'status': filter.status, 'period': filter.period, 'fromDate': filter.fromDate, 'toDate': filter.toDate, 'shopId': filter.shopId, 'paymentMethod': filter.paymentMethod, 'minAmount': filter.minAmount, 'maxAmount': filter.maxAmount, 'returnStatus': filter.returnStatus, 'sort': filter.sort} },
+            'Phân trang lịch sử giao hàng', 'đơn hàng', 'Đơn hàng mỗi trang')}"></div>
     </section>
 </main>
 <script>

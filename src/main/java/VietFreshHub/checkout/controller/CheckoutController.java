@@ -9,6 +9,8 @@ import VietFreshHub.checkout.dto.CheckoutPreview;
 import VietFreshHub.checkout.dto.CheckoutRequest;
 import VietFreshHub.checkout.dto.CheckoutResult;
 import VietFreshHub.checkout.service.CheckoutAddressService;
+import VietFreshHub.coupon.services.CouponApplicationService;
+import VietFreshHub.loyalty.services.LoyaltyService;
 import VietFreshHub.checkout.service.CheckoutDraftStore;
 import VietFreshHub.checkout.service.CheckoutService;
 import VietFreshHub.checkout.service.CheckoutShippingQuoteService;
@@ -30,22 +32,17 @@ import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.TransientDataAccessException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.TransactionException;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.WebDataBinder;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.InitBinder;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import java.math.BigDecimal;
+import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @Controller
@@ -61,8 +58,9 @@ public class CheckoutController {
     private final CustomerAddressService customerAddresses;
     private final VietMapService vietMapService;
     private final CartService carts;
+    private final CouponApplicationService couponApplicationService;
+    private final LoyaltyService loyaltyService;
     private final VnpayPaymentService vnpayPayments;
-
     @InitBinder("addressForm")
     public void bindAddressForm(WebDataBinder binder) {
         binder.setAllowedFields("recipientName", "phone", "refId", "searchText", "checkoutToken");
@@ -75,9 +73,13 @@ public class CheckoutController {
                        @RequestParam(required = false) List<Long> itemIds,
                        @RequestParam(defaultValue = "false") boolean selectionSubmitted,
                        @RequestParam(required = false) String checkoutToken,
-                       @RequestParam(required = false) Long addressId) {
+                       @RequestParam(required = false) Long addressId,
+                       @RequestParam(required = false) String couponCode,
+                       @RequestParam(defaultValue = "0") BigDecimal rewardAmountToUse) {
         Long customerId = currentCustomer.requireCustomerId(authentication);
         CheckoutRequest form = new CheckoutRequest();
+        form.setCouponCode(couponCode);
+        form.setRewardAmountToUse(rewardAmountToUse);
         CheckoutDraft draft = null;
         if (checkoutToken != null) {
             draft = requireCheckoutDraft(session, checkoutToken, customerId);
@@ -154,10 +156,11 @@ public class CheckoutController {
                     flash.addFlashAttribute("errorMessage", start.message());
                     return "redirect:/customer/orders";
                 }
-                return "redirect:/customer/order-receipts/" + order.orderId() + "/confirmation";
+                flash.addFlashAttribute("successMessage", "Đặt hàng thành công.");
+                return "redirect:/customer/orders";
             } catch (CheckoutException ex) {
                 errors.reject("checkout", ex.getMessage());
-            } catch (DataAccessException | TransactionException ex) {
+            } catch (TransientDataAccessException | TransactionException ex) {
                 log.warn("Checkout outcome needs verification for customerId={}, errorType={}", customerId, ex.getClass().getSimpleName());
                 response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 // A connection/commit failure may leave the outcome unknown. Keep the original
@@ -320,13 +323,124 @@ public class CheckoutController {
         model.addAttribute("cartBadgeTotal", carts.countActiveUnits(customerId));
         Map<Long, List<CartItemDto>> shopGroups = new LinkedHashMap<>();
         for (CartItemDto item : preview.cart().getItems()) {
-            List<CartItemDto> shopItems = shopGroups.get(item.getShopId());
-            if (shopItems == null) {
-                shopItems = new ArrayList<>();
-                shopGroups.put(item.getShopId(), shopItems);
-            }
-            shopItems.add(item);
+            shopGroups.computeIfAbsent(item.getShopId(), ignored -> new ArrayList<>()).add(item);
         }
         model.addAttribute("shopGroups", shopGroups);
+
+        BigDecimal couponDiscount = BigDecimal.ZERO;
+        BigDecimal loyaltyDiscount = BigDecimal.ZERO;
+
+        model.addAttribute("couponApplication", null);
+        model.addAttribute("couponError", null);
+        model.addAttribute("redemption", null);
+        model.addAttribute("loyaltyError", null);
+        model.addAttribute("loyaltyBalance", loyaltyService.getBalance(customerId));
+        model.addAttribute("availableCoupons", couponApplicationService.getAvailableCoupons(
+                customerId, draft.selectedItemIds()));
+
+        boolean couponValid = true;
+        String couponCode = form.getCouponCode();
+
+        if (couponCode != null && !couponCode.isBlank()) {
+            try {
+                var application = couponApplicationService.preview(
+                        customerId,
+                        couponCode,
+                        draft.selectedItemIds()
+                );
+
+                couponDiscount = application.discountAmount();
+                model.addAttribute("couponApplication", application);
+            } catch (IllegalArgumentException ex) {
+                couponValid = false;
+                model.addAttribute("couponError", ex.getMessage());
+            }
+        }
+
+        if (couponValid) {
+            BigDecimal goodsAmountAfterCoupon = preview.cart()
+                    .getTotalAmount()
+                    .subtract(couponDiscount);
+
+            try {
+                var redemption = loyaltyService.previewRedemption(
+                        customerId,
+                        form.getRewardAmountToUse(),
+                        goodsAmountAfterCoupon
+                );
+                loyaltyDiscount = redemption.discountAmount();
+                model.addAttribute("redemption", redemption);
+            } catch (IllegalArgumentException ex) {
+                model.addAttribute("loyaltyError", ex.getMessage());
+            }
+        }
+
+        model.addAttribute("couponDiscount", couponDiscount);
+        model.addAttribute("loyaltyDiscount", loyaltyDiscount);
+        model.addAttribute(
+                "checkoutTotal",
+                preview.grandTotal() == null
+                        ? null
+                        : preview.grandTotal().subtract(couponDiscount).subtract(loyaltyDiscount)
+        );
+    }
+
+    @PostMapping("/reward/preview")
+    public String previewReward(
+            @ModelAttribute("form") CheckoutRequest form,
+            @RequestParam(defaultValue = "0") BigDecimal rewardAmountInput,
+            Authentication authentication,
+            HttpSession session,
+            Model model
+    ) {
+        Long customerId = currentCustomer.requireCustomerId(authentication);
+        var draft = drafts.find(session, form.getCheckoutToken(), customerId);
+        if (draft == null) {
+            throw new CheckoutException(
+                    "Phiên đặt hàng đã hết hạn. Vui lòng chọn lại sản phẩm."
+            );
+        }
+
+        form.setRewardAmountToUse(rewardAmountInput);
+        var preview = checkout.preview(customerId, draft.selectedItemIds());
+        preview = shippingQuotes.quote(customerId, preview, form.getAddressId() == null ? draft.addressId() : form.getAddressId());
+        populate(customerId, form, preview, session, model);
+        return "customer/checkout";
+    }
+
+    @PostMapping("/coupon/preview")
+    public String previewCoupon(
+            @ModelAttribute("form") CheckoutRequest form,
+            @RequestParam(defaultValue = "") String couponInput,
+            Authentication authentication,
+            HttpSession session,
+            Model model
+    ) {
+        Long customerId =
+                currentCustomer.requireCustomerId(authentication);
+
+        var draft = drafts.find(
+                session,
+                form.getCheckoutToken(),
+                customerId
+        );
+
+        if (draft == null) {
+            throw new CheckoutException(
+                    "Phiên đặt hàng đã hết hạn. Vui lòng chọn lại sản phẩm."
+            );
+        }
+
+        form.setCouponCode(couponInput.strip());
+
+        var preview = checkout.preview(
+                customerId,
+                draft.selectedItemIds()
+        );
+
+        preview = shippingQuotes.quote(customerId, preview, form.getAddressId() == null ? draft.addressId() : form.getAddressId());
+        populate(customerId, form, preview, session, model);
+
+        return "customer/checkout";
     }
 }

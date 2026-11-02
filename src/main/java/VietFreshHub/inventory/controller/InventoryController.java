@@ -4,6 +4,7 @@ import VietFreshHub.inventory.dto.ActivityHistoryFilter;
 import VietFreshHub.inventory.dto.BatchRequest;
 import VietFreshHub.inventory.dto.BatchResponse;
 import VietFreshHub.inventory.dto.InventoryCatalogFilter;
+import VietFreshHub.common.BusinessCodes;
 import VietFreshHub.inventory.dto.MarkdownRequest;
 import VietFreshHub.inventory.dto.StockChangeRequest;
 import VietFreshHub.inventory.rule.InventoryRules;
@@ -14,6 +15,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.net.URI;
+import java.time.LocalDate;
 import java.util.List;
 
 @Controller
@@ -71,7 +74,7 @@ public class InventoryController {
         if (target.isAbsolute() || target.getRawAuthority() != null || path == null) {
             return false;
         }
-        return path.matches("/seller/inventory(?:/audit|/batches/[0-9]+/label)?")
+        return path.matches("/seller/inventory(?:/audit|/journal|/batches/[0-9]+/label)?")
                 || path.matches("/seller/products/[0-9]+");
     }
 
@@ -338,6 +341,28 @@ public class InventoryController {
         model.addAttribute("activityActions", ActivityHistoryFilter.ACTIONS);
         model.addAttribute("activityEntities", ActivityHistoryFilter.ENTITIES);
         return "inventory/audit";
+    }
+
+    @GetMapping("/journal")
+    public String journal(Authentication authentication,
+            @RequestParam(required = false) Long variant,
+            @RequestParam(required = false) Long batch,
+            @RequestParam(defaultValue = "") String type,
+            @RequestParam(defaultValue = "") String q,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "15") int size,
+            Model model) {
+        model.addAttribute("events", inventoryService.journal(authentication, variant, batch, type, q, from, to, page, size));
+        model.addAttribute("variant", variant);
+        model.addAttribute("batch", batch);
+        model.addAttribute("batchCode", BusinessCodes.format("LOT", batch));
+        model.addAttribute("type", type);
+        model.addAttribute("q", q);
+        model.addAttribute("from", from);
+        model.addAttribute("to", to);
+        return "inventory/journal";
     }
 
     /** Hiển thị chi tiết lô sau khi kiểm tra lô thuộc cửa hàng đang quản lý. */

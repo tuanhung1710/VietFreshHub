@@ -120,7 +120,6 @@ public class CatalogServiceImpl implements CatalogService {
         }
         throw notFound();
     }
-
     private Map<Long, Offer> offersFor(List<CatalogProduct> catalogProducts) {
         return pricing.offers(catalogProducts.stream().flatMap(product -> product.getVariants().stream())
                 .map(CatalogVariant::getVariantId).distinct().toList());
@@ -128,17 +127,21 @@ public class CatalogServiceImpl implements CatalogService {
 
     private CatalogProductResponse toResponse(CatalogProduct product, Long selectedId, Map<Long, Offer> offers,
             CatalogBrowseRepository.ProductMetrics metrics, Set<Long> categoryIds) {
-        var options = product.getVariants().stream().filter(variant -> hasOffer(variant, offers))
+        var options = product.getVariants().stream()
+                .filter(variant -> "ACTIVE".equals(variant.getStatus()) || "OUT_OF_STOCK".equals(variant.getStatus()))
                 .map(variant -> toVariant(variant, offers.get(variant.getVariantId())))
                 .sorted(Comparator.comparing(VariantResponse::getPrice).thenComparing(VariantResponse::getVariantId)).toList();
         VariantResponse selected = options.stream().filter(option -> selectedId == null || selectedId.equals(option.getVariantId()))
-                .findFirst().orElseThrow(this::notFound);
+                .filter(VariantResponse::isPurchasable).findFirst()
+                .orElseGet(() -> selectedId == null ? options.stream().findFirst().orElseThrow(this::notFound)
+                        : options.stream().filter(option -> selectedId.equals(option.getVariantId())).findFirst().orElseThrow(this::notFound));
         String imageUrl = product.getVariants().stream().filter(variant -> selected.getVariantId().equals(variant.getVariantId()))
                 .findFirst().map(CatalogVariant::getDisplayImageUrl).orElse(product.getImageUrl());
         var category = product.getCategories().stream().filter(c -> categoryIds.contains(c.getCategoryId()))
                 .min(Comparator.comparing(CatalogCategory::getCategoryId)).orElse(null);
         return CatalogProductResponse.builder().productId(product.getProductId()).shopId(product.getShop().getShopId())
                 .name(product.getName()).slug(product.getSlug()).description(product.getDescription()).imageUrl(imageUrl)
+                .origin(product.getOrigin())
                 .shopPlace(metrics == null ? null : metrics.place()).rating(metrics == null ? BigDecimal.ZERO : metrics.rating())
                 .sales(metrics == null ? 0 : metrics.sales()).categoryId(category == null ? null : category.getCategoryId())
                 .categoryName(category == null ? "" : category.getName())
@@ -148,9 +151,11 @@ public class CatalogServiceImpl implements CatalogService {
     private VariantResponse toVariant(CatalogVariant variant, Offer offer) {
         return VariantResponse.builder().variantId(variant.getVariantId()).variantName(variant.getVariantName()).sku(variant.getSku())
                 .imageUrl(variant.getDisplayImageUrl())
-                .price(offer.price()).basePrice(offer.basePrice()).status(variant.getStatus())
+                .price(offer == null ? variant.getPrice() : offer.price())
+                .basePrice(offer == null ? variant.getPrice() : offer.basePrice()).status(variant.getStatus())
                 .compareAtPrice(variant.getCompareAtPrice())
-                .availableStock(offer.availableStock()).purchasable(true).build();
+                .availableStock(offer == null ? 0 : offer.availableStock())
+                .purchasable(offer != null && "ACTIVE".equals(variant.getStatus()) && offer.availableStock() > 0).build();
     }
 
     private ResourceNotFoundException notFound() {
