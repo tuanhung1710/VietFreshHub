@@ -1,5 +1,5 @@
 import { request, parameters } from './api.js';
-import { $, html, notice } from './render.js';
+import { $, html, notice, fallbackProductImage } from './render.js';
 import { openProduct, openInformation, closeModal, addProduct, refreshCartCount } from './product.js';
 import { shopProductsPath, shopProductCard } from './shop-catalog.js';
 
@@ -10,6 +10,8 @@ let revision = 0;
 
 const handle = action => Promise.resolve().then(action).catch(error => notice(error.message));
 const empty = '<p class="empty-products">Shop chưa có sản phẩm phù hợp đang được bán.</p>';
+
+document.addEventListener('error', fallbackProductImage, true);
 
 function saveLocation(replace = false) {
     const query = state.tab === 'home' ? '' : '?' + parameters(state) + '&tab=all';

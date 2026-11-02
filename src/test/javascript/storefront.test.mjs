@@ -6,7 +6,8 @@ import { parameters } from '../../main/resources/static/js/storefront/api.js';
 test('database and search text cannot become markup in product or shop cards', () => {
     const payload = '<img src=x onerror="alert(1)">';
     const product = { id: 1, name: payload, emoji: '🍎', shopName: payload, place: payload, price: 50000, rating: 4.8, sales: 2 };
-    assert.ok(!card(product).includes('<img'));
+    assert.equal((card(product).match(/<img\b/g) || []).length, 1);
+    assert.ok(!card(product).includes(payload));
     assert.ok(card(product).includes('&lt;img'));
     assert.ok(!shopCard({ id:1, name:payload, description:payload, place:payload }).includes('<img'));
 });

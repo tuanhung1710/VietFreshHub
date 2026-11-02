@@ -149,6 +149,7 @@ public class CatalogServiceImpl implements CatalogService {
         return VariantResponse.builder().variantId(variant.getVariantId()).variantName(variant.getVariantName()).sku(variant.getSku())
                 .imageUrl(variant.getDisplayImageUrl())
                 .price(offer.price()).basePrice(offer.basePrice()).status(variant.getStatus())
+                .compareAtPrice(variant.getCompareAtPrice())
                 .availableStock(offer.availableStock()).purchasable(true).build();
     }
 

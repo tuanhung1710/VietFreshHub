@@ -4,9 +4,28 @@ export const html = value => String(value ?? '').replace(/[&<>"']/g, character =
 export const money = value => Number(value).toLocaleString('vi-VN') + ' VND';
 export const rating = value => String(Math.round(Number(value || 0) * 10) / 10);
 export const placeName = place => place || 'Chưa cập nhật';
+export const discountLabel = percent => Number(percent) === 0 ? 'Giảm dưới 1%' : `-${Number(percent)}%`;
+const fallbackImage = '/images/product/product-placeholder.svg';
+
+export function productImage(product) {
+    const source = product.imageUrl?.trim() || fallbackImage;
+    return `<img data-product-image src="${html(source)}" alt="${html(product.name)}" loading="lazy">`;
+}
+
+export function fallbackProductImage(event) {
+    const image = event.target;
+    if (image.tagName === 'IMG' && image.hasAttribute('data-product-image') && image.getAttribute('src') !== fallbackImage) {
+        image.src = fallbackImage;
+    }
+}
+
+export function discountBadge(product) {
+    if (product.discountPercent == null) return '';
+    return `<span class="discount-badge discount-badge--image">${html(discountLabel(product.discountPercent))}</span>`;
+}
 
 export function card(product) {
-    return `<button class="p-card" data-product="${Number(product.id)}"><div class="p-image">${html(product.emoji)}</div><div class="p-body"><div class="p-name">${html(product.name)}</div><div class="p-shop">${html(product.shopName)} · ${html(placeName(product.place))}</div><div class="p-price">${money(product.price)}</div><div class="p-sub"><span>★ ${rating(product.rating)}/5</span><span>Đã bán ${Number(product.sales)}</span></div></div></button>`;
+    return `<button class="p-card" data-product="${Number(product.id)}"><div class="p-image">${productImage(product)}${discountBadge(product)}</div><div class="p-body"><div class="p-name">${html(product.name)}</div><div class="p-shop">${html(product.shopName)} · ${html(placeName(product.place))}</div><div class="p-price">${money(product.price)}</div><div class="p-sub"><span>★ ${rating(product.rating)}/5</span><span>Đã bán ${Number(product.sales)}</span></div></div></button>`;
 }
 
 export function shopCard(shop) {

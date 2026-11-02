@@ -1,5 +1,5 @@
 import { request, parameters } from './api.js';
-import { $, html, card, shopCard, pager, notice, show } from './render.js';
+import { $, html, card, shopCard, pager, notice, show, fallbackProductImage } from './render.js';
 import { openProduct, openInformation, closeModal, addProduct, refreshCartCount } from './product.js';
 
 let options;
@@ -10,6 +10,8 @@ const homeState = { page: 1, pageSize: null };
 const state = { categoryId: null, q: '', places: [], shopIds: [], min: '', max: '', minRating: 0, sort: 'popular', page: 1, pageSize: null };
 const category = id => options.categories.find(category => category.id === Number(id));
 const shop = id => options.shops.find(shop => shop.id === Number(id));
+
+document.addEventListener('error', fallbackProductImage, true);
 
 document.addEventListener('click', event => {
     const link = event.target.closest('a[data-auth-link]');

@@ -1,4 +1,4 @@
-import { $, money, notice } from './render.js';
+import { $, money, notice, discountLabel } from './render.js';
 import { refreshCartCount } from './product.js';
 import { quantityWithinStock } from './purchase.js';
 
@@ -19,6 +19,12 @@ function update(changeVariant = false) {
     quantity.value = quantityWithinStock(quantity.value, stock);
     quantity.max = stock;
     $('currentPrice').textContent = money(selected.dataset.price);
+    const percent = selected.dataset.discountPercent;
+    const discounted = percent != null && percent !== '';
+    $('compareAtPrice').hidden = !discounted;
+    $('discountPercent').hidden = !discounted;
+    $('compareAtPrice').textContent = discounted ? money(selected.dataset.compareAtPrice) : '';
+    $('discountPercent').textContent = discounted ? discountLabel(percent) : '';
     $('stock').textContent = `${stock} phần có sẵn`;
     $('variantNote').textContent = `Đang chọn ${selected.dataset.name} · Tạm tính: ${money(Number(selected.dataset.price) * Number(quantity.value))}`;
     $('minus').disabled = Number(quantity.value) <= 1;
