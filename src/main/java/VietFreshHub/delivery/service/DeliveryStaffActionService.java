@@ -5,8 +5,8 @@ import VietFreshHub.delivery.entity.DeliveryAssignment;
 import VietFreshHub.delivery.entity.DeliveryStatus;
 import VietFreshHub.order.entity.ShopOrder;
 import VietFreshHub.order.service.OrderService;
+import VietFreshHub.payout.service.SellerPayoutService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -22,7 +22,7 @@ public class DeliveryStaffActionService {
     private final DeliveryStatusHistoryWriter deliveryStatusHistoryWriter;
     private final OrderService orderService;
     private final DeliveryNotificationService deliveryNotificationService;
-    private final ApplicationEventPublisher events;
+    private final SellerPayoutService sellerPayoutService;
 
     @Transactional
     public void confirmPickup(Long assignmentId, Authentication authentication) {
@@ -34,6 +34,7 @@ public class DeliveryStaffActionService {
         }
         deliveryService.markPickedUp(delivery.getDeliveryId());
         deliveryStatusHistoryWriter.record(delivery, assignment.getDeliveryStaff().getUserId(), null);
+        deliveryNotificationService.notifyPickedUp(delivery);
     }
 
     @Transactional
@@ -75,10 +76,10 @@ public class DeliveryStaffActionService {
         deliveryService.markDelivered(delivery.getDeliveryId());
         orderService.completeDeliveredShopOrder(shopOrder.getShopOrderId(), delivery.getDeliveredAt(),
                 assignment.getDeliveryStaff().getUserId());
+        sellerPayoutService.createForDeliveredOrder(shopOrder.getShopOrderId(), delivery.getDeliveredAt());
         deliveryStatusHistoryWriter.record(delivery, assignment.getDeliveryStaff().getUserId(), null);
         assignment.complete();
         deliveryNotificationService.notifyCompleted(delivery);
-        events.publishEvent(new DeliveryAssignmentRetryEvent());
     }
 
     @Transactional

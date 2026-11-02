@@ -1,5 +1,6 @@
 package VietFreshHub.order.entity;
 
+import VietFreshHub.common.BusinessCodes;
 import VietFreshHub.shop.entity.Shop;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -16,11 +17,14 @@ import java.util.List;
 @Getter @Setter @NoArgsConstructor
 public class ShopOrder {
     @Id @GeneratedValue(strategy=GenerationType.IDENTITY) @Column(name="shop_order_id") private Long shopOrderId;
+    @Transient
+    public String getShopOrderCode() { return BusinessCodes.format("VFH",shopOrderId); }
     @ManyToOne(fetch=FetchType.LAZY, optional=false) @JoinColumn(name="order_id", nullable=false) private Order order;
     @Column(name="shop_id", nullable=false) private Long shopId;
     @ManyToOne(fetch=FetchType.LAZY) @JoinColumn(name="shop_id", insertable=false, updatable=false) private Shop shop;
     public void setShop(Shop shop) { this.shop=shop; this.shopId=shop==null ? null : shop.getShopId(); }
     @Column(nullable=false, length=30) private String status="PENDING";
+    @Column(name="payment_status", nullable=false, length=30) private String paymentStatus="UNPAID";
     @Column(nullable=false, precision=18, scale=2) private BigDecimal subtotal=BigDecimal.ZERO;
     @Column(name="discount_total", nullable=false, precision=18, scale=2) private BigDecimal discountTotal=BigDecimal.ZERO;
     @Column(name="shipping_fee", nullable=false, precision=18, scale=2) private BigDecimal shippingFee=BigDecimal.ZERO;
@@ -38,8 +42,4 @@ public class ShopOrder {
     public void markOutForDelivery() { status="OUT_FOR_DELIVERY"; }
     public void markCompleted() { status="COMPLETED"; }
 
-@Transient
-    public String getShopOrderCode() {
-        return VietFreshHub.common.BusinessCodes.format("SOR", shopOrderId);
-    }
 }

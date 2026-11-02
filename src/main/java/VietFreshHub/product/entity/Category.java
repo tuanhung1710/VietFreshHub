@@ -9,6 +9,8 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 import lombok.Getter;
@@ -16,6 +18,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import org.hibernate.annotations.Nationalized;
+
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "categories", schema = "dbo")
@@ -32,13 +37,39 @@ public class Category {
     private Long parentCategoryId;
 
     @Nationalized
-    @Column(name = "name", length = 150)
+    @Column(name = "name", nullable = false, length = 150)
     private String name;
 
-    @Column(name = "slug", length = 200)
+    @Column(name = "slug", nullable = false, length = 200)
     private String slug;
 
-    @Column(name = "status", length = 30)
+    @Nationalized
+    @Column(name = "description", length = 1000)
+    private String description;
+
+    @Column(name = "status", nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
-    private CategoryStatus status;
+    private CategoryStatus status = CategoryStatus.ACTIVE;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    void initializeTimestamps() {
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
+        if (createdAt == null) {
+            createdAt = now;
+        }
+        if (updatedAt == null) {
+            updatedAt = now;
+        }
+    }
+
+    @PreUpdate
+    void updateTimestamp() {
+        updatedAt = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
+    }
 }

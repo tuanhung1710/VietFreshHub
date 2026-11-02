@@ -31,6 +31,12 @@ public class CartServiceImpl implements CartService {
     private final CatalogService catalogService;
 
     @Override
+    @Transactional(readOnly = true)
+    public long countActiveUnits(Long userId) {
+        return cartRepository.countActiveUnits(userId);
+    }
+
+    @Override
     @Transactional
     public AddToCartResponse addToCart(Long userId, AddToCartRequest request) {
         if (request == null || request.getVariantId() == null || request.getVariantId() <= 0

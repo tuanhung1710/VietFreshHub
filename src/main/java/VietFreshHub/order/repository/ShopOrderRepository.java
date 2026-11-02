@@ -1,6 +1,8 @@
 package VietFreshHub.order.repository;
 
 import VietFreshHub.order.entity.ShopOrder;
+import VietFreshHub.order.dto.CustomerShopOrderStatus;
+import VietFreshHub.order.dto.ShopOrderListRow;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,14 +12,45 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 @Repository
 public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, JpaSpecificationExecutor<ShopOrder> {
+
+    String CUSTOMER_HISTORY_FROM = "from ShopOrder s join s.order o left join OrderDeliveryView d on d.shopOrder = s "
+            + "where o.customer.userId = :customerId "
+            + "and (:status = '' or (" + OrderRepository.CUSTOMER_SHOP_STATUS + ") = :status) "
+            + "and (:keyword = '' or s.shopOrderId = :referenceId "
+            + "or (:referenceId is null and concat('vfh-', case when length(cast(s.shopOrderId as String)) < 6 "
+            + "then substring(concat('000000', cast(s.shopOrderId as String)), length(cast(s.shopOrderId as String)) + 1, 6) "
+            + "else cast(s.shopOrderId as String) end) like :keywordPattern escape '!') "
+            + "or locate(lower(:keyword),lower(o.orderCode)) > 0) "
+            + "and (:fromDate is null or o.placedAt >= :fromDate) "
+            + "and (:untilDate is null or o.placedAt < :untilDate) ";
+
+    @Query(value = "select new VietFreshHub.order.dto.ShopOrderListRow(s.shopOrderId,o.orderId,"
+            + "s.shop.shopName," + OrderRepository.CUSTOMER_SHOP_STATUS + ",s.paymentStatus,s.totalAmount,o.placedAt) "
+            + CUSTOMER_HISTORY_FROM + "order by o.placedAt desc,s.shopOrderId desc",
+            countQuery = "select count(s.shopOrderId) " + CUSTOMER_HISTORY_FROM)
+    Page<ShopOrderListRow> findCustomerHistory(@Param("customerId") Long customerId, @Param("status") String status,
+            @Param("keyword") String keyword, @Param("keywordPattern") String keywordPattern, @Param("referenceId") Long referenceId,
+            @Param("fromDate") LocalDateTime fromDate, @Param("untilDate") LocalDateTime untilDate, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"order", "shop"})
+    Optional<ShopOrder> findByShopOrderIdAndOrderCustomerUserId(Long shopOrderId, Long customerId);
+
+    @Query("select new VietFreshHub.order.dto.CustomerShopOrderStatus(s.order.orderId,s.shopOrderId,s.shop.shopName,"
+            + OrderRepository.CUSTOMER_SHOP_STATUS + ") from ShopOrder s left join OrderDeliveryView d on d.shopOrder = s "
+            + "where s.order.customer.userId = :customerId and s.shopOrderId in :shopOrderIds order by s.shopOrderId")
+    List<CustomerShopOrderStatus> findCustomerStatuses(@Param("customerId") Long customerId,
+            @Param("shopOrderIds") List<Long> shopOrderIds);
 
     @Override
     @EntityGraph(attributePaths = {"order", "order.customer"})
@@ -29,6 +62,16 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, Jpa
 
     @EntityGraph(attributePaths = {"shop", "items.variant.product"})
     List<ShopOrder> findByOrderOrderIdOrderByShopOrderIdAsc(Long orderId);
+
+    // Page IDs are already paginated; fetch one collection only, never paginate a collection fetch.
+    @org.springframework.data.jpa.repository.Query("select distinct s from ShopOrder s join fetch s.shop "
+            + "left join fetch s.items i left join fetch i.variant "
+            + "where s.order.customer.userId=:customerId and s.order.orderId in :orderIds order by s.shopOrderId")
+    List<ShopOrder> findCustomerHistoryShops(
+            @org.springframework.data.repository.query.Param("customerId") Long customerId,
+            @org.springframework.data.repository.query.Param("orderIds") List<Long> orderIds);
+    @Query("select s from ShopOrder s where s.order.orderId = :orderId order by s.shopOrderId")
+    List<ShopOrder> findForOrderNotification(@Param("orderId") Long orderId);
 
     boolean existsByOrder_OrderIdAndStatusNot(Long orderId, String status);
 
@@ -47,7 +90,7 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, Jpa
     @EntityGraph(attributePaths = {"order", "order.customer"})
     List<ShopOrder> findByShopIdAndStatusInOrderByOrderPlacedAtDesc(Long shopId, Collection<String> statuses);
 
-    @EntityGraph(attributePaths = {"order", "order.customer"})
+    @EntityGraph(attributePaths = {"order", "order.customer", "shop", "items"})
     Optional<ShopOrder> findByShopOrderIdAndShopId(Long shopOrderId, Long shopId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

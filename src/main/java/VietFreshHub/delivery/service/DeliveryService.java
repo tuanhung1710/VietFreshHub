@@ -19,23 +19,6 @@ public class DeliveryService {
     private final DeliveryRepository deliveryRepository;
 
     @Transactional
-    public void releaseAssignment(Long deliveryId) {
-        Delivery delivery = getDeliveryForUpdate(deliveryId);
-        requireStatus(delivery, DeliveryStatus.ASSIGNED);
-        delivery.releaseAssignment();
-    }
-
-    @Transactional
-    public void accept(Long deliveryId) {
-        Delivery delivery = getDeliveryForUpdate(deliveryId);
-        requireStatus(delivery, DeliveryStatus.ASSIGNED);
-        if (!"READY_FOR_DELIVERY".equals(delivery.getShopOrder().getStatus())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Đơn hàng chưa sẵn sàng giao hàng.");
-        }
-        delivery.accept();
-    }
-
-    @Transactional
     public void markPickedUp(Long deliveryId) {
         Delivery delivery = getDeliveryForUpdate(deliveryId);
         requireStatus(delivery, DeliveryStatus.ACCEPTED);

@@ -7,6 +7,12 @@ import java.util.List;
 import java.util.Optional;
 public interface OrderDeliveryReadRepository extends Repository<OrderDeliveryView,Long> {
     List<OrderDeliveryView> findByShopOrderOrderOrderIdOrderByDeliveryIdAsc(Long orderId);
+    List<OrderDeliveryView> findByShopOrderShopOrderIdInOrderByDeliveryIdAsc(List<Long> shopOrderIds);
+
+    @Query("select d from OrderDeliveryView d where d.shopOrder.order.customer.userId=:customerId "
+            + "and d.shopOrder.order.orderId in :orderIds order by d.deliveryId")
+    List<OrderDeliveryView> findCustomerHistoryDeliveries(@Param("customerId") Long customerId,
+            @Param("orderIds") List<Long> orderIds);
 
     Optional<OrderDeliveryView> findByShopOrder_ShopOrderIdAndShopOrder_ShopId(Long shopOrderId, Long shopId);
 

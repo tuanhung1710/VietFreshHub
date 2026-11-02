@@ -2,6 +2,7 @@ package VietFreshHub.delivery.service;
 
 import VietFreshHub.auth.service.AuthService;
 import VietFreshHub.delivery.dto.AssignedDeliverySummary;
+import VietFreshHub.delivery.dto.AvailableDeliveryResponse;
 import VietFreshHub.delivery.dto.DeliveryDetailResponse;
 import VietFreshHub.delivery.dto.DeliveryLocationResponse;
 import VietFreshHub.delivery.dto.DailyCodSummary;
@@ -13,6 +14,7 @@ import VietFreshHub.delivery.entity.DeliveryAssignment;
 import VietFreshHub.delivery.entity.DeliveryAssignmentStatus;
 import VietFreshHub.delivery.entity.DeliveryStatus;
 import VietFreshHub.delivery.repository.DeliveryAssignmentRepository;
+import VietFreshHub.delivery.repository.DeliveryRepository;
 import VietFreshHub.delivery.repository.DeliveryStatusHistoryRepository;
 import VietFreshHub.delivery.repository.DeliveryStaffHistoryRepository;
 import VietFreshHub.order.entity.Order;
@@ -27,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +38,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
-import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -48,12 +50,49 @@ public class DeliveryStaffQueryService {
     private static final ZoneId DELIVERY_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private final DeliveryAssignmentRepository deliveryAssignmentRepository;
+    private final DeliveryRepository deliveryRepository;
     private final DeliveryStatusHistoryRepository deliveryStatusHistoryRepository;
     private final AuthService authService;
     private final OrderService orderService;
     private final ShopService shopService;
     private final PaymentService paymentService;
     private final DeliveryStaffHistoryRepository staffHistory;
+
+    @Transactional(readOnly = true)
+    public List<AvailableDeliveryResponse> getAvailableDeliveries(Authentication authentication) {
+        authService.getCurrentDeliveryStaffId(authentication);
+        return deliveryRepository.findAll(DeliveryRepository.availableForClaim(), Sort.by(Sort.Direction.DESC, "createdAt", "deliveryId")).stream()
+                .map(this::toAvailableDeliveryResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public DeliveryDetailResponse getDeliveryDetailForClaim(Long deliveryId, Authentication authentication) {
+        authService.getCurrentDeliveryStaffId(authentication);
+        Delivery delivery = deliveryRepository.findOne(DeliveryRepository.availableForClaim()
+                        .and((root, query, builder) -> builder.equal(root.get("deliveryId"), deliveryId)))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Đơn giao hàng không còn trong danh sách có thể nhận."));
+        return toDeliveryDetailResponse(delivery, null);
+    }
+
+    @Transactional(readOnly = true)
+    public long getActiveAssignmentCount(Authentication authentication) {
+        Long deliveryStaffId = authService.getCurrentDeliveryStaffId(authentication);
+        return deliveryAssignmentRepository.countByDeliveryStaff_UserIdAndStatusIn(deliveryStaffId,
+                List.of(DeliveryAssignmentStatus.ASSIGNED, DeliveryAssignmentStatus.ACCEPTED));
+    }
+
+    private AvailableDeliveryResponse toAvailableDeliveryResponse(Delivery delivery) {
+        ShopOrder shopOrder = delivery.getShopOrder();
+        OrderAddress address = orderService.getOrderAddress(shopOrder.getOrder().getOrderId());
+        DeliveryLocationResponse pickupLocation = shopService.findLocationByShopId(shopOrder.getShopId())
+                .map(this::toDeliveryLocation)
+                .orElse(null);
+        return new AvailableDeliveryResponse(delivery.getDeliveryId(), shopOrder.getShopOrderCode(),
+                shopOrder.getShop() == null ? null : shopOrder.getShop().getShopName(),
+                pickupLocation, toDeliveryLocation(address));
+    }
 
     @Transactional(readOnly = true)
     public DailyCodSummary getDailyCodSummary(Authentication authentication, LocalDate date) {
@@ -165,9 +204,16 @@ public class DeliveryStaffQueryService {
                     throw historyFilterError("Ngày nằm ngoài phạm vi dữ liệu được hỗ trợ.");
                 }
             }
+            LocalDate today = LocalDate.now(DELIVERY_ZONE);
+            if (filter.getFromDate() != null && filter.getFromDate().isAfter(today)) {
+                throw historyFilterError("Từ ngày không được lớn hơn ngày hiện tại.");
+            }
+            if (filter.getToDate() != null && filter.getToDate().isAfter(today)) {
+                throw historyFilterError("Đến ngày không được lớn hơn ngày hiện tại.");
+            }
             if (filter.getFromDate() != null && filter.getToDate() != null
                     && filter.getFromDate().isAfter(filter.getToDate())) {
-                throw historyFilterError("Từ ngày không được sau đến ngày.");
+                throw historyFilterError("Từ ngày không được sau Đến ngày.");
             }
         }
     }
@@ -211,7 +257,7 @@ public class DeliveryStaffQueryService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Không tìm thấy phân công giao hàng."));
 
-        return toDeliveryDetailResponse(assignment);
+        return toDeliveryDetailResponse(assignment.getDelivery(), assignment);
     }
 
     private AssignedDeliverySummary toAssignedDeliverySummary(DeliveryAssignment assignment) {
@@ -222,19 +268,17 @@ public class DeliveryStaffQueryService {
                 assignment.getAssignmentId(),
                 delivery.getDeliveryId(),
                 shopOrder.getShopOrderId(),
-                shopOrder.getOrder().getOrderCode(),
+                shopOrder.getShopOrderCode(),
                 assignment.getStatus(),
                 delivery.getStatus(),
                 toDeliveryLocalTime(assignment.getAssignedAt()),
                 toDeliveryLocalTime(assignment.getAcceptedAt()),
                 assignmentStatusLabel(assignment.getStatus()),
-                OrderLabels.delivery(delivery.getStatus().name()),
-                remainingOfferSeconds(assignment)
+                OrderLabels.delivery(delivery.getStatus().name())
         );
     }
 
-    private DeliveryDetailResponse toDeliveryDetailResponse(DeliveryAssignment assignment) {
-        Delivery delivery = assignment.getDelivery();
+    private DeliveryDetailResponse toDeliveryDetailResponse(Delivery delivery, DeliveryAssignment assignment) {
         ShopOrder shopOrder = delivery.getShopOrder();
         Order order = shopOrder.getOrder();
         OrderAddress address = orderService.getOrderAddress(order.getOrderId());
@@ -243,39 +287,34 @@ public class DeliveryStaffQueryService {
                 .orElse(null);
 
         return new DeliveryDetailResponse(
-                assignment.getAssignmentId(),
+                assignment == null ? null : assignment.getAssignmentId(),
                 delivery.getDeliveryId(),
                 shopOrder.getShopOrderId(),
                 shopOrder.getShopId(),
-                order.getOrderCode(),
-                assignment.getStatus(),
+                shopOrder.getShopOrderCode(),
+                assignment == null ? null : assignment.getStatus(),
                 delivery.getStatus(),
-                order.getPlacedAt(),
-                toDeliveryLocalTime(assignment.getAssignedAt()),
-                toDeliveryLocalTime(assignment.getAcceptedAt()),
+                OrderLabels.local(order.getPlacedAt()),
+                assignment == null ? null : toDeliveryLocalTime(assignment.getAssignedAt()),
+                assignment == null ? null : toDeliveryLocalTime(assignment.getAcceptedAt()),
                 toDeliveryLocalTime(delivery.getPickedUpAt()),
                 delivery.getStatus() == DeliveryStatus.DELIVERED ? toDeliveryLocalTime(delivery.getDeliveredAt()) : null,
                 delivery.getFailureReason(),
-                returnStatusLabel(assignment),
-                remainingOfferSeconds(assignment),
-                assignmentStatusLabel(assignment.getStatus()),
+                assignment == null ? null : returnStatusLabel(assignment),
+                assignment == null ? null : assignmentStatusLabel(assignment.getStatus()),
                 OrderLabels.delivery(delivery.getStatus().name()),
                 address == null ? null : address.getRecipientName(),
                 address == null ? null : address.getPhone(),
                 pickupLocation,
                 toDeliveryLocation(address),
                 shopOrder.getShop() == null ? null : shopOrder.getShop().getShopName(),
-                paymentService.isCodOrder(order.getOrderId()) ? shopOrder.getTotalAmount() : BigDecimal.ZERO
+                paymentService.isCodOrder(order.getOrderId()) && "UNPAID".equals(shopOrder.getPaymentStatus())
+                        && !List.of("CANCELLED", "COMPLETED").contains(shopOrder.getStatus())
+                        && List.of(DeliveryStatus.UNASSIGNED, DeliveryStatus.ASSIGNED, DeliveryStatus.ACCEPTED,
+                                DeliveryStatus.PICKED_UP, DeliveryStatus.OUT_FOR_DELIVERY).contains(delivery.getStatus())
+                        ? shopOrder.getTotalAmount() : BigDecimal.ZERO,
+                shopOrder.getTotalAmount(), OrderLabels.payment(shopOrder.getPaymentStatus())
         );
-    }
-
-    private long remainingOfferSeconds(DeliveryAssignment assignment) {
-        if (assignment.getStatus() != DeliveryAssignmentStatus.ASSIGNED || assignment.getAssignedAt() == null) {
-            return 0;
-        }
-        long remainingMillis = Duration.between(LocalDateTime.now(ZoneOffset.UTC),
-                assignment.getAssignedAt().plusSeconds(DeliveryAssignmentService.OFFER_TIMEOUT_SECONDS)).toMillis();
-        return Math.max(0, (remainingMillis + 999) / 1000);
     }
 
     private boolean isSupportedDelivery(Delivery delivery) {
@@ -309,7 +348,7 @@ public class DeliveryStaffQueryService {
 
     private String assignmentStatusLabel(DeliveryAssignmentStatus status) {
         return switch (status) {
-            case ASSIGNED -> "Đang chờ chấp nhận";
+            case ASSIGNED -> "Phân công cũ cần đối soát";
             case ACCEPTED -> "Đã chấp nhận";
             case REJECTED -> "Đã từ chối";
             case CANCELLED -> "Đã hết hạn hoặc hủy";

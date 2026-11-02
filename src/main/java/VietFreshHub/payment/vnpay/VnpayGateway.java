@@ -40,7 +40,7 @@ public class VnpayGateway {
         fields.put("vnp_Amount", amountInSubunits(payment.getAmount()));
         fields.put("vnp_CurrCode", "VND");
         fields.put("vnp_TxnRef", payment.getTransactionReference());
-        fields.put("vnp_OrderInfo", "Thanh toan don hang " + payment.getOrder().getOrderCode());
+        fields.put("vnp_OrderInfo", "Thanh toán lượt đặt hàng VietFresh Hub");
         fields.put("vnp_OrderType", "other");
         fields.put("vnp_Locale", "vn");
         fields.put("vnp_ReturnUrl", properties.getReturnUrl());

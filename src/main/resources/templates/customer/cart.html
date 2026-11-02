@@ -48,7 +48,7 @@
                                 <input type="hidden" name="variantId" th:value="${item.variantId}">
                                 <div class="quantity">
                                     <button type="button" data-step="-1" th:aria-label="'Giảm số lượng ' + ${item.productName}">−</button>
-                                    <input type="number" name="quantity" min="0" required th:max="${item.availableStock}"
+                                    <input type="number" inputmode="numeric" step="1" name="quantity" min="0" required th:max="${item.availableStock}"
                                            th:value="${item.quantity}" th:aria-label="'Số lượng ' + ${item.productName}">
                                     <button type="button" data-step="1" th:disabled="${item.quantity >= item.availableStock}"
                                             th:aria-label="'Tăng số lượng ' + ${item.productName}">+</button>

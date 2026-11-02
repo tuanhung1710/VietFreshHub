@@ -2,7 +2,7 @@ package VietFreshHub.admin.service;
 
 import VietFreshHub.admin.dto.AdminProductModerationDetail;
 import VietFreshHub.admin.dto.AdminProductModerationRow;
-import VietFreshHub.admin.repository.AdminProductModerationRepository;
+import VietFreshHub.admin.repository.AdminProductModerationBulkRepository;
 import VietFreshHub.auth.entity.User;
 import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.inventory.service.InventoryJournalService;
@@ -41,11 +41,11 @@ public class AdminProductModerationService {
 
     private static final int PAGE_SIZE = 25;
     private static final int MAX_PAGE = 10000;
-    private static final Set<String> TABS = Set.of("PENDING", "LOCKED", "REVIEWED");
+    private static final Set<String> TABS = Set.of("PENDING", "REOPEN", "LOCKED", "REVIEWED");
     private static final Set<String> DATE_RANGES = Set.of("ALL", "TODAY", "LAST_3_DAYS", "LAST_7_DAYS", "LAST_30_DAYS");
     private static final ZoneId BUSINESS_TIME_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
-    private final AdminProductModerationRepository moderationRepository;
+    private final AdminProductModerationBulkRepository moderationRepository;
     private final ProductImageRepository productImageRepository;
     private final ProductVariantRepository productVariantRepository;
     private final ShopRepository shopRepository;
@@ -81,8 +81,14 @@ public class AdminProductModerationService {
                 ProductStatus.DELETED, ApprovalStatus.PENDING);
     }
 
+    public long countReopen() {
+        return moderationRepository.countByStatusNotAndApprovalStatusAndModerationBlockedTrue(
+                ProductStatus.DELETED, ApprovalStatus.PENDING);
+    }
+
     public long countLocked() {
-        return moderationRepository.countByStatusNotAndModerationBlockedTrue(ProductStatus.DELETED);
+        return moderationRepository.countLockedExceptPending(
+                ProductStatus.DELETED, ApprovalStatus.PENDING);
     }
 
     public long countReviewed() {

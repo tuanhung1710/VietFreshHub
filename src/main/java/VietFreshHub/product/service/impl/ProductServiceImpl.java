@@ -882,7 +882,10 @@ public class ProductServiceImpl implements ProductService {
         BigDecimal previousCompareAtPrice = variant.getCompareAtPrice();
         boolean priceChanged = !sameDecimal(previousPrice, form.getPrice());
         boolean compareAtPriceChanged = !sameDecimal(previousCompareAtPrice, form.getCompareAtPrice());
-        if (structureChanged) {
+        boolean reviewableVariantChange = structureChanged
+                || (otherFieldsChanged || priceChanged || compareAtPriceChanged)
+                        && product.isModerationBlocked();
+        if (reviewableVariantChange) {
             requestReapproval(product);
         }
         applyVariantFields(variant, form);

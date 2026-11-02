@@ -14,6 +14,7 @@ public class DeliveryMonitoringRow {
     private Long shopOrderId;
     private Long shopId;
     private String shopName;
+    private LocalDateTime placedAt;
     private String deliveryStatusLabel;
     private String assignmentTypeLabel;
     private Long assignmentId;
