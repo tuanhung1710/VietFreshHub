@@ -20,11 +20,14 @@ function readLocation() {
     const query = new URLSearchParams(location.search);
     state.q = (query.get('keyword') || '').slice(0, 100);
     state.categoryId = Number(query.get('categoryId')) || null;
+    state.sort = ['popular', 'latest', 'sales', 'asc', 'desc'].includes(query.get('sort')) ? query.get('sort') : 'popular';
     state.tab = query.get('tab') === 'all' || ['categoryId', 'keyword', 'sort', 'page', 'pageSize'].some(key => query.has(key)) ? 'all' : 'home';
 }
 
 function syncControls() {
     $('q').value = state.q;
+    $('priceSort').value = ['asc', 'desc'].includes(state.sort) ? state.sort : 'popular';
+    document.querySelectorAll('[data-sort]').forEach(button => button.classList.toggle('active', state.sort === button.dataset.sort));
     document.querySelectorAll('[data-shop-category]').forEach(button => {
         const selected = state.tab === 'all' && (Number(button.dataset.shopCategory) || null) === state.categoryId;
         button.classList.toggle('active', selected);
@@ -105,6 +108,7 @@ function clicked(event) {
         state.page = 1;
         return catalog();
     }
+    if (data.sort !== undefined) { state.sort = data.sort; state.page = 1; return catalog(); }
 }
 
 async function start() {
@@ -133,6 +137,7 @@ async function start() {
         state.page = 1;
         handle(() => catalog());
     });
+    $('priceSort').addEventListener('change', () => { state.sort = $('priceSort').value; state.page = 1; handle(() => catalog()); });
     window.addEventListener('popstate', () => { readLocation(); handle(() => state.tab === 'home' ? home(false) : catalog(false)); });
     const initialCatalog = state.tab === 'home' ? home(false) : catalog(false);
     await Promise.all([loadHome(), initialCatalog, refreshCartCount()]);
