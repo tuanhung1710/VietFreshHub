@@ -42,9 +42,14 @@ public class StorefrontPageController {
     public String product(@PathVariable(required = false) Long variantId, @RequestParam(required = false) Long productId,
                           @RequestParam(required = false) String slug, Model model) {
         var product = catalog.getProduct(variantId, productId, slug);
-        model.addAttribute("initialProductId", product.getProductId());
-        model.addAttribute("initialVariantId", product.getSelectedVariant().getVariantId());
-        return "customer/home";
+        addShopInformation(product.getShopId(), model);
+        var filter = new VietFreshHub.catalog.dto.CatalogBrowseFilter();
+        filter.setShopId(product.getShopId());
+        var related = catalog.listProducts(filter);
+        model.addAttribute("product", product);
+        model.addAttribute("details", storefront.productDetails(product.getProductId()));
+        model.addAttribute("shopProductCount", related.getTotalElements());
+        return "customer/product-detail";
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)

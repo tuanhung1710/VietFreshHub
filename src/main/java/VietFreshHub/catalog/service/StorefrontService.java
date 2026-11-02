@@ -3,6 +3,7 @@ package VietFreshHub.catalog.service;
 import VietFreshHub.catalog.dto.CatalogBrowseFilter;
 import VietFreshHub.catalog.dto.StorefrontProduct;
 import VietFreshHub.catalog.repository.StorefrontShopRepository;
+import VietFreshHub.catalog.repository.CatalogDetailRepository;
 import VietFreshHub.catalog.repository.StorefrontShopRepository.ShopOption;
 import VietFreshHub.common.PageResponse;
 import VietFreshHub.common.PageSizes;
@@ -22,6 +23,11 @@ public class StorefrontService {
     public record Home(PageResponse<StorefrontProduct> products, List<StorefrontProduct> topProducts) { }
     private final CatalogService catalog;
     private final StorefrontShopRepository shops;
+    private final CatalogDetailRepository details;
+
+    public CatalogDetailRepository.Details productDetails(Long productId) {
+        return details.find(productId);
+    }
 
     public Optional<String> shopAddress(Long shopId) {
         return shops.formattedAddress(shopId);
