@@ -9,6 +9,7 @@
 <th:block th:replace="~{fragments/account-menu :: assets}"></th:block>
 <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
 <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
+<link rel="stylesheet" th:href="@{/css/customer-pagination.css}">
 </head>
 <body th:attr="data-initial-view=${initialView},data-shop-id=${initialShopId},data-product-id=${initialProductId},data-variant-id=${initialVariantId}">
 <header th:replace="~{fragments/customer-shop :: header}"></header>
@@ -46,7 +47,7 @@
     <section class="section">
       <div class="sectiontop"><h2>GỢI Ý HÔM NAY</h2><button class="textlink" data-all>Xem tất cả sản phẩm</button></div>
       <div class="products" id="homeproducts"></div>
-      <div id="homePagination" class="pagination" aria-label="Phân trang gợi ý hôm nay"></div>
+      <div id="homePagination" class="customer-pagination-panel" aria-label="Phân trang gợi ý hôm nay"></div>
     </section>
   </div>
 
@@ -82,7 +83,7 @@
         </div>
         <div id="chips" class="chips"></div>
         <div id="results" class="products"></div>
-        <div id="pagination" class="pagination"></div>
+        <div id="pagination" class="customer-pagination-panel" aria-label="Phân trang sản phẩm"></div>
       </div>
     </div>
   </div>

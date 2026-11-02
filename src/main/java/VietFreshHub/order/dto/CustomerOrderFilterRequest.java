@@ -6,6 +6,8 @@ import lombok.Setter;
 import java.time.LocalDate;
 @Getter @Setter
 public class CustomerOrderFilterRequest {
+    private int size = VietFreshHub.common.PageSizes.DEFAULT;
+    public void setSize(int size) { this.size = VietFreshHub.common.PageSizes.normalize(size); }
     @Min(value=1,message="Trang phải từ 1 trở lên.") @Max(value=10000,message="Trang vượt giới hạn cho phép.") private int page=1;
     @Size(max=100,message="Mã đơn tìm kiếm tối đa 100 ký tự.") private String keyword="";
     @Pattern(regexp="|WAITING_PAYMENT|WAITING_CONFIRMATION|PREPARING|SHIPPING|AWAITING_DELIVERY|COMPLETED|CANCELLED",message="Trạng thái lọc không hợp lệ.") private String status="";

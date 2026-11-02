@@ -72,16 +72,29 @@ public class ShopCustomerOrderServiceImpl implements ShopCustomerOrderService {
         Long referenceId=VietFreshHub.common.BusinessCodes.parse("VFH",codeKeyword);
         String keywordPattern="%"+codeKeyword
                 .replace("!","!!").replace("\\","!\\").replace("%","!%").replace("_","!_").replace("[","![")+"%";
-        var page=shopOrders.findCustomerHistory(customerId,statusText,filter.getKeyword(),keywordPattern,referenceId,from,until,PageRequest.of(filter.getPage()-1,10));
-        if(page.getTotalElements()==0) return Page.empty(PageRequest.of(0,10));
+        var page=shopOrders.findCustomerHistory(customerId,statusText,filter.getKeyword(),keywordPattern,referenceId,from,until,PageRequest.of(filter.getPage()-1, filter.getSize()));
+        if(page.getTotalElements()==0) return Page.empty(PageRequest.of(0, filter.getSize()));
         if(page.getNumber()>=page.getTotalPages())
-            page=shopOrders.findCustomerHistory(customerId,statusText,filter.getKeyword(),keywordPattern,referenceId,from,until,PageRequest.of(page.getTotalPages()-1,10));
+            page=shopOrders.findCustomerHistory(customerId,statusText,filter.getKeyword(),keywordPattern,referenceId,from,until,PageRequest.of(page.getTotalPages()-1, filter.getSize()));
+        Map<Long,ShopOrder> previews = new HashMap<>();
+        for (var shop : shopOrders.findCustomerHistoryShops(customerId, page.getContent().stream().map(ShopOrderListRow::orderId).distinct().toList())) {
+            previews.put(shop.getShopOrderId(), shop);
+        }
         Map<Long,Boolean> codOrders=new HashMap<>();
         return page.map(row -> {
-            if(!"CANCELLED".equals(row.status()) || !"UNPAID".equals(row.paymentStatus())) return row;
-            boolean cod=codOrders.computeIfAbsent(row.orderId(),paymentService::isCodOrder);
+            String paymentLabel = row.paymentStatusLabel();
+            if ("CANCELLED".equals(row.status()) && "UNPAID".equals(row.paymentStatus())) {
+                boolean cod=codOrders.computeIfAbsent(row.orderId(),paymentService::isCodOrder);
+                paymentLabel=OrderLabels.customerPayment(row.status(),row.paymentStatus(),cod);
+            }
+            var shop = previews.get(row.shopOrderId());
+            var lines = shop == null ? List.<OrderItem>of() : shop.getItems().stream()
+                    .sorted(java.util.Comparator.comparing(OrderItem::getOrderItemId)).toList();
+            var products = lines.stream().limit(3).map(item -> new OrderHistorySummary.Product(
+                    item.getProductNameSnapshot(), item.getVariantNameSnapshot(), item.getQuantity(),
+                    item.getVariant() == null ? null : item.getVariant().getThumbnailUrl())).toList();
             return new ShopOrderListRow(row.shopOrderId(),row.orderId(),row.shopName(),row.status(),row.paymentStatus(),
-                    row.totalAmount(),row.placedAt(),OrderLabels.customerPayment(row.status(),row.paymentStatus(),cod));
+                    row.totalAmount(),row.placedAt(),paymentLabel,products,lines.size());
         });
     }
 

@@ -98,13 +98,13 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         LocalDateTime from = historyStartDate(filter.getFromDate(), customerZone);
         LocalDateTime until = historyEndDateExclusive(filter.getToDate(), customerZone);
         Sort sort = Sort.by(Sort.Order.desc("placedAt"), Sort.Order.desc("orderId"));
-        PageRequest requestedPage = PageRequest.of(filter.getPage() - 1, 10, sort);
+        PageRequest requestedPage = PageRequest.of(filter.getPage() - 1, filter.getSize(), sort);
         Page<OrderListRow> result = orders.findHistory(customerId, status, filter.getKeyword(), from, until, requestedPage);
         if (result.getTotalElements() == 0) {
-            return Page.empty(PageRequest.of(0, 10, sort));
+            return Page.empty(PageRequest.of(0, filter.getSize(), sort));
         }
         if (result.getNumber() >= result.getTotalPages()) {
-            PageRequest lastPage = PageRequest.of(result.getTotalPages() - 1, 10, sort);
+            PageRequest lastPage = PageRequest.of(result.getTotalPages() - 1, filter.getSize(), sort);
             return orders.findHistory(customerId, status, filter.getKeyword(), from, until, lastPage);
         }
         return result;
@@ -199,7 +199,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
     }
 
     private void validateHistoryOrderIds(Long customerId, List<Long> orderIds) {
-        if (customerId == null || customerId < 1 || orderIds == null || orderIds.size() > 10) {
+        if (customerId == null || customerId < 1 || orderIds == null || orderIds.size() > java.util.Collections.max(VietFreshHub.common.PageSizes.OPTIONS)) {
             throw new CustomerOrderException("Danh sách đơn hàng không hợp lệ.");
         }
         for (Long orderId : orderIds) {

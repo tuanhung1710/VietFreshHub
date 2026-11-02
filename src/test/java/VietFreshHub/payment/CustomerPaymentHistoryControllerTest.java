@@ -84,7 +84,25 @@ class CustomerPaymentHistoryControllerTest {
         assertTrue(html.contains("/customer/order-receipts/10")); assertTrue(html.contains("page=2"));
         assertTrue(html.contains("fromDate=2026-10-20")); assertTrue(html.contains("keyword=VF-10"));
         assertTrue(html.contains("12.345,50"));
-        assertFalse(html.contains("method=\"post\""));
+        assertFalse(html.substring(html.indexOf("payment-table")).contains("method=\"post\""));
+    }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({"5,5", "10,10", "20,20", "50,50", "999,10", "0,10"})
+    void pageSizeBindsAndSurvivesNavigation(int requested, int expected) throws Exception {
+        when(payments.history(eq(7L), any())).thenAnswer(invocation -> {
+            PaymentHistoryFilter filter = invocation.getArgument(1);
+            assertEquals(expected, filter.getSize());
+            return new PageImpl<>(List.of(row()), PageRequest.of(filter.getPage()-1, filter.getSize()), 101);
+        });
+        var response = mvc.perform(get("/customer/payments").principal(auth).param("size", String.valueOf(requested))
+                .param("keyword", "VF-10").param("status", "PENDING")).andReturn().getResponse();
+        assertEquals(200, response.getStatus());
+        String html = response.getContentAsString();
+        assertTrue(html.contains("size=" + expected));
+        assertTrue(html.contains("keyword=VF-10"));
+        assertTrue(html.contains("id=\"historyPageSize\""));
+        assertTrue(html.contains("value=\"" + expected + "\" selected=\"selected\""));
+        for (int option : VietFreshHub.common.PageSizes.OPTIONS) assertTrue(html.contains("value=\"" + option + "\""));
     }
     @Test void invalidBindingDoesNotQueryHistory() throws Exception {
         var response = mvc.perform(get("/customer/payments").principal(auth).param("page", "abc"))
@@ -117,7 +135,7 @@ class CustomerPaymentHistoryControllerTest {
         assertFalse(payment.contains("Thời điểm ghi nhận thanh toán"));
         assertFalse(payment.contains("Mã tham chiếu thanh toán"));
         assertFalse(html.contains("Trạng thái đơn hàng")); assertFalse(html.contains("WAITING_PAYMENT"));
-        assertFalse(html.contains("method=\"post\""));
+        assertFalse(html.substring(html.indexOf("payment-table")).contains("method=\"post\""));
     }
     @Test void distinctAttemptsSameOrderKeepTheirOwnIdStatusAndOptionalFields() throws Exception {
         var rows = List.of(record(1L,"VNPAY",Payment.Status.FAILED,null,null),

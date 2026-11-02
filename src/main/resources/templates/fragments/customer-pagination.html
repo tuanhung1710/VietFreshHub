@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+        <div
+            th:fragment="pagination(pageData, previousUrl, nextUrl, label, unit)"
+            class="customer-pager"
+            role="navigation"
+            th:attr="aria-label=${label}"
+        >
+            <a
+                class="customer-page-button customer-page-previous"
+                aria-label="Trang trước"
+                title="Trang trước"
+                th:classappend="${!pageData.hasPrevious() ? 'disabled' : ''}"
+                th:attr="href=${pageData.hasPrevious() ? previousUrl : null},aria-disabled=${!pageData.hasPrevious()},tabindex=${pageData.hasPrevious() ? null : -1}"
+            >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <span class="customer-page-summary" aria-live="polite">
+                <span
+                    th:text="${'Trang ' + (pageData.number + 1) + ' / ' + T(java.lang.Math).max(1, pageData.totalPages)}"
+                >
+                </span>
+                <small th:if="${!#strings.isEmpty(unit)}" th:text="${pageData.totalElements + ' ' + unit}">
+                </small>
+            </span>
+            <a
+                class="customer-page-button customer-page-next"
+                aria-label="Trang sau"
+                title="Trang sau"
+                th:classappend="${!pageData.hasNext() ? 'disabled' : ''}"
+                th:attr="href=${pageData.hasNext() ? nextUrl : null},aria-disabled=${!pageData.hasNext()},tabindex=${pageData.hasNext() ? null : -1}"
+            >
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+        </div>
+</body></html>

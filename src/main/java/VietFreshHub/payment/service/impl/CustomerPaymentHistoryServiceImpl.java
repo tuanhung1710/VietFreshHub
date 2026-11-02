@@ -39,15 +39,15 @@ public class CustomerPaymentHistoryServiceImpl implements CustomerPaymentHistory
         LocalDateTime from = startDate(filter.getFromDate());
         LocalDateTime until = endDateExclusive(filter.getToDate());
         Sort sort = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("paymentId"), Sort.Order.desc("s.shopOrderId"));
-        PageRequest requestedPage = PageRequest.of(filter.getPage() - 1, 10, sort);
+        PageRequest requestedPage = PageRequest.of(filter.getPage() - 1, filter.getSize(), sort);
         Page<PaymentHistoryRow> result = payments.findHistory(
                 customerId, status, filter.getKeyword(), from, until, requestedPage);
 
         if (result.getTotalElements() == 0) {
-            return Page.empty(PageRequest.of(0, 10, sort));
+            return Page.empty(PageRequest.of(0, filter.getSize(), sort));
         }
         if (result.getNumber() >= result.getTotalPages()) {
-            PageRequest lastPage = PageRequest.of(result.getTotalPages() - 1, 10, sort);
+            PageRequest lastPage = PageRequest.of(result.getTotalPages() - 1, filter.getSize(), sort);
             result = payments.findHistory(customerId, status, filter.getKeyword(), from, until, lastPage);
         }
         return attachOrderReferences(customerId, result);

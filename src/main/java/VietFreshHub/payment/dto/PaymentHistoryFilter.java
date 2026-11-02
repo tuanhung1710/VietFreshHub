@@ -8,6 +8,8 @@ import java.time.LocalDate;
 
 @Getter @Setter
 public class PaymentHistoryFilter {
+    private int size = VietFreshHub.common.PageSizes.DEFAULT;
+    public void setSize(int size) { this.size = VietFreshHub.common.PageSizes.normalize(size); }
     @Min(1) @Max(10000)
     private int page = 1;
     @NotNull @Size(max=100, message="Mã đơn tối đa 100 ký tự.")
