@@ -6,8 +6,6 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
 
 @Repository
 @RequiredArgsConstructor
@@ -30,11 +28,6 @@ public class InventoryAlertRepository {
                 (row, index) -> new Alert(row.getLong("variant_id"), "Cảnh báo tồn kho thấp",
                         row.getString("name") + " · " + row.getString("variant_name") + ": còn " + row.getLong("stock")
                                 + ", ngưỡng " + row.getInt("low_stock_threshold") + "."));
-    }
-
-    public Set<Long> activeIds(Long shopId, String type) {
-        return new HashSet<>(jdbc.query("SELECT entity_id FROM dbo.inventory_alert_states WHERE shop_id=:shop AND alert_type=:type AND active=1",
-                parameters(shopId, type), (row, index) -> row.getLong(1)));
     }
 
     public List<Alert> expiry(Long shopId, LocalDate today, boolean expired) {
@@ -60,14 +53,4 @@ public class InventoryAlertRepository {
                 new MapSqlParameterSource("shop", shopId).addValue("entity", entityId), Long.class) > 0;
     }
 
-    public void setActive(Long shopId, String type, Long entityId, boolean active) {
-        var parameters = parameters(shopId, type).addValue("entity", entityId).addValue("active", active)
-                .addValue("now", VietFreshHub.inventory.rule.InventoryRules.now());
-        int updated = jdbc.update("UPDATE dbo.inventory_alert_states SET active=:active,updated_at=:now WHERE shop_id=:shop AND alert_type=:type AND entity_id=:entity", parameters);
-        if (updated == 0) jdbc.update("INSERT INTO dbo.inventory_alert_states(shop_id,alert_type,entity_id,active,updated_at) VALUES(:shop,:type,:entity,:active,:now)", parameters);
-    }
-
-    private MapSqlParameterSource parameters(Long shopId, String type) {
-        return new MapSqlParameterSource("shop", shopId).addValue("type", type);
-    }
 }
