@@ -18,11 +18,19 @@ function saveLocation(replace = false) {
 
 function readLocation() {
     const query = new URLSearchParams(location.search);
-    state.tab = query.get('tab') === 'all' ? 'all' : 'home';
+    state.q = (query.get('keyword') || '').slice(0, 100);
+    state.categoryId = Number(query.get('categoryId')) || null;
+    state.tab = query.get('tab') === 'all' || ['categoryId', 'keyword', 'sort', 'page', 'pageSize'].some(key => query.has(key)) ? 'all' : 'home';
 }
 
 function syncControls() {
-
+    $('q').value = state.q;
+    document.querySelectorAll('[data-shop-category]').forEach(button => {
+        const selected = state.tab === 'all' && (Number(button.dataset.shopCategory) || null) === state.categoryId;
+        button.classList.toggle('active', selected);
+        if (selected) button.setAttribute('aria-current', 'page');
+        else button.removeAttribute('aria-current');
+    });
 }
 
 function home(push = true) {
@@ -92,7 +100,11 @@ function clicked(event) {
     if (data.product !== undefined) return openProduct(Number(data.product));
     if (data.shopview !== undefined) return location.assign('/shops/' + Number(data.shopview));
     if (data.footerInfo !== undefined) return openInformation(data.footerInfo);
-    if (data.shopAll !== undefined) return catalog();
+    if (data.shopAll !== undefined || data.shopCategory !== undefined) {
+        state.categoryId = Number(data.shopCategory) || null;
+        state.page = 1;
+        return catalog();
+    }
 }
 
 async function start() {
@@ -107,9 +119,19 @@ async function start() {
         if (logo.complete && !logo.naturalWidth) fallback();
     }
     options = await request('/options');
+    $('topnav').innerHTML = '<button data-shop-category="">Tất cả sản phẩm</button>' + options.categories.map(category =>
+        `<button data-shop-category="${Number(category.id)}">${html(category.name)}</button>`).join('');
+    $('footerCategories').innerHTML = options.categories.slice(0, 3).map(category =>
+        `<p><button class="textlink" data-shop-category="${Number(category.id)}">${html(category.name)}</button></p>`).join('');
     readLocation();
     document.addEventListener('click', event => {
         handle(() => clicked(event));
+    });
+    $('shopSearch').addEventListener('submit', event => {
+        event.preventDefault();
+        state.q = $('q').value.trim();
+        state.page = 1;
+        handle(() => catalog());
     });
     window.addEventListener('popstate', () => { readLocation(); handle(() => state.tab === 'home' ? home(false) : catalog(false)); });
     const initialCatalog = state.tab === 'home' ? home(false) : catalog(false);

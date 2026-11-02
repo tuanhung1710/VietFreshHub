@@ -15,7 +15,7 @@
     <div class="utility"><span>VietFresh Hub · Gian hàng trái cây</span><th:block th:replace="~{fragments/customer-shop :: accountLinks}"></th:block></div>
     <div class="headrow">
       <a class="logo" th:href="@{/home}">VietFresh Hub</a>
-      <form hidden class="search" id="shopSearch" role="search">
+      <form class="search" id="shopSearch" role="search">
         <input id="q" type="search" maxlength="100" placeholder="Tìm sản phẩm trong gian hàng..." aria-label="Tìm sản phẩm trong shop">
         <button type="submit">TÌM</button>
       </form>
@@ -40,7 +40,7 @@
       <div class="stat"><strong>Tham gia</strong><span id="joined" th:text="${joinedDate != null ? #temporals.format(joinedDate,'dd/MM/yyyy') : 'Chưa cập nhật'}"></span></div>
     </div>
   </section>
-  <nav hidden class="nav" id="topnav" aria-label="Danh mục sản phẩm trong shop"></nav>
+  <nav class="nav" id="topnav" aria-label="Danh mục sản phẩm trong shop"></nav>
   <div id="notice" class="note hide" role="status" aria-live="polite"></div>
   <div id="shopHome">
     <section class="section"><div class="sectionhead"><h2>ĐỀ XUẤT CHO BẠN</h2><button data-shop-all>Xem tất cả →</button></div><div class="products" id="recommended" aria-busy="true"></div></section>
