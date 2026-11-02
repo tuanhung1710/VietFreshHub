@@ -141,6 +141,13 @@ async function start() {
     $('size').innerHTML = options.pageSizes.map(size => `<option value="${size}">${size}</option>`).join('');
     readLocation();
     document.addEventListener('click', event => {
+        const authLink = event.target.closest('a[data-auth-link]');
+        if (authLink) {
+            const url = new URL(authLink.href, location.origin);
+            url.searchParams.set('returnTo', location.pathname + location.search);
+            authLink.href = url.pathname + url.search;
+            return;
+        }
         handle(() => clicked(event));
     });
     $('shopSearch').addEventListener('submit', event => {

@@ -1,5 +1,5 @@
 import { request } from './api.js';
-import { $, html, money, rating, placeName, notice } from './render.js';
+import { $, html, notice } from './render.js';
 
 let adding = false;
 let previousFocus;
@@ -35,8 +35,13 @@ export async function addProduct(button) {
         closeModal();
         notice('Đã thêm vào giỏ hàng.');
     } catch (error) {
-        if (error.status === 401 || error.status === 403) {
-            window.location.assign('/login');
+        if (error.status === 401) {
+            window.location.assign('/login?returnTo=' + encodeURIComponent('/product-detail/' + Number(button.dataset.add)));
+            return;
+        }
+        if (error.status === 403) {
+            closeModal();
+            notice('Bạn cần tài khoản khách hàng và phiên đăng nhập còn hiệu lực để thêm vào giỏ.');
             return;
         }
         closeModal();

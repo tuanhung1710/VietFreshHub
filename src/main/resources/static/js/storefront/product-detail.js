@@ -7,6 +7,12 @@ const quantity = $('quantity');
 const photo = $('mainPhoto');
 const fallbackPhoto = '/images/product/product-placeholder.svg';
 
+function loginUrl() {
+    const selected = form.querySelector('input[name="variantId"]:checked');
+    const target = '/product-detail/' + Number(selected.value) + '?quantity=' + quantity.value;
+    return '/login?returnTo=' + encodeURIComponent(target);
+}
+
 function update(changeVariant = false) {
     const selected = form.querySelector('input[name="variantId"]:checked');
     const stock = Number(selected.dataset.stock);
@@ -19,6 +25,7 @@ function update(changeVariant = false) {
     $('plus').disabled = Number(quantity.value) >= stock;
     form.querySelectorAll('input[name="variantId"]').forEach(input => input.closest('label').classList.toggle('selected', input.checked));
     if (changeVariant && selected.dataset.image) photo.src = selected.dataset.image;
+    document.querySelectorAll('[data-customer-login]').forEach(link => link.href = loginUrl());
 }
 
 document.querySelectorAll('img').forEach(image => {
@@ -40,13 +47,19 @@ form.addEventListener('change', event => {
 $('minus').addEventListener('click', () => { quantity.value = Number(quantity.value) - 1; update(); });
 $('plus').addEventListener('click', () => { quantity.value = Number(quantity.value) + 1; update(); });
 form.addEventListener('submit', event => {
-    if (document.body.dataset.customer !== 'true') { event.preventDefault(); location.assign('/login'); }
+    if (document.body.dataset.customer !== 'true') { event.preventDefault(); location.assign(loginUrl()); }
 });
 document.addEventListener('click', event => {
     const thumb = event.target.closest('[data-photo]');
     if (thumb) {
         photo.src = thumb.dataset.photo;
         document.querySelectorAll('[data-photo]').forEach(button => button.classList.toggle('active', button === thumb));
+    }
+    const link = event.target.closest('a[data-auth-link]');
+    if (link) {
+        const url = new URL(link.href, location.origin);
+        url.searchParams.set('returnTo', location.pathname + location.search);
+        link.href = url.pathname + url.search;
     }
 });
 const initialQuantity = new URLSearchParams(location.search).get('quantity');

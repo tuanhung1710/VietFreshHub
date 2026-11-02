@@ -11,6 +11,14 @@ const state = { categoryId: null, q: '', places: [], shopIds: [], min: '', max: 
 const category = id => options.categories.find(category => category.id === Number(id));
 const shop = id => options.shops.find(shop => shop.id === Number(id));
 
+document.addEventListener('click', event => {
+    const link = event.target.closest('a[data-auth-link]');
+    if (!link) return;
+    const url = new URL(link.href, location.origin);
+    url.searchParams.set('returnTo', location.pathname + location.search);
+    link.href = url.pathname + url.search;
+});
+
 function saveLocation(replace = false, shopId) {
     let url = '/home';
     if (view === 'catalog') url += '?view=catalog&' + parameters(state);
