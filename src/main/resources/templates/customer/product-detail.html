@@ -50,6 +50,8 @@
           <button id="plus" type="button" aria-label="Tăng số lượng">+</button><span class="stock" id="stock" th:text="${product.selectedVariant.availableStock} + ' phần có sẵn'"></span>
         </div></div>
         <div class="rowline"><div class="fieldname">Giao hàng từ</div><div class="shipping-place" th:text="${formattedAddress}"></div></div>
+        <div class="cta" th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}"><button type="submit" name="redirect" value="detail" id="addCart">+ Thêm vào giỏ hàng</button><button type="submit" name="redirect" value="checkout" class="solid" id="buyNow">Mua ngay</button></div>
+        <div class="cta" th:unless="${#authorization.expression('hasRole(''CUSTOMER'')')}"><a class="cta-button" data-customer-login th:href="@{/login}">+ Thêm vào giỏ hàng</a><a class="cta-button solid" data-customer-login th:href="@{/login}">Mua ngay</a></div>
       </form>
       <p class="summarysmall">Giá và tổng tiền cập nhật theo quy cách, số lượng đã chọn. Sản phẩm đã có trong giỏ được cộng dồn số lượng. Giá và tồn kho được kiểm tra lại khi thêm vào giỏ và đặt hàng.</p>
     </div>

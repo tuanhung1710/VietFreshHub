@@ -64,15 +64,17 @@ public class CustomerCartViewController {
             flash.addFlashAttribute("requestedQuantity", form.getQuantity());
         } else {
             try {
-                Long customerId = currentCustomer.requireCustomerId(authentication);
-                cartService.addToCart(customerId, form);
+                var added = cartService.addToCart(currentCustomer.requireCustomerId(authentication), form);
                 flash.addFlashAttribute("successMessage", "Đã thêm sản phẩm vào giỏ hàng.");
-            } catch (OutOfStockException | ResourceNotFoundException | IllegalArgumentException exception) {
-                flash.addFlashAttribute("errorMessage", exception.getMessage());
+                if ("checkout".equals(redirect)) {
+                    return "redirect:/customer/checkout?selectionSubmitted=true&itemIds=" + added.getCartItemId();
+                }
+            } catch (OutOfStockException | ResourceNotFoundException | IllegalArgumentException ex) {
+                flash.addFlashAttribute("errorMessage", ex.getMessage());
                 flash.addFlashAttribute("requestedQuantity", form.getQuantity());
             }
         }
-        if ("detail".equals(redirect) && form.getVariantId() != null && form.getVariantId() > 0) {
+        if (("detail".equals(redirect) || "checkout".equals(redirect)) && form.getVariantId() != null && form.getVariantId() > 0) {
             return "redirect:/product-detail/" + form.getVariantId();
         }
         return "redirect:/cart";

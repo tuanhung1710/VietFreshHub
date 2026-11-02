@@ -39,6 +39,9 @@ form.addEventListener('change', event => {
 });
 $('minus').addEventListener('click', () => { quantity.value = Number(quantity.value) - 1; update(); });
 $('plus').addEventListener('click', () => { quantity.value = Number(quantity.value) + 1; update(); });
+form.addEventListener('submit', event => {
+    if (document.body.dataset.customer !== 'true') { event.preventDefault(); location.assign('/login'); }
+});
 document.addEventListener('click', event => {
     const thumb = event.target.closest('[data-photo]');
     if (thumb) {
