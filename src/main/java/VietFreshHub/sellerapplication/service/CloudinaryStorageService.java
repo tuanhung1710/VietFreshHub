@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Map;
@@ -22,6 +23,8 @@ import javax.imageio.ImageIO;
 public class CloudinaryStorageService {
 
     private static final long MAX_FILE_SIZE = 5L * 1024 * 1024;
+    private static final long MAX_CATEGORY_IMAGE_SIZE = 2L * 1024 * 1024;
+    private static final String CATEGORY_IMAGE_FOLDER = "vietfresh/categories/";
 
     private static final Set<String> ALLOWED_TYPES = Set.of(
             "application/pdf",
@@ -41,6 +44,8 @@ public class CloudinaryStorageService {
     ) {}
 
     public record UploadedAvatar(String secureUrl, String publicId) {}
+
+    public record UploadedCategoryImage(String secureUrl, String publicId) {}
 
     public UploadedAvatar uploadPublicAvatar(MultipartFile file) {
         validateAvatar(file);
@@ -67,6 +72,80 @@ public class CloudinaryStorageService {
         }
     }
 
+    public UploadedCategoryImage uploadPublicCategoryImage(MultipartFile file) {
+        byte[] bytes = readCategoryImage(file);
+        String generatedPublicId = CATEGORY_IMAGE_FOLDER + UUID.randomUUID();
+        try {
+            Map<?, ?> result = cloudinary.uploader().upload(
+                    bytes,
+                    ObjectUtils.asMap(
+                            "resource_type", "image",
+                            "type", "upload",
+                            "public_id", generatedPublicId,
+                            "overwrite", false
+                    )
+            );
+            String secureUrl = (String) result.get("secure_url");
+            String publicId = (String) result.get("public_id");
+            if (secureUrl == null || !secureUrl.startsWith("https://") || secureUrl.length() > 1000
+                    || publicId == null || !publicId.startsWith(CATEGORY_IMAGE_FOLDER)) {
+                throw new IOException("Cloudinary không trả về đủ thông tin ảnh danh mục");
+            }
+            return new UploadedCategoryImage(secureUrl, publicId);
+        } catch (IOException | RuntimeException exception) {
+            log.warn("Cloudinary category image upload failed: sizeBytes={}", file.getSize());
+            throw new IllegalStateException("Không thể tải ảnh danh mục lên. Vui lòng thử lại.", exception);
+        }
+    }
+
+    private byte[] readCategoryImage(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Bạn chưa chọn ảnh danh mục.");
+        }
+        if (file.getSize() > MAX_CATEGORY_IMAGE_SIZE) {
+            throw new IllegalArgumentException("Ảnh danh mục không được vượt quá 2 MB.");
+        }
+
+        try {
+            byte[] bytes = file.getBytes();
+            String format = detectCategoryImageFormat(bytes);
+            if (format == null) {
+                throw new IllegalArgumentException("Chỉ chấp nhận ảnh JPG, PNG hoặc WebP hợp lệ.");
+            }
+            if (!"webp".equals(format)) {
+                var image = ImageIO.read(new ByteArrayInputStream(bytes));
+                if (image == null || (long) image.getWidth() * image.getHeight() > 40_000_000L) {
+                    throw new IllegalArgumentException("File tải lên không phải ảnh hợp lệ hoặc kích thước quá lớn.");
+                }
+            }
+            return bytes;
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("Không thể đọc ảnh đã chọn. Hãy chọn ảnh JPG, PNG hoặc WebP hợp lệ.", exception);
+        }
+    }
+
+    private String detectCategoryImageFormat(byte[] bytes) {
+        if (bytes.length >= 3
+                && (bytes[0] & 0xff) == 0xff
+                && (bytes[1] & 0xff) == 0xd8
+                && (bytes[2] & 0xff) == 0xff) {
+            return "jpeg";
+        }
+        if (bytes.length >= 8
+                && (bytes[0] & 0xff) == 0x89
+                && bytes[1] == 'P' && bytes[2] == 'N' && bytes[3] == 'G'
+                && (bytes[4] & 0xff) == 0x0d && (bytes[5] & 0xff) == 0x0a
+                && (bytes[6] & 0xff) == 0x1a && (bytes[7] & 0xff) == 0x0a) {
+            return "png";
+        }
+        if (bytes.length >= 12
+                && bytes[0] == 'R' && bytes[1] == 'I' && bytes[2] == 'F' && bytes[3] == 'F'
+                && bytes[8] == 'W' && bytes[9] == 'E' && bytes[10] == 'B' && bytes[11] == 'P') {
+            return "webp";
+        }
+        return null;
+    }
+
     public void deleteUploadedAvatar(String publicId) {
         if (publicId == null || !publicId.startsWith("vietfresh/avatars/")) {
             return;
@@ -82,6 +161,58 @@ public class CloudinaryStorageService {
             );
         } catch (Exception exception) {
             log.warn("Could not remove an unused Cloudinary avatar asset.");
+        }
+    }
+
+    public void deleteUploadedCategoryImage(String publicId) {
+        if (publicId == null || !publicId.startsWith(CATEGORY_IMAGE_FOLDER)) {
+            return;
+        }
+        try {
+            cloudinary.uploader().destroy(
+                    publicId,
+                    ObjectUtils.asMap(
+                            "resource_type", "image",
+                            "type", "upload",
+                            "invalidate", true
+                    )
+            );
+        } catch (Exception exception) {
+            log.warn("Could not remove an unused Cloudinary category image.");
+        }
+    }
+
+    public void deleteManagedCategoryImageByUrl(String imageUrl) {
+        String publicId = extractManagedCategoryImagePublicId(imageUrl);
+        if (publicId != null) {
+            deleteUploadedCategoryImage(publicId);
+        }
+    }
+
+    private String extractManagedCategoryImagePublicId(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank() || cloudName == null || cloudName.isBlank()) {
+            return null;
+        }
+        try {
+            URI uri = URI.create(imageUrl);
+            String expectedPrefix = "/" + cloudName + "/image/upload/";
+            if (!"https".equalsIgnoreCase(uri.getScheme())
+                    || !"res.cloudinary.com".equalsIgnoreCase(uri.getHost())
+                    || !uri.getPath().startsWith(expectedPrefix)) {
+                return null;
+            }
+
+            String assetPath = uri.getPath().substring(expectedPrefix.length());
+            if (assetPath.matches("v\\d+/.*")) {
+                assetPath = assetPath.substring(assetPath.indexOf('/') + 1);
+            }
+            int extensionIndex = assetPath.lastIndexOf('.');
+            if (extensionIndex >= 0) {
+                assetPath = assetPath.substring(0, extensionIndex);
+            }
+            return assetPath.startsWith(CATEGORY_IMAGE_FOLDER) ? assetPath : null;
+        } catch (IllegalArgumentException exception) {
+            return null;
         }
     }
 

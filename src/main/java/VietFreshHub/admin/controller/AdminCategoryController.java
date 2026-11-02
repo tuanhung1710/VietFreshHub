@@ -133,11 +133,20 @@ public class AdminCategoryController {
     private String renderList(String keyword, String status, AdminCategoryRequest form, Model model) {
         String normalizedKeyword = keyword == null ? "" : keyword.trim();
         String selectedStatus = categoryService.normalizeStatus(status);
+        String currentImageUrl = null;
+        if (form.getCategoryId() != null) {
+            try {
+                currentImageUrl = categoryService.getCategory(form.getCategoryId()).getImageUrl();
+            } catch (IllegalArgumentException ignored) {
+                // Keep the form renderable if a category was removed while the edit form was open.
+            }
+        }
         model.addAttribute("categoryRows", categoryService.list(normalizedKeyword, selectedStatus));
         model.addAttribute("parentOptions", categoryService.parentOptions(form.getCategoryId()));
         model.addAttribute("keyword", normalizedKeyword);
         model.addAttribute("selectedStatus", selectedStatus);
         model.addAttribute("form", form);
+        model.addAttribute("currentImageUrl", currentImageUrl);
         return "admin/categories";
     }
 

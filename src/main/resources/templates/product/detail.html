@@ -84,6 +84,9 @@
               class="small text-body-secondary mb-2"
               th:text="${'Đường dẫn sản phẩm: '+row.product.slug}"
             ></p>
+            <p class="small mb-2"><strong>Xuất xứ:</strong>
+              <span th:text="${#strings.isEmpty(row.product.origin) ? 'Chưa cập nhật' : row.product.origin}"></span>
+            </p>
             <p
               class="description mb-3"
               th:text="${row.product.description}"

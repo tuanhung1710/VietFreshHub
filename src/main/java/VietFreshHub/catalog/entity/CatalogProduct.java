@@ -40,6 +40,10 @@ public class CatalogProduct {
     @Column(name = "description", columnDefinition = "NVARCHAR(MAX)")
     private String description;
 
+    @Nationalized
+    @Column(name = "origin", length = 200)
+    private String origin;
+
     @Transient
     private String imageUrl;
 

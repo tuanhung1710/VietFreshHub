@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#f5f8f5">
     <title>Quản lý danh mục · VietFresh Hub</title>
     <link rel="stylesheet" th:href="@{/css/admin-categories.css}">
+    <script th:src="@{/js/admin-categories.js}" defer></script>
 </head>
 <body>
 <header class="topbar">
@@ -43,11 +44,12 @@
                 <h2 id="form-title" th:text="${form.categoryId == null ? 'Thêm danh mục' : 'Chỉnh sửa danh mục'}">Thêm danh mục</h2>
                 <p>Tên, slug và danh mục cha sẽ được dùng xuyên suốt catalog và quản lý sản phẩm.</p>
             </div>
-            <form class="form-body" method="post"
+            <form class="form-body" method="post" enctype="multipart/form-data"
                   th:action="${form.categoryId == null} ? @{/admin/categories} : @{/admin/categories/{categoryId}(categoryId=${form.categoryId})}"
                   th:object="${form}">
                 <input type="hidden" name="keyword" th:value="${keyword}">
                 <input type="hidden" name="status" th:value="${selectedStatus}">
+                <input type="hidden" th:field="*{removeImage}">
 
                 <div class="errors" th:if="${#fields.hasGlobalErrors()}" role="alert">
                     <p th:each="error : ${#fields.globalErrors()}" th:text="${error}">Lỗi danh mục</p>
@@ -76,6 +78,35 @@
                     </select>
                     <small>Không thể chọn chính danh mục này hoặc danh mục con làm danh mục cha.</small>
                     <small class="field-error" th:if="${#fields.hasErrors('parentCategoryId')}" th:errors="*{parentCategoryId}"></small>
+                </div>
+
+                <div class="field">
+                    <label for="imageFile">Ảnh đại diện</label>
+                    <input class="image-upload-input" id="imageFile" type="file" th:field="*{imageFile}"
+                           accept="image/jpeg,image/png,image/webp">
+                    <label class="image-drop-zone" id="imageDropZone" for="imageFile" tabindex="0">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.7">
+                            <rect x="3" y="3" width="18" height="18" rx="3"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <path d="m21 15-5-5L5 21"></path>
+                        </svg>
+                        <span>Kéo thả ảnh vào đây hoặc <strong>chọn ảnh</strong></span>
+                    </label>
+                    <small>JPG, PNG hoặc WebP · tối đa 2 MB · khuyến nghị ảnh vuông 200 × 200 px.</small>
+                    <small class="field-error" id="imageFileError" role="alert" hidden></small>
+                    <div class="image-preview" id="selectedImagePreview" hidden>
+                        <img id="selectedImage" alt="Xem trước ảnh danh mục đã chọn">
+                        <span id="selectedImageName"></span>
+                        <button class="image-remove-button" type="button" data-remove-selected-image
+                                aria-label="Bỏ ảnh vừa chọn" title="Bỏ ảnh vừa chọn">×</button>
+                    </div>
+                    <div class="image-preview" id="currentImagePreview"
+                         th:if="${currentImageUrl != null and !#strings.isEmpty(currentImageUrl) and !form.removeImage}">
+                        <img th:src="${currentImageUrl}" alt="Ảnh đại diện hiện tại của danh mục">
+                        <span>Ảnh hiện tại. Chọn ảnh mới để thay thế.</span>
+                        <button class="image-remove-button" type="button" data-remove-current-image
+                                aria-label="Xóa ảnh đại diện hiện tại" title="Xóa ảnh đại diện hiện tại">×</button>
+                    </div>
                 </div>
 
                 <div class="field">
@@ -116,6 +147,7 @@
                     <thead>
                     <tr>
                         <th scope="col">Danh mục</th>
+                        <th scope="col">Ảnh đại diện</th>
                         <th scope="col">Slug</th>
                         <th scope="col">Mô tả</th>
                         <th scope="col">Trạng thái</th>
@@ -129,6 +161,12 @@
                             <span th:text="${row.category.name}">Trái cây</span>
                             <span class="child-count" th:if="${row.childCount > 0}" th:text="|${row.childCount} danh mục con|">2 danh mục con</span>
                             <small class="help" th:if="${row.parentName != null}" th:text="|Cha: ${row.parentName}|"></small>
+                        </td>
+                        <td class="category-image-cell">
+                            <img class="category-image" th:if="${row.category.imageUrl != null and !#strings.isEmpty(row.category.imageUrl)}"
+                                 th:src="${row.category.imageUrl}" th:alt="|Ảnh ${row.category.name}|" loading="lazy">
+                            <span class="category-image-placeholder" th:unless="${row.category.imageUrl != null and !#strings.isEmpty(row.category.imageUrl)}"
+                                  aria-label="Chưa có ảnh">—</span>
                         </td>
                         <td><code class="slug" th:text="${row.category.slug}">trai-cay</code></td>
                         <td class="description" th:text="${row.category.description ?: '—'}">—</td>
@@ -154,7 +192,7 @@
                         </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(categoryRows)}">
-                        <td colspan="6" class="empty">Không tìm thấy danh mục phù hợp.</td>
+                        <td colspan="7" class="empty">Không tìm thấy danh mục phù hợp.</td>
                     </tr>
                     </tbody>
                 </table>

@@ -8,6 +8,7 @@ import lombok.Getter;
 public class CatalogProductResponse {
     private Long productId, shopId;
     private String name, slug, description, imageUrl, shopName;
+    private String origin;
     private String shopPlace, categoryName;
     private Long categoryId;
     private BigDecimal rating;
