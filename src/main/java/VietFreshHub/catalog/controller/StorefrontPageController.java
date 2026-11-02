@@ -1,6 +1,7 @@
 package VietFreshHub.catalog.controller;
 
 import VietFreshHub.catalog.service.CatalogService;
+import VietFreshHub.catalog.service.StorefrontService;
 import VietFreshHub.exception.ResourceNotFoundException;
 import VietFreshHub.shop.service.ShopBrowseService;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 public class StorefrontPageController {
     private final CatalogService catalog;
     private final ShopBrowseService shops;
+    private final StorefrontService storefront;
 
     @GetMapping({"/home", "/customer/home"})
     public String home() { return "customer/home"; }
@@ -23,9 +25,15 @@ public class StorefrontPageController {
 
     @GetMapping("/shops/{shopId}")
     public String shop(@PathVariable Long shopId, Model model) {
-        shops.profile(shopId);
-        model.addAttribute("initialShopId", shopId);
-        return "customer/home";
+        addShopInformation(shopId, model);
+        return "shop/detail";
+    }
+
+    private void addShopInformation(Long shopId, Model model) {
+        var shop = shops.profile(shopId);
+        model.addAttribute("shop", shop);
+        model.addAttribute("formattedAddress", "Chưa cập nhật địa chỉ");
+        model.addAttribute("joinedDate", null);
     }
 
     @GetMapping({"/product-detail", "/product-detail/{variantId}"})

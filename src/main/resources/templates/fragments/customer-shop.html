@@ -7,7 +7,7 @@
 <body>
 <header th:fragment="header">
   <div class="container">
-    <div class="utility"><span>VietFresh Hub · Sàn trái cây đa nhà bán hàng</span><span>Trợ giúp | Đăng nhập / Đăng ký</span></div>
+    <div class="utility"><span>VietFresh Hub · Sàn trái cây đa nhà bán hàng</span><span th:fragment="accountLinks">Trợ giúp | Đăng nhập / Đăng ký</span></div>
     <div class="headmain">
       <button class="brand" data-home>VietFresh Hub</button>
       <div class="search"><input id="search" placeholder="Tìm trái cây trên toàn sàn..." aria-label="Tìm sản phẩm"><button id="searchGo">TÌM</button></div>

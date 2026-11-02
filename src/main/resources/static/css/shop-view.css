@@ -1,0 +1,34 @@
+
+*{box-sizing:border-box}body{margin:0;color:#111;background:#f7f7f7;font:16px Arial,sans-serif}button,input,select{font:inherit;color:inherit}button{background:white;border:1px solid #999;padding:10px 14px;cursor:pointer}button:hover{background:#ededed}button:disabled{opacity:.3;cursor:default}input,select{padding:10px;border:1px solid #999;background:white}h1,h2,h3,p{margin-top:0}.wrap{max-width:1200px;margin:auto;padding:0 16px}.header{background:white;border-bottom:2px solid #111}.utility{padding:8px 0;font-size:12px;display:flex;justify-content:space-between;border-bottom:1px solid #ddd}.headrow{display:flex;align-items:center;gap:24px;padding:22px 0}.logo{border:0;font-size:25px;font-weight:bold;white-space:nowrap;padding:0}.search{display:flex;flex:1;min-width:0;gap:6px}.search input{flex:1;min-width:0}.nav{display:flex;flex-wrap:wrap;border-top:1px solid #ddd}.nav button{border:0;border-right:1px solid #ddd;padding:13px 19px}.nav button.active{font-weight:bold;text-decoration:underline}.crumb{padding:17px 0;font-size:13px}.shopinfo{background:white;border:1px solid #aaa;padding:22px;display:grid;grid-template-columns:1.4fr 1fr;gap:30px}.identity{border:1px solid #aaa;background:#fafafa;padding:25px;display:flex;gap:20px;align-items:center}.avatar{width:90px;height:90px;flex-shrink:0;border:1px solid #999;display:grid;place-items:center;font-size:48px;filter:grayscale(1)}.identity h1{font-size:24px;margin:0 0 8px}.identity p{color:#555;margin:0}.stats{display:flex;flex-direction:column;justify-content:center;gap:20px}.stat{border-bottom:1px solid #ddd;padding-bottom:10px;display:flex;align-items:baseline;gap:15px}.stat strong{min-width:105px}.section{background:white;border:1px solid #aaa;margin-top:24px}.sectionhead{padding:16px 18px;border-bottom:1px solid #aaa;display:flex;justify-content:space-between;align-items:center;gap:10px}.sectionhead h2{font-size:19px;margin:0}.products{display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}.product{min-width:0;border:1px solid #bbb;margin:-.5px;text-align:left;padding:0}.picture{height:156px;border:1px solid #aaa;background:#fafafa;margin:9px 9px 0;display:grid;place-items:center;font-size:58px;filter:grayscale(1)}.productbody{padding:12px}.productname{font-weight:bold;min-height:44px;line-height:1.3}.muted{color:#666;font-size:12px}.price{font-size:19px;margin:10px 0}.meta{display:flex;justify-content:space-between;gap:5px;font-size:12px;color:#555}.top{position:relative}.top::after{content:attr(data-rank);position:absolute;top:8px;left:8px;background:white;border:1px solid #555;padding:4px 7px;font-size:12px;font-weight:bold}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:15px;border:1px solid #aaa;background:white;margin-top:20px}.actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.actions button.active{background:#111;color:white}.listheading{margin-top:30px;font-size:21px}.pager{display:flex;justify-content:space-between;align-items:center;gap:20px;border:1px solid #aaa;background:white;padding:19px 24px;margin-top:35px;margin-bottom:65px;flex-wrap:wrap}.pagecontrols,.perpage{display:flex;align-items:center;gap:15px}.pagecount{text-align:center;min-width:100px}.pagecount small{display:block;color:#777;margin-top:7px}.foot{background:white;border-top:2px solid #111;padding:40px 0}.footgrid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:30px}.footgrid h3{font-size:16px}.footgrid p{font-size:13px;line-height:1.7}.copyright{border-top:1px solid #ddd;margin-top:20px;padding-top:20px;font-size:12px;color:#666}.hidden{display:none!important}.note{border:1px solid #888;padding:14px;background:white;margin:18px 0}.modalbg{position:fixed;inset:0;background:#0008;display:grid;place-items:center;padding:18px}.modal{background:white;border:2px solid #111;padding:25px;width:min(500px,100%)}@media(max-width:800px){.products{grid-template-columns:repeat(3,1fr)}.shopinfo{grid-template-columns:1fr}.footgrid{grid-template-columns:1fr 1fr}}@media(max-width:550px){.headrow{flex-wrap:wrap;gap:10px}.search{order:3;flex-basis:100%}.products{grid-template-columns:repeat(2,1fr)}.picture{height:120px;font-size:45px}.identity{padding:14px}.avatar{width:62px;height:62px;font-size:35px}.footgrid{grid-template-columns:1fr}.pager{padding:14px}}
+#catalog>.toolbar{margin-top:0;border:0;border-bottom:1px solid #aaa}
+#topnav{justify-content:center;margin-top:24px;border:1px solid #aaa;background:white}
+
+/* Khoang thoang giua noi dung san pham cuoi va footer, tren moi tab cua Shop View. */
+main.wrap{padding-bottom:76px}
+@media(max-width:550px){main.wrap{padding-bottom:48px}}
+
+/* Live shop data and shared cart/product controls. */
+a{color:inherit}
+.logo{text-decoration:none}
+.basket{border:1px solid #999;padding:10px 14px;text-decoration:none;white-space:nowrap}
+.basket:hover{background:#ededed}
+.textlink{border:0;padding:0;background:none;text-align:left;text-decoration:underline;font-size:inherit}
+.utility .textlink{padding:0 3px}
+.identity>div:last-child{min-width:0}
+.identity{position:relative;isolation:isolate;overflow:hidden}
+.identity-background{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.85;z-index:-1;pointer-events:none}
+.identity p{overflow-wrap:anywhere;white-space:pre-line;line-height:1.5}
+.avatar{overflow:hidden;position:relative;background:#fff;filter:none}
+.avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.stat span{min-width:0;overflow-wrap:anywhere;line-height:1.5}
+.stat strong{flex-shrink:0}
+.catalog-paging{padding:0 16px}
+.empty-products{grid-column:1/-1;padding:25px;margin:0;color:#555}
+.hide,[hidden]{display:none!important}
+.modal-back{position:fixed;inset:0;background:#0008;display:grid;place-items:center;padding:18px;z-index:100}
+.modal{max-height:90vh;overflow:auto}
+.modal .close{float:right}
+.modal p{line-height:1.5}
+.footgrid p{margin-bottom:8px}
+#footerCategories p{margin:0;font-size:13px;line-height:1.7}
+@media(max-width:550px){.stat{gap:8px}.stat strong{min-width:90px}.identity{gap:12px}.perpage{gap:8px;flex-wrap:wrap}.utility{gap:12px;align-items:center}}
