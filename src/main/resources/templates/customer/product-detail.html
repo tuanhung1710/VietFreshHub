@@ -32,7 +32,7 @@
     </div>
     <div class="info">
       <h1 th:text="${product.name}"></h1>
-      <div class="ratingline"><span>★ <strong th:text="${product.rating == null ? '0.0' : #numbers.formatDecimal(product.rating,1,1)}"></strong> / 5</span><span>Đã bán <strong th:text="${product.sales}"></strong></span></div>
+      <div class="ratingline"><span>★ <strong th:text="${product.rating == null ? '0.0' : #numbers.formatDecimal(product.rating,1,1)}"></strong> / 5</span><span><strong th:text="${details.reviewCount}"></strong> đánh giá</span><span>Đã bán <strong th:text="${product.sales}"></strong></span></div>
       <div class="pricebox"><div class="price" id="currentPrice" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'POINT')} + ' VND'"></div><div class="muted" style="font-size:12px;margin-top:5px">Giá theo quy cách đã chọn</div></div>
       <form id="productPurchase" th:action="@{/cart/add}" method="post">
         <div class="rowline"><div class="fieldname" id="variantLabel">Quy cách</div><div>
@@ -67,7 +67,12 @@
     </tbody></table>
     <div class="desc"><h3 style="margin-top:26px">Mô tả sản phẩm</h3><p th:text="${#strings.isEmpty(product.description) ? 'Nhà bán hàng chưa cập nhật mô tả.' : product.description}"></p></div>
   </div></section>
-
+  <section class="section"><div class="sectionhead">ĐÁNH GIÁ SẢN PHẨM</div><div class="sectionbody">
+    <div class="reviewshead"><div style="font-size:28px"><b th:text="${product.rating == null ? '0.0' : #numbers.formatDecimal(product.rating,1,1)}"></b><span style="font-size:15px"> / 5</span></div><span class="reviewsnote" th:text="${details.reviewCount} + ' đánh giá đã được duyệt'"></span></div>
+    <p th:if="${#lists.isEmpty(details.reviews)}" class="muted">Chưa có đánh giá được duyệt cho sản phẩm.</p>
+    <article th:each="review : ${details.reviews}" class="review"><strong th:text="${review.reviewer}"></strong><div class="stars" th:text="${#strings.repeat('★',review.rating)+#strings.repeat('☆',5-review.rating)}"></div><div class="date" th:text="${#temporals.format(review.createdAt,'dd/MM/yyyy')}"></div><p th:text="${review.content}"></p></article>
+    <p th:if="${details.reviewCount > #lists.size(details.reviews)}" class="reviewsnote">Hiển thị 5 đánh giá mới nhất.</p>
+  </div></section>
 
 </main>
 <footer class="footer"><div class="wrap"><div class="footergrid"><div><h3>VietFresh Hub</h3><p>Sàn mua sắm trái cây từ nhiều nhà bán hàng. Khám phá trái cây nội địa, nhập khẩu và sản phẩm theo mùa.</p></div><div><h3>Khám phá</h3><p><a th:href="@{/shops/{id}(id=${shop.shopId})}">Gian hàng</a><br><a th:href="@{/shops}">Danh sách gian hàng</a><br><a th:href="@{/home}">Tất cả sản phẩm</a></p></div><div><h3>Hỗ trợ &amp; chính sách</h3><p><a th:href="@{/customer/orders}">Theo dõi đơn hàng</a><br><a th:href="@{/cart}">Giỏ hàng của tôi</a></p></div></div><div class="copyright">© 2026 VietFresh Hub. All rights reserved.</div></div></footer>
