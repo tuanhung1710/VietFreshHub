@@ -22,6 +22,14 @@ public class ProductRequest {
     @Size(max = 20000, message = "Mô tả sản phẩm không được vượt quá 20.000 ký tự.")
     private String description;
 
+    @NotBlank(message = "Nhập xuất xứ sản phẩm.")
+    @Size(max = 200, message = "Xuất xứ không được vượt quá 200 ký tự.")
+    private String origin;
+
+    public void setOrigin(String origin) {
+        this.origin = origin == null ? null : origin.strip();
+    }
+
     @NotNull(message = "Chọn danh mục.")
     private Long categoryId;
 

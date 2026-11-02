@@ -84,7 +84,7 @@
     <table class="desctable"><tbody>
       <tr><th>Danh mục</th><td th:text="${product.categoryName}"></td></tr><tr><th>Tên sản phẩm</th><td th:text="${product.name}"></td></tr>
       <tr><th>Quy cách</th><td><th:block th:each="variant,iter : ${product.variants}"><span th:text="${variant.variantName}"></span><span th:unless="${iter.last}"> · </span></th:block></td></tr>
-      <tr><th>Xuất xứ</th><td>Chưa cập nhật</td></tr><tr><th>Nhà bán hàng</th><td th:text="${shop.shopName}"></td></tr>
+      <tr><th>Xuất xứ</th><td th:text="${#strings.isEmpty(product.origin) ? 'Chưa cập nhật' : product.origin}"></td></tr><tr><th>Nhà bán hàng</th><td th:text="${shop.shopName}"></td></tr>
     </tbody></table>
     <div class="desc"><h3 style="margin-top:26px">Mô tả sản phẩm</h3><p th:text="${#strings.isEmpty(product.description) ? 'Nhà bán hàng chưa cập nhật mô tả.' : product.description}"></p></div>
   </div></section>

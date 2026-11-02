@@ -139,6 +139,7 @@ public class CatalogServiceImpl implements CatalogService {
                 .min(Comparator.comparing(CatalogCategory::getCategoryId)).orElse(null);
         return CatalogProductResponse.builder().productId(product.getProductId()).shopId(product.getShop().getShopId())
                 .name(product.getName()).slug(product.getSlug()).description(product.getDescription()).imageUrl(imageUrl)
+                .origin(product.getOrigin())
                 .shopPlace(metrics == null ? null : metrics.place()).rating(metrics == null ? BigDecimal.ZERO : metrics.rating())
                 .sales(metrics == null ? 0 : metrics.sales()).categoryId(category == null ? null : category.getCategoryId())
                 .categoryName(category == null ? "" : category.getName())
