@@ -1546,6 +1546,9 @@ CREATE INDEX IX_coupon_usages_order_id ON dbo.coupon_usages(order_id);
 CREATE INDEX IX_order_discounts_order_id ON dbo.order_discounts(order_id);
 CREATE INDEX IX_order_discounts_shop_order_id ON dbo.order_discounts(shop_order_id);
 CREATE INDEX IX_order_discounts_order_item_id ON dbo.order_discounts(order_item_id);
+CREATE UNIQUE INDEX UX_order_discounts_one_coupon_per_shop_order
+    ON dbo.order_discounts(shop_order_id)
+    WHERE coupon_id IS NOT NULL AND shop_order_id IS NOT NULL;
 CREATE INDEX IX_payments_order_id ON dbo.payments(order_id);
 CREATE INDEX IX_payments_status ON dbo.payments(status);
 CREATE INDEX IX_payment_transactions_payment_id
