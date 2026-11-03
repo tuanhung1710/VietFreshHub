@@ -1,0 +1,26 @@
+.subscription-page { background:var(--canvas); color:var(--ink); }
+.subscription-form-page .page-content { width:min(900px,calc(100% - 48px)); }
+.subscription-list-card { overflow:hidden; }
+.subscription-list-card .panel-heading { border-bottom:1px solid var(--line); }
+.subscription-list-card .panel-heading h2 { margin:0; color:var(--green-900); }
+.subscription-form-card { max-width:900px; }
+.subscription-card-body { padding:24px; }
+.subscription-page .form-label { color:var(--ink); font-size:12px; }
+.subscription-page .form-control,.subscription-page .form-select,.subscription-page .input-group-text { min-height:38px; border-color:var(--line); color:var(--ink); font:inherit; font-size:12px; }
+.subscription-page .form-control:focus,.subscription-page .form-select:focus { border-color:var(--green-700); box-shadow:0 0 0 3px color-mix(in srgb,var(--green-700) 12%,transparent); }
+.subscription-actions { display:flex; justify-content:flex-end; gap:8px; padding-top:16px; border-top:1px solid var(--line); }
+.subscription-page a.button { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
+.subscription-action { min-height:30px; padding:0 10px; }
+.subscription-plans-table { min-width:1050px; }
+.subscription-plans-table thead th { background:var(--canvas); color:var(--muted)!important; font-size:10px; font-weight:600!important; text-transform:none!important; white-space:nowrap; }
+.subscription-plans-table tbody td { color:var(--ink); font-size:12px; }
+.plan-benefits { max-width:250px; white-space:pre-line; }
+.subscription-page .bg-success-subtle { background:var(--green-100)!important; }
+.subscription-page .text-success { color:var(--green-800)!important; }
+.subscription-page .border-success-subtle { border-color:#cfe4d5!important; }
+.subscription-page .table-hover tbody tr:hover > * { background:var(--green-100); }
+@media (max-width:600px) {
+    .subscription-page .page-content { width:calc(100% - 28px); }
+    .subscription-list-card .panel-heading { align-items:flex-start; flex-direction:column; gap:8px; }
+    .subscription-card-body { padding:17px; }
+}
