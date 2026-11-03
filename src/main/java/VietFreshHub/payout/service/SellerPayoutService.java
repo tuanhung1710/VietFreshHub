@@ -7,6 +7,7 @@ import VietFreshHub.payout.dto.ShopPayoutAccountForm;
 import VietFreshHub.payout.dto.ShopPayoutAccountView;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -26,19 +27,14 @@ public interface SellerPayoutService {
 
     ShopPayoutAccountForm getShopPayoutAccount(Long shopId);
 
-    List<PayoutBatchView> getRecentBatches();
+    List<PayoutBatchView> getBatchesCreatedBetween(LocalDate fromDate, LocalDate toDate);
 
     BigDecimal getCommissionRate();
 
     void saveShopAccount(Long shopId, String bankCode, String bankName, String accountNumber,
                          String accountHolder, Long changedBy);
 
-    void setAccountVerified(Long shopId, boolean verified, Long changedBy);
-
     void confirmCodRemittance(Long payoutId, Long confirmedBy);
-
-    void recordTransferResult(Long batchId, Long shopId, boolean successful,
-                              String reference, String failureReason, Long changedBy);
 
     PayoutBatchExport getBatchExport(Long batchId);
 }

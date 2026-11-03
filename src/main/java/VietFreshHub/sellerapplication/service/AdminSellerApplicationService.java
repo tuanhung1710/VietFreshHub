@@ -19,6 +19,10 @@ import VietFreshHub.sellerapplication.repository.AdminSellerApplicationQueryRepo
 import VietFreshHub.sellerapplication.repository.SellerApplicationDocumentAdminRepository;
 import VietFreshHub.sellerapplication.repository.SellerApplicationRepository;
 import VietFreshHub.sellerapplication.repository.SellerApplicationStatusHistoryRepository;
+import VietFreshHub.shop.entity.Shop;
+import VietFreshHub.shop.entity.ShopMember;
+import VietFreshHub.shop.repository.ShopMemberRepository;
+import VietFreshHub.shop.repository.ShopRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -38,6 +42,8 @@ public class AdminSellerApplicationService {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private final SellerApplicationRepository applicationRepository;
+    private final ShopRepository shopRepository;
+    private final ShopMemberRepository shopMemberRepository;
     private final AdminSellerApplicationQueryRepository adminQueryRepository;
     private final SellerApplicationDocumentAdminRepository documentRepository;
     private final SellerApplicationStatusHistoryRepository historyRepository;
@@ -51,6 +57,8 @@ public class AdminSellerApplicationService {
     private final CloudinaryStorageService cloudinaryStorageService;
     public AdminSellerApplicationService(
             SellerApplicationRepository applicationRepository,
+            ShopRepository shopRepository,
+            ShopMemberRepository shopMemberRepository,
             AdminSellerApplicationQueryRepository adminQueryRepository,
             SellerApplicationDocumentAdminRepository documentRepository,
             SellerApplicationStatusHistoryRepository historyRepository,
@@ -63,6 +71,8 @@ public class AdminSellerApplicationService {
             @Value("${cloudinary.document-resource-type:image}") String cloudinaryDocumentResourceType, CloudinaryStorageService cloudinaryStorageService
     ) {
         this.applicationRepository = applicationRepository;
+        this.shopRepository = shopRepository;
+        this.shopMemberRepository = shopMemberRepository;
         this.adminQueryRepository = adminQueryRepository;
         this.documentRepository = documentRepository;
         this.historyRepository = historyRepository;
@@ -249,15 +259,13 @@ public class AdminSellerApplicationService {
                     "Hãy xác minh tất cả giấy tờ trước khi phê duyệt hồ sơ.");
         }
 
-        Role storeManagerRole = roleRepository.findByRoleName("ROLE_STORE_MANAGER")
-                .orElseThrow(() -> new IllegalStateException(
-                        "Chưa có ROLE_STORE_MANAGER trong bảng roles. Hãy thêm role này trước khi duyệt."));
-        userRoleGrantRepository.grantIfMissing(application.getUser().getUserId(), storeManagerRole.getRoleId());
+        grantStoreManagerRole(application);
 
         application.setReviewedBy(admin);
         application.setReviewedAt(nowUtc());
         application.setRejectionReason(null);
         transition(application, SellerApplicationStatus.APPROVED, admin, cleanNote(note));
+        provisionShopAndOwnerMembership(application);
         User applicant = application.getUser();
         eventPublisher.publishEvent(new SellerApplicationApprovedEvent(
                 application.getApplicationId(),
@@ -292,6 +300,58 @@ public class AdminSellerApplicationService {
                 "SELLER_APPLICATION",
                 applicationId
         );
+    }
+
+    private void grantStoreManagerRole(SellerApplication application) {
+        Role storeManagerRole = roleRepository.findByRoleName("ROLE_STORE_MANAGER")
+                .orElseThrow(() -> new IllegalStateException(
+                        "Chưa có ROLE_STORE_MANAGER trong bảng roles. Hãy thêm role này trước khi duyệt."));
+        userRoleGrantRepository.grantIfMissing(
+                application.getUser().getUserId(),
+                storeManagerRole.getRoleId()
+        );
+    }
+
+    private void provisionShopAndOwnerMembership(SellerApplication application) {
+        Long applicationId = application.getApplicationId();
+        User applicant = application.getUser();
+        Long userId = applicant.getUserId();
+
+        Shop shop = shopRepository.findByApplicationId(applicationId).orElseGet(() -> {
+            Shop createdShop = new Shop();
+            createdShop.setApplicationId(applicationId);
+            createdShop.setShopName(application.getBusinessName());
+            createdShop.setPhone(applicant.getPhone());
+            createdShop.setEmail(applicant.getEmail());
+            createdShop.setStatus("ACTIVE");
+            createdShop.setAvailabilityStatus("OPEN");
+            return shopRepository.saveAndFlush(createdShop);
+        });
+
+        Long shopId = shop.getShopId();
+        List<ShopMember> activeMembershipsForUser = shopMemberRepository
+                .findAllByUserIdAndStatus(userId, "ACTIVE");
+        if (activeMembershipsForUser.size() > 1
+                || activeMembershipsForUser.stream().anyMatch(member -> !shopId.equals(member.getShopId()))) {
+            throw new SellerApplicationDecisionException(
+                    "Tài khoản này đã có tư cách thành viên đang hoạt động ở cửa hàng khác. Hãy xử lý tư cách đó trước khi liên kết hồ sơ.");
+        }
+
+        List<ShopMember> activeMembershipsForShop = shopMemberRepository
+                .findAllByShopIdAndStatus(shopId, "ACTIVE");
+        if (activeMembershipsForShop.size() > 1
+                || activeMembershipsForShop.stream().anyMatch(member -> !userId.equals(member.getUserId()))) {
+            throw new SellerApplicationDecisionException(
+                    "Cửa hàng này đã có thành viên đang hoạt động khác. Hãy kiểm tra dữ liệu thành viên trước khi liên kết hồ sơ.");
+        }
+
+        ShopMember membership = shopMemberRepository.findByShopIdAndUserId(shopId, userId)
+                .orElseGet(ShopMember::new);
+        membership.setShop(shop);
+        membership.setUser(applicant);
+        membership.setMemberRole("OWNER");
+        membership.setStatus("ACTIVE");
+        shopMemberRepository.saveAndFlush(membership);
     }
 
     private SellerApplication lockApplication(Long applicationId) {

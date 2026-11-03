@@ -1096,7 +1096,7 @@ INSERT @allocationPlan(line_n,batch_n,quantity,status) VALUES
       eligible_at,funds_source,funds_confirmed_at,funds_confirmed_by)
     VALUES(@shop,@so,@subtotal-@discount,FLOOR((@subtotal-@discount)*0.05),(@subtotal-@discount)-FLOOR((@subtotal-@discount)*0.05),CASE WHEN @n%3=0 THEN 'PENDING' ELSE 'PAID' END,
       CASE WHEN @n%3<>0 THEN DATEADD(DAY,1,@placed) END,N'PAYOUT-'+CONVERT(NVARCHAR(20),@so),DATEADD(HOUR,3,@placed),
-      DATEADD(DAY,1,@placed),CASE WHEN @method='COD' THEN 'COD' ELSE 'BANK_TRANSFER' END,DATEADD(HOUR,4,@placed),@admin);
+      DATEADD(DAY,1,@placed),CASE WHEN @method='COD' THEN 'COD' ELSE 'ONLINE' END,DATEADD(HOUR,4,@placed),@admin);
   SET @n+=1;
  END;
  -- One RESERVE entry for every allocation; SALE/RELEASE consume the hold once.
@@ -1163,10 +1163,6 @@ INSERT @allocationPlan(line_n,batch_n,quantity,status) VALUES
   FETCH NEXT FROM earned INTO @la,@order,@reward,@placed;
  END; CLOSE earned; DEALLOCATE earned;
 
- -- Demo bank details are deliberately unverified and cannot be selected for a payout batch.
- INSERT dbo.shop_payout_accounts(shop_id,bank_code,bank_name,account_number,account_holder,verified,updated_by,updated_at)
-  SELECT s.id,'DEMO',N'Ngân hàng minh họa','DEMO-'+CONVERT(VARCHAR(20),s.id),u.full_name,0,@admin,@now
-  FROM @shopPlan s JOIN dbo.users u ON u.user_id=(SELECT id FROM @userPlan WHERE n=s.owner_n) WHERE s.n<=2;
  INSERT dbo.refund_requests(order_id,shop_order_id,bank_name,bank_account_number,account_holder_name,refund_amount,submitted_at,status)
   SELECT o.order_id,s.shop_order_id,N'Ngân hàng minh họa',N'DEMO-'+CONVERT(NVARCHAR(20),o.customer_id),u.full_name,o.grand_total,o.cancelled_at,'PAID'
   FROM dbo.orders o JOIN dbo.shop_orders s ON s.order_id=o.order_id JOIN dbo.users u ON u.user_id=o.customer_id

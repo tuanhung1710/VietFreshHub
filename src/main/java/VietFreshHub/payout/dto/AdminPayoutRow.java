@@ -18,6 +18,6 @@ public record AdminPayoutRow(
         String status,
         LocalDateTime eligibleAt,
         LocalDateTime fundsConfirmedAt,
-        boolean hasVerifiedAccount,
+        boolean hasPayoutAccount,
         boolean canManualBatch
 ) {}

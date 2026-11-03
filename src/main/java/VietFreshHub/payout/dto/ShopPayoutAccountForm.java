@@ -7,6 +7,5 @@ public record ShopPayoutAccountForm(
         String bankName,
         String accountNumber,
         String accountHolder,
-        boolean verified,
         boolean hasAccount
 ) { }
