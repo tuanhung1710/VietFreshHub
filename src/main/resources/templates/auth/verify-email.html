@@ -2,34 +2,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+    
+    
     <title>Xác thực Email | VietFresh Hub - Nông Sản Tươi Sạch</title>
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['"Be Vietnam Pro"', 'sans-serif'],
-                    },
-                    colors: {
-                        brand: {
-                            50: '#f0fdf4',
-                            100: '#dcfce7',
-                            200: '#bbf7d0',
-                            500: '#22c55e',
-                            600: '#16a34a',
-                            700: '#15803d',
-                            800: '#166534',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    
     <style>
         /* Smooth styling for OTP character tracking */
         .otp-input-field {
@@ -37,9 +20,12 @@
             text-indent: 0.28em;
         }
     </style>
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-    <body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col">
-    <main class="relative z-10 flex-1 flex items-center justify-center px-4 py-6 sm:py-10">
+    <body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col vfo-app vfr-app vfr-utility vfc-app vfr-customer vfr-public" data-vfr-section="account">
+<th:block th:replace="~{fragments/interface-layout :: navigation('public','account')}"></th:block>
+
+    <main class="relative z-10 flex-1 flex items-center justify-center px-4 py-6 sm:py-10 vfr-page" id="customer-content" tabindex="-1">
         <div class="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-slate-200/70 border border-slate-100 p-6 sm:p-9 transition-all">
 
             <!-- Card Header Icon & Badge -->

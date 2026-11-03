@@ -1,19 +1,28 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <th:block th:if="${chatMode == 'customer'}"><th:block th:replace="~{fragments/head :: assets}"></th:block></th:block>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+    
+    
+    
     <meta name="_csrf" th:content="${_csrf.token}">
     <meta name="_csrf_header" th:content="${_csrf.headerName}">
     <title>Trò chuyện | VietFresh Hub</title>
     <link rel="stylesheet" th:href="@{/css/chat.css}">
     <script defer src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
     <script defer th:src="@{/js/chat.js}"></script>
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body>
-<th:block th:if="${chatMode == 'customer'}"><header th:replace="~{fragments/header :: header}"></header></th:block>
+<body class="vfo-app vfr-app vfr-utility vfr-chat" th:classappend="${chatMode == 'customer' ? 'vfc-app' : ''}" data-vfr-section="chat">
+<th:block th:if="${chatMode == 'shop'}"><th:block th:replace="~{fragments/interface-navigation :: seller('chat')}"></th:block></th:block>
+<th:block th:if="${chatMode == 'customer'}"><th:block th:replace="~{fragments/interface-layout :: customerHeader('account')}"></th:block></th:block>
+
+
 <style>body:has(> header) .chat-app { margin-top: 112px; height: calc(100dvh - 132px); } body:has(> header) { font-family: 'Be Vietnam Pro', sans-serif; background: #f8f9ff; }</style>
+<div class="vfr-chat-workspace" th:id="${chatMode == 'shop' ? 'order-content' : 'customer-content'}" tabindex="-1" th:classappend="${chatMode == 'shop' ? 'vfo-workspace' : ''}">
 <main class="chat-app" id="chatApp"
       th:attr="data-mode=${chatMode},data-user-id=${currentUserId}">
     <aside class="chat-sidebar">
@@ -28,11 +37,11 @@
         <section class="shop-picker" th:if="${chatMode == 'customer' and !#lists.isEmpty(shops)}">
             <label for="shopSelect">Bắt đầu cuộc trò chuyện</label>
             <div class="shop-picker-row">
-                <select id="shopSelect">
+                <select id="shopSelect" class="form-control">
                     <option value="">Chọn cửa hàng</option>
                     <option th:each="shop : ${shops}" th:value="${shop.shopId}" th:text="${shop.shopName}"></option>
                 </select>
-                <button id="startChat" type="button">Nhắn tin</button>
+                <button id="startChat" type="button" class="btn btn-success">Nhắn tin</button>
             </div>
         </section>
 
@@ -71,18 +80,20 @@
         </div>
         <section class="quick-replies" id="quickReplies" th:if="${chatMode == 'shop'}" aria-label="Trả lời nhanh">
             <span class="quick-replies-label">Trả lời nhanh</span>
-            <button type="button" data-quick-reply="Xin chào, shop có thể hỗ trợ bạn như thế nào?" disabled>Chào khách</button>
-            <button type="button" data-quick-reply="Shop đã nhận được tin nhắn, sẽ phản hồi bạn sớm." disabled>Đã nhận tin</button>
-            <button type="button" data-quick-reply="Bạn vui lòng cho shop xin thêm thông tin nhé." disabled>Xin thêm thông tin</button>
+            <button type="button" data-quick-reply="Xin chào, shop có thể hỗ trợ bạn như thế nào?" disabled class="btn btn-success">Chào khách</button>
+            <button type="button" data-quick-reply="Shop đã nhận được tin nhắn, sẽ phản hồi bạn sớm." disabled class="btn btn-success">Đã nhận tin</button>
+            <button type="button" data-quick-reply="Bạn vui lòng cho shop xin thêm thông tin nhé." disabled class="btn btn-success">Xin thêm thông tin</button>
         </section>
         <form class="message-form" id="messageForm">
             <label class="visually-hidden" for="messageInput">Nội dung tin nhắn</label>
             <input id="messageInput" type="text" maxlength="4000" autocomplete="off"
-                   placeholder="Nhập tin nhắn…" disabled>
-            <button type="submit" id="sendButton" disabled>Gửi</button>
+                   placeholder="Nhập tin nhắn…" disabled class="form-control">
+            <button type="submit" id="sendButton" disabled class="btn btn-success">Gửi</button>
         </form>
         <p class="chat-error" id="chatError" role="alert"></p>
     </section>
 </main>
+<th:block th:replace="~{fragments/interface-layout :: footer(${chatMode == 'shop' ? 'seller' : 'customer'})}"></th:block>
+</div>
 </body>
 </html>

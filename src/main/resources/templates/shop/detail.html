@@ -1,31 +1,36 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+  
+  
   <title th:text="${shop.shopName} + ' | VietFresh Hub'">Gian hàng | VietFresh Hub</title>
   <link rel="stylesheet" th:href="@{/css/shop-view.css}">
   <link rel="stylesheet" th:href="@{/css/discount-pricing.css}">
-  <th:block th:replace="~{fragments/account-menu :: assets}"></th:block>
+  
   <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
   <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
   <script type="module" th:src="@{/js/storefront/shop.js}"></script>
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body th:attr="data-shop-id=${shop.shopId}">
+<body th:attr="data-shop-id=${shop.shopId}" class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
 <header class="header">
   <div class="wrap">
     <div class="utility"><span>VietFresh Hub · Gian hàng trái cây</span><th:block th:replace="~{fragments/customer-shop :: accountLinks}"></th:block></div>
     <div class="headrow">
       <a class="logo" th:href="@{/home}">VietFresh Hub</a>
       <form class="search" id="shopSearch" role="search">
-        <input id="q" type="search" maxlength="100" placeholder="Tìm sản phẩm trong gian hàng..." aria-label="Tìm sản phẩm trong shop">
-        <button type="submit">TÌM</button>
+        <input id="q" type="search" maxlength="100" placeholder="Tìm sản phẩm trong gian hàng..." aria-label="Tìm sản phẩm trong shop" class="form-control">
+        <button type="submit" class="btn btn-success">TÌM</button>
       </form>
       <a class="basket" th:href="@{/cart}">Giỏ hàng (<span id="cartCount" aria-live="polite">0</span>)</a>
     </div>
   </div>
 </header>
-<main class="wrap">
+<main class="wrap vfr-page">
   <div class="crumb"><a th:href="@{/home}">Trang chủ</a> / <a th:href="@{/shops}">Gian hàng</a> / <span th:text="${shop.shopName}"></span></div>
   <section class="shopinfo" aria-label="Thông tin shop">
     <div class="identity">
@@ -45,18 +50,18 @@
   <nav class="nav" id="topnav" aria-label="Danh mục sản phẩm trong shop"></nav>
   <div id="notice" class="note hide" role="status" aria-live="polite"></div>
   <div id="shopHome">
-    <section class="section"><div class="sectionhead"><h2>ĐỀ XUẤT CHO BẠN</h2><button data-shop-all>Xem tất cả →</button></div><div class="products" id="recommended" aria-busy="true"></div></section>
-    <section class="section"><div class="sectionhead"><h2>TOP PRODUCTS</h2><button data-shop-all>Xem tất cả →</button></div><div class="products" id="topProducts" aria-busy="true"></div></section>
+    <section class="section"><div class="sectionhead"><h2>ĐỀ XUẤT CHO BẠN</h2><button data-shop-all class="btn btn-success">Xem tất cả →</button></div><div class="products" id="recommended" aria-busy="true"></div></section>
+    <section class="section"><div class="sectionhead"><h2>TOP PRODUCTS</h2><button data-shop-all class="btn btn-success">Xem tất cả →</button></div><div class="products" id="topProducts" aria-busy="true"></div></section>
   </div>
   <section class="section hidden" id="catalog" aria-label="Sản phẩm của shop">
     <div class="toolbar">
-      <div class="actions"><span>Sắp xếp theo:</span><button data-sort="popular" class="active">Phổ biến</button><button data-sort="latest">Mới nhất</button><button data-sort="sales">Bán chạy</button><select id="priceSort" aria-label="Sắp xếp theo giá"><option value="popular">Giá</option><option value="asc">Giá thấp đến cao</option><option value="desc">Giá cao đến thấp</option></select></div>
+      <div class="actions"><span>Sắp xếp theo:</span><button data-sort="popular" class="active">Phổ biến</button><button data-sort="latest" class="btn btn-success">Mới nhất</button><button data-sort="sales" class="btn btn-success">Bán chạy</button><select id="priceSort" aria-label="Sắp xếp theo giá" class="form-control"><option value="popular">Giá</option><option value="asc">Giá thấp đến cao</option><option value="desc">Giá cao đến thấp</option></select></div>
       <div id="matchCount" aria-live="polite">Đang tải…</div>
     </div>
     <div class="products" id="results" aria-busy="true"></div>
     <div class="catalog-paging"><div class="pager">
-      <div class="pagecontrols"><button id="prev" aria-label="Trang trước" disabled>‹</button><div class="pagecount"><b id="pageLabel">Trang 1 / 1</b><small id="totalLabel">Đang tải…</small></div><button id="next" aria-label="Trang tiếp" disabled>›</button></div>
-      <div class="perpage"><label for="size">Sản phẩm mỗi trang</label><select id="size"></select><button id="apply">Áp dụng</button></div>
+      <div class="pagecontrols"><button id="prev" aria-label="Trang trước" disabled class="btn btn-success">‹</button><div class="pagecount"><b id="pageLabel">Trang 1 / 1</b><small id="totalLabel">Đang tải…</small></div><button id="next" aria-label="Trang tiếp" disabled class="btn btn-success">›</button></div>
+      <div class="perpage"><label for="size">Sản phẩm mỗi trang</label><select id="size" class="form-control"></select><button id="apply" class="btn btn-success">Áp dụng</button></div>
     </div></div>
   </section>
   <noscript><p class="note">Bật JavaScript để xem và tìm kiếm sản phẩm trong gian hàng.</p></noscript>

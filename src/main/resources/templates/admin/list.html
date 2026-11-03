@@ -3,11 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+    
+    
     <title>Hồ sơ đăng ký bán hàng | VietFresh Hub</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body class="min-h-screen bg-slate-100 text-slate-900">
-<main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+<body class="min-h-screen bg-slate-100 text-slate-900 vfo-app vfr-app vfr-utility vfr-admin" data-vfr-section="applications">
+<th:block th:replace="~{fragments/interface-layout :: navigation('admin','applications')}"></th:block>
+
+<div class="vfo-workspace vfr-workspace" id="workspace-content" tabindex="-1">
+<main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 vfr-page">
     <header class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
             <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">VietFresh Hub · Quản trị</p>
@@ -65,7 +73,7 @@
         </div>
 
         <div th:unless="${#lists.isEmpty(applications)}" class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+            <table class="min-w-full divide-y divide-slate-200 text-left text-sm table align-middle">
                 <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                 <tr>
                     <th class="px-5 py-3">Mã hồ sơ</th>
@@ -105,5 +113,7 @@
         </div>
     </section>
 </main>
+<footer th:replace="~{fragments/admin-workspace :: footer}"></footer>
+</div>
 </body>
 </html>

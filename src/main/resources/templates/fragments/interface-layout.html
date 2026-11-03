@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title}">VietFresh Hub</title>
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+</head>
+<head th:fragment="customerHead(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title + ' | VietFresh Hub'}">VietFresh Hub</title>
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/storefront.css}">
+    <link rel="stylesheet" th:href="@{/css/customer-orders.css}">
+    <link rel="stylesheet" th:href="@{/css/customer-shell.css}">
+    <link rel="stylesheet" th:href="@{/css/customer-pagination.css}">
+    <link rel="stylesheet" th:href="@{/css/customer-purchases.css}">
+    <script defer th:src="@{/js/cart.js}"></script>
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+</head>
+<body>
+<th:block th:fragment="foundation">
+    <th:block th:replace="~{fragments/seller-orders :: assets}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/order-service-pages.css}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+</th:block>
+<th:block th:fragment="styles">
+    <link rel="stylesheet" th:href="@{/css/interface-utilities.css}">
+    <link rel="stylesheet" th:href="@{/css/interface-theme.css}">
+</th:block>
+<th:block th:fragment="customerHeader(active)">
+    <a class="vfo-skip-link" href="#customer-content">Đến nội dung chính</a>
+    <svg th:replace="~{fragments/seller-orders :: icons}"></svg>
+    <header class="vfc-header">
+        <div class="vfc-container vfc-header-main">
+            <a class="vfo-brand" th:href="@{/home}" aria-label="VietFresh Hub — Trang chủ"><span class="vfo-brand-mark"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-leaf"/></svg></span><span><span class="vfo-brand-name"><strong>VietFresh</strong> Hub</span><span class="vfo-brand-tagline">Fresh from the heart</span></span></a>
+            <form class="vfc-header-search d-none d-lg-flex" th:action="@{/home}" method="get" role="search">
+                <input th:if="${category != null and not #strings.isEmpty(category)}" type="hidden" name="category" th:value="${category}">
+                <svg class="vfo-icon" aria-hidden="true"><use href="#vfo-search"/></svg>
+                <input class="form-control" aria-label="Tìm kiếm trái cây" name="keyword" maxlength="100" th:value="${keyword}" placeholder="Tìm kiếm trái cây tươi, bưởi da xanh, xoài cát..." type="search">
+                <button class="btn vfo-btn-primary" type="submit">Tìm kiếm</button>
+            </form>
+            <div class="vfo-topbar-actions vfc-header-actions">
+                <span th:replace="~{fragments/notifications :: bell}"></span>
+                <a class="vfc-cart-link" th:attr="aria-current=${active == 'cart' ? 'page' : null}" th:href="@{/cart}" title="Giỏ hàng" aria-label="Giỏ hàng"><svg class="vfo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h3l3 13h11l3-9H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg><span th:text="${cartBadgeTotal != null ? cartBadgeTotal : (cart != null ? cart.totalItems : 0)}">0</span></a>
+                <span class="vfo-topbar-divider d-none d-sm-block"></span>
+                <th:block th:replace="~{fragments/account-menu :: menu}"></th:block>
+            </div>
+        </div>
+        <nav class="vfc-header-nav" aria-label="Điều hướng mua sắm"><div class="vfc-container">
+            <a th:href="@{/home}">Trang chủ</a><a th:href="@{/shops}">Hệ thống cửa hàng</a>
+            <a th:classappend="${active == 'orders' ? 'active' : ''}" th:attr="aria-current=${active == 'orders' ? 'location' : null}" th:href="@{/customer/orders}">Đơn hàng của tôi</a>
+            <a th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" th:classappend="${active == 'loyalty' ? 'active' : ''}" th:attr="aria-current=${active == 'loyalty' ? 'page' : null}" th:href="@{/customer/loyalty}">Tiền thưởng</a>
+        </div></nav>
+    </header>
+</th:block>
+<th:block th:fragment="navigation(role, active)">
+    <th:block th:if="${role == 'admin'}"><th:block th:replace="~{fragments/interface-navigation :: admin(${active})}"></th:block></th:block>
+    <th:block th:if="${role == 'seller'}"><th:block th:replace="~{fragments/interface-navigation :: seller(${active})}"></th:block></th:block>
+    <th:block th:if="${role == 'customer' or role == 'public'}"><th:block th:replace="~{fragments/interface-layout :: customerHeader(${active})}"></th:block></th:block>
+</th:block>
+<th:block th:fragment="footer(role)">
+    <th:block th:if="${role == 'admin'}"><footer th:replace="~{fragments/admin-workspace :: footer}"></footer></th:block>
+    <th:block th:if="${role == 'seller'}"><footer th:replace="~{fragments/seller-orders :: footer}"></footer></th:block>
+    <th:block th:if="${role == 'customer' or role == 'public'}"><footer th:replace="~{fragments/customer-service :: footer}"></footer></th:block>
+</th:block>
+</body>
+</html>

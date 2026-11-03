@@ -1,15 +1,22 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head><th:block th:replace="~{fragments/head :: assets}"></th:block>
+<head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+    
+    
     <title>Kiểm tra kết quả đặt hàng | VietFresh Hub</title>
     <link rel="stylesheet" th:href="@{/css/storefront.css}">
     <link rel="stylesheet" th:href="@{/css/checkout-recovery.css}">
-<link rel="stylesheet" th:href="@{/css/customer-shell.css}"></head>
-<body class="checkout-recovery">
-<header th:replace="~{fragments/header :: header}"></header>
-<main class="container page">
+<link rel="stylesheet" th:href="@{/css/customer-shell.css}">    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+</head>
+<body class="checkout-recovery vfo-app vfr-app vfr-utility vfc-app vfr-customer" data-vfr-section="orders">
+<th:block th:replace="~{fragments/interface-layout :: navigation('customer','orders')}"></th:block>
+
+
+<main class="container page vfr-page" id="customer-content" tabindex="-1">
     <section class="panel recovery-panel" aria-labelledby="recovery-title">
         <p class="eyebrow">Thông tin đặt hàng</p>
         <h1 id="recovery-title">Chưa xác nhận được kết quả đặt hàng</h1>
@@ -23,5 +30,6 @@
         <p class="muted">Nếu hệ thống vẫn chưa truy cập được, vui lòng thử lại sau.</p>
     </section>
 </main>
-<footer th:replace="~{fragments/storefront :: footer}"></footer>
+
+<footer th:replace="~{fragments/customer-service :: footer}"></footer>
 </body></html>

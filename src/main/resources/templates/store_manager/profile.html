@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{store_manager/profile-layout :: head('Hồ sơ cửa hàng | VietFresh Hub')}"></head>
-<body>
-<header th:replace="~{store_manager/profile-layout :: header}"></header>
-<main class="container">
+<body class="vfo-app vfr-app vfr-seller" data-vfr-section="profile">
+<th:block th:replace="~{fragments/interface-layout :: navigation('seller','profile')}"></th:block>
+
+
+<div class="vfo-workspace vfr-workspace" id="order-content" tabindex="-1">
+<main class="container vfr-page">
     <nav class="breadcrumb" aria-label="Đường dẫn">
         <a th:href="@{/seller}">Cửa hàng của tôi</a> &nbsp;/&nbsp; <b>Hồ sơ cửa hàng</b>
         &nbsp;·&nbsp; <a href="#pickup">Địa điểm lấy hàng</a>
@@ -39,7 +42,7 @@
                         </div>
                         <div><h2 th:text="${shop.shopName}"></h2><p>Hồ sơ gian hàng trên VietFresh Hub</p></div>
                     </div>
-                    <table class="info-table"><tbody>
+                    <table class="info-table table align-middle"><tbody>
                         <tr><th scope="row">Mã cửa hàng</th><td th:text="${shop.shopCode}"></td></tr>
                         <tr><th scope="row">Mô tả</th><td class="description" th:text="${#strings.isEmpty(shop.description) ? 'Chưa cập nhật' : shop.description}"></td></tr>
                         <tr><th scope="row">Điện thoại</th><td th:text="${#strings.isEmpty(shop.phone) ? 'Chưa cập nhật' : shop.phone}"></td></tr>
@@ -62,7 +65,7 @@
                     <p class="status-caption">Cho phép khách hàng đặt hàng mới từ gian hàng khi trạng thái là “Mở cửa”.</p>
                     <form class="availability-form" method="post" th:action="@{/seller/profile/availability}">
                         <label for="availability">Nhận đơn</label>
-                        <select id="availability" name="status" th:disabled="${shop.status != 'ACTIVE'}" aria-describedby="availability-help">
+                        <select id="availability" name="status" th:disabled="${shop.status != 'ACTIVE'}" aria-describedby="availability-help" class="form-control">
                             <option value="OPEN" th:selected="${shop.availabilityStatus == 'OPEN'}">Mở cửa – Nhận đơn mới</option>
                             <option value="CLOSED" th:selected="${shop.availabilityStatus == 'CLOSED'}">Tạm ngừng nhận đơn</option>
                         </select>
@@ -75,6 +78,8 @@
         </aside>
     </div>
 </main>
-<footer th:replace="~{store_manager/profile-layout :: footer}"></footer>
+<footer th:replace="~{fragments/seller-orders :: footer}"></footer>
+</div>
+
 </body>
 </html>

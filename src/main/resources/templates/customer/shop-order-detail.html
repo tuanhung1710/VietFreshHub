@@ -1,7 +1,14 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head><th:block th:replace="~{fragments/head :: assets}"></th:block><title>Chi tiết đơn hàng | VietFresh Hub</title><link rel="stylesheet" th:href="@{/css/storefront.css}"><link rel="stylesheet" th:href="@{/css/customer-orders.css}"><link rel="stylesheet" th:href="@{/css/customer-shell.css}"><link rel="stylesheet" th:href="@{/css/order-detail.css(v=2)}"></head>
-<body><header th:replace="~{fragments/storefront :: header}"></header><main class="container page order-detail-page shop-receipt-page"><div th:replace="~{fragments/storefront :: messages}"></div>    <nav class="receipt-breadcrumb" aria-label="Đường dẫn"><a th:href="@{/home}"><span class="material-symbols-outlined">home</span></a><span>›</span><a th:href="@{/customer/orders}">Đơn mua</a><span>›</span><span>Chi tiết đơn hàng</span></nav>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    <title>Chi tiết đơn hàng | VietFresh Hub</title><link rel="stylesheet" th:href="@{/css/storefront.css}"><link rel="stylesheet" th:href="@{/css/customer-orders.css}"><link rel="stylesheet" th:href="@{/css/customer-shell.css}"><link rel="stylesheet" th:href="@{/css/order-detail.css(v=2)}">    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+</head>
+<body class="vfo-app vfr-app vfr-utility vfc-app vfr-customer" data-vfr-section="orders">
+<th:block th:replace="~{fragments/interface-layout :: navigation('customer','orders')}"></th:block>
+<main class="container page order-detail-page shop-receipt-page vfr-page" id="customer-content" tabindex="-1"><div th:replace="~{fragments/storefront :: messages}"></div>    <nav class="receipt-breadcrumb" aria-label="Đường dẫn"><a th:href="@{/home}"><span class="material-symbols-outlined">home</span></a><span>›</span><a th:href="@{/customer/orders}">Đơn mua</a><span>›</span><span>Chi tiết đơn hàng</span></nav>
     <div class="receipt-heading"><h1>Chi tiết đơn hàng</h1><span class="receipt-code" th:text="'Mã đơn: ' + ${order.orderCode}"></span><span class="receipt-date" th:text="'Đặt lúc: ' + ${#temporals.format(order.placedAt,'HH:mm - dd/MM/yyyy')}"></span><span class="order-state receipt-status" th:text="${order.statusLabel}"></span></div>
 <div class="detail-layout"><div class="detail-main"><div class="receipt-info-grid"><section class="panel detail-address"><h2><span class="material-symbols-outlined">location_on</span>Thông tin nhận hàng</h2><strong th:text="${order.recipientName}"></strong><p th:text="${order.phone}"></p><p class="muted" th:text="${order.addressText}"></p></section>
 <section class="panel receipt-payment-method"><h2><span class="material-symbols-outlined">credit_card</span>Phương thức thanh toán</h2><div th:if="${receipt.cod()}" class="receipt-method"><span class="material-symbols-outlined">account_balance_wallet</span><div><strong>Thanh toán khi nhận hàng (COD)</strong><p th:text="${order.paymentStatusLabel}"></p></div></div><div th:each="payment : ${receipt.payments}" th:if="${payment.methodCode != 'COD'}" class="receipt-method"><span class="material-symbols-outlined">credit_card</span><div><strong th:text="${payment.methodName}"></strong><p th:text="${payment.statusLabel}"></p></div></div><p th:if="${#lists.isEmpty(receipt.payments)}" class="muted">Chưa có bản ghi thanh toán.</p></section></div><section class="panel mockup-products"><div class="detail-section-heading receipt-products-title"><h2><span class="material-symbols-outlined">inventory_2</span>Sản phẩm trong đơn</h2></div>            <section th:each="shop : ${order.shops}" class="panel detail-shop" th:attr="data-shop-order-id=${shop.shopOrderId}">
@@ -69,7 +76,7 @@
             <details th:if="${shopOrderId != null and actions != null and actions.cancellable}" class="cancel-order"><summary class="button danger full">Hủy đơn</summary>
                 <form th:action="@{/customer/orders/shops/{id}/cancel(id=${shopOrderId})}" method="post">
                     <p class="muted">Bạn chỉ có thể hủy đơn này trước khi cửa hàng xác nhận. Thao tác hủy không thể hoàn tác.</p>
-                    <label for="cancel-reason">Lý do hủy (không bắt buộc)</label><textarea id="cancel-reason" name="reason" maxlength="500" rows="3" th:text="${cancelReason}"></textarea>
+                    <label for="cancel-reason">Lý do hủy (không bắt buộc)</label><textarea id="cancel-reason" name="reason" maxlength="500" rows="3" th:text="${cancelReason}" class="form-control"></textarea>
                     <button class="button danger full" type="submit">Xác nhận hủy đơn</button>
                 </form>
             </details>
@@ -89,4 +96,5 @@
                     <p th:if="${payment.paidAt != null}" class="muted" th:text="'Ghi nhận thanh toán lúc ' + ${#temporals.format(payment.paidAt,'HH:mm dd/MM/yyyy')}"></p>
                 </article>
             </section>
-</details></main><footer th:replace="~{fragments/storefront :: footer}"></footer></body></html>
+</details></main><footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</body></html>

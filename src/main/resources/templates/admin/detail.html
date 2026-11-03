@@ -3,8 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+    
+    
     <title>Thẩm định hồ sơ | VietFresh Hub</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    
     <style>
         #documentPreviewImage {
             display: block;
@@ -22,9 +26,13 @@
             height: calc(100dvh - 2rem);
         }
     </style>
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body class="min-h-screen bg-slate-100 text-slate-900">
-<main class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+<body class="min-h-screen bg-slate-100 text-slate-900 vfo-app vfr-app vfr-utility vfr-admin" data-vfr-section="applications">
+<th:block th:replace="~{fragments/interface-layout :: navigation('admin','applications')}"></th:block>
+
+<div class="vfo-workspace vfr-workspace" id="workspace-content" tabindex="-1">
+<main class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 vfr-page">
     <a th:href="@{/admin/seller-applications}" class="text-sm font-semibold text-emerald-800 hover:underline">← Quay lại danh sách</a>
     <header class="mt-5 flex flex-col gap-3 border-b pb-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -163,6 +171,8 @@
         </ol>
     </section>
 </main>
+<footer th:replace="~{fragments/admin-workspace :: footer}"></footer>
+</div>
 <div id="documentPreviewModal"
      class="fixed inset-0 z-50 hidden items-center justify-center bg-black/80 p-2"
      role="dialog"

@@ -5,13 +5,13 @@
     <head th:replace="~{fragments/product-inventory :: head('Kho hàng','inventory')}">
     </head>
 
-    <body>
+    <body class="vfo-app vfr-app vfr-product vfr-seller" data-vfr-section="inventory">
         <div th:replace="~{fragments/product-inventory :: nav('inventory')}">
         </div>
 
         <!-- Nội dung chính -->
-        <div class="vf-workspace">
-        <main class="container vf-main vf-inventory-main vf-list-page" data-vf-live-list>
+        <div class="vf-workspace" id="order-content" tabindex="-1">
+        <main class="container vf-main vf-inventory-main vf-list-page vfr-page" data-vf-live-list>
             <div class="page-heading">
                 <div>
                     <h1>
@@ -551,5 +551,6 @@
 
         <div th:replace="~{fragments/inventory-actions :: actionModal}"></div>
         <script defer th:src="@{/js/inventory/inventory.js}"></script>
-    </body>
+    <div class="vfr-product-footer"><footer th:replace="~{fragments/seller-orders :: footer}"></footer></div>
+</body>
 </html>

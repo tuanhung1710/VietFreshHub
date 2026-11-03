@@ -7,6 +7,7 @@
     <link rel="stylesheet" th:href="@{/css/storefront.css}">
     <link rel="stylesheet" th:href="@{/css/customer-shell.css}">
     <script defer th:src="@{/js/cart.js}"></script>
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
 <body>
 <header th:fragment="header" th:replace="~{fragments/header :: header}"></header>
