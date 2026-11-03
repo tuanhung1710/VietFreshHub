@@ -1604,9 +1604,6 @@ IF OBJECT_ID('dbo.orders','U') IS NULL OR OBJECT_ID('dbo.shop_orders','U') IS NU
 
 IF COL_LENGTH(N'dbo.products', N'origin') IS NULL
     EXEC(N'ALTER TABLE dbo.products ADD origin NVARCHAR(200) NULL;');
-
-IF COL_LENGTH(N'dbo.categories', N'image_url') IS NULL
-    EXEC(N'ALTER TABLE dbo.categories ADD image_url NVARCHAR(1000) NULL;');
 IF OBJECT_ID(N'dbo.CK_products_origin_not_blank', N'C') IS NULL
     EXEC(N'ALTER TABLE dbo.products WITH CHECK ADD CONSTRAINT CK_products_origin_not_blank
            CHECK (origin IS NULL OR LEN(LTRIM(RTRIM(origin))) > 0);');
@@ -2814,10 +2811,10 @@ UPDATE dbo.seller_payout_batch_items SET status=status;';
 
 COMMIT TRANSACTION;
 SELECT CASE WHEN @freshInstall=1 THEN N'SCHEMA_CREATED' ELSE N'SCHEMA_UPDATED' END AS result,
- DB_NAME() AS database_name,(SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped=0) AS table_count;
+       DB_NAME() AS database_name,(SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped=0) AS table_count;
 END TRY
 BEGIN CATCH
- IF XACT_STATE()<>0 ROLLBACK TRANSACTION;
+IF XACT_STATE()<>0 ROLLBACK TRANSACTION;
  THROW;
 END CATCH;
 GO
