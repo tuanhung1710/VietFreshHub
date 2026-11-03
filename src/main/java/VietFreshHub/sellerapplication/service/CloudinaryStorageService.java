@@ -275,6 +275,56 @@ public class CloudinaryStorageService {
         }
     }
 
+    public UploadedAsset uploadPrivateStaged(
+            MultipartFile file,
+            Long userId,
+            String documentType,
+            boolean imagesOnly
+    ) throws IOException {
+        long startedAt = System.nanoTime();
+        try {
+            validateUpload(file, imagesOnly);
+
+            String folder = "vietfresh/seller-applications/staging/"
+                    + userId + "/" + documentType;
+            Map<?, ?> result = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "resource_type", "auto",
+                            "type", "authenticated",
+                            "folder", folder,
+                            "public_id", UUID.randomUUID().toString(),
+                            "overwrite", false
+                    )
+            );
+
+            String publicId = (String) result.get("public_id");
+            String resourceType = (String) result.get("resource_type");
+            String format = (String) result.get("format");
+            if (publicId == null || resourceType == null || format == null) {
+                throw new IOException("Cloudinary không trả về đủ thông tin file");
+            }
+
+            log.info(
+                    "Private seller document staged: userId={}, documentType={}, sizeBytes={}, durationMs={}",
+                    userId,
+                    documentType,
+                    file.getSize(),
+                    elapsedMillis(startedAt)
+            );
+            return new UploadedAsset(publicId, resourceType, format);
+        } catch (IOException | RuntimeException exception) {
+            log.warn(
+                    "Private seller document staging failed: userId={}, documentType={}, sizeBytes={}, durationMs={}",
+                    userId,
+                    documentType,
+                    file == null ? 0 : file.getSize(),
+                    elapsedMillis(startedAt)
+            );
+            throw exception;
+        }
+    }
+
     public void validateUpload(MultipartFile file, boolean imagesOnly) {
         validate(file, imagesOnly);
     }

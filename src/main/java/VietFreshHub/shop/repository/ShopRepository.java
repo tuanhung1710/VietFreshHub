@@ -23,6 +23,8 @@ public interface ShopRepository extends JpaRepository<Shop, Long> {
 
     Optional<Shop> findByShopName(String shopName);
 
+    Optional<Shop> findByApplicationId(Long applicationId);
+
     @Query(value = """
             select s from Shop s
             where (:status = 'ALL' or s.status = :status)

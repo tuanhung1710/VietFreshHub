@@ -11,6 +11,7 @@
     <button type="submit">Đăng xuất</button>
 </form>
 <h1>SHOP</h1>
+<p th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}"><a th:href="@{/home}">← Quay lại mua sắm</a></p>
 <p><a th:href="@{/seller/announcements}">Thông báo từ hệ thống và quản trị viên</a></p>
 <p><a th:href="@{/seller/profile}">Hồ sơ cửa hàng và trạng thái nhận đơn</a></p>
 <p>Mã shop: <span th:text="${shopCode}"></span>

@@ -5,6 +5,5 @@ public record ShopPayoutAccountView(
         String shopName,
         String bankName,
         String accountNumber,
-        String accountHolder,
-        boolean verified
+        String accountHolder
 ) {}

@@ -15,7 +15,5 @@ public record PayoutBatchExportItem(
         BigDecimal grossAmount,
         BigDecimal discountAmount,
         BigDecimal commissionAmount,
-        BigDecimal transferAmount,
-        String status,
-        String transferReference
+        BigDecimal transferAmount
 ) {}

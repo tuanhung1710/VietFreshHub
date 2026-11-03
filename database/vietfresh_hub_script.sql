@@ -2811,10 +2811,10 @@ UPDATE dbo.seller_payout_batch_items SET status=status;';
 
 COMMIT TRANSACTION;
 SELECT CASE WHEN @freshInstall=1 THEN N'SCHEMA_CREATED' ELSE N'SCHEMA_UPDATED' END AS result,
- DB_NAME() AS database_name,(SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped=0) AS table_count;
+       DB_NAME() AS database_name,(SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped=0) AS table_count;
 END TRY
 BEGIN CATCH
- IF XACT_STATE()<>0 ROLLBACK TRANSACTION;
+IF XACT_STATE()<>0 ROLLBACK TRANSACTION;
  THROW;
 END CATCH;
 GO

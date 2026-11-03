@@ -34,6 +34,12 @@ public interface ShopMemberRepository extends JpaRepository<ShopMember, Long> {
 
     List<ShopMember> findByShopIdAndUserIdIn(Long shopId, Collection<Long> userIds);
 
+    List<ShopMember> findAllByUserIdAndStatus(Long userId, String status);
+
+    List<ShopMember> findAllByShopIdAndStatus(Long shopId, String status);
+
+    Optional<ShopMember> findByShopIdAndUserId(Long shopId, Long userId);
+
     @Query("""
             select sm from ShopMember sm
             join fetch sm.shop s

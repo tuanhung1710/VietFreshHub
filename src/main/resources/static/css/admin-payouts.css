@@ -35,12 +35,16 @@ td small, .batch-heading small { display: block; margin-top: 4px; color: #7a8980
 .account-title .status { white-space: normal; }
 .account-form { display: grid; gap: 10px; margin-top: 14px; }
 .account-form label { display: grid; gap: 5px; color: #59685e; font-size: 12px; font-weight: 700; }
+.batch-filter { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin: 0 0 14px; }
+.batch-filter label { display: grid; gap: 5px; color: #59685e; font-size: 12px; font-weight: 700; }
+.batch-filter input { min-width: 170px; }
+.batch-filter .button { min-height: 36px; }
+.filter-error { margin: 0 0 12px; }
 input, select { width: 100%; min-width: 0; border: 1px solid #d4dfd6; border-radius: 7px; padding: 9px 10px; background: #fff; color: #1f3429; font: inherit; font-size: 13px; }
 .verify-check { display: flex !important; grid-template-columns: auto 1fr; align-items: center; }
 .verify-check input { width: auto; }
 .batch-card { margin-top: 14px; border: 1px solid #e0e9e1; border-radius: 12px; overflow: hidden; }
 .batch-heading { padding: 14px 16px; background: #f8fbf8; }
 .batch-heading > div { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.compact { min-width: 980px; }
-.result-form { display: grid; grid-template-columns: 110px minmax(120px, 1fr) minmax(130px, 1fr) auto; gap: 6px; min-width: 500px; }
-@media (max-width: 760px) { .page-shell { width: min(calc(100% - 20px), 1440px); margin-top: 14px; } .page-header, .section-heading { align-items: flex-start; flex-direction: column; } .panel { padding: 15px; } }
+.compact { min-width: 620px; }
+@media (max-width: 760px) { .page-shell { width: min(calc(100% - 20px), 1440px); margin-top: 14px; } .page-header, .section-heading { align-items: flex-start; flex-direction: column; } .batch-filter { align-items: stretch; flex-direction: column; } .batch-filter input { width: 100%; } .panel { padding: 15px; } }
