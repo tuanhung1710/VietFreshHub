@@ -25,7 +25,6 @@
         <span th:text="${reviews.number + 1 + ' / ' + reviews.totalPages}"></span>
         <a th:if="${reviews.hasNext()}" th:href="@{/admin/reviews/pending(page=${reviews.number + 1})}">Sau</a>
     </nav>
-    <a th:href="@{/admin/review-reports}">Báo cáo</a>
 </main>
 <footer th:replace="~{fragments/admin-workspace :: footer}"></footer>
 </div></body></html>

@@ -5,49 +5,26 @@
 <th:block th:fragment="seller(active)">
     <a class="vfo-skip-link" href="#order-content">Đến nội dung chính</a>
     <svg th:replace="~{fragments/seller-orders :: icons}"></svg>
-    <header class="vfo-topbar navbar">
+    <header class="vfo-topbar navbar" data-workspace-header>
         <div class="vfo-brand-group">
-            <button class="btn vfo-menu-toggle d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#vfoSidebar" aria-controls="vfoSidebar" aria-label="Mở thanh điều hướng"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-menu"/></svg></button>
             <a class="vfo-brand" th:href="@{/seller}" aria-label="VietFresh Hub — Kênh người bán"><span class="vfo-brand-mark"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-leaf"/></svg></span><span><span class="vfo-brand-name"><strong>VietFresh</strong> Hub</span><span class="vfo-brand-tagline">Fresh from the heart</span></span></a>
             <span class="vfo-portal-label d-none d-xl-inline">Kênh người bán</span>
         </div>
-        <div class="vfo-topbar-actions"><span th:replace="~{fragments/notifications :: bell}"></span><span class="vfo-topbar-divider d-none d-sm-block"></span><th:block th:replace="~{fragments/account-menu :: menu}"></th:block></div>
+        <div class="vfo-topbar-actions"><th:block th:replace="~{fragments/account-menu :: menu}"></th:block></div>
     </header>
+    <button class="btn vfo-menu-toggle vfo-sidebar-toggle" type="button" data-workspace-sidebar-toggle data-bs-toggle="offcanvas" data-bs-target="#vfoSidebar" aria-controls="vfoSidebar" aria-expanded="true" aria-label="Ẩn thanh điều hướng"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-menu"/></svg></button>
     <aside class="offcanvas-lg offcanvas-start vfo-sidebar" tabindex="-1" id="vfoSidebar" aria-labelledby="vfoSidebarTitle">
         <div class="offcanvas-header d-lg-none"><h2 class="offcanvas-title" id="vfoSidebarTitle">Kênh người bán</h2><button class="btn-close" type="button" data-bs-dismiss="offcanvas" data-bs-target="#vfoSidebar" aria-label="Đóng menu"></button></div>
         <div class="offcanvas-body">
-            <a class="vfo-store-card" th:href="@{/seller/profile}"><span class="vfo-store-mark"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-leaf"/></svg></span><span><strong>Gian hàng của bạn</strong><small th:text="${headerAccountName != null ? headerAccountName : #authentication.name}">Tài khoản người bán</small></span></a>
-            <nav class="nav flex-column vfo-side-nav" aria-label="Điều hướng kênh người bán">
-                <a class="nav-link" th:classappend="${active == 'dashboard' ? 'active' : ''}" th:attr="aria-current=${active == 'dashboard' ? 'page' : null}" th:href="@{/seller}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-grid"/></svg>Tổng quan</a>
-                <a class="nav-link" th:classappend="${active == 'product' ? 'active' : ''}" th:attr="aria-current=${active == 'product' ? 'page' : null}" th:href="@{/seller/products}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-product"/></svg>Sản phẩm &amp; phân loại</a>
-                <a class="nav-link" th:classappend="${active == 'inventory' ? 'active' : ''}" th:attr="aria-current=${active == 'inventory' ? 'page' : null}" th:href="@{/seller/inventory}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-box"/></svg>Kho &amp; lô hàng</a>
-                <a class="nav-link" th:classappend="${active == 'journal' ? 'active' : ''}" th:attr="aria-current=${active == 'journal' ? 'page' : null}" th:href="@{/seller/inventory/journal}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-history"/></svg>Biến động kho</a>
-                <a class="nav-link" th:classappend="${active == 'orders' ? 'active' : ''}" th:attr="aria-current=${active == 'orders' ? 'page' : null}" th:href="@{/seller/orders}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-order"/></svg>Đơn hàng</a>
-                <a class="nav-link" th:classappend="${active == 'deliveries' ? 'active' : ''}" th:attr="aria-current=${active == 'deliveries' ? 'page' : null}" th:href="@{/seller/deliveries}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg>Giám sát giao hàng</a>
-                <a class="nav-link" th:classappend="${active == 'promotions' ? 'active' : ''}" th:attr="aria-current=${active == 'promotions' ? 'page' : null}" th:href="@{/seller/promotions}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-promotion"/></svg>Khuyến mãi</a>
-                <a class="nav-link" th:classappend="${active == 'coupons' ? 'active' : ''}" th:attr="aria-current=${active == 'coupons' ? 'page' : null}" th:href="@{/seller/coupons}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-tag"/></svg>Coupon</a>
-                <a class="nav-link" th:classappend="${active == 'reports' ? 'active' : ''}" th:attr="aria-current=${active == 'reports' ? 'page' : null}" th:href="@{/seller/reports}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-chart"/></svg>Báo cáo bán hàng</a>
-                <a class="nav-link" th:classappend="${active == 'chat' ? 'active' : ''}" th:attr="aria-current=${active == 'chat' ? 'page' : null}" th:href="@{/store_manager/chat}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-chat"/></svg>Tin nhắn</a>
-                <a class="nav-link" th:classappend="${active == 'profile' ? 'active' : ''}" th:attr="aria-current=${active == 'profile' ? 'page' : null}" th:href="@{/seller/profile}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-shop"/></svg>Hồ sơ cửa hàng</a>
-                <a class="nav-link" th:classappend="${active == 'pickup' ? 'active' : ''}" th:attr="aria-current=${active == 'pickup' ? 'page' : null}" th:href="@{/seller/pickup-location}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-pin"/></svg>Địa điểm lấy hàng</a>
-                <a class="nav-link" th:classappend="${active == 'payout' ? 'active' : ''}" th:attr="aria-current=${active == 'payout' ? 'page' : null}" th:href="@{/seller/payout-account}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-bank"/></svg>Tài khoản nhận tiền</a>
-                <a class="nav-link" th:classappend="${active == 'subscription' or active == 'subscription-payments' ? 'active' : ''}" th:attr="aria-current=${active == 'subscription' or active == 'subscription-payments' ? 'page' : null}" th:href="@{/seller/subscription}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-award"/></svg>Gói dịch vụ</a>
-                <a class="nav-link" th:classappend="${active == 'notifications' ? 'active' : ''}" th:attr="aria-current=${active == 'notifications' ? 'page' : null}" th:href="@{/notifications}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-bell"/></svg>Thông báo của tôi</a>
-                <a class="nav-link" th:classappend="${active == 'announcements' ? 'active' : ''}" th:attr="aria-current=${active == 'announcements' ? 'page' : null}" th:href="@{/seller/announcements}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-promotion"/></svg>Thông báo hệ thống</a>
-            </nav>
-            <div class="vfo-sidebar-bottom"><a th:href="@{/home}"><span aria-hidden="true">←</span> Khám phá VietFresh Hub</a><p>Mỗi ngày, thêm một chút tươi lành.</p></div>
+            <nav th:replace="~{fragments/workspace-navigation :: seller(${active})}"></nav>
         </div>
     </aside>
 </th:block>
 <th:block th:fragment="admin(active)">
     <a class="vfo-skip-link" href="#workspace-content">Đến nội dung chính</a>
     <svg th:replace="~{fragments/seller-orders :: icons}"></svg>
-    <header class="vfo-topbar navbar">
+    <header class="vfo-topbar navbar" data-workspace-header>
         <div class="vfo-brand-group">
-            <button class="btn vfo-menu-toggle d-lg-none" type="button" data-bs-toggle="offcanvas"
-                    data-bs-target="#vfoSidebar" aria-controls="vfoSidebar" aria-label="Mở thanh điều hướng">
-                <svg class="vfo-icon" aria-hidden="true"><use href="#vfo-menu"/></svg>
-            </button>
             <a class="vfo-brand" th:href="@{/admin/dashboard}" aria-label="VietFresh Hub — Trung tâm quản trị">
                 <span class="vfo-brand-mark"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-leaf"/></svg></span>
                 <span><span class="vfo-brand-name"><strong>VietFresh</strong> Hub</span><span class="vfo-brand-tagline">Fresh from the heart</span></span>
@@ -55,49 +32,17 @@
             <span class="vfo-portal-label d-none d-xl-inline">Trung tâm quản trị</span>
         </div>
         <div class="vfo-topbar-actions">
-            <span th:replace="~{fragments/notifications :: bell}"></span>
-            <span class="vfo-topbar-divider d-none d-sm-block"></span>
             <th:block th:replace="~{fragments/account-menu :: menu}"></th:block>
         </div>
     </header>
+    <button class="btn vfo-menu-toggle vfo-sidebar-toggle" type="button" data-workspace-sidebar-toggle data-bs-toggle="offcanvas" data-bs-target="#vfoSidebar" aria-controls="vfoSidebar" aria-expanded="true" aria-label="Ẩn thanh điều hướng"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-menu"/></svg></button>
     <aside class="offcanvas-lg offcanvas-start vfo-sidebar" tabindex="-1" id="vfoSidebar" aria-labelledby="vfaSidebarTitle">
         <div class="offcanvas-header d-lg-none">
             <h2 class="offcanvas-title" id="vfaSidebarTitle">Trung tâm quản trị</h2>
             <button class="btn-close" type="button" data-bs-dismiss="offcanvas" data-bs-target="#vfoSidebar" aria-label="Đóng menu"></button>
         </div>
         <div class="offcanvas-body">
-            <div class="vfo-store-card">
-                <span class="vfo-store-mark"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-grid"/></svg></span>
-                <span><strong>Quản trị viên</strong><small th:text="${headerAccountName != null ? headerAccountName : #authentication.name}"></small></span>
-            </div>
-            <nav class="nav flex-column vfo-side-nav" aria-label="Điều hướng quản trị">
-                <a class="nav-link" th:classappend="${active == 'dashboard' ? 'active' : ''}" th:attr="aria-current=${active == 'dashboard' ? 'page' : null}" th:href="@{/admin/dashboard}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-grid"/></svg>Tổng quan hệ thống</a>
-                <a class="nav-link" th:classappend="${active == 'accounts' ? 'active' : ''}" th:attr="aria-current=${active == 'accounts' ? 'page' : null}" th:href="@{/admin/accounts}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-user"/></svg>Quản lý tài khoản</a>
-                <a class="nav-link" th:classappend="${active == 'shops' ? 'active' : ''}" th:attr="aria-current=${active == 'shops' ? 'page' : null}" th:href="@{/admin/shops}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-shop"/></svg>Quản lý cửa hàng</a>
-                <a class="nav-link" th:classappend="${active == 'products' ? 'active' : ''}" th:attr="aria-current=${active == 'products' ? 'page' : null}" th:href="@{/admin/products}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-product"/></svg>Hậu kiểm sản phẩm</a>
-                <a class="nav-link" th:classappend="${active == 'categories' ? 'active' : ''}" th:attr="aria-current=${active == 'categories' ? 'page' : null}" th:href="@{/admin/categories}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-tag"/></svg>Quản lý danh mục</a>
-                <a class="nav-link" th:classappend="${active == 'deliveries' ? 'active' : ''}" th:attr="aria-current=${active == 'deliveries' ? 'page' : null}" th:href="@{/admin/deliveries}">
-                    <svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg>Giám sát giao hàng
-                </a>
-                <a class="nav-link" th:classappend="${active == 'refunds' ? 'active' : ''}" th:attr="aria-current=${active == 'refunds' ? 'page' : null}" th:href="@{/admin/refund-requests}">
-                    <svg class="vfo-icon" aria-hidden="true"><use href="#vfo-history"/></svg>Yêu cầu hoàn tiền
-                </a>
-                <a class="nav-link" th:classappend="${active == 'payouts' ? 'active' : ''}" th:attr="aria-current=${active == 'payouts' ? 'page' : null}" th:href="@{/admin/payouts}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-bank"/></svg>Đối soát chi trả</a>
-                <a class="nav-link" th:classappend="${active == 'reviews' ? 'active' : ''}" th:attr="aria-current=${active == 'reviews' ? 'page' : null}" th:href="@{/admin/reviews/pending}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-check"/></svg>Đánh giá chờ duyệt</a>
-                <a class="nav-link" th:classappend="${active == 'review-reports' ? 'active' : ''}" th:attr="aria-current=${active == 'review-reports' ? 'page' : null}" th:href="@{/admin/review-reports}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-chat"/></svg>Báo cáo đánh giá</a>
-                <a class="nav-link" th:classappend="${active == 'notifications' ? 'active' : ''}" th:attr="aria-current=${active == 'notifications' ? 'page' : null}" th:href="@{/notifications}">
-                    <svg class="vfo-icon" aria-hidden="true"><use href="#vfo-bell"/></svg>Thông báo
-                </a>
-                <a class="nav-link" th:classappend="${active == 'applications' ? 'active' : ''}" th:attr="aria-current=${active == 'applications' ? 'page' : null}" th:href="@{/admin/seller-applications}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-check"/></svg>Đăng ký bán hàng</a>
-                <a class="nav-link" th:classappend="${active == 'loyalty' ? 'active' : ''}" th:attr="aria-current=${active == 'loyalty' ? 'page' : null}" th:href="@{/admin/loyalty-rules}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-award"/></svg>Chương trình tích lũy</a>
-                <a class="nav-link" th:classappend="${active == 'subscription' ? 'active' : ''}" th:attr="aria-current=${active == 'subscription' ? 'page' : null}" th:href="@{/admin/subscription-plans}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-tag"/></svg>Danh mục gói dịch vụ</a>
-                <a class="nav-link" th:classappend="${active == 'shop-subscriptions' ? 'active' : ''}" th:attr="aria-current=${active == 'shop-subscriptions' ? 'page' : null}" th:href="@{/admin/shop-subscriptions}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-shop"/></svg>Đăng ký gói của shop</a>
-                <a class="nav-link" th:classappend="${active == 'subscription-payments' ? 'active' : ''}" th:attr="aria-current=${active == 'subscription-payments' ? 'page' : null}" th:href="@{/admin/shop-subscriptions/payments}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-bank"/></svg>Thanh toán gói dịch vụ</a>
-            </nav>
-            <div class="vfo-sidebar-bottom">
-                <a th:href="@{/home}"><span aria-hidden="true">←</span> Khám phá VietFresh Hub</a>
-                <p>Tươi lành từ những điều tận tâm.</p>
-            </div>
+            <nav th:replace="~{fragments/workspace-navigation :: admin(${active})}"></nav>
         </div>
     </aside>
 </th:block>

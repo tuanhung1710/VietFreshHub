@@ -17,15 +17,14 @@
 </head>
 <body th:with="mainUrl=${#strings.isEmpty(product.imageUrl) ? '/images/product/product-placeholder.svg' : product.imageUrl}"
       th:attr="data-customer=${#authorization.expression('hasRole(''CUSTOMER'')')}" class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
-<header><div class="wrap">
-  <div class="utility"><span>VietFresh Hub · Gian hàng trái cây</span><th:block th:replace="~{fragments/customer-shop :: accountLinks}"></th:block></div>
-  <div class="headrow"><a class="brand" th:href="@{/home}">VietFresh Hub</a>
+<header class="vfc-header"><div class="wrap">
+  <div class="headrow vfc-header-main"><a class="brand" th:href="@{/home}">VietFresh Hub</a><div class="vfo-topbar-actions vfc-header-actions"><th:block th:replace="~{fragments/customer-shop :: accountLinks}"></th:block></div></div>
+  <div class="vfc-header-tools">
     <form class="searchbar" th:action="@{/shops/{id}(id=${shop.shopId})}" method="get" role="search"><input type="hidden" name="tab" value="all"><input type="search" name="keyword" maxlength="100" placeholder="Tìm trái cây trong gian hàng..." aria-label="Tìm sản phẩm trong shop" class="form-control"><button type="submit" class="btn btn-success">TÌM</button></form>
     <a class="cart-button" th:href="@{/cart}">Giỏ hàng (<span id="cartCount" aria-live="polite">0</span>)</a>
   </div>
 </div></header>
 <main class="wrap vfr-page">
-  <div class="crumb"><a th:href="@{/shops/{id}(id=${shop.shopId})}">Gian hàng</a> / <a th:href="@{/shops/{id}(id=${shop.shopId},tab='all',categoryId=${product.categoryId})}" th:text="${product.categoryName}"></a> / <span th:text="${product.name}"></span></div>
   <p th:if="${successMessage}" class="purchase-message" role="status" th:text="${successMessage}"></p>
   <p th:if="${errorMessage}" class="purchase-message error" role="alert" th:text="${errorMessage}"></p>
   <section class="detail">
@@ -110,6 +109,6 @@
       <div class="minor" th:text="'★ ' + ${item.rating == null ? '0.0' : #numbers.formatDecimal(item.rating,1,1)} + '/5 · Đã bán ' + ${item.sales}"></div></div></a></div>
   </section>
 </main>
-<footer class="footer"><div class="wrap"><div class="footergrid"><div><h3>VietFresh Hub</h3><p>Sàn mua sắm trái cây từ nhiều nhà bán hàng. Khám phá trái cây nội địa, nhập khẩu và sản phẩm theo mùa.</p></div><div><h3>Khám phá</h3><p><a th:href="@{/shops/{id}(id=${shop.shopId})}">Gian hàng</a><br><a th:href="@{/shops}">Danh sách gian hàng</a><br><a th:href="@{/home}">Tất cả sản phẩm</a></p></div><div><h3>Hỗ trợ &amp; chính sách</h3><p><a th:href="@{/customer/orders}">Theo dõi đơn hàng</a><br><a th:href="@{/cart}">Giỏ hàng của tôi</a></p></div></div><div class="copyright">© 2026 VietFresh Hub. All rights reserved.</div></div></footer>
+<footer th:replace="~{fragments/footer :: footer}"></footer>
 <div id="notice" class="toast hide" role="status" aria-live="polite"></div><div id="modal"></div>
 </body></html>

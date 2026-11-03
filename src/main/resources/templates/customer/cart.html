@@ -11,7 +11,7 @@
 
 
 <main class="container page cart-page vfr-page" th:attr="data-cart-id=${cart.cartId}" id="customer-content" tabindex="-1">
-    <nav class="cart-breadcrumb" aria-label="Đường dẫn"><a th:href="@{/home}">⌂ &nbsp; Trang chủ</a><span>›</span><span>Giỏ hàng</span></nav><div class="page-heading cart-page-heading"><div><h1>Giỏ hàng <span class="heading-count" th:text="'(' + ${#lists.size(cart.items)} + ' sản phẩm)'"></span></h1></div>
+    <div class="page-heading cart-page-heading"><div><h1>Giỏ hàng <span class="heading-count" th:text="'(' + ${#lists.size(cart.items)} + ' sản phẩm)'"></span></h1></div>
         <a th:href="@{/home}">← Tiếp tục mua sắm</a></div>
     <div th:replace="~{fragments/storefront :: messages}"></div>
     <section th:if="${reorderSkipped != null and !#lists.isEmpty(reorderSkipped)}" class="notice error" aria-label="Sản phẩm chưa thể mua lại">

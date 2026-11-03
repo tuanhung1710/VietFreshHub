@@ -16,11 +16,8 @@
 
 <div class="vfo-workspace vfr-workspace" id="order-content" tabindex="-1">
 <main class="payout-page vfr-page">
-    <a class="back-link" th:href="@{/seller}">← Về trang quản lý shop</a>
     <header class="page-heading">
-        <p class="eyebrow">THANH TOÁN CỬA HÀNG</p>
         <h1>Tài khoản nhận payout</h1>
-        <p>Shop <strong th:text="${payoutAccount.shopName}">Tên shop</strong> tự nhập tài khoản dùng để nhận tiền payout.</p>
     </header>
 
     <div th:if="${successMessage}" class="notice success" role="status" th:text="${successMessage}"></div>

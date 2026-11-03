@@ -20,13 +20,11 @@
 <header th:replace="~{fragments/customer-shop :: header}"></header>
 <main class="container vfr-page">
   <div id="notice" class="notice hide"></div>
-  <p th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" class="section"><a th:href="@{/customer/loyalty}">Tiền thưởng và điểm tích lũy</a></p>
 
   <div id="home">
     <section class="bannergrid" style="margin-top:22px">
       <div class="hero">
         <h1>Trái cây tươi mỗi ngày</h1>
-        <p>Khám phá các loại trái cây nội địa và nhập khẩu từ nhiều gian hàng trên VietFresh Hub. Toàn bộ dữ liệu demo trong trang này đều là trái cây.</p>
         <button data-all class="btn btn-success">Xem tất cả sản phẩm</button>
       </div>
       <div class="sidebanners">
@@ -58,9 +56,7 @@
   </div>
 
   <div id="catalog" class="hide">
-    <div class="bread"><button class="textlink" data-home>Trang chủ</button> / <span id="breadcrumb">Tất cả sản phẩm</span></div>
     <h1 id="catTitle">Tất cả sản phẩm</h1>
-    <p class="muted item-title">Danh sách trái cây từ nhiều nhà bán hàng</p>
     <button id="toggleFilters" class="mobileonly">☰ Bộ lọc</button>
     <div class="twocol">
       <aside class="sidebar" id="sidebar">
@@ -95,22 +91,13 @@
   </div>
 
   <div id="shopspage" class="hide">
-    <div class="bread"><button class="textlink" data-home>Trang chủ</button> / Gian hàng</div>
     <h1>Danh sách gian hàng</h1>
     <div id="shoplist" class="shopgrid"></div>
   </div>
 
   <div id="shopdetail" class="hide"></div>
 </main>
-<footer class="site-footer">
-  <div class="container footer-inner">
-    <div class="footer-column"><h3>VietFresh Hub</h3><p>Sàn mua sắm trái cây từ nhiều nhà bán hàng. Khám phá trái cây nội địa, nhập khẩu và các loại trái cây theo mùa.</p><p><strong>Chăm sóc khách hàng:</strong><br>support@vietfreshhub.example</p></div>
-    <div class="footer-column" id="footerCategories"><h3>Danh mục trái cây</h3><button data-cat="Trái cây nhập khẩu" class="btn btn-success">Trái cây nhập khẩu</button><button data-cat="Trái cây nội địa" class="btn btn-success">Trái cây nội địa</button><button data-cat="Trái cây nhiệt đới" class="btn btn-success">Trái cây nhiệt đới</button><button data-cat="Trái cây theo mùa" class="btn btn-success">Trái cây theo mùa</button><button data-all class="btn btn-success">Xem tất cả</button></div>
-    <div class="footer-column"><h3>Hỗ trợ khách hàng</h3><button data-footer-info="Hướng dẫn mua hàng" class="btn btn-success">Hướng dẫn mua hàng</button><button data-footer-info="Theo dõi đơn hàng" class="btn btn-success">Theo dõi đơn hàng</button><button data-footer-info="Đổi trả và hoàn tiền" class="btn btn-success">Đổi trả và hoàn tiền</button><button data-footer-info="Câu hỏi thường gặp" class="btn btn-success">Câu hỏi thường gặp</button></div>
-    <div class="footer-column"><h3>Thông tin & chính sách</h3><button data-footer-info="Giới thiệu VietFresh Hub" class="btn btn-success">Giới thiệu VietFresh Hub</button><button data-shops class="btn btn-success">Danh sách gian hàng</button><button data-footer-info="Chính sách bảo mật" class="btn btn-success">Chính sách bảo mật</button><button data-footer-info="Điều khoản sử dụng" class="btn btn-success">Điều khoản sử dụng</button></div>
-  </div>
-  <div class="container footer-bottom"><span>© 2026 VietFresh Hub. All rights reserved.</span><span>Giao diện minh họa · Dữ liệu demo, không phải thông tin kinh doanh thực tế.</span></div>
-</footer>
+<footer th:replace="~{fragments/footer :: footer}"></footer>
 <div id="modal"></div>
 <script type="module" th:src="@{/js/storefront/storefront.js}" src="/js/storefront/storefront.js"></script>
 </body>

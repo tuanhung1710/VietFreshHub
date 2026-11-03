@@ -5,10 +5,8 @@
 <th:block th:replace="~{fragments/delivery-layout :: navigation(${deliveryDetail.assignmentId == null ? 'available' : 'home'})}"></th:block>
 <div id="delivery-content" class="vfo-workspace" tabindex="-1">
 <main class="vfo-main vfd-detail-page">
-    <nav th:replace="~{fragments/delivery-layout :: breadcrumb('Chi tiết giao hàng')}"></nav>
     <header class="vfo-page-heading">
-        <div><h1>Chi tiết giao hàng</h1><p class="vfo-page-description">Địa điểm lấy hàng, thông tin người nhận và cập nhật hành trình giao hàng.</p></div>
-        <a class="btn vfo-btn-secondary" th:href="@{/delivery}"><span aria-hidden="true">←</span> Trang chủ giao hàng</a>
+        <div><h1>Chi tiết giao hàng</h1></div>
     </header>
     <p class="vfd-alert vfd-alert-danger" th:if="${errorMessage != null}" th:text="${errorMessage}" role="alert"></p>
     <div class="vfd-order-banner">
@@ -90,7 +88,8 @@
         <p class="vfd-cash-amount" th:text="${#numbers.formatDecimal(deliveryDetail.cashToCollect, 1, 'POINT', deliveryDetail.cashToCollect.stripTrailingZeros().scale() > 0 ? 2 : 0, 'COMMA')} + ' VND'"></p>
     </section>
     </div>
-    <div class="vfd-action-grid">
+    <div class="vfd-action-grid"
+         th:classappend="${deliveryDetail.assignmentId != null and deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'OUT_FOR_DELIVERY' ? 'vfd-completion-actions' : ''}">
     <form class="delivery-actions card vfd-action-card" method="post"
           th:if="${deliveryDetail.assignmentId == null and deliveryDetail.deliveryStatus.name() == 'UNASSIGNED'}"
           th:action="@{/delivery/available/{deliveryId}/claim(deliveryId=${deliveryDetail.deliveryId})}">
@@ -109,12 +108,12 @@
           th:action="@{/delivery/assignments/{assignmentId}/start-delivery(assignmentId=${deliveryDetail.assignmentId})}">
         <button class="btn vfo-btn-primary" type="submit">BẮT ĐẦU GIAO HÀNG</button>
     </form>
-    <form class="delivery-actions card vfd-action-card" method="post"
+    <form class="delivery-actions vfd-action-card" method="post"
           th:if="${deliveryDetail.assignmentId != null and deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'OUT_FOR_DELIVERY'}"
           th:action="@{/delivery/assignments/{assignmentId}/delivered(assignmentId=${deliveryDetail.assignmentId})}">
         <button class="btn vfo-btn-primary" type="submit">GIAO HÀNG THÀNH CÔNG</button>
     </form>
-    <form class="delivery-actions card vfd-action-card vfd-failure-card" method="post"
+    <form class="delivery-actions vfd-action-card vfd-failure-card" method="post"
           th:if="${deliveryDetail.assignmentId != null and deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'OUT_FOR_DELIVERY'}"
           th:action="@{/delivery/assignments/{assignmentId}/failed(assignmentId=${deliveryDetail.assignmentId})}"
           th:object="${failureRequest}">

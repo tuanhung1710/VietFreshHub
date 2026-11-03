@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/customer-service :: head('Thông tin nhận hoàn tiền')}"></head>
-<body class="vfo-app vfc-app">
-<th:block th:replace="~{fragments/customer-service :: header}"></th:block>
+<body class="vfo-app vfc-app vfc-refund-app">
+<th:block th:replace="~{fragments/customer-service :: [th:fragment='header']}"></th:block>
 <main id="customer-content" class="vfc-container vfc-main vfc-refund-page" tabindex="-1">
-    <nav aria-label="Đường dẫn trang"><ol class="breadcrumb vfo-breadcrumb"><li class="breadcrumb-item"><a th:href="@{/home}">Trang chủ</a></li><li class="breadcrumb-item"><a th:href="@{/customer/orders}">Đơn hàng của tôi</a></li><li class="breadcrumb-item"><a th:href="@{${orderDetailPath}}">Chi tiết đơn hàng</a></li><li class="breadcrumb-item active" aria-current="page">Thông tin nhận hoàn tiền</li></ol></nav>
     <header class="vfo-page-heading">
-        <div><h1>Thông tin nhận hoàn tiền</h1><p class="vfo-page-description">Cung cấp tài khoản ngân hàng nhận hoàn tiền cho đơn hàng của bạn.</p></div>
+        <div><h1>Thông tin nhận hoàn tiền</h1></div>
         <a class="btn vfo-btn-secondary" th:href="@{${orderDetailPath}}"><span aria-hidden="true">←</span> Chi tiết đơn hàng</a>
     </header>
     <div class="vfc-refund-layout">

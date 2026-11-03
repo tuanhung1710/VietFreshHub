@@ -4,22 +4,9 @@
 <th:block th:replace="~{fragments/interface-layout :: navigation('customer','orders')}"></th:block>
 
 <main class="container page purchase-layout vfr-page" id="customer-content" tabindex="-1">
-<aside class="purchase-sidebar">
-<div class="purchase-profile"><span class="purchase-avatar"><svg th:replace="~{fragments/account-menu :: icon('person')}"></svg></span><div><strong th:text="${headerAccountName != null ? headerAccountName : #authentication.name}"></strong><span class="purchase-role">Khách hàng</span></div></div>
-<nav aria-label="Tài khoản của tôi"><a th:href="@{/customer/profile}" ><svg th:replace="~{fragments/account-menu :: icon('person')}"></svg>Thông tin tài khoản</a>
-<a th:href="@{/customer/orders}" class="active" aria-current="page"><svg th:replace="~{fragments/account-menu :: icon('orders')}"></svg>Đơn hàng của tôi</a>
-<a th:href="@{/customer/payments}" ><svg th:replace="~{fragments/account-menu :: icon('orders')}"></svg>Lịch sử thanh toán</a>
-<a th:href="@{/customer/addresses}" ><svg th:replace="~{fragments/account-menu :: icon('location')}"></svg>Địa chỉ nhận hàng</a>
-<a th:href="@{/cart}" ><svg th:replace="~{fragments/account-menu :: icon('cart')}"></svg>Giỏ hàng</a><form th:action="@{/logout}" method="post"><button type="submit" class="btn btn-success"><svg th:replace="~{fragments/account-menu :: icon('logout')}"></svg>Đăng xuất</button></form></nav><div class="purchase-landscape" aria-hidden="true"><span>♧</span></div>
-</aside>
 <div class="purchase-content order-history-page">
-<nav class="purchase-breadcrumb" aria-label="Đường dẫn"><a th:href="@{/home}">Trang chủ</a><span aria-hidden="true">›</span><span>Đơn hàng của tôi</span></nav>
-<div class="purchase-heading"><h1><svg th:replace="~{fragments/account-menu :: icon('cart')}"></svg>Đơn hàng của tôi</h1><p>Xem lịch sử mua hàng, theo dõi trạng thái và mua lại sản phẩm.</p></div>
+<div class="purchase-heading"><h1><svg th:replace="~{fragments/account-menu :: icon('cart')}"></svg>Đơn hàng của tôi</h1></div>
 <div th:replace="~{fragments/storefront :: messages}"></div>
-<nav class="purchase-tabs" aria-label="Lọc trạng thái đơn hàng">
-<a th:classappend="${#strings.isEmpty(filter.status)} ? 'active'" th:href="@{/customer/orders(size=${filter.size},keyword=${filter.keyword},fromDate=${filter.fromDate},toDate=${filter.toDate})}">Tất cả</a>
-<a th:each="state : ${statusOptions}" th:classappend="${filter.status == state.key} ? 'active'" th:attr="aria-current=${filter.status == state.key ? 'page' : null}" th:href="@{/customer/orders(status=${state.key},size=${filter.size},keyword=${filter.keyword},fromDate=${filter.fromDate},toDate=${filter.toDate})}" th:text="${state.value}"></a>
-</nav>
     <p th:if="${filterError != null}" class="notice error" role="alert" th:text="${filterError}"></p>
     <p th:if="${pageNotice != null}" class="notice info" role="status" th:text="${pageNotice}"></p>
     <form class="purchase-filters" th:action="@{/customer/orders}" th:object="${filter}" method="get">
@@ -34,7 +21,7 @@
         <button class="button" type="submit">Lọc đơn</button><a class="filter-reset" th:href="@{/customer/orders}">Xóa bộ lọc</a>
     </form>
 
-<div class="purchase-results"><span th:unless="${invalidFilter}" th:text="${orderPage.totalElements} + ' đơn hàng'"></span><a th:href="@{/customer/order-receipts}">Lịch sử toàn bộ lượt mua <span aria-hidden="true">↗</span></a></div>
+<div class="purchase-results"><span th:unless="${invalidFilter}" th:text="${orderPage.totalElements} + ' đơn hàng'"></span></div>
     <section th:if="${!invalidFilter and orderPage.empty}" class="panel empty"><h2 th:text="${filter.hasFilters()} ? 'Chưa có đơn hàng phù hợp' : 'Bạn chưa có đơn hàng nào'"></h2><p class="muted" th:text="${filter.hasFilters()} ? 'Bạn có thể thay đổi hoặc xóa bộ lọc để tìm lại đơn hàng.' : 'Đơn hàng của bạn sẽ xuất hiện tại đây sau khi đặt hàng.'"></p><a class="button secondary" th:href="@{/home}">Khám phá sản phẩm</a></section>
 
 <section class="purchase-list" aria-label="Danh sách đơn hàng">

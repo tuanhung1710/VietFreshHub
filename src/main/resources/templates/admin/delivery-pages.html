@@ -3,10 +3,8 @@
 <body>
 <div th:fragment="list" id="workspace-content" class="vfo-workspace" tabindex="-1">
 <main class="vfo-main">
-    <nav th:replace="~{fragments/admin-workspace :: breadcrumb('Giám sát giao hàng')}"></nav>
     <header class="vfo-page-heading">
-        <div><h1>Giám sát giao hàng</h1><p class="vfo-page-description">Theo dõi giao hàng toàn hệ thống, nhân viên phụ trách và trạng thái hoàn hàng.</p></div>
-        <a class="btn vfo-btn-secondary" th:href="@{${homePath}}"><span aria-hidden="true">←</span> Quay lại trang quản lý</a>
+        <div><h1>Giám sát giao hàng</h1></div>
     </header>
     <section class="card vfa-filter-card" aria-labelledby="admin-delivery-filter-heading">
         <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-filter"/></svg></span><h2 id="admin-delivery-filter-heading">Tìm kiếm &amp; bộ lọc</h2></div>
@@ -36,7 +34,7 @@
         </form>
     </section>
     <section class="card vfo-list-card" aria-labelledby="admin-delivery-list-heading">
-        <div class="vfo-list-heading"><div><span class="vfo-section-marker" aria-hidden="true"></span><h2 id="admin-delivery-list-heading">Danh sách giao hàng</h2><span class="vfo-count" th:text="${deliveriesPage.totalElements}"></span></div><span class="vfo-list-caption" th:text="${scopeLabel}"></span></div>
+        <div class="vfo-list-heading"><div><span class="vfo-section-marker" aria-hidden="true"></span><h2 id="admin-delivery-list-heading">Danh sách giao hàng</h2><span class="vfo-count" th:text="${deliveriesPage.totalElements}"></span></div></div>
         <div class="vfo-empty-state" th:if="${deliveriesPage.empty}"><span class="vfo-empty-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg></span><h3>Chưa có đơn giao hàng phù hợp</h3><p>Không có đơn giao hàng trong phạm vi hoặc bộ lọc hiện tại.</p></div>
         <div class="table-responsive" th:unless="${deliveriesPage.empty}">
             <table class="table table-hover align-middle mb-0 vfa-delivery-table" aria-label="Danh sách giao hàng">
@@ -66,8 +64,7 @@
 
 <div th:fragment="detail" id="workspace-content" class="vfo-workspace" tabindex="-1">
 <main class="vfo-main" th:with="delivery=${deliveryDetail.summary}">
-    <nav aria-label="Đường dẫn trang"><ol class="breadcrumb vfo-breadcrumb"><li class="breadcrumb-item"><a th:href="@{/admin/dashboard}">Trung tâm quản trị</a></li><li class="breadcrumb-item"><a th:href="@{${basePath}}">Giám sát giao hàng</a></li><li class="breadcrumb-item active" aria-current="page">Chi tiết giao hàng</li></ol></nav>
-    <header class="vfo-page-heading"><div><h1>Chi tiết giám sát giao hàng</h1><p class="vfo-page-description">Thông tin cửa hàng, người nhận và lịch sử xử lý đơn hàng.</p></div><a class="btn vfo-btn-secondary" th:href="@{${basePath}}"><span aria-hidden="true">←</span> Giám sát giao hàng</a></header>
+    <header class="vfo-page-heading"><div><h1>Chi tiết giám sát giao hàng</h1></div></header>
     <p class="vfm-notice" th:if="${successMessage != null}" th:text="${successMessage}" role="status"></p>
     <p class="vfm-notice vfm-notice-warning" th:if="${deliveryDetail.legacyRedelivery}">Hồ sơ giao lại cũ chỉ được xem và cần đối soát thủ công. Chức năng giao lại đã ngừng.</p>
     <div class="vfa-order-banner"><span class="vfo-banner-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg></span><div><span class="vfo-meta-label">Mã đơn</span><strong class="vfo-order-code" th:text="${delivery.orderCode}"></strong></div><span class="vfo-status vfa-delivery-state" th:attr="data-label=${delivery.deliveryStatusLabel}" th:text="${delivery.deliveryStatusLabel}"></span></div>

@@ -5,19 +5,15 @@
 <th:block th:replace="~{fragments/delivery-layout :: navigation('available')}"></th:block>
 <div id="delivery-content" class="vfo-workspace" tabindex="-1">
     <main class="vfo-main">
-        <nav th:replace="~{fragments/delivery-layout :: breadcrumb('Nhận đơn mới')}"></nav>
         <header class="vfo-page-heading">
-            <div><h1>Nhận đơn mới</h1><p class="vfo-page-description">Xem cửa hàng, địa điểm lấy hàng và địa chỉ giao trước khi nhận đơn.</p></div>
-            <a class="btn vfo-btn-secondary" th:href="@{/delivery}"><span aria-hidden="true">←</span> Đơn giao hàng của tôi</a>
+            <div><h1>Nhận đơn mới</h1></div>
         </header>
-        <nav th:replace="~{fragments/delivery-layout :: tabs('available')}"></nav>
         <p class="vfd-alert vfd-alert-danger" th:if="${errorMessage != null}" th:text="${errorMessage}" role="alert"></p>
         <p id="available-refresh-status" class="vfd-alert vfd-alert-warning" role="status" hidden></p>
         <section id="available-deliveries" class="card vfo-list-card" th:fragment="deliveries"
                  th:attr="data-refresh-url=@{/delivery/available(fragment=true,page=${availablePage.number + 1},size=${availablePage.size})},data-page-size=${availablePage.size}">
             <div class="vfo-list-heading">
                 <div><span class="vfo-section-marker" aria-hidden="true"></span><h2>Đơn giao hàng có thể nhận</h2><span class="vfo-count" th:text="${availablePage.totalElements}"></span></div>
-                <span class="vfd-refresh-note"><span aria-hidden="true"></span>Danh sách tự cập nhật</span>
             </div>
             <div class="vfo-empty-state" th:if="${#lists.isEmpty(availableDeliveries)}">
                 <span class="vfo-empty-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-box"/></svg></span>

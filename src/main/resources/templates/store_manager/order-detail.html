@@ -11,9 +11,8 @@
 <th:block th:replace="~{fragments/seller-orders :: navigation('orders')}"></th:block>
 <div class="vfo-workspace">
 <main id="order-content" class="vfo-main">
-    <nav aria-label="Đường dẫn trang"><ol class="breadcrumb vfo-breadcrumb"><li class="breadcrumb-item"><a th:href="@{/seller}">Kênh người bán</a></li><li class="breadcrumb-item"><a th:href="@{/seller/orders}">Đơn hàng</a></li><li class="breadcrumb-item active" aria-current="page">Chi tiết đơn hàng</li></ol></nav>
     <header class="vfo-page-heading">
-        <div><p class="vfo-eyebrow">Mỗi đơn hàng, một sự tin yêu</p><h1>Chi tiết đơn hàng</h1><p class="vfo-page-description">Thông tin khách hàng, sản phẩm và tiến trình xử lý đơn.</p></div>
+        <div><h1>Chi tiết đơn hàng</h1></div>
         <a class="btn vfo-btn-secondary" th:href="@{/seller/orders}"><span aria-hidden="true">←</span> Tất cả đơn hàng</a>
     </header>
     <div class="vfo-status-banner"><span class="vfo-banner-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-order"/></svg></span><div><span class="vfo-meta-label">Trạng thái đơn hàng</span><strong class="vfo-status" th:attr="data-status=${orderDetail.orderStatus}" th:text="${orderDetail.orderStatusLabel}"></strong></div><svg class="vfo-icon vfo-banner-leaf" aria-hidden="true"><use href="#vfo-leaf"/></svg></div>

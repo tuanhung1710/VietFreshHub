@@ -1,6 +1,8 @@
 /* Bootstrap presentation for administration, notifications and the seller dashboard. */
 .vfa-app [hidden], .vfn-app [hidden], .vfs-app [hidden] { display: none !important; }
 .vfa-app #workspace-content, .vfn-app #workspace-content, .vfs-app #workspace-content { scroll-margin-top: var(--vfo-topbar-height); }
+.vfo-topbar.vfn-customer-header { position: relative; inset: auto; }
+.vfn-app:has(.vfn-customer-header) .vfo-workspace { min-height: calc(100vh - var(--vfo-topbar-height)); padding-top: 0; }
 .vfm-notice { margin: 0 0 22px; padding: 15px 20px; border: 1px solid #dbe5d2; border-radius: 10px; background: #f0f5e9; color: #61794f; font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
 .vfm-notice-warning { border-color: #e9dfbf; background: #fbf7ea; color: #927944; }
 .vfm-notice-danger { border-color: #ead7d0; background: #fcf1eb; color: #a16150; }
@@ -47,7 +49,7 @@
 .vfa-order-banner > div { min-width: 0; }
 .vfa-order-banner .vfo-order-code { font-size: 16px; }
 .vfa-order-banner > .vfo-status { margin-left: auto; }
-.vfa-contact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 24px; margin-bottom: 24px; }
+.vfa-contact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 24px; margin-bottom: 24px; }
 .vfa-contact-card { min-width: 0; overflow: hidden; }
 .vfa-contact-card .vfo-card-heading { background: #fdfefb; }
 .vfa-facts { display: grid; grid-template-columns: minmax(110px, .8fr) minmax(0, 1.25fr); gap: 17px 20px; margin: 0; padding: 24px; }

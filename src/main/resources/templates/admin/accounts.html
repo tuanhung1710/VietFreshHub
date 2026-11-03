@@ -23,26 +23,10 @@
 
     <div class="vfo-workspace vfr-workspace" id="workspace-content" tabindex="-1">
 <main class="page-content vfr-page">
-        <nav class="breadcrumbs" aria-label="Điều hướng">
-            <span>Quản trị</span><span aria-hidden="true">/</span><strong>Quản lý tài khoản</strong>
-            <a th:href="@{/admin/seller-applications}">Duyệt đăng ký bán hàng</a>
-            <a th:href="@{/admin/payouts}">Đối soát payout</a>
-            <a th:href="@{/admin/deliveries}">Giám sát giao hàng</a>
-            <a th:href="@{/admin/products}">Hậu kiểm sản phẩm</a>
-            <a th:href="@{/admin/categories}">Quản lý danh mục</a>
-            <a th:href="@{/admin/shops}">Quản lý shop</a>
-            <a th:href="@{/admin/refund-requests}">Yêu cầu hoàn tiền</a>
-            <a th:href="@{/admin/loyalty-rules}">Quản lý chương trình Loyalty</a>
-            <a th:href="@{/admin/subscription-plans}">Quản lý các gói Subscription</a>
-            <a th:href="@{/admin/dashboard}">Báo cáo và Thống kê</a>
-        </nav>
         <section class="page-heading">
             <div>
-                <p class="eyebrow">NGƯỜI DÙNG &amp; PHÂN QUYỀN</p>
                 <h1>Quản lý tài khoản</h1>
-                <p class="subheading">Tra cứu hồ sơ, điều chỉnh quyền và kiểm soát trạng thái tài khoản.</p>
             </div>
-            <span class="live-data-badge"><span></span> DỮ LIỆU TỪ DATABASE</span>
         </section>
 
         <div th:if="${successMessage}" class="flash-message flash-success" role="status" th:text="${successMessage}"></div>
@@ -66,7 +50,6 @@
         <section class="accounts-panel" aria-labelledby="accounts-title">
             <div class="panel-heading">
                 <div><h2 id="accounts-title">Danh sách tài khoản</h2><p class="muted" th:text="|${accountsPage.totalElements} tài khoản phù hợp|">0 tài khoản</p></div>
-                <span class="sample-data-label">Dữ liệu trực tiếp</span>
             </div>
 
             <form class="filter-bar" method="get" th:action="@{/admin/accounts}">

@@ -43,7 +43,6 @@
     <div th:if="${successMessage}" class="alert alert-success" role="alert" th:text="${successMessage}"></div>
     <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
 
-    <p class="text-secondary">Gói được kích hoạt sau khi quản trị viên xác nhận nhận tiền. Gia hạn chỉ áp dụng cho gói gần nhất đã hết hạn và phải chọn đúng gói đó.</p>
     <div th:object="${paymentForm}">
         <div th:if="${#fields.hasAnyErrors()}" class="alert alert-danger" role="alert">
             <strong>Không thể tạo yêu cầu thanh toán:</strong>

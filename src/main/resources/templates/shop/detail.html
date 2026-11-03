@@ -17,11 +17,13 @@
     <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
 <body th:attr="data-shop-id=${shop.shopId}" class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
-<header class="header">
+<header class="header vfc-header">
   <div class="wrap">
-    <div class="utility"><span>VietFresh Hub · Gian hàng trái cây</span><th:block th:replace="~{fragments/customer-shop :: accountLinks}"></th:block></div>
-    <div class="headrow">
+    <div class="headrow vfc-header-main">
       <a class="logo" th:href="@{/home}">VietFresh Hub</a>
+      <div class="vfo-topbar-actions vfc-header-actions"><th:block th:replace="~{fragments/customer-shop :: accountLinks}"></th:block></div>
+    </div>
+    <div class="vfc-header-tools">
       <form class="search" id="shopSearch" role="search">
         <input id="q" type="search" maxlength="100" placeholder="Tìm sản phẩm trong gian hàng..." aria-label="Tìm sản phẩm trong shop" class="form-control">
         <button type="submit" class="btn btn-success">TÌM</button>
@@ -31,7 +33,6 @@
   </div>
 </header>
 <main class="wrap vfr-page">
-  <div class="crumb"><a th:href="@{/home}">Trang chủ</a> / <a th:href="@{/shops}">Gian hàng</a> / <span th:text="${shop.shopName}"></span></div>
   <section class="shopinfo" aria-label="Thông tin shop">
     <div class="identity">
       <img th:if="${!#strings.isEmpty(shop.bannerUrl)}" class="identity-background" th:src="${shop.bannerUrl}" alt="" aria-hidden="true" data-shop-background>
@@ -66,14 +67,7 @@
   </section>
   <noscript><p class="note">Bật JavaScript để xem và tìm kiếm sản phẩm trong gian hàng.</p></noscript>
 </main>
-<footer class="foot"><div class="wrap">
-  <div class="footgrid">
-    <div><h3>VietFresh Hub</h3><p>Sàn mua sắm trái cây từ nhiều nhà bán hàng, gồm trái cây nội địa, nhập khẩu và các sản phẩm theo mùa.</p></div>
-    <div><h3>Khám phá</h3><p><a th:href="@{/shops}">Danh sách gian hàng</a></p><div id="footerCategories"></div></div>
-    <div><h3>Hỗ trợ &amp; chính sách</h3><p><button class="textlink" data-footer-info="Hướng dẫn mua hàng">Hướng dẫn mua hàng</button><br><a th:href="@{/customer/orders}">Theo dõi đơn hàng</a><br><button class="textlink" data-footer-info="Chính sách bảo mật">Chính sách bảo mật</button><br><button class="textlink" data-footer-info="Điều khoản sử dụng">Điều khoản sử dụng</button></p></div>
-  </div>
-  <div class="copyright">© 2026 VietFresh Hub. All rights reserved.</div>
-</div></footer>
+<footer th:replace="~{fragments/footer :: footer}"></footer>
 <div id="modal"></div>
 </body>
 </html>

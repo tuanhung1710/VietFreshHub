@@ -14,28 +14,64 @@
         <a th:href="@{/register}" data-auth-link>Đăng ký</a>
     </span>
     <details th:if="${#authorization.expression('isAuthenticated()')}" class="header-account" data-header-account
-             th:with="accountName=${headerAccountName != null ? headerAccountName : #authentication.name}">
+             th:with="accountName=${headerAccountName != null ? headerAccountName : #authentication.name},
+                      workspaceAccount=${#authorization.expression('hasAnyRole(''ADMIN'',''STORE_MANAGER'',''DELIVERY_STAFF'')')},
+                      adminAccount=${#authorization.expression('hasRole(''ADMIN'')')},
+                      sellerAccount=${!adminAccount and #authorization.expression('hasRole(''STORE_MANAGER'')')},
+                      accountRole=${adminAccount ? 'Quản trị viên' : (sellerAccount ? 'Người bán' : 'Nhân viên giao hàng')}"
+             th:classappend="${workspaceAccount ? 'header-account-workspace' : 'header-account-customer'}">
         <summary class="header-account-trigger">
             <span class="header-account-avatar"><svg th:replace="~{fragments/account-menu :: icon('person')}"></svg></span>
             <span class="header-account-label"><span>Xin chào,</span><strong th:text="${accountName}"></strong></span>
             <svg class="header-account-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
         </summary>
         <div class="header-account-dropdown">
-            <div class="header-account-heading"><span>Tài khoản của bạn</span><strong th:text="${accountName}"></strong></div>
-            <nav class="header-account-links" aria-label="Chức năng tài khoản">
-                <th:block th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}">
-                    <a th:href="@{/customer/profile}"><svg th:replace="~{fragments/account-menu :: icon('person')}"></svg><span>Tài khoản của tôi</span></a>
-                    <a th:href="@{/customer/orders}"><svg th:replace="~{fragments/account-menu :: icon('orders')}"></svg><span>Đơn mua</span></a>
-                    <a th:href="@{/customer/loyalty}"><span>Tiền thưởng</span></a>
-                    <a th:href="@{/customer/addresses}"><svg th:replace="~{fragments/account-menu :: icon('location')}"></svg><span>Sổ địa chỉ</span></a>
-                    <a th:href="@{/customer/payments}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="17" height="13" rx="1"/><circle cx="12.5" cy="9.5" r="3"/><path d="M1 7v14h17"/></svg><span>Lịch sử thanh toán</span></a>
-                    <a th:href="@{/customer/chat}"><svg th:replace="~{fragments/account-menu :: icon('chat')}"></svg><span>Tin nhắn với cửa hàng</span></a>
-                    <a th:href="@{/cart}"><svg th:replace="~{fragments/account-menu :: icon('cart')}"></svg><span>Giỏ hàng</span></a>
+            <div class="header-account-heading">
+                <th:block th:if="${workspaceAccount}">
+                    <span class="header-account-profile-icon"><svg th:replace="~{fragments/account-menu :: icon('person')}"></svg></span>
+                    <div class="header-account-identity">
+                        <strong th:text="${accountName}"></strong>
+                        <span class="header-account-role" th:text="${accountRole}"></span>
+                    </div>
                 </th:block>
-                <a th:if="${#authorization.expression('hasAnyRole(''ADMIN'',''STORE_MANAGER'',''DELIVERY_STAFF'')')}" th:href="@{/}">
-                    <svg th:replace="~{fragments/account-menu :: icon('orders')}"></svg><span>Trang quản lý</span>
-                </a>
-                <a th:href="@{/notifications}"><svg th:replace="~{fragments/account-menu :: icon('bell')}"></svg><span>Thông báo</span></a>
+                <th:block th:unless="${workspaceAccount}"><span>Tài khoản của bạn</span><strong th:text="${accountName}"></strong></th:block>
+            </div>
+            <nav class="header-account-links header-customer-links" aria-label="Chức năng tài khoản"
+                 th:if="${!workspaceAccount}">
+                <th:block th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}">
+                    <div class="header-account-group">
+                        <p class="header-account-section-label">Tài khoản</p>
+                        <a th:href="@{/customer/profile}"><svg th:replace="~{fragments/account-menu :: icon('person')}"></svg><span>Thông tin tài khoản</span></a>
+                        <a th:href="@{/customer/addresses}"><svg th:replace="~{fragments/account-menu :: icon('location')}"></svg><span>Địa chỉ nhận hàng</span></a>
+                    </div>
+                    <div class="header-account-group">
+                        <p class="header-account-section-label">Mua sắm &amp; ưu đãi</p>
+                        <a th:href="@{/customer/orders}"><svg th:replace="~{fragments/account-menu :: icon('orders')}"></svg><span>Đơn hàng của tôi</span></a>
+                        <a th:href="@{/customer/payments}"><svg th:replace="~{fragments/account-menu :: icon('bank')}"></svg><span>Lịch sử thanh toán</span></a>
+                        <a th:href="@{/customer/loyalty}"><svg th:replace="~{fragments/account-menu :: icon('award')}"></svg><span>Tiền thưởng &amp; điểm tích lũy</span></a>
+                        <a th:href="@{/cart}"><svg th:replace="~{fragments/account-menu :: icon('cart')}"></svg><span>Giỏ hàng</span></a>
+                    </div>
+                </th:block>
+                <div class="header-account-group">
+                    <p class="header-account-section-label" th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}">Kết nối</p>
+                    <a th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" th:href="@{/customer/chat}"><svg th:replace="~{fragments/account-menu :: icon('chat')}"></svg><span>Tin nhắn với cửa hàng</span></a>
+                    <a th:href="@{/notifications}"><svg th:replace="~{fragments/account-menu :: icon('bell')}"></svg><span>Thông báo</span></a>
+                </div>
+            </nav>
+            <nav class="header-account-links header-workspace-links" aria-label="Thiết lập và thông báo"
+                 th:if="${workspaceAccount}">
+                <div class="header-account-group" th:if="${sellerAccount}">
+                    <p class="header-account-section-label">Thiết lập cửa hàng</p>
+                    <a th:href="@{/seller/profile}" th:classappend="${active == 'profile' ? 'active' : ''}" th:attr="aria-current=${active == 'profile' ? 'page' : null}"><svg th:replace="~{fragments/account-menu :: icon('shop')}"></svg><span>Hồ sơ cửa hàng</span></a>
+                    <a th:href="@{/seller/pickup-location}" th:classappend="${active == 'pickup' ? 'active' : ''}" th:attr="aria-current=${active == 'pickup' ? 'page' : null}"><svg th:replace="~{fragments/account-menu :: icon('location')}"></svg><span>Địa điểm lấy hàng</span></a>
+                    <a th:href="@{/seller/payout-account}" th:classappend="${active == 'payout' ? 'active' : ''}" th:attr="aria-current=${active == 'payout' ? 'page' : null}"><svg th:replace="~{fragments/account-menu :: icon('bank')}"></svg><span>Tài khoản nhận tiền</span></a>
+                    <a th:href="@{/seller/subscription}" th:classappend="${active == 'subscription' or active == 'subscription-payments' ? 'active' : ''}" th:attr="aria-current=${active == 'subscription' or active == 'subscription-payments' ? 'page' : null}"><svg th:replace="~{fragments/account-menu :: icon('award')}"></svg><span>Gói dịch vụ</span></a>
+                </div>
+                <div class="header-account-group">
+                    <p class="header-account-section-label" th:if="${sellerAccount}">Thông báo</p>
+                    <a th:href="@{/notifications}" th:classappend="${active == 'notifications' ? 'active' : ''}" th:attr="aria-current=${active == 'notifications' ? 'page' : null}"><svg th:replace="~{fragments/account-menu :: icon('bell')}"></svg><span>Thông báo của tôi</span></a>
+                    <a th:if="${sellerAccount}" th:href="@{/seller/announcements}" th:classappend="${active == 'announcements' ? 'active' : ''}" th:attr="aria-current=${active == 'announcements' ? 'page' : null}"><svg th:replace="~{fragments/account-menu :: icon('announcement')}"></svg><span>Thông báo hệ thống</span></a>
+                </div>
             </nav>
             <form class="header-account-logout" th:action="@{/logout}" method="post">
                 <button type="submit"><svg th:replace="~{fragments/account-menu :: icon('logout')}"></svg><span>Đăng xuất</span></button>
@@ -50,6 +86,10 @@
     <th:block th:case="'chat'"><path d="M3 3h18v14H8l-5 4Z"/></th:block>
     <th:block th:case="'cart'"><path d="M2 3h3l3 13h11l3-9H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></th:block>
     <th:block th:case="'bell'"><path d="M5 17h14l-2-3V9a5 5 0 0 0-10 0v5Zm5 3a2 2 0 0 0 4 0M12 2v2"/></th:block>
+    <th:block th:case="'shop'"><path d="m3 9 2-6h14l2 6M3 9c0 4 4 4 4 0 0 4 5 4 5 0 0 4 5 4 5 0 0 4 4 4 4 0M5 13v8h14v-8M10 21v-6h4v6"/></th:block>
+    <th:block th:case="'bank'"><path d="m3 8 9-6 9 6ZM5 11v7M10 11v7M14 11v7M19 11v7M3 21h18"/></th:block>
+    <th:block th:case="'award'"><circle cx="12" cy="8" r="6"/><path d="m8 13-2 9 6-3 6 3-2-9M10 8l1 1 3-3"/></th:block>
+    <th:block th:case="'announcement'"><path d="m3 10 12-5v14L3 14ZM6 15l2 6h3l-2-5M19 7l2-2M19 12h3M19 17l2 2"/></th:block>
     <th:block th:case="'logout'"><path d="M9 3H4v18h5m5-14 5 5-5 5m-5-5h10"/></th:block>
 </svg>
 </body>

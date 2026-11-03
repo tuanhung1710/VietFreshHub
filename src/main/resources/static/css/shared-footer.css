@@ -1,0 +1,26 @@
+body.vfo-app footer.vfh-footer {
+    display: block;
+    flex-shrink: 0;
+    margin: 0;
+    padding: 16px 24px;
+    border-top: 1px solid #e0e7d5;
+    background: #eef3e5;
+    color: #7e906f;
+    font: 13px/1.6 "Segoe UI", Arial, sans-serif;
+    text-align: center;
+}
+
+@media screen and (min-width: 992px) {
+    body.vfo-shell { --vfo-footer-offset: var(--vfo-sidebar-width); }
+    body.vfo-shell.vfo-sidebar-collapsed { --vfo-footer-offset: 56px; }
+    body.vfo-shell footer.vfh-footer { position: relative; z-index: 1021; }
+    body.vfo-shell :is(.vfo-workspace, .vfr-product-footer) footer.vfh-footer {
+        width: calc(100% + var(--vfo-footer-offset));
+        margin-left: calc(0px - var(--vfo-footer-offset));
+    }
+    body.vfo-shell .vfo-sidebar { bottom: var(--vfo-sidebar-bottom, 0px); }
+}
+
+@media print {
+    .vfh-footer { display: none !important; }
+}

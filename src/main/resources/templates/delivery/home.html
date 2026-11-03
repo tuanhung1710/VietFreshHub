@@ -5,25 +5,17 @@
 <th:block th:replace="~{fragments/delivery-layout :: navigation('home')}"></th:block>
 <div id="delivery-content" class="vfo-workspace" tabindex="-1">
     <main id="delivery-dashboard" class="vfo-main">
-        <nav th:replace="~{fragments/delivery-layout :: breadcrumb('Đơn giao hàng của tôi')}"></nav>
         <header class="vfo-page-heading">
             <div>
                 <h1>Đơn giao hàng của tôi</h1>
-                <p class="vfo-page-description">Theo dõi các đơn đang phụ trách và cập nhật tiến độ giao hàng.</p>
             </div>
-            <a class="btn vfo-btn-primary" th:href="@{/delivery/available}">
-                <svg class="vfo-icon" aria-hidden="true"><use href="#vfo-box"/></svg>Nhận đơn mới
-                <svg class="vfo-icon vfo-icon-sm" aria-hidden="true"><use href="#vfo-arrow"/></svg>
-            </a>
         </header>
-        <nav th:replace="~{fragments/delivery-layout :: tabs('home')}"></nav>
         <div class="vfd-capacity-banner">
             <span class="vfo-banner-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg></span>
             <div class="vfd-capacity-info">
                 <span class="vfo-meta-label">Sức chứa đang giữ</span>
                 <strong><span th:text="${activeAssignmentCount}"></span><span class="vfd-capacity-limit" th:text="| / ${maxActiveAssignments} đơn|"></span></strong>
             </div>
-            <span class="vfd-refresh-note"><span aria-hidden="true"></span>Danh sách tự cập nhật</span>
         </div>
         <p id="delivery-refresh-status" class="vfd-alert vfd-alert-warning" role="status" hidden></p>
         <section class="card vfo-list-card" aria-labelledby="assigned-heading">
