@@ -35,7 +35,7 @@ import java.time.ZoneOffset;
 public class SellerPayout {
 
     public enum Status { PENDING, PROCESSING, PAID, FAILED, CANCELLED }
-    public enum FundsSource { COD, ONLINE, UNCONFIRMED }
+    public enum FundsSource { COD, ONLINE, BANK_TRANSFER, VNPAY, MANUAL, UNCONFIRMED }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
