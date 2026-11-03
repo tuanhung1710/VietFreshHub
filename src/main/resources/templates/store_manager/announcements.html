@@ -1,19 +1,43 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title>Thông báo hệ thống</title></head>
-<body>
-<nav><a th:href="@{/seller}">Cửa hàng của tôi</a> · <a th:href="@{/notifications}">Tất cả thông báo</a></nav>
-<h1>Thông báo từ hệ thống và quản trị viên</h1>
-<p th:if="${announcementsPage.empty}">Chưa có thông báo.</p>
-<article th:each="notice : ${announcementsPage.content}">
-    <h2 th:text="${notice.title}"></h2><p th:text="${notice.content}"></p>
-    <time th:text="${#temporals.format(notice.createdAt,'dd/MM/yyyy HH:mm')}"></time>
-    <form th:if="${notice.readAt == null}" method="post" th:action="@{/notifications/{id}/read(id=${notice.notificationId})}"><button>Đánh dấu đã đọc</button></form>
-</article>
-<nav th:if="${announcementsPage.totalPages > 1}">
-    <a th:if="${announcementsPage.hasPrevious()}" th:href="@{/seller/announcements(page=${announcementsPage.number})}">Trang trước</a>
-    <span th:text="${announcementsPage.number + 1} + ' / ' + ${announcementsPage.totalPages}"></span>
-    <a th:if="${announcementsPage.hasNext()}" th:href="@{/seller/announcements(page=${announcementsPage.number + 2})}">Trang tiếp</a>
-</nav>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Thông báo hệ thống | VietFresh Hub</title>
+    <th:block th:replace="~{fragments/seller-orders :: assets}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/workspace-management.css}">
+</head>
+<body class="vfo-app vfn-app">
+<th:block th:replace="~{fragments/seller-orders :: navigation('announcements')}"></th:block>
+<div id="workspace-content" class="vfo-workspace" tabindex="-1">
+<main id="order-content" class="vfo-main vfn-main">
+    <nav aria-label="Đường dẫn trang"><ol class="breadcrumb vfo-breadcrumb"><li class="breadcrumb-item"><a th:href="@{/seller}">Kênh người bán</a></li><li class="breadcrumb-item active" aria-current="page">Thông báo hệ thống</li></ol></nav>
+    <header class="vfo-page-heading"><div><h1>Thông báo hệ thống</h1><p class="vfo-page-description">Thông báo từ hệ thống và quản trị viên.</p></div><a class="btn vfo-btn-secondary" th:href="@{/seller}"><span aria-hidden="true">←</span> Cửa hàng của tôi</a></header>
+    <nav class="nav nav-pills vfo-order-tabs" aria-label="Nhóm thông báo"><a class="nav-link" th:href="@{/notifications}">Tất cả thông báo</a><a class="nav-link active" aria-current="page" th:href="@{/seller/announcements}">Thông báo hệ thống</a></nav>
+    <section class="card vfo-list-card vfn-inbox-card" aria-labelledby="announcements-heading">
+        <div class="vfo-list-heading"><div><span class="vfo-section-marker" aria-hidden="true"></span><h2 id="announcements-heading">Thông báo từ hệ thống và quản trị viên</h2><span class="vfo-count" th:text="${announcementsPage.totalElements}"></span></div></div>
+        <div class="vfo-empty-state" th:if="${announcementsPage.empty}"><span class="vfo-empty-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-promotion"/></svg></span><h3>Chưa có cập nhật mới</h3><p>Chưa có thông báo.</p></div>
+        <ul class="vfn-notification-list">
+            <li th:each="notice : ${announcementsPage.content}">
+                <article class="vfn-notification" th:classappend="${notice.readAt == null ? 'vfn-unread' : ''}">
+                    <span class="vfn-notification-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-promotion"/></svg></span>
+                    <div class="vfn-notification-body">
+                        <header class="vfn-notification-heading"><h2 th:text="${notice.title}"></h2><span class="vfn-unread-label" th:if="${notice.readAt == null}">Chưa đọc</span></header>
+                        <p class="vfn-content" th:text="${notice.content}"></p>
+                        <div class="vfn-notification-meta"><time th:text="${#temporals.format(notice.createdAt,'dd/MM/yyyy HH:mm')}"></time></div>
+                        <div class="vfn-notification-actions"><form th:if="${notice.readAt == null}" method="post" th:action="@{/notifications/{id}/read(id=${notice.notificationId})}"><button class="btn vfn-read-button" type="submit">Đánh dấu đã đọc</button></form></div>
+                    </div>
+                </article>
+            </li>
+        </ul>
+        <nav class="vfn-pagination" th:if="${announcementsPage.totalPages > 1}" aria-label="Phân trang thông báo hệ thống">
+            <a class="btn vfo-btn-secondary" th:if="${announcementsPage.hasPrevious()}" th:href="@{/seller/announcements(page=${announcementsPage.number})}"><span aria-hidden="true">←</span> Trang trước</a>
+            <span th:text="${announcementsPage.number + 1} + ' / ' + ${announcementsPage.totalPages}"></span>
+            <a class="btn vfo-btn-secondary" th:if="${announcementsPage.hasNext()}" th:href="@{/seller/announcements(page=${announcementsPage.number + 2})}">Trang tiếp <span aria-hidden="true">→</span></a>
+        </nav>
+    </section>
+</main>
+<footer th:replace="~{fragments/seller-orders :: footer}"></footer>
+</div>
 </body>
 </html>

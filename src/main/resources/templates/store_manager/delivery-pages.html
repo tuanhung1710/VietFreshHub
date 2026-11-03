@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="list" class="vfo-workspace">
+    <main id="order-content" class="vfo-main monitoring-page">
+        <nav aria-label="Đường dẫn trang"><ol class="breadcrumb vfo-breadcrumb"><li class="breadcrumb-item"><a th:href="@{/seller}">Kênh người bán</a></li><li class="breadcrumb-item"><a th:href="@{/seller/orders}">Đơn hàng</a></li><li class="breadcrumb-item active" aria-current="page">Giám sát giao hàng</li></ol></nav>
+        <header class="vfo-page-heading"><div><p class="vfo-eyebrow">Từ cửa hàng đến tay khách</p><h1>Giám sát giao hàng</h1><p class="vfo-page-description">Theo dõi trạng thái giao hàng, nhân viên phụ trách và hoàn hàng.</p></div><a class="btn vfo-btn-secondary" th:href="@{${homePath}}"><span aria-hidden="true">←</span> Trang chủ</a></header>
+        <section class="card filters-card" aria-label="Bộ lọc giao hàng">
+            <form class="monitoring-filters" method="get" th:action="@{${basePath}}">
+                <input type="hidden" name="size" th:value="${deliveriesPage.size}">
+                <div class="filter-field"><label for="seller-order-code">Tìm kiếm</label><input class="form-control" id="seller-order-code" type="search" name="orderCode" th:value="${orderCode}" placeholder="Mã đơn hàng, Nhân viên giao hàng"></div>
+                <div class="filter-field"><label for="seller-delivery-status">Trạng thái giao hàng</label><select class="form-select" id="seller-delivery-status" name="status"><option value="" th:selected="${selectedStatus == null}">Tất cả trạng thái</option><option th:each="option : ${statusOptions}" th:value="${option.key}" th:selected="${selectedStatus == option.key}" th:text="${option.value}"></option></select></div>
+                <div class="filter-field"><label for="seller-sort-by">Sắp xếp theo</label><select class="form-select" id="seller-sort-by" name="sortBy"><option value="placedAt" th:selected="${sortBy == 'placedAt'}">Thời gian đặt hàng</option><option value="deliveredAt" th:selected="${sortBy == 'deliveredAt'}">Thời gian giao thành công</option></select></div>
+                <div class="filter-field"><label for="seller-sort-direction">Thứ tự</label><select class="form-select" id="seller-sort-direction" name="direction"><option value="desc" th:selected="${direction == 'desc'}">Mới nhất trước</option><option value="asc" th:selected="${direction == 'asc'}">Cũ nhất trước</option></select></div>
+                <div class="filter-actions"><a class="btn vfo-btn-secondary" th:href="@{${basePath}}">Xóa bộ lọc</a><button class="btn vfo-btn-primary" type="submit"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-search"/></svg>Tìm kiếm / Lọc</button></div>
+            </form>
+        </section>
+        <section class="card vfo-list-card" aria-labelledby="seller-delivery-list-heading">
+            <div class="vfo-list-heading"><div><span class="vfo-section-marker" aria-hidden="true"></span><h2 id="seller-delivery-list-heading">Danh sách giao hàng</h2><span class="vfo-count" th:text="${deliveriesPage.totalElements}"></span></div><span class="vfo-list-caption">Giao hàng của cửa hàng bạn quản lý</span></div>
+            <div th:if="${deliveriesPage.empty}" class="vfo-empty-state"><span class="vfo-empty-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg></span><h3>Chưa có đơn giao hàng phù hợp</h3><p>Không có đơn giao hàng trong phạm vi hoặc bộ lọc hiện tại.</p></div>
+            <div class="table-responsive" th:unless="${deliveriesPage.empty}">
+                <table class="table table-hover align-middle mb-0 delivery-table" aria-label="Danh sách giao hàng">
+                    <thead><tr><th class="row-number" scope="col">STT</th><th scope="col">Mã đơn hàng</th><th scope="col">Thời gian đặt hàng</th><th scope="col">Trạng thái giao hàng</th><th scope="col">Nhân viên giao hàng</th><th scope="col">Thời gian giao thành công</th><th scope="col">Trạng thái hoàn hàng</th><th scope="col">Chi tiết</th></tr></thead>
+                    <tbody><tr th:each="delivery, rowStat : ${deliveriesPage.content}">
+                        <td class="row-number" th:text="${deliveriesPage.pageable.offset + rowStat.count}"></td>
+                        <td class="order-code" th:text="${delivery.orderCode}"></td>
+                        <td class="date-cell"><th:block th:if="${delivery.placedAt != null}"><span th:text="${#temporals.format(delivery.placedAt, 'dd-MM-yyyy')}"></span><br><span class="delivery-time" th:text="${#temporals.format(delivery.placedAt, 'HH:mm')}"></span></th:block></td>
+                        <td class="delivery-status"><span class="vfo-status" th:text="${delivery.deliveryStatusLabel}"></span></td>
+                        <td class="staff-name" th:text="${delivery.deliveryStaffName}"></td>
+                        <td class="date-cell"><th:block th:if="${delivery.deliveredAt != null}"><span th:text="${#temporals.format(delivery.deliveredAt, 'dd-MM-yyyy')}"></span><br><span class="delivery-time" th:text="${#temporals.format(delivery.deliveredAt, 'HH:mm')}"></span></th:block></td>
+                        <td th:text="${delivery.returnStatusLabel}"></td>
+                        <td><a class="detail-link" th:href="@{${basePath + '/' + delivery.deliveryId}}">Xem chi tiết <span aria-hidden="true">→</span></a></td>
+                    </tr></tbody>
+                </table>
+            </div>
+            <div th:replace="~{fragments/pagination :: panel(${deliveriesPage},
+                @{${basePath}(page=${deliveriesPage.number - 1},size=${deliveriesPage.size},status=${selectedStatus},orderCode=${orderCode},shopId=${selectedShopId},sortBy=${sortBy},direction=${direction})},
+                @{${basePath}(page=${deliveriesPage.number + 1},size=${deliveriesPage.size},status=${selectedStatus},orderCode=${orderCode},shopId=${selectedShopId},sortBy=${sortBy},direction=${direction})},
+                @{${basePath} }, ${ {'status': selectedStatus, 'orderCode': orderCode, 'shopId': selectedShopId, 'sortBy': sortBy, 'direction': direction} },
+                'Phân trang giao hàng', 'đơn hàng', 'Đơn hàng mỗi trang')}"></div>
+        </section>
+    </main>
+    <footer th:replace="~{fragments/seller-orders :: footer}"></footer>
+</div>
+
+<div th:fragment="detail" class="vfo-workspace">
+    <main id="order-content" class="vfo-main vfo-delivery-detail" th:with="delivery=${deliveryDetail.summary}">
+        <nav aria-label="Đường dẫn trang"><ol class="breadcrumb vfo-breadcrumb"><li class="breadcrumb-item"><a th:href="@{/seller}">Kênh người bán</a></li><li class="breadcrumb-item"><a th:href="@{${basePath}}">Giám sát giao hàng</a></li><li class="breadcrumb-item active" aria-current="page">Chi tiết giao hàng</li></ol></nav>
+        <header class="vfo-page-heading"><div><p class="vfo-eyebrow">Đồng hành trên từng chặng đường</p><h1>Chi tiết giao hàng</h1><p class="vfo-page-description">Thông tin đơn hàng và lịch sử cập nhật trạng thái giao hàng.</p></div><a class="btn vfo-btn-secondary" th:href="@{${basePath}}"><span aria-hidden="true">←</span> Giám sát giao hàng</a></header>
+        <p class="vfo-notice" th:if="${successMessage != null}" th:text="${successMessage}" role="status"></p>
+        <p class="vfo-notice vfo-notice-warning" th:if="${deliveryDetail.legacyRedelivery}">Hồ sơ giao lại cũ chỉ được xem và cần đối soát thủ công. Chức năng giao lại đã ngừng.</p>
+        <div class="vfo-status-banner"><span class="vfo-banner-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg></span><div><span class="vfo-meta-label">Trạng thái giao hàng</span><strong class="vfo-status" th:text="${delivery.deliveryStatusLabel}"></strong></div><svg class="vfo-icon vfo-banner-leaf" aria-hidden="true"><use href="#vfo-leaf"/></svg></div>
+        <section class="card vfo-information-card" aria-labelledby="seller-delivery-heading">
+            <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-order"/></svg></span><h2 id="seller-delivery-heading">Thông tin đơn hàng</h2></div>
+            <div class="vfo-delivery-facts"><dl class="vfo-facts"><div><dt>Mã đơn hàng</dt><dd class="vfo-order-code" th:text="${delivery.orderCode}"></dd></div><div><dt>Cửa hàng</dt><dd th:text="${delivery.shopName == null ? 'Cửa hàng' : delivery.shopName}"></dd></div></dl>
+                <form class="vfo-return-action" method="post" th:if="${basePath == '/seller/deliveries' and delivery.returnPending}" th:action="@{/seller/deliveries/{deliveryId}/confirm-return(deliveryId=${delivery.deliveryId})}"><p>Xác nhận hoàn hàng:</p><button class="btn vfo-btn-primary" type="submit"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-check"/></svg>Xác nhận đã nhận lại hàng</button></form>
+            </div>
+        </section>
+        <section class="card vfo-list-card" aria-labelledby="seller-history-heading">
+            <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-history"/></svg></span><h2 id="seller-history-heading">Lịch sử trạng thái giao hàng</h2></div>
+            <div th:if="${#lists.isEmpty(deliveryDetail.history)}" class="vfo-empty-state"><span class="vfo-empty-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-history"/></svg></span><p>Chưa có lịch sử trạng thái giao hàng được ghi nhận.</p></div>
+            <div class="table-responsive" th:unless="${#lists.isEmpty(deliveryDetail.history)}"><table class="table align-middle mb-0 vfo-delivery-history"><thead><tr><th scope="col">Trạng thái</th><th scope="col">Thời gian</th><th scope="col">Người thực hiện</th><th scope="col">Ghi chú</th></tr></thead><tbody><tr th:each="event : ${deliveryDetail.history}"><td th:text="${event.statusLabel}"></td><td th:text="${event.createdAt == null ? '—' : #temporals.format(event.createdAt, 'dd-MM-yyyy HH:mm')}"></td><td th:text="${event.performerName}"></td><td th:text="${event.note}"></td></tr></tbody></table></div>
+        </section>
+    </main>
+    <footer th:replace="~{fragments/seller-orders :: footer}"></footer>
+</div>
+</body>
+</html>

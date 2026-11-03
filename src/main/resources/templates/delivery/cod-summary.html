@@ -1,43 +1,59 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tổng hợp COD trong ngày | VIETFRESH HUB</title>
-    <style>
-        body {
-            max-width: 1000px;
-            margin: 24px auto;
-            padding: 0 16px;
-            font-family: Arial, sans-serif;
-            line-height: 1.5;
-        }
-    </style>
-</head>
-<body>
-<header>
-    <span th:replace="~{fragments/notifications :: bell}"></span>
-    <p>VIETFRESH HUB</p>
-    <p><a th:href="@{/delivery}">Trang chủ</a></p>
-</header>
-<main>
-    <h1>Tổng hợp COD trong ngày</h1>
-    <form method="get" th:action="@{/delivery/cod-summary}">
-        <label for="cod-date">Ngày</label>
-        <input id="cod-date" type="date" name="date" th:value="${codSummary.date}"
-               min="0001-01-01" max="9999-12-31" required>
-        <button type="submit">Xem</button>
-    </form>
-    <dl>
-        <dt>Tổng tiền COD ghi nhận (chưa đối soát)</dt>
-        <dd><strong th:text="${#numbers.formatDecimal(codSummary.amount, 1, 'POINT', codSummary.amount.stripTrailingZeros().scale() > 0 ? 2 : 0, 'COMMA')} + ' VNĐ'"></strong></dd>
-        <dt>Số đơn COD giao thành công</dt>
-        <dd><strong th:text="|${codSummary.deliveryCount} đơn|"></strong></dd>
-    </dl>
-    <p th:if="${codSummary.amount.signum() == 0}"
-       th:text="${isToday ? 'Hôm nay chưa có đơn hàng COD nào được giao thành công.' : 'Ngày đã chọn chưa có đơn hàng COD nào được giao thành công.'}"></p>
-    <p th:if="${codSummary.unresolvedCount > 0}"
-       th:text="|Có ${codSummary.unresolvedCount} hồ sơ COD chưa đủ dữ liệu xác định người hoàn tất hoặc phương thức thanh toán; chưa cộng vào tổng.|"></p>
-</main>
+<head th:replace="~{fragments/delivery-layout :: head('Tổng hợp COD trong ngày')}"></head>
+<body class="vfo-app vfd-app">
+<th:block th:replace="~{fragments/delivery-layout :: navigation('cod')}"></th:block>
+<div id="delivery-content" class="vfo-workspace" tabindex="-1">
+    <main class="vfo-main vfd-cod-page">
+        <nav th:replace="~{fragments/delivery-layout :: breadcrumb('Tổng hợp COD')}"></nav>
+        <header class="vfo-page-heading">
+            <div>
+                <h1>Tổng hợp COD trong ngày</h1>
+                <p class="vfo-page-description">Tra cứu số tiền COD và số đơn giao thành công theo ngày.</p>
+            </div>
+            <a class="btn vfo-btn-secondary" th:href="@{/delivery}"><span aria-hidden="true">←</span> Trang chủ giao hàng</a>
+        </header>
+        <nav th:replace="~{fragments/delivery-layout :: tabs('cod')}"></nav>
+        <section class="card vfd-cod-filter" aria-labelledby="cod-date-heading">
+            <div class="vfd-cod-date-heading">
+                <span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-history"/></svg></span>
+                <div><h2 id="cod-date-heading">Ngày ghi nhận</h2><p th:text="${#temporals.format(codSummary.date, 'dd-MM-yyyy')}"></p></div>
+            </div>
+            <form method="get" th:action="@{/delivery/cod-summary}">
+                <label for="cod-date">Ngày</label>
+                <input class="form-control" id="cod-date" type="date" name="date" th:value="${codSummary.date}"
+                       min="0001-01-01" max="9999-12-31" required>
+                <button class="btn vfo-btn-primary" type="submit">Xem</button>
+            </form>
+        </section>
+        <div class="vfd-cod-grid">
+            <section class="vfd-cod-total" aria-labelledby="cod-amount-heading">
+                <div class="vfd-cod-card-top">
+                    <span class="vfd-cod-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-bank"/></svg></span>
+                    <span class="vfd-cod-note">Chưa đối soát</span>
+                </div>
+                <dl>
+                    <dt id="cod-amount-heading">Tổng tiền COD ghi nhận (chưa đối soát)</dt>
+                    <dd><strong th:text="${#numbers.formatDecimal(codSummary.amount, 1, 'POINT', codSummary.amount.stripTrailingZeros().scale() > 0 ? 2 : 0, 'COMMA')} + ' VNĐ'"></strong></dd>
+                </dl>
+                <svg class="vfo-icon vfd-cod-leaf" aria-hidden="true"><use href="#vfo-leaf"/></svg>
+            </section>
+            <section class="card vfd-cod-count" aria-labelledby="cod-count-heading">
+                <span class="vfd-cod-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-check"/></svg></span>
+                <dl>
+                    <dt id="cod-count-heading">Số đơn COD giao thành công</dt>
+                    <dd><strong th:text="|${codSummary.deliveryCount} đơn|"></strong></dd>
+                </dl>
+            </section>
+        </div>
+        <div class="card vfd-cod-empty" th:if="${codSummary.amount.signum() == 0}">
+            <span class="vfo-empty-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-bank"/></svg></span>
+            <p th:text="${isToday ? 'Hôm nay chưa có đơn hàng COD nào được giao thành công.' : 'Ngày đã chọn chưa có đơn hàng COD nào được giao thành công.'}"></p>
+        </div>
+        <p class="vfd-alert vfd-alert-warning" th:if="${codSummary.unresolvedCount > 0}"
+           th:text="|Có ${codSummary.unresolvedCount} hồ sơ COD chưa đủ dữ liệu xác định người hoàn tất hoặc phương thức thanh toán; chưa cộng vào tổng.|"></p>
+    </main>
+    <footer th:replace="~{fragments/delivery-layout :: footer}"></footer>
+</div>
 </body>
 </html>

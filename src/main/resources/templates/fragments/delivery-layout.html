@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title + ' | VietFresh Hub'}">VietFresh Hub</title>
+    <th:block th:replace="~{fragments/seller-orders :: assets}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/delivery-staff.css}">
+</head>
+<body>
+<th:block th:fragment="navigation(active)">
+    <a class="vfo-skip-link" href="#delivery-content">Đến nội dung chính</a>
+    <svg th:replace="~{fragments/seller-orders :: icons}"></svg>
+    <header class="vfo-topbar navbar">
+        <div class="vfo-brand-group">
+            <button class="btn vfo-menu-toggle d-lg-none" type="button"
+                    data-bs-toggle="offcanvas" data-bs-target="#vfoSidebar"
+                    aria-controls="vfoSidebar" aria-label="Mở thanh điều hướng">
+                <svg class="vfo-icon" aria-hidden="true"><use href="#vfo-menu"/></svg>
+            </button>
+            <a class="vfo-brand" th:href="@{/delivery}" aria-label="VietFresh Hub — Kênh giao hàng">
+                <span class="vfo-brand-mark"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-leaf"/></svg></span>
+                <span>
+                    <span class="vfo-brand-name"><strong>VietFresh</strong> Hub</span>
+                    <span class="vfo-brand-tagline">Fresh from the heart</span>
+                </span>
+            </a>
+            <span class="vfo-portal-label d-none d-xl-inline">Kênh giao hàng</span>
+        </div>
+        <div class="vfo-topbar-actions">
+            <span th:replace="~{fragments/notifications :: bell}"></span>
+            <span class="vfo-topbar-divider d-none d-sm-block"></span>
+            <th:block th:replace="~{fragments/account-menu :: menu}"></th:block>
+        </div>
+    </header>
+    <aside class="offcanvas-lg offcanvas-start vfo-sidebar" tabindex="-1"
+           id="vfoSidebar" aria-labelledby="vfdSidebarTitle">
+        <div class="offcanvas-header d-lg-none">
+            <h2 class="offcanvas-title" id="vfdSidebarTitle">Kênh giao hàng</h2>
+            <button class="btn-close" type="button" data-bs-dismiss="offcanvas"
+                    data-bs-target="#vfoSidebar" aria-label="Đóng menu"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div class="vfo-store-card vfd-staff-card">
+                <span class="vfo-store-mark"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg></span>
+                <span>
+                    <strong>Nhân viên giao hàng</strong>
+                    <small th:text="${headerAccountName != null ? headerAccountName : #authentication.name}"></small>
+                </span>
+            </div>
+            <p class="vfd-nav-label">Không gian làm việc</p>
+            <nav class="nav flex-column vfo-side-nav" aria-label="Điều hướng giao hàng">
+                <a class="nav-link" th:classappend="${active == 'home' ? 'active' : ''}"
+                   th:attr="aria-current=${active == 'home' ? 'page' : null}" th:href="@{/delivery}">
+                    <svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg>Đơn giao hàng của tôi
+                </a>
+                <a class="nav-link" th:classappend="${active == 'available' ? 'active' : ''}"
+                   th:attr="aria-current=${active == 'available' ? 'page' : null}" th:href="@{/delivery/available}">
+                    <svg class="vfo-icon" aria-hidden="true"><use href="#vfo-box"/></svg>Nhận đơn mới
+                </a>
+                <a class="nav-link" th:classappend="${active == 'history' ? 'active' : ''}"
+                   th:attr="aria-current=${active == 'history' ? 'page' : null}" th:href="@{/delivery/history}">
+                    <svg class="vfo-icon" aria-hidden="true"><use href="#vfo-history"/></svg>Lịch sử giao hàng
+                </a>
+                <a class="nav-link" th:classappend="${active == 'cod' ? 'active' : ''}"
+                   th:attr="aria-current=${active == 'cod' ? 'page' : null}" th:href="@{/delivery/cod-summary}">
+                    <svg class="vfo-icon" aria-hidden="true"><use href="#vfo-bank"/></svg>Tổng hợp COD
+                </a>
+                <a class="nav-link" th:classappend="${active == 'notifications' ? 'active' : ''}"
+                   th:attr="aria-current=${active == 'notifications' ? 'page' : null}" th:href="@{/notifications}">
+                    <svg class="vfo-icon" aria-hidden="true"><use href="#vfo-bell"/></svg>Thông báo
+                </a>
+            </nav>
+            <div class="vfd-sidebar-note">
+                <svg class="vfo-icon" aria-hidden="true"><use href="#vfo-leaf"/></svg>
+                <strong>Gửi trao sự tươi lành</strong>
+                <p>Chu đáo từ lúc nhận hàng<br>đến khi trao tận tay.</p>
+            </div>
+            <div class="vfo-sidebar-bottom">
+                <a th:href="@{/delivery/history}"><span aria-hidden="true">↗</span> Xem hành trình giao hàng</a>
+                <form th:action="@{/logout}" method="post" class="vfd-sidebar-logout">
+                    <button class="btn vfo-btn-secondary w-100" type="submit">Đăng xuất</button>
+                </form>
+            </div>
+        </div>
+    </aside>
+</th:block>
+
+<nav th:fragment="breadcrumb(label)" aria-label="Đường dẫn trang">
+    <ol class="breadcrumb vfo-breadcrumb">
+        <li class="breadcrumb-item"><a th:href="@{/delivery}">Kênh giao hàng</a></li>
+        <li class="breadcrumb-item active" aria-current="page" th:text="${label}"></li>
+    </ol>
+</nav>
+
+<nav th:fragment="tabs(active)" class="nav nav-pills vfo-order-tabs vfd-page-tabs" aria-label="Các trang giao hàng">
+    <a class="nav-link" th:classappend="${active == 'home' ? 'active' : ''}"
+       th:attr="aria-current=${active == 'home' ? 'page' : null}" th:href="@{/delivery}">Đơn của tôi</a>
+    <a class="nav-link" th:classappend="${active == 'available' ? 'active' : ''}"
+       th:attr="aria-current=${active == 'available' ? 'page' : null}" th:href="@{/delivery/available}">Nhận đơn mới</a>
+    <a class="nav-link" th:classappend="${active == 'history' ? 'active' : ''}"
+       th:attr="aria-current=${active == 'history' ? 'page' : null}" th:href="@{/delivery/history}">Lịch sử giao hàng</a>
+    <a class="nav-link" th:classappend="${active == 'cod' ? 'active' : ''}"
+       th:attr="aria-current=${active == 'cod' ? 'page' : null}" th:href="@{/delivery/cod-summary}">Tổng hợp COD</a>
+</nav>
+
+<footer th:fragment="footer" class="vfo-footer">
+    <div>
+        <a th:href="@{/delivery}" class="vfo-footer-brand"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-leaf"/></svg>VietFresh Hub</a>
+        <span>© VietFresh Hub · Kênh giao hàng</span>
+    </div>
+    <p>Giao đúng hẹn. Trọn niềm tin.</p>
+    <a th:href="@{/delivery/history}">Lịch sử giao hàng <span aria-hidden="true">↗</span></a>
+</footer>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="list" id="workspace-content" class="vfo-workspace" tabindex="-1">
+<main class="vfo-main">
+    <nav th:replace="~{fragments/admin-workspace :: breadcrumb('Giám sát giao hàng')}"></nav>
+    <header class="vfo-page-heading">
+        <div><h1>Giám sát giao hàng</h1><p class="vfo-page-description">Theo dõi giao hàng toàn hệ thống, nhân viên phụ trách và trạng thái hoàn hàng.</p></div>
+        <a class="btn vfo-btn-secondary" th:href="@{${homePath}}"><span aria-hidden="true">←</span> Quay lại trang quản lý</a>
+    </header>
+    <section class="card vfa-filter-card" aria-labelledby="admin-delivery-filter-heading">
+        <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-filter"/></svg></span><h2 id="admin-delivery-filter-heading">Tìm kiếm &amp; bộ lọc</h2></div>
+        <form class="vfa-monitor-filters" method="get" th:action="@{${basePath}}">
+            <input type="hidden" name="size" th:value="${deliveriesPage.size}">
+            <div class="vfa-filter-field vfa-filter-search">
+                <label for="order-code">Tìm kiếm</label>
+                <input class="form-control" id="order-code" type="search" name="orderCode" th:value="${orderCode}" placeholder="Mã đơn hàng, Nhân viên giao hàng">
+            </div>
+            <div class="vfa-filter-field">
+                <label for="shop-id">Cửa hàng</label>
+                <select class="form-select" id="shop-id" name="shopId"><option value="" th:selected="${selectedShopId == null}">Tất cả cửa hàng</option><option th:each="shop : ${shops}" th:value="${shop.shopId}" th:selected="${selectedShopId == shop.shopId}" th:text="${shop.shopName}"></option></select>
+            </div>
+            <div class="vfa-filter-field">
+                <label for="delivery-status">Trạng thái giao hàng</label>
+                <select class="form-select" id="delivery-status" name="status"><option value="" th:selected="${selectedStatus == null}">Tất cả trạng thái</option><option th:each="option : ${statusOptions}" th:value="${option.key}" th:selected="${selectedStatus == option.key}" th:text="${option.value}"></option></select>
+            </div>
+            <div class="vfa-filter-field">
+                <label for="sort-by">Sắp xếp theo</label>
+                <select class="form-select" id="sort-by" name="sortBy"><option value="placedAt" th:selected="${sortBy == 'placedAt'}">Thời gian đặt hàng</option><option value="deliveredAt" th:selected="${sortBy == 'deliveredAt'}">Thời gian giao thành công</option></select>
+            </div>
+            <div class="vfa-filter-field">
+                <label for="sort-direction">Thứ tự</label>
+                <select class="form-select" id="sort-direction" name="direction"><option value="desc" th:selected="${direction == 'desc'}">Mới nhất trước</option><option value="asc" th:selected="${direction == 'asc'}">Cũ nhất trước</option></select>
+            </div>
+            <div class="vfa-filter-actions"><a class="btn vfo-btn-secondary" th:href="@{${basePath}}">Xóa bộ lọc</a><button class="btn vfo-btn-primary" type="submit"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-search"/></svg>Tìm kiếm / Lọc</button></div>
+        </form>
+    </section>
+    <section class="card vfo-list-card" aria-labelledby="admin-delivery-list-heading">
+        <div class="vfo-list-heading"><div><span class="vfo-section-marker" aria-hidden="true"></span><h2 id="admin-delivery-list-heading">Danh sách giao hàng</h2><span class="vfo-count" th:text="${deliveriesPage.totalElements}"></span></div><span class="vfo-list-caption" th:text="${scopeLabel}"></span></div>
+        <div class="vfo-empty-state" th:if="${deliveriesPage.empty}"><span class="vfo-empty-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg></span><h3>Chưa có đơn giao hàng phù hợp</h3><p>Không có đơn giao hàng trong phạm vi hoặc bộ lọc hiện tại.</p></div>
+        <div class="table-responsive" th:unless="${deliveriesPage.empty}">
+            <table class="table table-hover align-middle mb-0 vfa-delivery-table" aria-label="Danh sách giao hàng">
+                <thead><tr><th scope="col" class="vfa-row-number">STT</th><th scope="col">Mã đơn hàng</th><th scope="col">Cửa hàng</th><th scope="col">Thời gian đặt hàng</th><th scope="col">Trạng thái giao hàng</th><th scope="col">Nhân viên giao hàng</th><th scope="col">Thời gian giao hàng thành công</th><th scope="col">Trả hàng về cửa hàng</th><th scope="col">Chi tiết</th></tr></thead>
+                <tbody><tr th:each="delivery, rowStat : ${deliveriesPage.content}">
+                    <td class="vfa-row-number" th:text="${deliveriesPage.pageable.offset + rowStat.count}"></td>
+                    <td class="vfo-order-code" th:text="${delivery.orderCode}"></td>
+                    <td class="vfo-customer-name" th:text="${delivery.shopName == null ? 'Cửa hàng' : delivery.shopName}"></td>
+                    <td class="vfo-date-cell"><th:block th:if="${delivery.placedAt != null}"><span th:text="${#temporals.format(delivery.placedAt, 'dd-MM-yyyy')}"></span><br><span class="vfa-time" th:text="${#temporals.format(delivery.placedAt, 'HH:mm')}"></span></th:block></td>
+                    <td><span class="vfo-status vfa-delivery-state" th:attr="data-label=${delivery.deliveryStatusLabel}" th:text="${delivery.deliveryStatusLabel}"></span></td>
+                    <td th:text="${delivery.deliveryStaffName}"></td>
+                    <td class="vfo-date-cell"><th:block th:if="${delivery.deliveredAt != null}"><span th:text="${#temporals.format(delivery.deliveredAt, 'dd-MM-yyyy')}"></span><br><span class="vfa-time" th:text="${#temporals.format(delivery.deliveredAt, 'HH:mm')}"></span></th:block></td>
+                    <td class="vfa-return-state" th:text="${delivery.returnStatusLabel}"></td>
+                    <td><a class="btn vfo-detail-link" th:href="@{${basePath + '/' + delivery.deliveryId}}">Xem chi tiết <span aria-hidden="true">→</span></a></td>
+                </tr></tbody>
+            </table>
+        </div>
+        <div th:replace="~{fragments/pagination :: panel(${deliveriesPage},
+            @{${basePath}(page=${deliveriesPage.number - 1},size=${deliveriesPage.size},status=${selectedStatus},orderCode=${orderCode},shopId=${selectedShopId},sortBy=${sortBy},direction=${direction})},
+            @{${basePath}(page=${deliveriesPage.number + 1},size=${deliveriesPage.size},status=${selectedStatus},orderCode=${orderCode},shopId=${selectedShopId},sortBy=${sortBy},direction=${direction})},
+            @{${basePath} }, ${ {'status': selectedStatus, 'orderCode': orderCode, 'shopId': selectedShopId, 'sortBy': sortBy, 'direction': direction} },
+            'Phân trang giao hàng', 'đơn hàng', 'Đơn hàng mỗi trang')}"></div>
+    </section>
+</main>
+<footer th:replace="~{fragments/admin-workspace :: footer}"></footer>
+</div>
+
+<div th:fragment="detail" id="workspace-content" class="vfo-workspace" tabindex="-1">
+<main class="vfo-main" th:with="delivery=${deliveryDetail.summary}">
+    <nav aria-label="Đường dẫn trang"><ol class="breadcrumb vfo-breadcrumb"><li class="breadcrumb-item"><a th:href="@{/admin/dashboard}">Trung tâm quản trị</a></li><li class="breadcrumb-item"><a th:href="@{${basePath}}">Giám sát giao hàng</a></li><li class="breadcrumb-item active" aria-current="page">Chi tiết giao hàng</li></ol></nav>
+    <header class="vfo-page-heading"><div><h1>Chi tiết giám sát giao hàng</h1><p class="vfo-page-description">Thông tin cửa hàng, người nhận và lịch sử xử lý đơn hàng.</p></div><a class="btn vfo-btn-secondary" th:href="@{${basePath}}"><span aria-hidden="true">←</span> Giám sát giao hàng</a></header>
+    <p class="vfm-notice" th:if="${successMessage != null}" th:text="${successMessage}" role="status"></p>
+    <p class="vfm-notice vfm-notice-warning" th:if="${deliveryDetail.legacyRedelivery}">Hồ sơ giao lại cũ chỉ được xem và cần đối soát thủ công. Chức năng giao lại đã ngừng.</p>
+    <div class="vfa-order-banner"><span class="vfo-banner-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg></span><div><span class="vfo-meta-label">Mã đơn</span><strong class="vfo-order-code" th:text="${delivery.orderCode}"></strong></div><span class="vfo-status vfa-delivery-state" th:attr="data-label=${delivery.deliveryStatusLabel}" th:text="${delivery.deliveryStatusLabel}"></span></div>
+    <div class="vfa-contact-grid">
+        <section class="card vfa-contact-card" aria-labelledby="shop-heading">
+            <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-shop"/></svg></span><h2 id="shop-heading">Thông tin cửa hàng</h2></div>
+            <dl class="vfa-facts"><dt>Tên cửa hàng</dt><dd th:text="${delivery.shopName ?: '—'}"></dd><dt>Số điện thoại liên hệ</dt><dd th:text="${adminDetail.shopPhone ?: '—'}"></dd><dt>Địa chỉ</dt><dd th:text="${adminDetail.shopAddress ?: '—'}"></dd></dl>
+        </section>
+        <section class="card vfa-contact-card" aria-labelledby="recipient-heading">
+            <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-pin"/></svg></span><h2 id="recipient-heading">Thông tin nhận hàng</h2></div>
+            <dl class="vfa-facts"><dt>Người nhận</dt><dd th:text="${adminDetail.recipientName ?: '—'}"></dd><dt>Số điện thoại liên hệ</dt><dd th:text="${adminDetail.recipientPhone ?: '—'}"></dd><dt>Địa chỉ</dt><dd th:text="${adminDetail.recipientAddress ?: '—'}"></dd></dl>
+        </section>
+    </div>
+    <section class="card vfo-list-card vfa-history-card" aria-labelledby="order-history-heading">
+        <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-order"/></svg></span><h2 id="order-history-heading">Lịch sử xử lý đơn hàng</h2></div>
+        <p class="vfa-history-empty" th:if="${#lists.isEmpty(adminDetail.orderHistory)}">Chưa có lịch sử xử lý đơn hàng được ghi nhận.</p>
+        <div class="table-responsive" th:unless="${#lists.isEmpty(adminDetail.orderHistory)}"><table class="table align-middle mb-0 vfa-history-table"><thead><tr><th scope="col">Trạng thái</th><th scope="col">Thời gian</th><th scope="col">Ghi chú</th></tr></thead><tbody><tr th:each="event : ${adminDetail.orderHistory}"><td th:text="${event.statusLabel}"></td><td class="vfo-date-cell" th:text="${event.createdAt == null ? '—' : #temporals.format(event.createdAt, 'dd-MM-yyyy HH:mm')}"></td><td th:text="${event.note}"></td></tr></tbody></table></div>
+    </section>
+    <section class="card vfo-list-card vfa-history-card" aria-labelledby="history-heading">
+        <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-history"/></svg></span><h2 id="history-heading">Lịch sử trạng thái giao hàng</h2></div>
+        <p class="vfa-history-empty" th:if="${#lists.isEmpty(deliveryDetail.history)}">Chưa có lịch sử trạng thái giao hàng được ghi nhận.</p>
+        <div class="table-responsive" th:unless="${#lists.isEmpty(deliveryDetail.history)}"><table class="table align-middle mb-0 vfa-history-table"><thead><tr><th scope="col">Trạng thái</th><th scope="col">Thời gian</th><th scope="col">Người thực hiện</th><th scope="col">Ghi chú</th></tr></thead><tbody><tr th:each="event : ${deliveryDetail.history}"><td th:text="${event.statusLabel}"></td><td class="vfo-date-cell" th:text="${event.createdAt == null ? '—' : #temporals.format(event.createdAt, 'dd-MM-yyyy HH:mm')}"></td><td th:text="${event.performerName}"></td><td th:text="${event.note}"></td></tr></tbody></table></div>
+    </section>
+</main>
+<footer th:replace="~{fragments/admin-workspace :: footer}"></footer>
+</div>
+</body>
+</html>
