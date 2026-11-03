@@ -2,7 +2,7 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/customer-service :: head('Theo dõi đơn hàng')}"></head>
 <body class="vfo-app vfc-app">
-<th:block th:replace="~{fragments/customer-service :: header}"></th:block>
+<th:block th:replace="~{fragments/customer-service :: [th:fragment='header']}"></th:block>
 <main th:replace="~{fragments/customer-service :: tracking(true)}"></main>
 <footer th:replace="~{fragments/customer-service :: footer}"></footer>
 </body>
