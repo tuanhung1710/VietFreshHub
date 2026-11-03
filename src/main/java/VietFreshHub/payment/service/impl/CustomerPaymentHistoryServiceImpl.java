@@ -1,5 +1,6 @@
 package VietFreshHub.payment.service.impl;
 
+import VietFreshHub.order.service.OrderLabels;
 import VietFreshHub.payment.dto.PaymentHistoryFilter;
 import VietFreshHub.payment.dto.PaymentHistoryRow;
 import VietFreshHub.payment.entity.Payment;
@@ -31,25 +32,36 @@ public class CustomerPaymentHistoryServiceImpl implements CustomerPaymentHistory
         if (filter.getStatus() != null) {
             statusText = filter.getStatus().trim();
         }
-        Payment.Status status = parseStatus(statusText);
+        String status = parseStatus(statusText);
         filter.setStatus(statusText);
         filter.setKeyword(filter.getKeyword().trim());
 
         LocalDateTime from = startDate(filter.getFromDate());
         LocalDateTime until = endDateExclusive(filter.getToDate());
-        Sort sort = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("paymentId"));
-        PageRequest requestedPage = PageRequest.of(filter.getPage() - 1, 10, sort);
+        Sort sort = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("paymentId"), Sort.Order.desc("s.shopOrderId"));
+        PageRequest requestedPage = PageRequest.of(filter.getPage() - 1, filter.getSize(), sort);
         Page<PaymentHistoryRow> result = payments.findHistory(
                 customerId, status, filter.getKeyword(), from, until, requestedPage);
 
         if (result.getTotalElements() == 0) {
-            return Page.empty(PageRequest.of(0, 10, sort));
+            return Page.empty(PageRequest.of(0, filter.getSize(), sort));
         }
         if (result.getNumber() >= result.getTotalPages()) {
-            PageRequest lastPage = PageRequest.of(result.getTotalPages() - 1, 10, sort);
-            return payments.findHistory(customerId, status, filter.getKeyword(), from, until, lastPage);
+            PageRequest lastPage = PageRequest.of(result.getTotalPages() - 1, filter.getSize(), sort);
+            result = payments.findHistory(customerId, status, filter.getKeyword(), from, until, lastPage);
         }
-        return result;
+        return attachOrderReferences(customerId, result);
+    }
+
+    private Page<PaymentHistoryRow> attachOrderReferences(Long customerId, Page<PaymentHistoryRow> page) {
+        var orderIds = page.getContent().stream().map(PaymentHistoryRow::orderId).distinct().toList();
+        if (orderIds.isEmpty() || page.getContent().stream().allMatch(row -> row.shopOrderId() != null)) return page;
+        var references = payments.findOrderReferences(customerId, orderIds).stream().collect(
+                java.util.stream.Collectors.groupingBy(CustomerPaymentReadRepository.OrderReference::getOrderId,
+                        java.util.stream.Collectors.mapping(reference -> new PaymentHistoryRow.OrderReference(
+                                reference.getOrderId(), reference.getShopOrderId()), java.util.stream.Collectors.toList())));
+        if (references.isEmpty()) return page;
+        return page.map(row -> row.withOrders(references.getOrDefault(row.orderId(), java.util.List.of())));
     }
 
     private void validateFilter(Long customerId, PaymentHistoryFilter filter) {
@@ -60,12 +72,15 @@ public class CustomerPaymentHistoryServiceImpl implements CustomerPaymentHistory
         }
     }
 
-    private Payment.Status parseStatus(String statusText) {
+    private String parseStatus(String statusText) {
         try {
             if (statusText.isEmpty()) {
                 return null;
             }
-            return Payment.Status.valueOf(statusText);
+            if (!VietFreshHub.payment.dto.PaymentHistoryDisplay.options().containsKey(statusText)) {
+                throw new IllegalArgumentException();
+            }
+            return statusText;
         } catch (IllegalArgumentException exception) {
             throw new IllegalArgumentException("Trạng thái thanh toán không hợp lệ.");
         }

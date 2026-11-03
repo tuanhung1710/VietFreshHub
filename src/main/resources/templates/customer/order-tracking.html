@@ -3,10 +3,10 @@
 <header th:replace="~{fragments/storefront :: header}"></header><main class="container page tracking-page">
     <p><a th:href="@{/customer/orders(keyword=${tracking.orderCode})}">← Đơn hàng của tôi</a></p>
     <div class="page-heading"><h1 class="checkout-title">Theo dõi đơn hàng</h1><p class="order-code">
-        Mã đơn hàng: <span th:text="${tracking.orderCode}"></span>
+        Mã lượt mua: <span th:text="${tracking.orderCode}"></span>
     </p></div>
     <div class="tracking-shops"><section th:each="shop : ${tracking.shops}" class="panel tracking-shop">
-        <div class="order-shop-heading"><h2 th:text="${shop.shopName}"></h2></div>
+        <div class="order-shop-heading"><h2 th:text="${shop.shopName}"></h2><a class="order-code" th:href="@{/customer/orders/{id}(id=${shop.shopOrderId})}" th:text="${shop.orderCode()}"></a></div>
         <p><strong class="order-state" th:attr="data-status=${shop.deliveryStatusCode}" th:text="${shop.deliveryStatus}"></strong></p>
         <div th:if="${shop.deliveryStatusCode == 'FAILED'}" class="notice error" role="status">
             <strong>Lý do giao hàng thất bại:</strong>

@@ -1,13 +1,34 @@
 <!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/order-pages :: head('Đơn hàng của tôi')}"></head><body>
-<header th:replace="~{fragments/storefront :: header}"></header><main class="container page order-history-page">
-    <div class="page-heading"><p class="eyebrow">Mua sắm của bạn</p><h1 class="checkout-title">Đơn hàng của tôi</h1><p class="muted">Xem lịch sử, theo dõi tiến trình và mua lại sản phẩm.</p></div>
-    <div th:replace="~{fragments/storefront :: messages}"></div>
-    <p><a th:href="@{/customer/order-receipts}">Xem lịch sử theo toàn bộ lượt mua</a></p>
+<head th:replace="~{fragments/order-pages :: head('Đơn hàng của tôi')}"></head>
+<body class="purchase-page"><header class="purchase-header">
+<div class="purchase-header-inner">
+<a class="purchase-brand" th:href="@{/home}"><span aria-hidden="true">❧</span> VIETFRESH HUB</a>
+<nav class="purchase-header-nav" aria-label="Điều hướng chính"><a th:href="@{/home}">Trang chủ</a><a th:href="@{/shops}">Cửa hàng</a></nav>
+<form class="purchase-header-search" th:action="@{/home}" method="get" role="search"><input type="search" name="keyword" maxlength="100" placeholder="Tìm kiếm trái cây, cửa hàng…" aria-label="Tìm kiếm sản phẩm"><button type="submit" aria-label="Tìm kiếm">Tìm kiếm</button></form>
+<div class="purchase-header-actions"><a th:href="@{/notifications}" aria-label="Thông báo"><svg th:replace="~{fragments/account-menu :: icon('bell')}"></svg><span class="purchase-header-action-label">Thông báo</span></a><a th:href="@{/cart}" aria-label="Giỏ hàng"><svg th:replace="~{fragments/account-menu :: icon('cart')}"></svg><span class="purchase-cart-count" th:text="${cartBadgeTotal != null ? cartBadgeTotal : 0}"></span></a><a class="purchase-header-account" th:href="@{/customer/profile}"><svg th:replace="~{fragments/account-menu :: icon('person')}"></svg><span th:text="${headerAccountName != null ? headerAccountName : #authentication.name}"></span></a></div>
+</div></header>
+<main class="container page purchase-layout">
+<aside class="purchase-sidebar">
+<div class="purchase-profile"><span class="purchase-avatar"><svg th:replace="~{fragments/account-menu :: icon('person')}"></svg></span><div><strong th:text="${headerAccountName != null ? headerAccountName : #authentication.name}"></strong><span class="purchase-role">Khách hàng</span></div></div>
+<nav aria-label="Tài khoản của tôi"><a th:href="@{/customer/profile}" ><svg th:replace="~{fragments/account-menu :: icon('person')}"></svg>Thông tin tài khoản</a>
+<a th:href="@{/customer/orders}" class="active" aria-current="page"><svg th:replace="~{fragments/account-menu :: icon('orders')}"></svg>Đơn hàng của tôi</a>
+<a th:href="@{/customer/payments}" ><svg th:replace="~{fragments/account-menu :: icon('orders')}"></svg>Lịch sử thanh toán</a>
+<a th:href="@{/customer/addresses}" ><svg th:replace="~{fragments/account-menu :: icon('location')}"></svg>Địa chỉ nhận hàng</a>
+<a th:href="@{/cart}" ><svg th:replace="~{fragments/account-menu :: icon('cart')}"></svg>Giỏ hàng</a><form th:action="@{/logout}" method="post"><button type="submit"><svg th:replace="~{fragments/account-menu :: icon('logout')}"></svg>Đăng xuất</button></form></nav><div class="purchase-landscape" aria-hidden="true"><span>♧</span></div>
+</aside>
+<div class="purchase-content order-history-page">
+<nav class="purchase-breadcrumb" aria-label="Đường dẫn"><a th:href="@{/home}">Trang chủ</a><span aria-hidden="true">›</span><span>Đơn hàng của tôi</span></nav>
+<div class="purchase-heading"><h1><svg th:replace="~{fragments/account-menu :: icon('cart')}"></svg>Đơn hàng của tôi</h1><p>Xem lịch sử mua hàng, theo dõi trạng thái và mua lại sản phẩm.</p></div>
+<div th:replace="~{fragments/storefront :: messages}"></div>
+<nav class="purchase-tabs" aria-label="Lọc trạng thái đơn hàng">
+<a th:classappend="${#strings.isEmpty(filter.status)} ? 'active'" th:href="@{/customer/orders(size=${filter.size},keyword=${filter.keyword},fromDate=${filter.fromDate},toDate=${filter.toDate})}">Tất cả</a>
+<a th:each="state : ${statusOptions}" th:classappend="${filter.status == state.key} ? 'active'" th:attr="aria-current=${filter.status == state.key ? 'page' : null}" th:href="@{/customer/orders(status=${state.key},size=${filter.size},keyword=${filter.keyword},fromDate=${filter.fromDate},toDate=${filter.toDate})}" th:text="${state.value}"></a>
+</nav>
     <p th:if="${filterError != null}" class="notice error" role="alert" th:text="${filterError}"></p>
     <p th:if="${pageNotice != null}" class="notice info" role="status" th:text="${pageNotice}"></p>
-    <form class="panel order-filters" th:action="@{/customer/orders}" th:object="${filter}" method="get">
-        <div><label for="order-keyword">Mã đơn hàng</label><input id="order-keyword" type="search" th:field="*{keyword}" maxlength="100" placeholder="Nhập mã đơn"></div>
+    <form class="purchase-filters" th:action="@{/customer/orders}" th:object="${filter}" method="get">
+        <input type="hidden" name="size" th:value="${filter.size}">
+        <div><label for="order-keyword">Mã đơn hàng</label><input id="order-keyword" type="search" th:field="*{keyword}" maxlength="100" placeholder="Tìm theo mã đơn hàng…"></div>
         <div><label for="order-status">Trạng thái</label><select id="order-status" th:field="*{status}"><option value="">Tất cả trạng thái</option><option th:if="${#fields.hasErrors('status')}" th:value="*{status}">Trạng thái không hợp lệ</option><option th:each="state : ${statusOptions}" th:value="${state.key}" th:text="${state.value}"></option></select></div>
         <div><label for="order-from">Từ ngày</label><input id="order-from" type="date" min="0001-01-01" max="9999-12-31" th:field="*{fromDate}"></div>
         <div><label for="order-to">Đến ngày</label><input id="order-to" type="date" min="0001-01-01" max="9999-12-31" th:field="*{toDate}"></div>
@@ -16,20 +37,30 @@
         </ul>
         <button class="button" type="submit">Lọc đơn</button><a class="filter-reset" th:href="@{/customer/orders}">Xóa bộ lọc</a>
     </form>
-    <p th:unless="${invalidFilter}" class="muted" th:text="${orderPage.totalElements} + ' đơn hàng'"></p>
+
+<div class="purchase-results"><span th:unless="${invalidFilter}" th:text="${orderPage.totalElements} + ' đơn hàng'"></span><a th:href="@{/customer/order-receipts}">Lịch sử toàn bộ lượt mua <span aria-hidden="true">↗</span></a></div>
     <section th:if="${!invalidFilter and orderPage.empty}" class="panel empty"><h2 th:text="${filter.hasFilters()} ? 'Chưa có đơn hàng phù hợp' : 'Bạn chưa có đơn hàng nào'"></h2><p class="muted" th:text="${filter.hasFilters()} ? 'Bạn có thể thay đổi hoặc xóa bộ lọc để tìm lại đơn hàng.' : 'Đơn hàng của bạn sẽ xuất hiện tại đây sau khi đặt hàng.'"></p><a class="button secondary" th:href="@{/home}">Khám phá sản phẩm</a></section>
-    <section class="order-list" aria-label="Danh sách đơn hàng"><article th:each="order : ${orderPage.content}" class="panel history-order">
-        <div class="history-order-top"><div><span class="muted" th:text="${#temporals.format(order.placedAtLocal(),'HH:mm dd/MM/yyyy')}"></span><h2 class="order-code" th:text="${order.orderCode()}"></h2><p class="history-payment muted" th:text="'Trạng thái thanh toán: ' + ${order.paymentStatusLabel()}"></p></div>
-            <div>
-                <p><strong th:text="${order.shopName}"></strong>: <span class="order-state" th:attr="data-status=${order.status}" th:text="${order.statusLabel()}"></span></p>
-            </div>
-        </div>
-        <div class="history-order-bottom"><div><span class="muted">Giá trị đơn</span><strong class="price" th:text="${#numbers.formatDecimal(order.totalAmount,1,'POINT',order.totalAmount.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></strong></div>
-            <div class="history-actions"><a class="button secondary" th:href="@{/customer/orders/{id}/tracking(id=${order.shopOrderId})}">Theo dõi</a><a class="button" th:href="@{/customer/orders/{id}(id=${order.shopOrderId})}">Xem chi tiết</a></div></div>
-    </article></section>
-    <nav th:if="${orderPage.totalPages > 1}" class="pagination" aria-label="Phân trang đơn hàng">
-        <a th:if="${orderPage.hasPrevious()}" class="button secondary" th:href="@{/customer/orders(page=${orderPage.number},keyword=${filter.keyword},status=${filter.status},fromDate=${filter.fromDate != null ? #temporals.format(filter.fromDate,'yyyy-MM-dd') : null},toDate=${filter.toDate != null ? #temporals.format(filter.toDate,'yyyy-MM-dd') : null})}">← Trang trước</a>
-        <span th:text="'Trang ' + ${orderPage.number+1} + ' / ' + ${orderPage.totalPages}"></span>
-        <a th:if="${orderPage.hasNext()}" class="button secondary" th:href="@{/customer/orders(page=${orderPage.number+2},keyword=${filter.keyword},status=${filter.status},fromDate=${filter.fromDate != null ? #temporals.format(filter.fromDate,'yyyy-MM-dd') : null},toDate=${filter.toDate != null ? #temporals.format(filter.toDate,'yyyy-MM-dd') : null})}">Trang tiếp →</a>
-    </nav>
-</main><footer th:replace="~{fragments/storefront :: footer}"></footer></body></html>
+
+<section class="purchase-list" aria-label="Danh sách đơn hàng">
+<article class="purchase-card" th:each="order : ${orderPage.content}">
+<div class="purchase-card-top"><div class="purchase-order-id"><svg th:replace="~{fragments/account-menu :: icon('orders')}"></svg><div><h2 th:text="${order.orderCode()}"></h2><p th:text="'Đặt lúc: ' + ${#temporals.format(order.placedAtLocal(),'HH:mm - dd/MM/yyyy')}"></p></div></div><span class="order-state" th:attr="data-status=${order.status}" th:text="${order.statusLabel()}"></span><a class="purchase-detail" th:href="@{/customer/orders/{id}(id=${order.shopOrderId})}">Xem chi tiết <span aria-hidden="true">→</span></a></div>
+<div class="purchase-card-body"><div class="purchase-products"><img th:each="product : ${order.products}" th:src="${product.imageUrl != null and !#strings.isEmpty(product.imageUrl) ? product.imageUrl : '/images/product/product-placeholder.svg'}" th:alt="${product.productName}" loading="lazy"><span class="purchase-more" th:if="${order.productCount > 3}" th:text="'+' + ${order.productCount - 3}"></span><span class="purchase-no-image" th:if="${#lists.isEmpty(order.products)}"><svg th:replace="~{fragments/account-menu :: icon('orders')}"></svg></span></div><div class="purchase-shop"><strong th:if="${order.productCount > 0}" th:text="${order.productCount} + ' sản phẩm từ 1 cửa hàng'"></strong><span th:text="${order.shopName}"></span><small th:text="${order.paymentStatusLabel()}"></small></div><div class="purchase-total"><span>Tổng tiền:</span><strong th:text="${#numbers.formatDecimal(order.totalAmount,1,'POINT',order.totalAmount.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></strong></div></div>
+<div class="purchase-cancelled" th:if="${order.status == 'CANCELLED'}">Đơn hàng đã hủy. Xem trạng thái thanh toán và hoàn tiền (nếu có) tại <a th:href="@{/customer/payments(keyword=${order.orderCode()})}">Lịch sử thanh toán</a>.</div>
+<div class="purchase-card-actions"><a th:href="@{/customer/orders/{id}/tracking(id=${order.shopOrderId})}">Theo dõi đơn hàng <span aria-hidden="true">→</span></a></div>
+</article></section>
+    <div class="customer-pagination-panel" th:unless="${invalidFilter}">
+        <nav th:replace="~{fragments/customer-pagination :: pagination(${orderPage}, @{/customer/orders(size=${filter.size},page=${orderPage.number},keyword=${filter.keyword},status=${filter.status},fromDate=${filter.fromDate != null ? #temporals.format(filter.fromDate,'yyyy-MM-dd') : null},toDate=${filter.toDate != null ? #temporals.format(filter.toDate,'yyyy-MM-dd') : null})}, @{/customer/orders(size=${filter.size},page=${orderPage.number+2},keyword=${filter.keyword},status=${filter.status},fromDate=${filter.fromDate != null ? #temporals.format(filter.fromDate,'yyyy-MM-dd') : null},toDate=${filter.toDate != null ? #temporals.format(filter.toDate,'yyyy-MM-dd') : null})}, 'Phân trang đơn hàng', 'đơn hàng')}"></nav>
+        <form class="customer-page-size" method="get" th:action="@{/customer/orders}">
+            <input type="hidden" name="keyword" th:value="${filter.keyword}">
+            <input type="hidden" name="status" th:value="${filter.status}">
+            <input type="hidden" name="fromDate" th:value="${filter.fromDate != null ? #temporals.format(filter.fromDate,'yyyy-MM-dd') : null}">
+            <input type="hidden" name="toDate" th:value="${filter.toDate != null ? #temporals.format(filter.toDate,'yyyy-MM-dd') : null}">
+            <label for="historyPageSize">Đơn hàng mỗi trang</label>
+            <select name="size" id="historyPageSize">
+                <option th:each="size : ${T(VietFreshHub.common.PageSizes).OPTIONS}" th:value="${size}" th:selected="${filter.size == size}" th:text="${size}"></option>
+            </select>
+            <button type="submit">Áp dụng</button>
+        </form>
+    </div>
+
+</div></main><footer th:replace="~{fragments/storefront :: footer}"></footer></body></html>

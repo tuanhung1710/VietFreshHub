@@ -74,6 +74,8 @@ public class CheckoutController {
                        @RequestParam(defaultValue = "false") boolean selectionSubmitted,
                        @RequestParam(required = false) String checkoutToken,
                        @RequestParam(required = false) Long addressId,
+                       @RequestParam(required = false) Long buyNowVariantId,
+                       @RequestParam(required = false) Integer buyNowQuantity,
                        @RequestParam(required = false) String couponCode,
                        @RequestParam(defaultValue = "0") BigDecimal rewardAmountToUse) {
         Long customerId = currentCustomer.requireCustomerId(authentication);
@@ -87,6 +89,9 @@ public class CheckoutController {
         CheckoutPreview preview;
         if (draft != null) {
             preview = previewDraft(customerId, draft);
+            form.setCheckoutToken(draft.token());
+        } else if (buyNowVariantId != null) {
+            preview = checkout.previewBuyNow(customerId, buyNowVariantId, buyNowQuantity);
         } else if (itemIds == null && !selectionSubmitted) {
             preview = checkout.preview(customerId);
         } else {
@@ -101,7 +106,7 @@ public class CheckoutController {
             selectedAddressId = draft.addressId();
         }
         preview = shippingQuotes.quote(customerId, preview, selectedAddressId);
-        populate(customerId, form, preview, session, model);
+        populate(customerId, form, preview, session, model, draft == null && buyNowVariantId != null);
         return "customer/checkout";
     }
 
@@ -170,7 +175,7 @@ public class CheckoutController {
                 return "customer/checkout-unavailable";
             }
         }
-        CheckoutPreview preview = checkout.preview(customerId, draft.selectedItemIds());
+        CheckoutPreview preview = draft.buyNow() ? checkout.previewBuyNow(customerId, draft.buyNowVariantId(), draft.buyNowQuantity()) : checkout.preview(customerId, draft.selectedItemIds());
         Long selectedAddressId = form.getAddressId();
         if (selectedAddressId == null) {
             selectedAddressId = draft.addressId();
@@ -278,7 +283,7 @@ public class CheckoutController {
     }
 
     private CheckoutPreview previewDraft(Long customerId, CheckoutDraft draft) {
-        CheckoutPreview preview = checkout.preview(customerId, draft.selectedItemIds());
+        CheckoutPreview preview = draft.buyNow() ? checkout.previewBuyNow(customerId, draft.buyNowVariantId(), draft.buyNowQuantity()) : checkout.preview(customerId, draft.selectedItemIds());
         if (!Objects.equals(preview.cart().getCartId(), draft.cartId()) || !Objects.equals(preview.fingerprint(), draft.fingerprint())) {
             throw new CheckoutException("Giỏ hàng đã thay đổi. Vui lòng chọn lại sản phẩm.");
         }
@@ -313,7 +318,13 @@ public class CheckoutController {
     }
 
     private void populate(Long customerId, CheckoutRequest form, CheckoutPreview preview, HttpSession session, Model model) {
-        CheckoutDraft draft = drafts.issue(session, customerId, preview);
+        populate(customerId,form,preview,session,model,false);
+    }
+
+    private void populate(Long customerId, CheckoutRequest form, CheckoutPreview preview, HttpSession session, Model model, boolean fresh) {
+        CheckoutDraft draft = "BUY_NOW".equals(preview.cart().getStatus())
+                ? drafts.issueBuyNow(session, customerId, preview, fresh ? null : form.getCheckoutToken())
+                : drafts.issue(session, customerId, preview);
         form.setCheckoutToken(draft.token());
         if (!preview.codAvailable() && preview.vnpayAvailable()) form.setPaymentMethodCode("BANK_TRANSFER");
         form.setAddressId(preview.addressId());
@@ -335,15 +346,18 @@ public class CheckoutController {
         model.addAttribute("redemption", null);
         model.addAttribute("loyaltyError", null);
         model.addAttribute("loyaltyBalance", loyaltyService.getBalance(customerId));
-        model.addAttribute("availableCoupons", couponApplicationService.getAvailableCoupons(
-                customerId, draft.selectedItemIds()));
+        model.addAttribute("availableCoupons", draft.buyNow()
+                ? couponApplicationService.getAvailableBuyNowCoupons(customerId, draft.buyNowVariantId(), draft.buyNowQuantity())
+                : couponApplicationService.getAvailableCoupons(customerId, draft.selectedItemIds()));
 
         boolean couponValid = true;
         String couponCode = form.getCouponCode();
 
         if (couponCode != null && !couponCode.isBlank()) {
             try {
-                var application = couponApplicationService.preview(
+                var application = draft.buyNow()
+                        ? couponApplicationService.previewBuyNow(customerId, couponCode, draft.buyNowVariantId(), draft.buyNowQuantity())
+                        : couponApplicationService.preview(
                         customerId,
                         couponCode,
                         draft.selectedItemIds()
@@ -402,7 +416,7 @@ public class CheckoutController {
         }
 
         form.setRewardAmountToUse(rewardAmountInput);
-        var preview = checkout.preview(customerId, draft.selectedItemIds());
+        var preview = previewDraft(customerId, draft);
         preview = shippingQuotes.quote(customerId, preview, form.getAddressId() == null ? draft.addressId() : form.getAddressId());
         populate(customerId, form, preview, session, model);
         return "customer/checkout";
@@ -433,10 +447,7 @@ public class CheckoutController {
 
         form.setCouponCode(couponInput.strip());
 
-        var preview = checkout.preview(
-                customerId,
-                draft.selectedItemIds()
-        );
+        var preview = previewDraft(customerId, draft);
 
         preview = shippingQuotes.quote(customerId, preview, form.getAddressId() == null ? draft.addressId() : form.getAddressId());
         populate(customerId, form, preview, session, model);

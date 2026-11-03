@@ -1604,6 +1604,9 @@ IF OBJECT_ID('dbo.orders','U') IS NULL OR OBJECT_ID('dbo.shop_orders','U') IS NU
 
 IF COL_LENGTH(N'dbo.products', N'origin') IS NULL
     EXEC(N'ALTER TABLE dbo.products ADD origin NVARCHAR(200) NULL;');
+
+IF COL_LENGTH(N'dbo.categories', N'image_url') IS NULL
+    EXEC(N'ALTER TABLE dbo.categories ADD image_url NVARCHAR(1000) NULL;');
 IF OBJECT_ID(N'dbo.CK_products_origin_not_blank', N'C') IS NULL
     EXEC(N'ALTER TABLE dbo.products WITH CHECK ADD CONSTRAINT CK_products_origin_not_blank
            CHECK (origin IS NULL OR LEN(LTRIM(RTRIM(origin))) > 0);');

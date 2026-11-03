@@ -77,7 +77,9 @@ public class CustomerOrderController {
         for (ObjectError error : errors.getAllErrors()) {
             String message = error.getDefaultMessage();
             if (error instanceof FieldError field && field.isBindingFailure()) {
-                if ("page".equals(field.getField())) {
+                if ("size".equals(field.getField())) {
+                    message = "Số bản ghi mỗi trang phải là số nguyên hợp lệ.";
+                } else if ("page".equals(field.getField())) {
                     message = "Trang phải là số nguyên hợp lệ.";
                 } else {
                     message = "Ngày lọc phải có định dạng yyyy-MM-dd.";

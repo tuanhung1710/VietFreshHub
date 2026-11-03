@@ -245,3 +245,6 @@
     .order-detail-page .detail-payment-data,.order-detail-page .detail-delivery-dates { grid-template-columns:1fr; }
     .order-detail-page .detail-section-heading { align-items:flex-start;flex-direction:column; }
 }
+
+/* Payment History display state; does not style other payment screens. */
+.payment-history-page [data-payment-status="REFUND_PROCESSING"] { background:#fff3d6;color:#825600; }

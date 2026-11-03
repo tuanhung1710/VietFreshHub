@@ -4,7 +4,10 @@ import VietFreshHub.order.service.OrderLabels;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 public record ShopOrderListRow(Long shopOrderId,Long orderId,String shopName,String status,
-                           String paymentStatus,BigDecimal totalAmount,LocalDateTime placedAt,String paymentStatusLabel) {
+                           String paymentStatus,BigDecimal totalAmount,LocalDateTime placedAt,String paymentStatusLabel, java.util.List<OrderHistorySummary.Product> products, int productCount) {
+    public ShopOrderListRow(Long shopOrderId, Long orderId, String shopName, String status, String paymentStatus, BigDecimal totalAmount, LocalDateTime placedAt, String paymentStatusLabel) {
+        this(shopOrderId, orderId, shopName, status, paymentStatus, totalAmount, placedAt, paymentStatusLabel, java.util.List.of(), 0);
+    }
     public ShopOrderListRow(Long shopOrderId,Long orderId,String shopName,String status,
                         String paymentStatus,BigDecimal totalAmount,LocalDateTime placedAt) {
         this(shopOrderId,orderId,shopName,status,paymentStatus,totalAmount,placedAt,OrderLabels.payment(paymentStatus));
