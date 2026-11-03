@@ -77,6 +77,7 @@ class CheckoutUiRenderTest {
             var form=new CheckoutRequest();form.setAddressId(1L);form.setCheckoutToken("0123456789abcdef0123456789abcdef");
             var preview=new CheckoutPreview(cart,List.of(new CheckoutPreview.AddressOption(1L,"Trần Quốc Bảo","0987253641","18 Trần Hưng Đạo",true,true)),1L,java.util.Map.of(),null,null,true,true,"fingerprint",null,true);
             model.addAttribute("availableCoupons", List.of());
+            model.addAttribute("couponApplications", List.of());model.addAttribute("couponErrors", java.util.Map.of());
             model.addAttribute("loyaltyBalance", new VietFreshHub.loyalty.dto.LoyaltyBalanceResponse(1L,7L,BigDecimal.ZERO,BigDecimal.ZERO,BigDecimal.ZERO,null));
             model.addAttribute("couponDiscount",BigDecimal.ZERO);model.addAttribute("loyaltyDiscount",BigDecimal.ZERO);
             model.addAttribute("cart",cart);model.addAttribute("checkout",preview);model.addAttribute("form",form);model.addAttribute("shopGroups",java.util.Map.of(1L,cart.getItems()));return "customer/checkout";
@@ -96,11 +97,11 @@ class CheckoutUiRenderTest {
             model.addAttribute("checkout", new CheckoutPreview(cart, addresses, 1L, quotes, new BigDecimal("35000"), new BigDecimal("198000"), true, true, "fingerprint", null, false));
             model.addAttribute("shopGroups", java.util.Map.of(1L,List.of(first),2L,List.of(second)));
             var form = (CheckoutRequest) model.getAttribute("form");
-            form.setCouponCode("VUON10");
+            form.setCouponCodes(List.of("VUON10"));
             form.setRewardAmountToUse(new BigDecimal("3000"));
             var coupon = new VietFreshHub.coupon.dto.CouponApplicationResponse(1L,"VUON10",1L,1L,new BigDecimal("59000"),new BigDecimal("10000"),new BigDecimal("49000"));
             model.addAttribute("availableCoupons",List.of(coupon));
-            model.addAttribute("couponApplication",coupon);
+            model.addAttribute("couponApplications",List.of(coupon));model.addAttribute("couponErrors",java.util.Map.of());
             model.addAttribute("couponDiscount",new BigDecimal("10000"));
             model.addAttribute("loyaltyBalance",new VietFreshHub.loyalty.dto.LoyaltyBalanceResponse(1L,7L,new BigDecimal("8330"),new BigDecimal("8330"),BigDecimal.ZERO,null));
             model.addAttribute("redemption",new VietFreshHub.loyalty.dto.LoyaltyRedemptionResponse(new BigDecimal("3000"),new BigDecimal("3000"),new BigDecimal("5330")));
@@ -128,10 +129,10 @@ class CheckoutUiRenderTest {
         var response = mvc.perform(get("/preview/ready")).andReturn().getResponse();
         assertEquals(200, response.getStatus());
         String html = response.getContentAsString();
-        for (String value : List.of("Mã giảm giá của shop", "Không sử dụng mã giảm giá", "VUON10", "Nông sản Vĩnh Long", "185.000", "8.330", "Tiền thưởng đã sử dụng", "name=\"couponInput\"", "name=\"rewardAmountInput\"", "/customer/checkout/coupon/preview", "/customer/checkout/reward/preview", "/customer/checkout/address/1/edit", "/customer/checkout/address/new", "/customer/addresses")) {
+        for (String value : List.of("Mã giảm giá của shop", "Không sử dụng mã giảm giá", "VUON10", "Nông sản Vĩnh Long", "185.000", "8.330", "Tiền thưởng đã sử dụng", "name=\"couponCodes\"", "name=\"rewardAmountInput\"", "/customer/checkout/coupon/preview", "/customer/checkout/reward/preview", "/customer/checkout/address/1/edit", "/customer/checkout/address/new", "/customer/addresses")) {
             assertTrue(html.contains(value), value);
         }
-        assertTrue(html.contains("<select id=\"coupon-input\""));
+        assertTrue(html.contains("<select id=\"coupon-1\""));
         assertFalse(html.contains("Không dùng coupon"));
         var confirm = html.substring(html.lastIndexOf("<button"), html.indexOf("</button>", html.lastIndexOf("<button")));
         assertFalse(confirm.contains("disabled="));
