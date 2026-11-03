@@ -43,6 +43,31 @@ public class CouponApplicationServiceImpl
     private final EntityManager em;
 
     @Override
+    public List<CouponApplicationResponse> getAvailableBuyNowCoupons(Long customerId, Long variantId, Integer quantity) {
+        requireId(customerId);
+        return availableForItems(customerId, buyNowItems(variantId, quantity));
+    }
+
+    @Override
+    public CouponApplicationResponse previewBuyNow(Long customerId, String code, Long variantId, Integer quantity) {
+        requireId(customerId);
+        var coupon = couponRepository.findByCodeIgnoreCase(normalizeCode(code))
+                .orElseThrow(() -> invalid("Mã coupon không tồn tại"));
+        return previewCoupon(customerId, coupon, buyNowItems(variantId, quantity), new HashMap<>());
+    }
+
+    private List<CartItem> buyNowItems(Long variantId, Integer quantity) {
+        requireId(variantId);
+        if (quantity == null || quantity < 1) throw invalid("Số lượng mua ngay không hợp lệ");
+        var variant = em.find(VietFreshHub.catalog.entity.CatalogVariant.class, variantId);
+        if (variant == null) throw invalid("Sản phẩm không còn tồn tại");
+        var item = new CartItem();
+        item.setVariant(variant);
+        item.setQuantity(quantity);
+        return List.of(item);
+    }
+
+    @Override
     public CouponApplicationResponse preview(
             Long customerId,
             String code,
@@ -62,6 +87,10 @@ public class CouponApplicationServiceImpl
         requireId(customerId);
         if (cartItemIds != null && cartItemIds.isEmpty()) return List.of();
         List<CartItem> items = selectedItems(customerId, cartItemIds);
+        return availableForItems(customerId, items);
+    }
+
+    private List<CouponApplicationResponse> availableForItems(Long customerId, List<CartItem> items) {
         List<Long> shopIds = items.stream()
                 .map(item -> item.getVariant().getProduct().getShop().getShopId())
                 .distinct().toList();

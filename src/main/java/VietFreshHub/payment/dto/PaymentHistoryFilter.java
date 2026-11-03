@@ -8,11 +8,13 @@ import java.time.LocalDate;
 
 @Getter @Setter
 public class PaymentHistoryFilter {
+    private int size = VietFreshHub.common.PageSizes.DEFAULT;
+    public void setSize(int size) { this.size = VietFreshHub.common.PageSizes.normalize(size); }
     @Min(1) @Max(10000)
     private int page = 1;
     @NotNull @Size(max=100, message="Mã đơn tối đa 100 ký tự.")
     private String keyword = "";
-    @Pattern(regexp="|PENDING|PROCESSING|PAID|FAILED|CANCELLED|REFUNDED|PARTIALLY_REFUNDED", message="Trạng thái thanh toán không hợp lệ.")
+    @Pattern(regexp="|PENDING|PAID|FAILED|CANCELLED|REFUND_PROCESSING", message="Trạng thái thanh toán không hợp lệ.")
     private String status = "";
     @DateTimeFormat(iso=DateTimeFormat.ISO.DATE)
     private LocalDate fromDate;

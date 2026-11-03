@@ -61,7 +61,14 @@
             <tbody><tr th:if="${#lists.isEmpty(orderDetail.items)}"><td colspan="5" class="vfo-table-empty">Không có sản phẩm trong đơn.</td></tr>
             <tr th:each="item : ${orderDetail.items}"><td class="vfo-customer-name" th:text="${item.productName}"></td><td th:text="${item.variantName}"></td><td class="vfo-money text-end" th:text="${#numbers.formatDecimal(item.unitPrice, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></td><td class="text-center" th:text="${item.quantity}"></td><td class="vfo-money text-end" th:text="${#numbers.formatDecimal(item.totalAmount, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></td></tr></tbody>
         </table></div>
-        <div class="vfo-settlement"><div class="vfo-totals"><div><span>Phí vận chuyển</span><strong th:text="${#numbers.formatDecimal(orderDetail.shippingFee, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></strong></div><div class="vfo-grand-total"><span>Tổng cộng</span><strong th:text="${#numbers.formatDecimal(orderDetail.totalAmount, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></strong></div></div></div>
+        <div class="vfo-settlement">
+            <div class="vfo-totals">
+                <div><span>Tổng tiền hàng</span><strong><span th:replace="~{store_manager/purchase-invoice :: money(${orderDetail.subtotal})}"></span></strong></div>
+                <div th:if="${orderDetail.discountTotal.signum() != 0}"><span>Giảm giá</span><strong><span th:replace="~{store_manager/purchase-invoice :: money(${orderDetail.discountTotal.negate()})}"></span></strong></div>
+                <div><span>Phí vận chuyển</span><strong><span th:replace="~{store_manager/purchase-invoice :: money(${orderDetail.shippingFee})}"></span></strong></div>
+                <div class="vfo-grand-total"><span>Tổng cộng</span><strong><span th:replace="~{store_manager/purchase-invoice :: money(${orderDetail.totalAmount})}"></span></strong></div>
+            </div>
+        </div>
     </section>
 </main>
 <footer th:replace="~{fragments/seller-orders :: footer}"></footer>

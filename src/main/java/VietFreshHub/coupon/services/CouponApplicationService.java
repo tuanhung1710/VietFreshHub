@@ -8,6 +8,8 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface CouponApplicationService {
+    List<CouponApplicationResponse> getAvailableBuyNowCoupons(Long customerId, Long variantId, Integer quantity);
+    CouponApplicationResponse previewBuyNow(Long customerId, String code, Long variantId, Integer quantity);
     List<CouponApplicationResponse> getAvailableCoupons(Long customerId, List<Long> cartItemIds);
 
     // Kiểm tra mã và tính thử mức giảm từ các dòng giỏ hàng.

@@ -52,13 +52,14 @@
         <a class="btn vfo-btn-secondary" th:if="${shopView}" th:href="@{/customer/orders/{id}(id=${shopOrderId})}"><span aria-hidden="true">←</span> Chi tiết đơn hàng</a>
         <a class="btn vfo-btn-secondary" th:unless="${shopView}" th:href="@{/customer/orders(keyword=${tracking.orderCode})}"><span aria-hidden="true">←</span> Đơn hàng của tôi</a>
     </header>
-    <div class="vfc-order-reference"><span class="vfc-reference-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-order"/></svg></span><div><span>Mã đơn hàng</span><strong th:text="${tracking.orderCode}"></strong></div><svg class="vfo-icon vfc-reference-leaf" aria-hidden="true"><use href="#vfo-leaf"/></svg></div>
+    <div class="vfc-order-reference"><span class="vfc-reference-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-order"/></svg></span><div><span th:text="${shopView ? 'Mã đơn hàng' : 'Mã lượt mua'}">Mã đơn hàng</span><strong th:text="${tracking.orderCode}"></strong></div><svg class="vfo-icon vfc-reference-leaf" aria-hidden="true"><use href="#vfo-leaf"/></svg></div>
     <div class="vfc-tracking-shops">
         <section th:each="shop : ${tracking.shops}" class="card vfc-tracking-shop">
             <div class="vfc-shop-summary">
                 <span class="vfc-shop-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-shop"/></svg></span>
                 <p class="vfo-eyebrow">Cửa hàng</p>
                 <h2 th:text="${shop.shopName}"></h2>
+                <p class="vfc-shop-order-status" th:unless="${shopView}">Mã đơn hàng: <a th:href="@{/customer/orders/{id}(id=${shop.shopOrderId})}" th:text="${shop.orderCode()}"></a></p>
                 <div class="vfc-shop-delivery"><span>Trạng thái giao hàng</span><strong class="vfo-status vfc-delivery-state" th:attr="data-status=${shop.deliveryStatusCode}" th:text="${shop.deliveryStatus}"></strong></div>
                 <p class="vfc-shop-order-status" th:if="${shopView}">Trạng thái đơn hàng: <strong th:text="${shop.orderStatus}"></strong></p>
             </div>

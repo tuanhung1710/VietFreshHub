@@ -5,6 +5,7 @@ import VietFreshHub.payout.dto.PayoutBatchExport;
 import VietFreshHub.payout.service.PayoutExcelService;
 import VietFreshHub.payout.service.SellerPayoutService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -21,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.List;
 
 @Controller
@@ -33,30 +35,23 @@ public class AdminPayoutController {
     private final AuthService authService;
 
     @GetMapping
-    public String dashboard(Model model) {
+    public String dashboard(@RequestParam(name = "fromDate", required = false)
+                            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+                            @RequestParam(name = "toDate", required = false)
+                            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+                            Model model) {
         model.addAttribute("payoutQueue", sellerPayoutService.getQueue());
-        model.addAttribute("accounts", sellerPayoutService.getAccounts());
-        model.addAttribute("batches", sellerPayoutService.getRecentBatches());
+        model.addAttribute("fromDate", fromDate);
+        model.addAttribute("toDate", toDate);
+        if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
+            model.addAttribute("filterError", "Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
+            model.addAttribute("batches", List.of());
+        } else {
+            model.addAttribute("batches", sellerPayoutService.getBatchesCreatedBetween(fromDate, toDate));
+        }
         model.addAttribute("commissionRate", sellerPayoutService.getCommissionRate()
                 .movePointRight(2).stripTrailingZeros().toPlainString());
         return "admin/payouts";
-    }
-
-    @PostMapping("/accounts/{shopId}/verification")
-    public String setAccountVerified(@PathVariable Long shopId,
-                                     @RequestParam boolean verified,
-                                     Authentication authentication,
-                                     RedirectAttributes redirectAttributes) {
-        try {
-            sellerPayoutService.setAccountVerified(shopId, verified,
-                    authService.getCurrentUserId(authentication));
-            redirectAttributes.addFlashAttribute("successMessage", verified
-                    ? "Đã xác minh tài khoản ngân hàng nhận tiền của cửa hàng."
-                    : "Đã thu hồi xác minh tài khoản ngân hàng của cửa hàng.");
-        } catch (ResponseStatusException exception) {
-            redirectAttributes.addFlashAttribute("errorMessage", exception.getReason());
-        }
-        return "redirect:/admin/payouts";
     }
 
     @PostMapping("/{payoutId}/confirm-cod")
@@ -78,33 +73,6 @@ public class AdminPayoutController {
             Long batchId = sellerPayoutService.createManualBatch(payoutIds);
             redirectAttributes.addFlashAttribute("successMessage",
                     "Đã tạo đợt chi trả #" + batchId + ". Bạn có thể tải file Excel trong mục Các đợt chi trả.");
-        } catch (ResponseStatusException exception) {
-            redirectAttributes.addFlashAttribute("errorMessage", exception.getReason());
-        }
-        return "redirect:/admin/payouts";
-    }
-
-    @PostMapping("/batches/{batchId}/shops/{shopId}/result")
-    public String recordTransferResult(@PathVariable Long batchId,
-                                       @PathVariable Long shopId,
-                                       @RequestParam(required = false) String reference,
-                                       @RequestParam(required = false) String failureReason,
-                                       Authentication authentication,
-                                       RedirectAttributes redirectAttributes) {
-        try {
-            String normalizedReference = reference == null ? "" : reference.strip();
-            String normalizedFailureReason = failureReason == null ? "" : failureReason.strip();
-            boolean hasReference = !normalizedReference.isBlank();
-            boolean hasFailureReason = !normalizedFailureReason.isBlank();
-            if (hasReference == hasFailureReason) {
-                throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
-                        "Chỉ nhập mã giao dịch nếu thành công hoặc lý do nếu thất bại.");
-            }
-            sellerPayoutService.recordTransferResult(batchId, shopId, hasReference,
-                    hasReference ? normalizedReference : null,
-                    hasFailureReason ? normalizedFailureReason : null,
-                    authService.getCurrentUserId(authentication));
-            redirectAttributes.addFlashAttribute("successMessage", "Đã lưu kết quả chuyển khoản.");
         } catch (ResponseStatusException exception) {
             redirectAttributes.addFlashAttribute("errorMessage", exception.getReason());
         }

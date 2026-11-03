@@ -48,7 +48,8 @@ public final class OrderLabels {
         return options;
     }
     public static String payment(String status) { return switch(status==null ? "" : status) {
-        case "UNPAID" -> "Chưa thu tiền"; case "PENDING" -> "Đang chờ thanh toán"; case "PAID" -> "Đã thanh toán";
+        case "UNPAID", "PENDING" -> "Chờ thanh toán"; case "PAID" -> "Đã thanh toán";
+        case "PROCESSING" -> "Đang xử lý"; case "CANCELLED" -> "Đã hủy giao dịch";
         case "PARTIALLY_REFUNDED" -> "Hoàn tiền một phần"; case "REFUNDED" -> "Đã hoàn tiền";
         case "FAILED" -> "Thanh toán thất bại"; default -> "Cập nhật thanh toán";
     }; }
@@ -62,6 +63,17 @@ public final class OrderLabels {
     public static String customerPayment(String shopStatus, String paymentStatus, boolean cod) {
         return cod && "CANCELLED".equals(shopStatus) && "UNPAID".equals(paymentStatus)
                 ? "Không phát sinh thanh toán" : payment(paymentStatus);
+    }
+    public static Map<String, String> paymentStatusOptions() {
+        Map<String, String> options = new LinkedHashMap<>();
+        for (var status : List.of(VietFreshHub.payment.entity.Payment.Status.PENDING,
+                VietFreshHub.payment.entity.Payment.Status.PROCESSING,
+                VietFreshHub.payment.entity.Payment.Status.PAID,
+                VietFreshHub.payment.entity.Payment.Status.FAILED)) {
+            options.put(status.name(), status == VietFreshHub.payment.entity.Payment.Status.PENDING
+                    ? "Chờ thanh toán / Chờ thu COD" : paymentTransaction(status));
+        }
+        return options;
     }
     public static String paymentTransaction(VietFreshHub.payment.entity.Payment.Status status) { return switch(status) {
         case PENDING -> "Chờ thanh toán"; case PROCESSING -> "Đang xử lý"; case PAID -> "Đã thanh toán";

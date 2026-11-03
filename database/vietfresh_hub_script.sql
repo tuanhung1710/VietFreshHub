@@ -851,7 +851,7 @@ CREATE TABLE dbo.seller_payouts (
     CONSTRAINT UQ_seller_payouts_shop_order UNIQUE (shop_order_id),
     CONSTRAINT UQ_seller_payouts_id_shop UNIQUE (payout_id, shop_id),
     CONSTRAINT FK_seller_payouts_funds_confirmed_by FOREIGN KEY (funds_confirmed_by) REFERENCES dbo.users(user_id),
-    CONSTRAINT CK_seller_payouts_funds_source CHECK (funds_source IN (''UNCONFIRMED'', ''COD'', ''BANK_TRANSFER'', ''VNPAY'', ''MANUAL'')),
+    CONSTRAINT CK_seller_payouts_funds_source CHECK (funds_source IN (''UNCONFIRMED'', ''COD'', ''BANK_TRANSFER'', ''VNPAY'', ''MANUAL'', ''ONLINE'')),
     CONSTRAINT CK_seller_payouts_funds_confirmation CHECK (
         (funds_confirmed_at IS NULL AND funds_confirmed_by IS NULL)
         OR (funds_confirmed_at IS NOT NULL AND funds_source <> ''UNCONFIRMED'')
@@ -1602,11 +1602,11 @@ IF OBJECT_ID('dbo.orders','U') IS NULL OR OBJECT_ID('dbo.shop_orders','U') IS NU
  OR OBJECT_ID('dbo.seller_payouts','U') IS NULL OR OBJECT_ID('dbo.subscription_plans','U') IS NULL
  THROW 51500,'Unrecognized or incomplete existing VietFreshHub schema.',1;
 
-IF COL_LENGTH(N'dbo.categories', N'image_url') IS NULL
-    EXEC(N'ALTER TABLE dbo.categories ADD image_url NVARCHAR(1000) NULL;');
-
 IF COL_LENGTH(N'dbo.products', N'origin') IS NULL
     EXEC(N'ALTER TABLE dbo.products ADD origin NVARCHAR(200) NULL;');
+
+IF COL_LENGTH(N'dbo.categories', N'image_url') IS NULL
+    EXEC(N'ALTER TABLE dbo.categories ADD image_url NVARCHAR(1000) NULL;');
 IF OBJECT_ID(N'dbo.CK_products_origin_not_blank', N'C') IS NULL
     EXEC(N'ALTER TABLE dbo.products WITH CHECK ADD CONSTRAINT CK_products_origin_not_blank
            CHECK (origin IS NULL OR LEN(LTRIM(RTRIM(origin))) > 0);');
@@ -2062,7 +2062,8 @@ IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE parent_object_id = OBJE
 
 ';
 
-EXEC sys.sp_executesql N'IF NOT EXISTS(SELECT 1 FROM sys.key_constraints WHERE parent_object_id=OBJECT_ID(''dbo.shop_orders'') AND name=''UQ_shop_orders_id_order'')
+EXEC sys.sp_executesql N'IF COL_LENGTH(''dbo.categories'',''image_url'') IS NULL ALTER TABLE dbo.categories ADD image_url NVARCHAR(1000) NULL;
+IF NOT EXISTS(SELECT 1 FROM sys.key_constraints WHERE parent_object_id=OBJECT_ID(''dbo.shop_orders'') AND name=''UQ_shop_orders_id_order'')
  ALTER TABLE dbo.shop_orders ADD CONSTRAINT UQ_shop_orders_id_order UNIQUE(shop_order_id,order_id);
 IF COL_LENGTH(''dbo.seller_payouts'',''eligible_at'') IS NULL ALTER TABLE dbo.seller_payouts ADD eligible_at DATETIME2(0) NULL;
 IF COL_LENGTH(''dbo.seller_payouts'',''funds_source'') IS NULL ALTER TABLE dbo.seller_payouts ADD funds_source VARCHAR(20) NOT NULL CONSTRAINT DF_seller_payouts_funds_source DEFAULT(''UNCONFIRMED'') WITH VALUES;
@@ -2073,8 +2074,12 @@ IF NOT EXISTS(SELECT 1 FROM sys.key_constraints WHERE parent_object_id=OBJECT_ID
 
 EXEC sys.sp_executesql N'IF NOT EXISTS(SELECT 1 FROM sys.foreign_keys WHERE parent_object_id=OBJECT_ID(''dbo.seller_payouts'') AND name=''FK_seller_payouts_funds_confirmed_by'')
  ALTER TABLE dbo.seller_payouts WITH CHECK ADD CONSTRAINT FK_seller_payouts_funds_confirmed_by FOREIGN KEY(funds_confirmed_by) REFERENCES dbo.users(user_id);
-IF OBJECT_ID(''dbo.CK_seller_payouts_funds_source'',''C'') IS NULL
- ALTER TABLE dbo.seller_payouts WITH CHECK ADD CONSTRAINT CK_seller_payouts_funds_source CHECK(funds_source IN(''UNCONFIRMED'',''COD'',''BANK_TRANSFER'',''VNPAY'',''MANUAL''));
+IF NOT EXISTS(SELECT 1 FROM sys.check_constraints WHERE parent_object_id=OBJECT_ID(''dbo.seller_payouts'') AND name=''CK_seller_payouts_funds_source'' AND definition LIKE ''%ONLINE%'')
+BEGIN
+ IF OBJECT_ID(''dbo.CK_seller_payouts_funds_source'',''C'') IS NOT NULL ALTER TABLE dbo.seller_payouts DROP CONSTRAINT CK_seller_payouts_funds_source;
+ ALTER TABLE dbo.seller_payouts WITH CHECK ADD CONSTRAINT CK_seller_payouts_funds_source CHECK(funds_source IN(''UNCONFIRMED'',''COD'',''BANK_TRANSFER'',''VNPAY'',''MANUAL'',''ONLINE''));
+END;
+UPDATE dbo.seller_payouts SET funds_source=''ONLINE'' WHERE funds_source=''BANK_TRANSFER'';
 IF OBJECT_ID(''dbo.CK_seller_payouts_funds_confirmation'',''C'') IS NULL
  ALTER TABLE dbo.seller_payouts WITH CHECK ADD CONSTRAINT CK_seller_payouts_funds_confirmation CHECK((funds_confirmed_at IS NULL AND funds_confirmed_by IS NULL) OR (funds_confirmed_at IS NOT NULL AND funds_source<>''UNCONFIRMED''));
 IF COL_LENGTH(''dbo.subscription_plans'',''max_products'') IS NULL ALTER TABLE dbo.subscription_plans ADD max_products INT NULL;';
@@ -2775,8 +2780,10 @@ BEGIN
         WHERE d.batch_item_id IS NOT NULL AND (i.payout_id<>d.payout_id OR i.shop_id<>d.shop_id OR i.batch_id<>d.batch_id))
         THROW 51411,N''Khong doi payout/shop/batch cua lich su chuyen tien.'',1;
     IF EXISTS (SELECT 1 FROM inserted i JOIN dbo.seller_payouts p WITH (UPDLOCK,HOLDLOCK) ON p.payout_id=i.payout_id
-        JOIN dbo.shop_orders s ON s.shop_order_id=p.shop_order_id LEFT JOIN deleted d ON d.batch_item_id=i.batch_item_id
-        WHERE i.status IN (''PENDING'',''PAID'') AND (i.transfer_amount<>p.net_amount OR p.eligible_at IS NULL OR p.eligible_at>SYSUTCDATETIME()
+        JOIN dbo.shop_orders s ON s.shop_order_id=p.shop_order_id JOIN dbo.seller_payout_batches b ON b.batch_id=i.batch_id
+        LEFT JOIN deleted d ON d.batch_item_id=i.batch_item_id
+        WHERE i.status IN (''PENDING'',''PAID'') AND (i.transfer_amount<>p.net_amount OR p.eligible_at IS NULL
+            OR (b.scheduled_slot NOT LIKE ''MANUAL-%'' AND p.eligible_at>SYSUTCDATETIME())
             OR p.funds_confirmed_at IS NULL OR p.funds_confirmed_at>SYSUTCDATETIME() OR p.funds_source=''UNCONFIRMED''
             OR s.status<>''COMPLETED'' OR s.payment_status<>''PAID'' OR p.status IN (''FAILED'',''CANCELLED'')
             OR (p.status=''PAID'' AND (d.batch_item_id IS NULL OR d.status=''FAILED''))))
@@ -2784,7 +2791,7 @@ BEGIN
     IF EXISTS (SELECT 1 FROM inserted i LEFT JOIN deleted d ON d.batch_item_id=i.batch_item_id
         LEFT JOIN dbo.shop_payout_accounts a ON a.shop_id=i.shop_id
         WHERE i.status IN (''PENDING'',''PAID'') AND (d.batch_item_id IS NULL OR d.status=''FAILED'')
-          AND (a.shop_id IS NULL OR a.verified=0 OR i.bank_code_snapshot<>a.bank_code OR i.bank_name_snapshot<>a.bank_name
+          AND (a.shop_id IS NULL OR i.bank_code_snapshot<>a.bank_code OR i.bank_name_snapshot<>a.bank_name
             OR i.account_number_snapshot<>a.account_number OR i.account_holder_snapshot<>a.account_holder))
         THROW 51413,N''Tai khoan nhan tien chua xac minh hoac snapshot khong khop.'',1;
     IF EXISTS (SELECT 1 FROM inserted i JOIN dbo.seller_payouts p ON p.payout_id=i.payout_id

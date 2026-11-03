@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/storefront :: head('Đặt hàng')}"></head><body>
+<head><th:block th:replace="~{fragments/head :: assets}"></th:block><title>Đặt hàng | VietFresh Hub</title><link rel="stylesheet" th:href="@{/css/storefront.css}"><link rel="stylesheet" th:href="@{/css/customer-shell.css}"><link rel="stylesheet" th:href="@{/css/checkout-page.css(v=1)}"><script defer th:src="@{/js/cart.js}"></script></head><body>
 <header th:replace="~{fragments/storefront :: header}"></header>
-<main class="container page">
+<main class="container page checkout-page">
     <nav class="checkout-steps" aria-label="Tiến trình mua hàng"><a th:href="@{/cart}">Giỏ hàng</a><span aria-hidden="true">›</span><strong aria-current="step">Đặt hàng</strong><span aria-hidden="true">›</span><span>Hoàn tất</span></nav>
-    <div class="page-heading"><h1 class="checkout-title">Kiểm tra và đặt hàng</h1><p class="muted">Xem lại địa chỉ, sản phẩm và tổng tiền trước khi xác nhận.</p></div>
+    <div class="page-heading"><h1 class="checkout-title">Kiểm tra và đặt hàng</h1><p class="muted">Xem lại địa chỉ nhận hàng, phương thức thanh toán và sản phẩm trước khi xác nhận đơn hàng.</p></div>
     <div th:replace="~{fragments/storefront :: messages}"></div>
+    <p th:if="${cart.status == 'BUY_NOW'}" class="notice info">Mua ngay: chỉ đặt số lượng vừa chọn. Sản phẩm đang có trong giỏ hàng được giữ nguyên.</p>
     <form th:action="@{/customer/checkout}" th:object="${form}" method="post" id="checkout-form">
         <input type="hidden" name="checkoutToken" th:value="${form.checkoutToken}">
         <input type="hidden" th:field="*{couponCode}">
@@ -13,55 +14,57 @@
         <div th:if="${#fields.hasGlobalErrors()}" class="notice error" role="alert"><p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p></div>
         <div class="checkout-layout">
             <div class="checkout-sections">
-                <section class="panel"><h2><span class="section-number">1</span>Địa chỉ nhận hàng</h2>
+                <section class="panel checkout-address-panel"><h2><span class="checkout-section-number" aria-hidden="true">1</span>Địa chỉ nhận hàng</h2>
                     <p th:if="${#lists.isEmpty(checkout.addresses)}" class="muted">Bạn chưa có địa chỉ nhận hàng. Thêm địa chỉ mới để tiếp tục.</p>
                     <div class="address-options">
                         <div th:each="address : ${checkout.addresses}" class="address-option-card">
                             <label class="address-option">
                                 <input type="radio" th:field="*{addressId}" th:value="${address.addressId}" required>
                                 <span><strong th:text="${address.recipientName}"></strong><span class="default-address" th:if="${address.defaultAddress}">Mặc định</span>
-                                    <span class="address-phone" th:text="${address.phone}"></span><span class="address-text" th:text="${address.addressText}"></span>
+                                    <span class="address-phone" th:text="${address.phone}"></span><span class="address-text"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg><span th:text="${address.addressText}"></span></span>
                                     <span th:unless="${address.locationComplete}" class="item-error">Chưa đủ thông tin vị trí. Cập nhật địa chỉ bằng gợi ý VietMap trước khi đặt hàng.</span></span>
                             </label>
                             <a class="address-edit-link" th:href="@{/customer/checkout/address/{id}/edit(id=${address.addressId},checkoutToken=${form.checkoutToken})}">Sửa</a>
                         </div>
                     </div><p class="item-error" th:errors="*{addressId}"></p>
-                    <a th:href="@{/customer/checkout/address/new(checkoutToken=${form.checkoutToken})}" class="button secondary address-add-link">+ Thêm địa chỉ mới</a>
-                    <a th:href="@{/customer/addresses}" class="button secondary">Quản lý địa chỉ đã lưu</a>
+                    <div class="checkout-address-actions">
+                        <a th:href="@{/customer/checkout/address/new(checkoutToken=${form.checkoutToken})}" class="button secondary address-add-link">+ Thêm địa chỉ mới</a>
+                        <a th:href="@{/customer/addresses}" class="checkout-manage-addresses">Quản lý địa chỉ đã lưu</a>
+                    </div>
                 </section>
-                <section class="panel"><h2><span class="section-number">2</span>Phương thức thanh toán</h2>
+                <section class="panel checkout-payment-panel"><h2><span class="checkout-section-number" aria-hidden="true">2</span>Phương thức thanh toán</h2>
                     <label class="payment-option"><input type="radio" th:field="*{paymentMethodCode}" value="COD" th:disabled="${!checkout.codAvailable}">
-                        <span><strong>Thanh toán khi nhận hàng (COD)</strong><span class="muted">Bạn thanh toán cho nhân viên giao hàng khi nhận sản phẩm.</span></span></label>
+                        <span><strong>Thanh toán khi nhận hàng (COD)</strong><span class="muted">Thanh toán cho nhân viên giao hàng khi nhận sản phẩm.</span></span></label>
                     <p th:unless="${checkout.codAvailable}" class="item-error">Thanh toán khi nhận hàng hiện chưa khả dụng.</p><p class="item-error" th:errors="*{paymentMethodCode}"></p>
                     <label class="payment-option"><input type="radio" th:field="*{paymentMethodCode}" value="BANK_TRANSFER" th:disabled="${!checkout.vnpayAvailable}">
-                        <span><strong>Chuyển khoản ngân hàng</strong><span class="muted">Bạn sẽ được chuyển đến cổng VNPAY Sandbox. Sản phẩm được giữ trong 15 phút.</span></span></label>
+                        <span><strong>Chuyển khoản ngân hàng</strong><span class="muted">Bạn sẽ được chuyển đến cổng thanh toán VNPAY Sandbox. Đơn hàng được xử lý theo kết quả thanh toán.</span></span></label>
                     <p th:unless="${checkout.vnpayAvailable}" class="item-error">Chuyển khoản qua VNPAY hiện chưa được cấu hình hoặc chưa khả dụng.</p>
                 </section>
-                <section class="panel"><h2><span class="section-number">3</span>Sản phẩm trong đơn</h2>
+                <section class="panel checkout-products-panel"><h2><span class="checkout-section-number" aria-hidden="true">3</span>Sản phẩm trong đơn</h2>
                     <p th:if="${#lists.isEmpty(cart.items)}" class="item-error">Giỏ hàng đang trống. <a th:href="@{/home}">Chọn sản phẩm</a> để tiếp tục.</p>
                     <p th:if="${cart.hasUnavailableItems}" class="notice error">Một sản phẩm đã chọn không còn đủ điều kiện mua. <a th:href="@{/cart}">Chọn lại sản phẩm trong giỏ</a> để tiếp tục.</p>
-                    <p class="muted">Chỉ các sản phẩm bên dưới được đặt hàng. <a th:href="@{/cart}">Thay đổi lựa chọn</a></p>
-                    <section th:each="group : ${shopGroups}" class="checkout-shop"><h3 th:text="${group.value[0].shopName}"></h3>
+                    <p class="muted"><span th:unless="${cart.status == 'BUY_NOW'}">Chỉ các sản phẩm đã chọn từ giỏ hàng được đưa vào bước đặt hàng. </span><span th:if="${cart.status == 'BUY_NOW'}">Đơn mua ngay chỉ gồm sản phẩm và số lượng bạn vừa chọn. </span><a th:unless="${cart.status == 'BUY_NOW'}" th:href="@{/cart}">Thay đổi lựa chọn</a><a th:if="${cart.status == 'BUY_NOW' and !#lists.isEmpty(cart.items)}" th:href="@{/product-detail/{id}(id=${cart.items[0].variantId},quantity=${cart.items[0].quantity})}">Thay đổi số lượng mua ngay</a></p>
+                    <section th:each="group : ${shopGroups}" class="checkout-shop"><h3><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10V5h18v5M5 10v11h14V10M9 21v-7h6v7M2 10h20M3 5l2-3h14l2 3"/></svg><span th:text="${group.value[0].shopName}"></span></h3><div class="checkout-product-columns" aria-hidden="true"><span>Sản phẩm</span><span>Đơn giá</span><span>Số lượng</span><span>Thành tiền</span></div>
                         <article th:each="item : ${group.value}" class="checkout-line"><img th:src="${item.imageUrl}" th:alt="${item.productName}" width="64" height="64">
-                            <div><strong th:text="${item.productName}"></strong><p class="muted" th:text="${item.variantName} + ' · Số lượng ' + ${item.quantity}"></p>
+                            <div><strong th:text="${item.productName}"></strong><p class="muted" th:text="${item.variantName}"></p>
                                 <p th:if="${item.availabilityMessage != null}" class="item-error" th:text="${item.availabilityMessage}"></p>
                                 <p th:unless="${item.purchasable}" class="item-error">Bạn chọn <strong th:text="${item.quantity}"></strong>, tồn khả dụng hiện tại <strong th:text="${item.availableStock}"></strong>. <a th:href="@{/cart}">Điều chỉnh hoặc xóa trong giỏ</a>.</p>
                                 <p th:if="${item.priceChanged}" class="item-warning">Giá hiện tại đã được cập nhật. Xác nhận bên dưới để đặt theo giá đang hiển thị.</p></div>
-                            <span class="price" th:text="${#numbers.formatInteger(item.itemSubtotal,0,'POINT')} + ' ₫'"></span>
+                            <span class="checkout-unit-price" th:text="${#numbers.formatInteger(item.unitPriceSnapshot,0,'POINT')} + ' ₫'"></span><span class="checkout-quantity" th:text="'× ' + ${item.quantity}"></span><span class="price" th:text="${#numbers.formatInteger(item.itemSubtotal,0,'POINT')} + ' ₫'"></span>
                         </article>
                         <p class="shop-shipping muted" th:if="${checkout.shopQuotes[group.key] != null}">Phí giao từ cửa hàng này: <strong data-shipping-amount th:text="${#numbers.formatInteger(checkout.shopQuotes[group.key].shippingFee,0,'POINT')} + ' ₫'"></strong></p>
                     </section>
                 </section>
             </div>
-            <aside class="panel summary"><h2>Tóm tắt đơn hàng</h2>
+            <aside class="panel summary checkout-summary" aria-label="Tóm tắt đơn hàng"><h2>Tóm tắt đơn hàng</h2>
                 <div class="coupon-section">
-                    <label for="coupon-input">Mã giảm giá</label>
+                    <label for="coupon-input">Mã giảm giá của shop</label>
                     <select id="coupon-input" name="couponInput" aria-describedby="coupon-help">
-                        <option value="">Không dùng coupon</option>
+                        <option value="">Không sử dụng mã giảm giá</option>
                         <option th:each="coupon : ${availableCoupons}"
                                 th:value="${coupon.code}"
                                 th:selected="${coupon.code.equalsIgnoreCase(form.couponCode)}"
-                                th:text="${coupon.code + ' — Giảm ' + #numbers.formatInteger(coupon.discountAmount, 0, 'POINT') + ' ₫'}"></option>
+                                th:text="${coupon.code + ' — ' + (shopGroups[coupon.shopId] != null ? shopGroups[coupon.shopId][0].shopName + ' — ' : '') + 'Giảm ' + #numbers.formatInteger(coupon.discountAmount, 0, 'POINT') + ' ₫'}"></option>
                     </select>
                     <button type="submit"
                             class="button secondary"
@@ -70,7 +73,7 @@
                         Áp dụng
                     </button>
                     <p id="coupon-help" class="muted"
-                       th:text="${#lists.isEmpty(availableCoupons) ? 'Chưa có coupon phù hợp với sản phẩm đã chọn.' : 'Chọn coupon của shop rồi bấm Áp dụng. Chọn Không dùng coupon để bỏ mã.'}"></p>
+                       th:text="${#lists.isEmpty(availableCoupons) ? 'Hiện chưa có mã giảm giá phù hợp với sản phẩm đã chọn.' : 'Chọn mã giảm giá phù hợp, sau đó bấm Áp dụng. Mã chỉ giảm cho sản phẩm đủ điều kiện của shop phát hành.'}"></p>
                     <p th:if="${couponApplication != null}"
                        role="status"
                        th:text="${'Đã áp dụng mã ' + couponApplication.code}"></p>
@@ -82,11 +85,14 @@
                 </div>
                 <div class="loyalty-section">
                     <h3>Tiền thưởng</h3>
-                    <p>Tiền thưởng hiện có: <strong th:text="${#numbers.formatInteger(loyaltyBalance.rewardBalance, 1, 'POINT') + ' ₫'}"></strong></p>
+                    <p class="checkout-reward-balance">Số dư hiện có: <strong th:text="${#numbers.formatInteger(loyaltyBalance.rewardBalance, 0, 'POINT') + ' ₫'}"></strong></p>
                     <label for="reward-amount-input">Số tiền thưởng muốn sử dụng</label>
                     <input id="reward-amount-input"
                            type="number"
                            name="rewardAmountInput"
+                           placeholder="Nhập số tiền thưởng muốn sử dụng"
+                           aria-describedby="reward-help"
+                           th:disabled="${loyaltyBalance.rewardBalance.signum() == 0 and loyaltyError == null and (form.rewardAmountToUse == null or form.rewardAmountToUse.signum() == 0)}"
                            th:value="${form.rewardAmountToUse}"
                            min="0"
                            step="1"
@@ -94,36 +100,37 @@
                     <button type="submit"
                             class="button secondary"
                             th:formaction="@{/customer/checkout/reward/preview}"
+                            th:disabled="${loyaltyBalance.rewardBalance.signum() == 0 and loyaltyError == null and (form.rewardAmountToUse == null or form.rewardAmountToUse.signum() == 0)}"
                             formnovalidate>
                         Áp dụng tiền thưởng
                     </button>
-                    <p class="muted">Nhập 0 rồi bấm Áp dụng tiền thưởng để bỏ sử dụng tiền thưởng.</p>
+                    <p id="reward-help" class="muted" th:text="${loyaltyBalance.rewardBalance.signum() == 0 ? 'Bạn chưa có tiền thưởng khả dụng.' : 'Nhập 0 nếu bạn không muốn sử dụng tiền thưởng cho đơn hàng này.'}"></p>
                     <p th:if="${redemption != null and redemption.rewardAmountUsed.signum() > 0}"
                        role="status"
-                       th:text="${'Đã áp dụng ' + #numbers.formatInteger(redemption.rewardAmountUsed, 1, 'POINT')
+                       th:text="${'Đã áp dụng ' + #numbers.formatInteger(redemption.rewardAmountUsed, 0, 'POINT')
                                + ' ₫.'}"></p>
                     <p th:if="${loyaltyError != null}"
                        class="item-error"
                        role="alert"
                        th:text="${loyaltyError}"></p>
-                    <p th:if="${redemption != null}" th:text="${'Số dư dự kiến: ' + #numbers.formatInteger(redemption.balanceAfterAmount, 1, 'POINT') + ' ₫'}"></p>
+                    <p th:if="${redemption != null}" class="checkout-reward-remaining" th:text="${'Số dư dự kiến: ' + #numbers.formatInteger(redemption.balanceAfterAmount, 0, 'POINT') + ' ₫'}"></p>
                     <p class="item-error" th:errors="*{rewardAmountToUse}"></p>
                 </div>
-                <div class="summary-line"><span>Tiền sản phẩm</span><strong th:text="${#numbers.formatInteger(cart.totalAmount,0,'POINT')} + ' ₫'"></strong></div>
+                <div class="summary-line"><span>Tiền hàng</span><strong th:text="${#numbers.formatInteger(cart.totalAmount,0,'POINT')} + ' ₫'"></strong></div>
+                <div class="summary-line"><span th:text="${checkout.deliveryOutOfRange ? 'Phí vận chuyển:' : 'Phí vận chuyển (' + #maps.size(shopGroups) + ' shop)'}"></span><strong data-shipping-amount th:if="${checkout.shippingFee != null}" th:text="${#numbers.formatInteger(checkout.shippingFee,0,'POINT')} + ' ₫'"></strong><strong data-shipping-amount th:if="${checkout.deliveryOutOfRange}">Không hỗ trợ</strong></div>
                 <div class="summary-line" th:if="${couponDiscount.signum() > 0}">
-                    <span>Giảm giá coupon</span>
+                    <span>Giảm giá từ shop</span>
                     <strong th:text="${'- ' + #numbers.formatInteger(couponDiscount, 0, 'POINT') + ' ₫'}"></strong>
                 </div>
                 <div class="summary-line" th:if="${loyaltyDiscount.signum() > 0}">
-                    <span>Giảm bằng tiền thưởng</span>
+                    <span>Tiền thưởng đã sử dụng</span>
                     <strong th:text="${'- ' + #numbers.formatInteger(loyaltyDiscount, 0, 'POINT') + ' ₫'}"></strong>
                 </div>
-                <div class="summary-line"><span th:text="${checkout.deliveryOutOfRange ? 'Phí vận chuyển:' : 'Phí vận chuyển (' + #maps.size(shopGroups) + ' shop)'}"></span><strong data-shipping-amount th:if="${checkout.shippingFee != null}" th:text="${#numbers.formatInteger(checkout.shippingFee,0,'POINT')} + ' ₫'"></strong><strong data-shipping-amount th:if="${checkout.deliveryOutOfRange}">Không hỗ trợ</strong></div>
                 <p th:if="${checkout.deliveryOutOfRange}" class="item-error" role="alert" data-shipping-error><strong>Không có phương thức vận chuyển phù hợp</strong></p>
                 <p th:if="${checkout.shippingError != null and !checkout.deliveryOutOfRange}" class="item-error" role="alert" data-shipping-error th:text="${checkout.shippingError}"></p>
                 <a th:if="${checkout.shippingError != null and !checkout.deliveryOutOfRange}" th:href="@{/customer/checkout(checkoutToken=${form.checkoutToken},addressId=${form.addressId})}" class="button secondary">Tính lại phí giao hàng</a>
                 <div class="summary-line summary-total"><span>Tổng thanh toán</span><strong class="price" data-grand-total th:if="${checkoutTotal != null}" th:text="${#numbers.formatInteger(checkoutTotal,0,'POINT')} + ' ₫'"></strong><strong data-grand-total th:if="${checkoutTotal == null}">Chưa thể xác định</strong></div>
-                <button class="button full" type="submit" th:disabled="${!checkout.canConfirm() or couponError != null or loyaltyError != null}" data-confirm-order>Xác nhận đặt hàng</button>
+                <p class="checkout-confirm-note"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Vui lòng kiểm tra thông tin nhận hàng, phương thức thanh toán và sản phẩm trước khi đặt hàng.</p><button class="button full" type="submit" th:disabled="${!checkout.canConfirm() or couponError != null or loyaltyError != null}" data-confirm-order>Đặt hàng</button>
                 <a th:href="@{/cart}" class="checkout-back">← Quay lại giỏ hàng</a>
             </aside>
         </div>

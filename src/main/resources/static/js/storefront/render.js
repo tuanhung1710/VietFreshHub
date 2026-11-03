@@ -37,11 +37,12 @@ export function pager(page, sizes, home = false) {
     const next = home ? 'data-homenext' : 'data-next';
     const select = home ? 'homePageSize' : 'pageSize';
     const apply = home ? 'applyHomePageSize' : 'applyPageSize';
-    return `<div class="pager-left">
-        <button ${previous} aria-label="Trang trước" ${page.page <= 1 ? 'disabled' : ''}>‹</button>
-        <div class="pager-info"><strong>Trang ${page.page} / ${page.pages}</strong><small>${page.total} sản phẩm</small></div>
-        <button ${next} aria-label="Trang tiếp" ${page.page >= page.pages ? 'disabled' : ''}>›</button>
-    </div><div class="pager-right">
+    const arrow = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    return `<div class="customer-pager" role="navigation" aria-label="Phân trang sản phẩm">
+        <button class="customer-page-button customer-page-previous" ${previous} aria-label="Trang trước" title="Trang trước" ${page.page <= 1 ? 'disabled' : ''}>${arrow}</button>
+        <span class="customer-page-summary" aria-live="polite"><span>Trang ${page.page} / ${Math.max(1, page.pages)}</span><small>${page.total} sản phẩm</small></span>
+        <button class="customer-page-button customer-page-next" ${next} aria-label="Trang sau" title="Trang sau" ${page.page >= page.pages ? 'disabled' : ''}>${arrow}</button>
+    </div><div class="customer-page-size">
         <label for="${select}">Sản phẩm mỗi trang</label>
         <select id="${select}" aria-label="${home ? 'Số sản phẩm mỗi trang ở Home' : 'Số sản phẩm mỗi trang'}">
             ${sizes.map(size => `<option value="${size}" ${size === page.pageSize ? 'selected' : ''}>${size}</option>`).join('')}

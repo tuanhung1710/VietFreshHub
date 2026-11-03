@@ -14,7 +14,7 @@ public interface ShopPayoutAccountRepository extends JpaRepository<ShopPayoutAcc
     Optional<ShopPayoutAccount> findByShopId(Long shopId);
 
     @EntityGraph(attributePaths = "shop")
-    List<ShopPayoutAccount> findByShopIdInAndVerifiedTrue(Collection<Long> shopIds);
+    List<ShopPayoutAccount> findByShopIdIn(Collection<Long> shopIds);
 
     @EntityGraph(attributePaths = "shop")
     List<ShopPayoutAccount> findAllByOrderByShopShopNameAsc();

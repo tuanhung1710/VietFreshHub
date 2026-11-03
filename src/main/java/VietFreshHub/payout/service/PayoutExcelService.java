@@ -44,7 +44,7 @@ public class PayoutExcelService {
                                   PayoutBatchExport batch) {
         Sheet sheet = workbook.createSheet("Chuyen tien theo shop");
         String[] headers = {"Shop ID", "Cửa hàng", "Ngân hàng", "Mã ngân hàng", "Số tài khoản",
-                "Chủ tài khoản", "Số tiền chuyển", "Số đơn", "Trạng thái", "Mã giao dịch"};
+                "Chủ tài khoản", "Số tiền chuyển", "Số đơn"};
         header(sheet, headerStyle, headers);
         Map<Long, List<PayoutBatchExportItem>> grouped = batch.items().stream().collect(Collectors.groupingBy(
                 PayoutBatchExportItem::shopId, LinkedHashMap::new, Collectors.toList()));
@@ -62,9 +62,6 @@ public class PayoutExcelService {
             amount(row.createCell(6), shopItems.stream().map(PayoutBatchExportItem::transferAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add), amountStyle);
             row.createCell(7).setCellValue(shopItems.size());
-            row.createCell(8).setCellValue(aggregateStatus(shopItems));
-            row.createCell(9).setCellValue(shopItems.stream().map(PayoutBatchExportItem::transferReference)
-                    .filter(value -> value != null && !value.isBlank()).findFirst().orElse(""));
         }
         Row totalRow = sheet.createRow(rowIndex);
         CellStyle totalLabelStyle = workbook.createCellStyle();
@@ -83,7 +80,7 @@ public class PayoutExcelService {
                                    List<PayoutBatchExportItem> items) {
         Sheet sheet = workbook.createSheet("Chi tiet don hang");
         String[] headers = {"Shop ID", "Cửa hàng", "ID đơn shop", "Mã đơn chính", "Tổng tiền hàng", "Coupon shop tài trợ",
-                "Tiền hàng sau coupon", "Hoa hồng sàn", "Tiền chuyển shop", "Trạng thái", "Mã giao dịch"};
+                "Tiền hàng sau coupon", "Hoa hồng sàn", "Tiền chuyển shop"};
         header(sheet, headerStyle, headers);
         int rowIndex = 1;
         for (PayoutBatchExportItem item : items) {
@@ -97,8 +94,6 @@ public class PayoutExcelService {
             amount(row.createCell(6), item.grossAmount(), amountStyle);
             amount(row.createCell(7), item.commissionAmount(), amountStyle);
             amount(row.createCell(8), item.transferAmount(), amountStyle);
-            row.createCell(9).setCellValue(item.status());
-            row.createCell(10).setCellValue(item.transferReference() == null ? "" : item.transferReference());
         }
         autoSize(sheet, headers.length);
     }
@@ -117,14 +112,6 @@ public class PayoutExcelService {
     private void amount(Cell cell, BigDecimal value, CellStyle style) {
         cell.setCellValue(value == null ? 0 : value.doubleValue());
         cell.setCellStyle(style);
-    }
-
-    private String aggregateStatus(List<PayoutBatchExportItem> items) {
-        long paid = items.stream().filter(item -> "PAID".equals(item.status())).count();
-        if (paid == items.size()) return "PAID";
-        if (paid == 0 && items.stream().allMatch(item -> "FAILED".equals(item.status()))) return "FAILED";
-        if (items.stream().allMatch(item -> "PENDING".equals(item.status()))) return "PENDING";
-        return "PARTIAL";
     }
 
     private void autoSize(Sheet sheet, int columnCount) {
