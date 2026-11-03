@@ -34,6 +34,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (Array.isArray(saved)) selections.forEach(box => { box.checked = saved.includes(box.value); });
         } catch { /* Selection works without browser storage. */ }
         const money = value => new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(value) + ' ₫';
+        const shopSelections = [...document.querySelectorAll('.shop-selection-checkbox')];
+        const shopItems = shop => selections.filter(box => box.dataset.shopId === shop.dataset.shopId);
+        shopSelections.forEach(shop => {
+            shop.hidden = false;
+            shop.disabled = shopItems(shop).length === 0;
+        });
         const update = () => {
             const chosen = selections.filter(box => box.checked);
             const subtotal = chosen.reduce((total, box) => total + Number(box.dataset.amount), 0);
@@ -45,10 +51,24 @@ document.addEventListener('DOMContentLoaded', () => {
             selectAll.checked = selections.length > 0 && chosen.length === selections.length;
             selectAll.indeterminate = chosen.length > 0 && chosen.length < selections.length;
             selectedButton.disabled = chosen.length === 0;
+            selectedButton.textContent = 'Mua hàng (' + chosen.length + ')';
+            shopSelections.forEach(shop => {
+                const items = shopItems(shop);
+                const checked = items.filter(box => box.checked).length;
+                shop.checked = items.length > 0 && checked === items.length;
+                shop.indeterminate = checked > 0 && checked < items.length;
+            });
             try { sessionStorage.setItem(key, JSON.stringify(chosen.map(box => box.value))); } catch {}
         };
         selectAll.addEventListener('change', () => { selections.forEach(box => { box.checked = selectAll.checked; }); update(); });
         selections.forEach(box => box.addEventListener('change', update));
+        shopSelections.forEach(shop => shop.addEventListener('change', () => {
+            shopItems(shop).forEach(box => { box.checked = shop.checked; });
+            update();
+        }));
+        document.getElementById('checkout-selection').addEventListener('submit', event => {
+            if (!selections.some(box => box.checked)) event.preventDefault();
+        });
         update();
     }
     document.querySelectorAll('[data-quantity-form]').forEach(form => {

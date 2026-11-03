@@ -81,9 +81,45 @@ class CartScreenRenderTest {
         var response = mvc.perform(get("/cart").principal(auth)).andReturn().getResponse();
         assertEquals(200,response.getStatus());
         String html=response.getContentAsString();
-        assertTrue(html.contains("178.000")); assertTrue(html.contains("Sắp có"));
+        assertTrue(html.contains("178.000")); assertFalse(html.contains("Sắp có"));
+        assertFalse(html.contains("Voucher nền tảng"));
+        assertFalse(html.contains("Mã giảm giá của shop"));
+        assertFalse(html.contains("Giảm giá / voucher"));
+        assertFalse(html.contains("Tính khi thanh toán"));
+        assertTrue(html.contains("Mua hàng (1)"));
         assertTrue(html.contains("name=\"itemIds\"")); assertTrue(html.contains("/customer/checkout"));
         assertTrue(html.contains("/cart/update")); assertTrue(html.contains("/cart/remove"));
         assertFalse(html.contains("15.000"));
+    }
+
+    @Test void rendersIndependentShopsAndUnavailableItems() throws Exception {
+        when(auth.isAuthenticated()).thenReturn(true);
+        doReturn(org.springframework.security.core.authority.AuthorityUtils.createAuthorityList("ROLE_CUSTOMER")).when(auth).getAuthorities();
+        var apple = CartItemDto.builder().cartItemId(9L).variantId(12L).shopId(2L).shopName("Vườn trái cây Miền Tây").productName("Táo Gala New Zealand").variantName("Khay 4 quả").quantity(2).unitPriceSnapshot(new BigDecimal("89000")).itemSubtotal(new BigDecimal("178000")).availableStock(5).purchasable(true).quantityEditable(true).imageUrl("/images/apple.jpg").build();
+        var mango = CartItemDto.builder().cartItemId(10L).variantId(13L).shopId(2L).shopName("Vườn trái cây Miền Tây").productName("Xoài cát Hòa Lộc").variantName("Hộp 1 kg").quantity(1).unitPriceSnapshot(new BigDecimal("65000")).itemSubtotal(new BigDecimal("65000")).availableStock(3).purchasable(true).quantityEditable(true).imageUrl("/images/xoai-cat.png").build();
+        var pomelo = CartItemDto.builder().cartItemId(11L).variantId(14L).shopId(3L).shopName("Nông sản Vĩnh Long").productName("Bưởi da xanh").variantName("Quả 1,2 kg").quantity(1).unitPriceSnapshot(new BigDecimal("52000")).itemSubtotal(new BigDecimal("52000")).availableStock(0).purchasable(false).quantityEditable(false).availabilityMessage("Tạm hết hàng.").imageUrl("/images/buoi-da-xanh.jpg").build();
+        when(cart.getActiveCart(7L)).thenReturn(CartDto.builder().cartId(3L).items(List.of(apple, mango, pomelo)).totalAmount(new BigDecimal("243000")).hasUnavailableItems(true).build());
+        when(catalog.listProducts(1)).thenReturn(Page.empty());
+        var response = mvc.perform(get("/cart").principal(auth)).andReturn().getResponse();
+        assertEquals(200, response.getStatus());
+        String html = response.getContentAsString();
+        assertTrue(html.contains("/shops/2/products"));
+        assertTrue(html.contains("/shops/3/products"));
+        assertEquals(2, html.split("class=\"shop-selection-checkbox\"", -1).length - 1);
+        assertTrue(html.contains("Mua hàng (2)"));
+        assertTrue(html.contains("243.000"));
+        assertTrue(html.contains("Tạm hết hàng."));
+        assertFalse(html.contains("cart-suggestion-add"));
+        java.nio.file.Files.writeString(java.nio.file.Path.of("target/cart-redesign-preview.html"), html);
+    }
+
+    @Test void rendersEmptyCartWithoutCheckoutButton() throws Exception {
+        when(catalog.listProducts(1)).thenReturn(Page.empty());
+        var response = mvc.perform(get("/cart")).andReturn().getResponse();
+        assertEquals(200, response.getStatus());
+        String html = response.getContentAsString();
+        assertTrue(html.contains("Giỏ hàng của bạn đang trống"));
+        assertTrue(html.contains("Khám phá sản phẩm"));
+        assertFalse(html.contains("id=\"checkout-selected-button\""));
     }
 }
