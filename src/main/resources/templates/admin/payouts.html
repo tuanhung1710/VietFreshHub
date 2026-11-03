@@ -3,11 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+    
+    
     <title>Quản lý chi trả cho cửa hàng · VietFresh Hub</title>
     <link rel="stylesheet" th:href="@{/css/admin-payouts.css}">
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body>
-<main class="page-shell">
+<body class="vfo-app vfr-app vfr-admin" data-vfr-section="payouts">
+<th:block th:replace="~{fragments/interface-layout :: navigation('admin','payouts')}"></th:block>
+
+<div class="vfo-workspace vfr-workspace" id="workspace-content" tabindex="-1">
+<main class="page-shell vfr-page">
     <header class="page-header">
         <div>
             <p class="eyebrow">TRUNG TÂM QUẢN TRỊ</p>
@@ -33,7 +41,7 @@
             <button class="button primary" type="submit" form="manualPayoutBatchForm">Tạo đợt chi trả thủ công</button>
         </div>
         <div class="table-scroll">
-            <table>
+            <table class="table align-middle">
                 <thead><tr>
                     <th>Chọn</th><th>Cửa hàng / mã đơn</th><th>Phương thức thanh toán</th><th class="money">Tiền hàng</th><th class="money">Mã giảm giá</th>
                     <th class="money">Tiền tính hoa hồng</th><th class="money">Phí sàn</th><th class="money">Tiền chuyển cho shop</th><th>Trạng thái chi trả</th><th>Thao tác</th>
@@ -43,7 +51,7 @@
                     <td>
                         <input th:if="${payout.canManualBatch}" type="checkbox" form="manualPayoutBatchForm"
                                name="payoutIds" th:value="${payout.payoutId}"
-                               th:attr="aria-label=|Chọn đơn ${payout.orderCode} để đưa vào đợt chi trả thủ công|">
+                               th:attr="aria-label=|Chọn đơn ${payout.orderCode} để đưa vào đợt chi trả thủ công|" class="form-check-input">
                         <span th:unless="${payout.canManualBatch}" class="muted">—</span>
                     </td>
                     <td><strong th:text="${payout.shopName}">Cửa hàng</strong><small th:text="${payout.orderCode}">VF-ORDER</small></td>
@@ -76,8 +84,8 @@
     <section class="panel">
         <div class="section-heading"><div><h2>Các đợt chi trả</h2><p>Tải file Excel để lấy danh sách chuyển tiền. Không cần cập nhật kết quả giao dịch trên hệ thống.</p></div></div>
         <form class="batch-filter" method="get" th:action="@{/admin/payouts}">
-            <label>Từ ngày<input type="date" name="fromDate" th:value="${fromDate}"></label>
-            <label>Đến ngày<input type="date" name="toDate" th:value="${toDate}"></label>
+            <label>Từ ngày<input type="date" name="fromDate" th:value="${fromDate}" class="form-control"></label>
+            <label>Đến ngày<input type="date" name="toDate" th:value="${toDate}" class="form-control"></label>
             <button class="button primary" type="submit">Lọc đợt</button>
             <a class="button secondary" th:href="@{/admin/payouts}">Xóa lọc</a>
         </form>
@@ -90,7 +98,7 @@
                 <a class="button primary" th:href="@{/admin/payouts/batches/{id}/export.xlsx(id=${batch.batchId})}">Tải file Excel</a>
             </header>
             <div class="table-scroll">
-                <table class="compact"><thead><tr><th>Cửa hàng</th><th>Số đơn</th><th class="money">Tổng tiền chuyển</th></tr></thead>
+                <table class="compact table align-middle"><thead><tr><th>Cửa hàng</th><th>Số đơn</th><th class="money">Tổng tiền chuyển</th></tr></thead>
                     <tbody><tr th:each="transfer : ${batch.shopTransfers}">
                         <td th:text="${transfer.shopName}">Shop</td><td th:text="${transfer.orderCount}">0</td>
                         <td class="money" th:text="${#numbers.formatDecimal(transfer.amount, 1, 'COMMA', 2, 'POINT')}">0</td>
@@ -102,5 +110,7 @@
            th:text="${fromDate == null and toDate == null ? 'Chưa có đợt chi trả nào.' : 'Không có đợt chi trả trong khoảng ngày đã chọn.'}">Chưa có đợt chi trả nào.</p>
     </section>
 </main>
+<footer th:replace="~{fragments/admin-workspace :: footer}"></footer>
+</div>
 </body>
 </html>

@@ -3,18 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+    
+    
     <title>Báo cáo cửa hàng · VietFresh Hub</title>
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body>
+<body class="vfo-app vfr-app vfr-seller" data-vfr-section="reports">
+<th:block th:replace="~{fragments/interface-layout :: navigation('seller','reports')}"></th:block>
+<div class="vfo-workspace vfr-workspace" id="order-content" tabindex="-1">
+<main class="vfr-page">
+
+
 <h1>Báo cáo cửa hàng</h1>
 <form method="get" th:action="@{/seller/reports}">
-    <label for="from">Từ ngày</label>
-    <input id="from" name="from" type="date" th:value="${report.from}">
-    <label for="to">Đến ngày</label>
-    <input id="to" name="to" type="date" th:value="${report.to}">
-    <button type="submit">Lọc</button>
+    <div class="vfr-filter-field"><label for="from">Từ ngày</label>
+    <input id="from" name="from" type="date" th:value="${report.from}" class="form-control"></div>
+    <div class="vfr-filter-field"><label for="to">Đến ngày</label>
+    <input id="to" name="to" type="date" th:value="${report.to}" class="form-control"></div>
+    <button type="submit" class="btn btn-success">Lọc</button>
 </form>
 
+<div class="vfr-report-grid">
+<section class="vfr-section vfr-report-section">
 <h2>Doanh số đơn shop hoàn thành</h2>
 <p th:if="${report.sales.completedOrders == 0}">Không có đơn hoàn thành trong khoảng ngày này.</p>
 <dl>
@@ -24,23 +36,27 @@
     <dt>Số đơn hoàn thành</dt><dd th:text="${report.sales.completedOrders}">0</dd>
 </dl>
 <p>Doanh thu ròng: TBD (chưa có quy tắc về hoàn tiền, phí nền tảng và ghi nhận doanh thu).</p>
-
+</section>
+<section class="vfr-section vfr-report-section">
 <h2>Thống kê đơn hàng theo ngày đặt</h2>
 <p th:if="${#lists.isEmpty(report.ordersByStatus)}">Không có đơn hàng trong khoảng ngày này.</p>
 <ul th:unless="${#lists.isEmpty(report.ordersByStatus)}">
     <li th:each="row : ${report.ordersByStatus}" th:text="${row.status + ': ' + row.orderCount}">Trạng thái</li>
 </ul>
-
+</section>
+<section class="vfr-section vfr-report-section">
 <h2>Thống kê khách hàng theo ngày đặt đơn</h2>
 <p th:text="${'Khách hàng duy nhất: ' + report.distinctCustomers}">Khách hàng duy nhất: 0</p>
-
+</section>
+<section class="vfr-section vfr-report-section">
 <h2>Sản phẩm bán chạy trong đơn hoàn thành</h2>
 <p th:if="${#lists.isEmpty(report.bestSellingProducts)}">Không có sản phẩm bán ra trong khoảng ngày này.</p>
 <ol th:unless="${#lists.isEmpty(report.bestSellingProducts)}">
     <li th:each="product : ${report.bestSellingProducts}"
         th:text="${product.productName + ' · ' + product.unitsSold + ' sản phẩm'}">Sản phẩm</li>
 </ol>
-
+</section>
+<section class="vfr-section vfr-report-section">
 <h2>Tình trạng tồn kho hiện tại</h2>
 <p th:if="${inventoryLoadError}">Không thể tải dữ liệu tồn kho. Vui lòng thử lại sau.</p>
 <th:block th:unless="${inventoryLoadError}">
@@ -53,6 +69,11 @@
     </ul>
 </th:block>
 <p><a th:href="@{/seller/inventory/journal(from=${report.from},to=${report.to})}">Xem biến động tồn kho trong khoảng ngày đã chọn</a></p>
+</section>
+</div>
 <p><a th:href="@{/seller}">Về trang cửa hàng</a></p>
+</main>
+<footer th:replace="~{fragments/seller-orders :: footer}"></footer>
+</div>
 </body>
 </html>

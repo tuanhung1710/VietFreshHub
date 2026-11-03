@@ -3,23 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+    
+    
     <title>Quản lý gói dịch vụ · VietFresh Hub</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-          rel="stylesheet"
-          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
-          crossorigin="anonymous">
+    
     <link rel="stylesheet" th:href="@{/css/admin-accounts.css}">
     <link rel="stylesheet" th:href="@{/css/admin-dashboard.css}">
     <link rel="stylesheet" th:href="@{/css/admin-subscription.css}">
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body class="subscription-page">
-<div class="app-shell">
-    <header class="topbar">
-        <a class="brand" th:href="@{/admin/accounts}" aria-label="VietFresh Hub, trung tâm quản trị"><span class="brand-mark" aria-hidden="true">V</span><span><strong>VietFresh Hub</strong><small>TRUNG TÂM QUẢN TRỊ</small></span></a>
-        <div class="topbar-right"><span th:replace="~{fragments/notifications :: bell}"></span><span class="admin-label">QUẢN TRỊ VIÊN</span><span class="admin-avatar" aria-label="Quản trị viên">AD</span></div>
-    </header>
+<body class="subscription-page vfo-app vfr-app vfr-admin" data-vfr-section="subscription">
+<th:block th:replace="~{fragments/interface-layout :: navigation('admin','subscription')}"></th:block>
 
-<main class="page-content">
+<div class="app-shell">
+    
+
+<div class="vfo-workspace vfr-workspace" id="workspace-content" tabindex="-1">
+<main class="page-content vfr-page">
     <nav class="breadcrumbs" aria-label="Điều hướng"><a th:href="@{/admin/accounts}">Quản trị</a><span aria-hidden="true">/</span><strong>Quản lý gói dịch vụ</strong></nav>
     <section class="page-heading">
         <div><p class="eyebrow">QUẢN LÝ GÓI DỊCH VỤ</p><h1>Quản lý gói dịch vụ</h1></div>
@@ -46,7 +48,7 @@
         </div>
 
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0 subscription-plans-table">
+            <table class="table table-hover align-middle mb-0 subscription-plans-table table align-middle">
                 <thead class="table-light">
                 <tr>
                     <th scope="col" class="text-center text-secondary small fw-bold py-3"
@@ -152,6 +154,8 @@
         </div>
     </div>
 </main>
+<footer th:replace="~{fragments/admin-workspace :: footer}"></footer>
+</div>
 </div>
 </body>
 </html>

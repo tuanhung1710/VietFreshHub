@@ -1,18 +1,9 @@
-<!DOCTYPE html><html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/storefront :: head('Theo dõi đơn hàng')}"></head><body>
-<header th:replace="~{fragments/storefront :: header}"></header><main class="container page tracking-page">
-    <p><a th:href="@{/customer/orders(keyword=${tracking.orderCode})}">← Đơn hàng của tôi</a></p>
-    <div class="page-heading"><h1 class="checkout-title">Theo dõi đơn hàng</h1><p class="order-code">
-        Mã lượt mua: <span th:text="${tracking.orderCode}"></span>
-    </p></div>
-    <div class="tracking-shops"><section th:each="shop : ${tracking.shops}" class="panel tracking-shop">
-        <div class="order-shop-heading"><h2 th:text="${shop.shopName}"></h2><a class="order-code" th:href="@{/customer/orders/{id}(id=${shop.shopOrderId})}" th:text="${shop.orderCode()}"></a></div>
-        <p><strong class="order-state" th:attr="data-status=${shop.deliveryStatusCode}" th:text="${shop.deliveryStatus}"></strong></p>
-        <div th:if="${shop.deliveryStatusCode == 'FAILED'}" class="notice error" role="status">
-            <strong>Lý do giao hàng thất bại:</strong>
-            <p th:text="${shop.failureReason != null ? shop.failureReason : 'Chưa ghi nhận lý do. Vui lòng liên hệ cửa hàng để được hỗ trợ.'}"></p>
-        </div>
-        <p th:if="${#lists.isEmpty(shop.events)}" class="muted">Chưa có lịch sử cập nhật.</p>
-        <ol class="order-timeline"><li th:each="event : ${shop.events}"><time th:if="${event.occurredAt != null}" th:text="${#temporals.format(event.occurredAt,'HH:mm dd/MM/yyyy')}"></time><span th:if="${event.occurredAt == null}" class="muted">Chưa ghi nhận thời gian</span><div><strong th:text="${event.label}"></strong><p th:if="${event.note != null}" class="muted" th:text="${event.note}"></p></div></li></ol>
-    </section></div>
-</main><footer th:replace="~{fragments/storefront :: footer}"></footer></body></html>
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/customer-service :: head('Theo dõi đơn hàng')}"></head>
+<body class="vfo-app vfc-app">
+<th:block th:replace="~{fragments/customer-service :: header}"></th:block>
+<main th:replace="~{fragments/customer-service :: tracking(false)}"></main>
+<footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</body>
+</html>

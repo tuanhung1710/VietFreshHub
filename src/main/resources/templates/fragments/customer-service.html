@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title + ' | VietFresh Hub'}">VietFresh Hub</title>
+    <th:block th:replace="~{fragments/seller-orders :: assets}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/order-service-pages.css}">
+    <script defer th:src="@{/js/cart.js}"></script>
+</head>
+<body>
+<th:block th:fragment="header">
+    <a class="vfo-skip-link" href="#customer-content">Đến nội dung chính</a>
+    <svg th:replace="~{fragments/seller-orders :: icons}"></svg>
+    <header class="vfc-header">
+        <div class="vfc-container vfc-header-main">
+            <a class="vfo-brand" data-path="home" th:href="@{/home}" aria-label="VietFresh Hub — Trang chủ">
+                <span class="vfo-brand-mark"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-leaf"/></svg></span>
+                <span><span class="vfo-brand-name"><strong>VietFresh</strong> Hub</span><span class="vfo-brand-tagline">Fresh from the heart</span></span>
+            </a>
+            <form class="vfc-header-search d-none d-lg-flex" th:action="@{/home}" method="get" role="search">
+                <input th:if="${category != null and not #strings.isEmpty(category)}" type="hidden" name="category" th:value="${category}">
+                <svg class="vfo-icon" aria-hidden="true"><use href="#vfo-search"/></svg>
+                <input class="form-control" aria-label="Tìm kiếm trái cây" name="keyword" maxlength="100" th:value="${keyword}" placeholder="Tìm kiếm trái cây tươi, bưởi da xanh, xoài cát..." type="search">
+                <button class="btn vfo-btn-primary" type="submit">Tìm kiếm</button>
+            </form>
+            <div class="vfo-topbar-actions vfc-header-actions">
+                <span th:replace="~{fragments/notifications :: bell}"></span>
+                <a class="vfc-cart-link" data-path="gio-hang" th:href="@{/cart}" title="Giỏ hàng" aria-label="Giỏ hàng">
+                    <svg class="vfo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h3l3 13h11l3-9H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg>
+                    <span th:text="${cartBadgeTotal != null ? cartBadgeTotal : (cart != null ? cart.totalItems : 0)}">0</span>
+                </a>
+                <span class="vfo-topbar-divider d-none d-sm-block"></span>
+                <th:block th:replace="~{fragments/account-menu :: menu}"></th:block>
+            </div>
+        </div>
+        <nav class="vfc-header-nav" aria-label="Điều hướng mua sắm">
+            <div class="vfc-container">
+                <a th:href="@{/home}">Trang chủ</a>
+                <a data-path="he-thong-cua-hang" th:href="@{/shops}">Hệ thống cửa hàng</a>
+                <a class="active" aria-current="location" th:href="@{/customer/orders}">Đơn hàng của tôi</a>
+                <a th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" th:href="@{/customer/loyalty}">Tiền thưởng</a>
+            </div>
+        </nav>
+    </header>
+</th:block>
+
+<main th:fragment="tracking(shopView)" id="customer-content" class="vfc-container vfc-main vfc-tracking-page" tabindex="-1">
+    <nav aria-label="Đường dẫn trang"><ol class="breadcrumb vfo-breadcrumb"><li class="breadcrumb-item"><a th:href="@{/home}">Trang chủ</a></li><li class="breadcrumb-item"><a th:href="@{/customer/orders}">Đơn hàng của tôi</a></li><li class="breadcrumb-item active" aria-current="page">Theo dõi đơn hàng</li></ol></nav>
+    <header class="vfo-page-heading">
+        <div><h1>Theo dõi đơn hàng</h1><p class="vfo-page-description">Theo dõi trạng thái và các cập nhật trong hành trình đơn hàng.</p></div>
+        <a class="btn vfo-btn-secondary" th:if="${shopView}" th:href="@{/customer/orders/{id}(id=${shopOrderId})}"><span aria-hidden="true">←</span> Chi tiết đơn hàng</a>
+        <a class="btn vfo-btn-secondary" th:unless="${shopView}" th:href="@{/customer/orders(keyword=${tracking.orderCode})}"><span aria-hidden="true">←</span> Đơn hàng của tôi</a>
+    </header>
+    <div class="vfc-order-reference"><span class="vfc-reference-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-order"/></svg></span><div><span th:text="${shopView ? 'Mã đơn hàng' : 'Mã lượt mua'}">Mã đơn hàng</span><strong th:text="${tracking.orderCode}"></strong></div><svg class="vfo-icon vfc-reference-leaf" aria-hidden="true"><use href="#vfo-leaf"/></svg></div>
+    <div class="vfc-tracking-shops">
+        <section th:each="shop : ${tracking.shops}" class="card vfc-tracking-shop">
+            <div class="vfc-shop-summary">
+                <span class="vfc-shop-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-shop"/></svg></span>
+                <p class="vfo-eyebrow">Cửa hàng</p>
+                <h2 th:text="${shop.shopName}"></h2>
+                <p class="vfc-shop-order-status" th:unless="${shopView}">Mã đơn hàng: <a th:href="@{/customer/orders/{id}(id=${shop.shopOrderId})}" th:text="${shop.orderCode()}"></a></p>
+                <div class="vfc-shop-delivery"><span>Trạng thái giao hàng</span><strong class="vfo-status vfc-delivery-state" th:attr="data-status=${shop.deliveryStatusCode}" th:text="${shop.deliveryStatus}"></strong></div>
+                <p class="vfc-shop-order-status" th:if="${shopView}">Trạng thái đơn hàng: <strong th:text="${shop.orderStatus}"></strong></p>
+            </div>
+            <div class="vfc-tracking-history">
+                <div class="vfc-history-heading"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-history"/></svg><h3>Nhật ký đơn hàng</h3></div>
+                <div th:if="${!shopView and shop.deliveryStatusCode == 'FAILED'}" class="vfc-notice vfc-notice-danger" role="status"><strong>Lý do giao hàng thất bại:</strong><p th:text="${shop.failureReason != null ? shop.failureReason : 'Chưa ghi nhận lý do. Vui lòng liên hệ cửa hàng để được hỗ trợ.'}"></p></div>
+                <div class="vfc-tracking-empty" th:if="${#lists.isEmpty(shop.events)}"><span class="vfo-empty-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-history"/></svg></span><p>Chưa có lịch sử cập nhật.</p></div>
+                <ol class="vfc-timeline">
+                    <li th:each="event : ${shop.events}" th:attr="data-recorded=${event.verified and event.occurredAt != null}">
+                        <div class="vfc-event-time"><time th:if="${event.occurredAt != null}" th:text="${#temporals.format(event.occurredAt,'HH:mm dd/MM/yyyy')}"></time><span th:if="${event.occurredAt == null}">Chưa ghi nhận thời gian</span></div>
+                        <span class="vfc-timeline-dot" aria-hidden="true"></span>
+                        <div class="vfc-event-content"><strong th:text="${event.label}"></strong><p th:if="${event.note != null}" th:text="${event.note}"></p></div>
+                    </li>
+                </ol>
+            </div>
+        </section>
+    </div>
+</main>
+
+<footer th:fragment="footer" class="vfc-footer">
+    <div class="vfc-container">
+        <div class="row g-4 g-xl-5">
+            <section class="col-12 col-lg-5 vfc-footer-intro"><a class="vfc-footer-brand" th:href="@{/home}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-leaf"/></svg>VietFresh Hub</a><p>Hệ thống phân phối trái cây sạch và nông sản an toàn hàng đầu Việt Nam. Nguồn gốc minh bạch, tiêu chuẩn kiểm định nghiêm ngặt từ nông trại tới bàn ăn.</p></section>
+            <section class="col-12 col-sm-6 col-lg-3"><h2>Danh mục sản phẩm</h2><ul><li><a data-path="noi-dia" href="#">Trái cây đặc sản nội địa</a></li><li><a data-path="nhap-khau" href="#">Trái cây nhập khẩu cao cấp</a></li><li><a data-path="hop-qua-bieu" href="#">Giỏ &amp; hộp quà trái cây biếu</a></li><li><a data-path="combo-tiet-kiem" href="#">Combo dinh dưỡng gia đình</a></li><li><a data-path="chinh-sach-si" href="#">Cung ứng sỉ cho doanh nghiệp</a></li></ul></section>
+            <section class="col-12 col-sm-6 col-lg-4"><h2>Hỗ trợ khách hàng</h2><ul><li><a data-path="chinh-sach-giao-hang" href="#">Chính sách vận chuyển 2h</a></li><li><a data-path="chinh-sach-doi-tra" href="#">Chính sách 1 đổi 1 trong 24h</a></li><li><a data-path="kiem-dinh-chat-luong" href="#">Tiêu chuẩn nguồn gốc xuất xứ</a></li><li><a data-path="he-thong-cua-hang" href="#">Tìm kiếm cửa hàng</a></li><li><a data-path="bao-mat" href="#">Điều khoản &amp; bảo mật</a></li></ul></section>
+        </div>
+        <div class="vfc-footer-bottom">© 2026 VietFresh Hub - Nông Sản Tươi Lành Cho Mọi Nhà. Tất cả các quyền được bảo lưu.</div>
+    </div>
+</footer>
+</body>
+</html>

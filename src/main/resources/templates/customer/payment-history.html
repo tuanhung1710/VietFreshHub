@@ -1,20 +1,16 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/order-pages :: head('Lịch sử thanh toán')}"></head>
-<body class="purchase-page"><header class="purchase-header">
-<div class="purchase-header-inner">
-<a class="purchase-brand" th:href="@{/home}"><span aria-hidden="true">❧</span> VIETFRESH HUB</a>
-<nav class="purchase-header-nav" aria-label="Điều hướng chính"><a th:href="@{/home}">Trang chủ</a><a th:href="@{/shops}">Cửa hàng</a></nav>
-<form class="purchase-header-search" th:action="@{/home}" method="get" role="search"><input type="search" name="keyword" maxlength="100" placeholder="Tìm kiếm trái cây, cửa hàng…" aria-label="Tìm kiếm sản phẩm"><button type="submit" aria-label="Tìm kiếm">Tìm kiếm</button></form>
-<div class="purchase-header-actions"><a th:href="@{/notifications}" aria-label="Thông báo"><svg th:replace="~{fragments/account-menu :: icon('bell')}"></svg><span class="purchase-header-action-label">Thông báo</span></a><a th:href="@{/cart}" aria-label="Giỏ hàng"><svg th:replace="~{fragments/account-menu :: icon('cart')}"></svg><span class="purchase-cart-count" th:text="${cartBadgeTotal != null ? cartBadgeTotal : 0}"></span></a><a class="purchase-header-account" th:href="@{/customer/profile}"><svg th:replace="~{fragments/account-menu :: icon('person')}"></svg><span th:text="${headerAccountName != null ? headerAccountName : #authentication.name}"></span></a></div>
-</div></header>
-<main class="container page purchase-layout"><aside class="purchase-sidebar">
+<head th:replace="~{fragments/interface-layout :: customerHead('Lịch sử thanh toán')}"></head>
+<body class="purchase-page vfo-app vfr-app vfc-app vfr-customer" data-vfr-section="orders">
+<th:block th:replace="~{fragments/interface-layout :: navigation('customer','orders')}"></th:block>
+
+<main class="container page purchase-layout vfr-page" id="customer-content" tabindex="-1"><aside class="purchase-sidebar">
 <div class="purchase-profile"><span class="purchase-avatar"><svg th:replace="~{fragments/account-menu :: icon('person')}"></svg></span><div><strong th:text="${headerAccountName != null ? headerAccountName : #authentication.name}"></strong><span class="purchase-role">Khách hàng</span></div></div>
 <nav aria-label="Tài khoản của tôi"><a th:href="@{/customer/profile}" ><svg th:replace="~{fragments/account-menu :: icon('person')}"></svg>Thông tin tài khoản</a>
 <a th:href="@{/customer/orders}" ><svg th:replace="~{fragments/account-menu :: icon('orders')}"></svg>Đơn hàng của tôi</a>
 <a class="active" aria-current="page" th:href="@{/customer/payments}" ><svg th:replace="~{fragments/account-menu :: icon('orders')}"></svg>Lịch sử thanh toán</a>
 <a th:href="@{/customer/addresses}" ><svg th:replace="~{fragments/account-menu :: icon('location')}"></svg>Địa chỉ nhận hàng</a>
-<a th:href="@{/cart}" ><svg th:replace="~{fragments/account-menu :: icon('cart')}"></svg>Giỏ hàng</a><form th:action="@{/logout}" method="post"><button type="submit"><svg th:replace="~{fragments/account-menu :: icon('logout')}"></svg>Đăng xuất</button></form></nav><div class="purchase-landscape" aria-hidden="true"><span>♧</span></div>
+<a th:href="@{/cart}" ><svg th:replace="~{fragments/account-menu :: icon('cart')}"></svg>Giỏ hàng</a><form th:action="@{/logout}" method="post"><button type="submit" class="btn btn-success"><svg th:replace="~{fragments/account-menu :: icon('logout')}"></svg>Đăng xuất</button></form></nav><div class="purchase-landscape" aria-hidden="true"><span>♧</span></div>
 </aside>
 <div class="purchase-content order-history-page payment-history-page payment-template">
     <nav class="purchase-breadcrumb" aria-label="Đường dẫn"><a th:href="@{/home}">Trang chủ</a><span>›</span><span>Lịch sử thanh toán</span></nav><div class="page-heading payments-heading">
@@ -31,14 +27,14 @@
     <p th:if="${pageNotice != null}" class="notice info" role="status" th:text="${pageNotice}"></p>
     <form class="panel purchase-filters" th:action="@{/customer/payments}" th:object="${filter}" method="get" aria-label="Lọc bản ghi thanh toán">
         <input type="hidden" name="size" th:value="${filter.size}">
-        <div><label for="payment-keyword">Mã đơn hàng liên quan</label><input id="payment-keyword" type="search" th:field="*{keyword}" maxlength="100" placeholder="Tìm theo mã đơn hàng"></div>
-        <div><label for="payment-status">Trạng thái thanh toán</label><select id="payment-status" th:field="*{status}">
+        <div><label for="payment-keyword">Mã đơn hàng liên quan</label><input id="payment-keyword" type="search" th:field="*{keyword}" maxlength="100" placeholder="Tìm theo mã đơn hàng" class="form-control"></div>
+        <div><label for="payment-status">Trạng thái thanh toán</label><select id="payment-status" th:field="*{status}" class="form-control">
             <option value="">Tất cả</option>
             <option th:if="${#fields.hasErrors('status')}" th:value="*{status}">Trạng thái không hợp lệ</option>
             <option th:each="state : ${statusOptions}" th:value="${state.key}" th:text="${state.value}"></option>
         </select></div>
-        <div><label for="payment-from">Từ ngày tạo</label><input id="payment-from" type="date" min="0001-01-01" max="9999-12-31" th:field="*{fromDate}"></div>
-        <div><label for="payment-to">Đến ngày tạo</label><input id="payment-to" type="date" min="0001-01-01" max="9999-12-31" th:field="*{toDate}"></div>
+        <div><label for="payment-from">Từ ngày tạo</label><input id="payment-from" type="date" min="0001-01-01" max="9999-12-31" th:field="*{fromDate}" class="form-control"></div>
+        <div><label for="payment-to">Đến ngày tạo</label><input id="payment-to" type="date" min="0001-01-01" max="9999-12-31" th:field="*{toDate}" class="form-control"></div>
         <button class="button" type="submit">Lọc thanh toán</button>
         <a class="filter-reset" th:href="@{/customer/payments}">Xóa bộ lọc</a>
     </form>
@@ -78,12 +74,13 @@
             <input type="hidden" name="fromDate" th:value="${filter.fromDate != null ? #temporals.format(filter.fromDate,'yyyy-MM-dd') : null}">
             <input type="hidden" name="toDate" th:value="${filter.toDate != null ? #temporals.format(filter.toDate,'yyyy-MM-dd') : null}">
             <label for="historyPageSize">Bản ghi mỗi trang</label>
-            <select name="size" id="historyPageSize">
+            <select name="size" id="historyPageSize" class="form-control">
                 <option th:each="size : ${T(VietFreshHub.common.PageSizes).OPTIONS}" th:value="${size}" th:selected="${filter.size == size}" th:text="${size}"></option>
             </select>
-            <button type="submit">Áp dụng</button>
+            <button type="submit" class="btn btn-success">Áp dụng</button>
         </form>
     </div>
 </div></main>
-<footer th:replace="~{fragments/storefront :: footer}"></footer>
+
+<footer th:replace="~{fragments/customer-service :: footer}"></footer>
 </body></html>

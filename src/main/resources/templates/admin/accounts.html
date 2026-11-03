@@ -3,31 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+    
+    
     <meta name="theme-color" content="#f4f8f4">
     <meta name="_csrf" th:content="${_csrf.token}">
     <meta name="_csrf_parameter" th:content="${_csrf.parameterName}">
     <title>Quản lý tài khoản · VietFresh Hub</title>
     <link rel="stylesheet" th:href="@{/css/admin-accounts.css}">
     <script defer th:src="@{/js/admin-accounts.js}"></script>
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body>
-<div class="app-shell" data-accounts-page>
-    <header class="topbar">
-        <a class="brand" th:href="@{/admin/accounts}" aria-label="VietFresh Hub, quản lý tài khoản">
-            <span class="brand-mark" aria-hidden="true">V</span>
-            <span><strong>VietFresh Hub</strong><small>TRUNG TÂM QUẢN TRỊ</small></span>
-        </a>
-        <div class="topbar-right">
-            <span th:replace="~{fragments/notifications :: bell}"></span>
-            <span class="admin-label">QUẢN TRỊ VIÊN</span>
-            <span class="admin-avatar" aria-label="Quản trị viên">AD</span>
-            <form th:action="@{/logout}" method="post">
-                <button class="button" type="submit">Đăng xuất</button>
-            </form>
-        </div>
-    </header>
+<body class="vfo-app vfr-app vfr-admin" data-vfr-section="accounts">
+<th:block th:replace="~{fragments/interface-layout :: navigation('admin','accounts')}"></th:block>
 
-    <main class="page-content">
+<div class="app-shell" data-accounts-page>
+    
+
+    <div class="vfo-workspace vfr-workspace" id="workspace-content" tabindex="-1">
+<main class="page-content vfr-page">
         <nav class="breadcrumbs" aria-label="Điều hướng">
             <span>Quản trị</span><span aria-hidden="true">/</span><strong>Quản lý tài khoản</strong>
             <a th:href="@{/admin/seller-applications}">Duyệt đăng ký bán hàng</a>
@@ -77,17 +72,17 @@
             <form class="filter-bar" method="get" th:action="@{/admin/accounts}">
                 <label class="search-box">
                     <span class="visually-hidden">Tìm kiếm tài khoản</span><span class="search-icon" aria-hidden="true">⌕</span>
-                    <input id="search-input" type="search" name="keyword" th:value="${keyword}" placeholder="Tìm tên, email hoặc số điện thoại…" autocomplete="off">
+                    <input id="search-input" type="search" name="keyword" th:value="${keyword}" placeholder="Tìm tên, email hoặc số điện thoại…" autocomplete="off" class="form-control">
                 </label>
                 <label class="select-filter"><span class="visually-hidden">Sắp xếp tài khoản</span>
-                    <select name="sort" aria-label="Sắp xếp tài khoản">
+                    <select name="sort" aria-label="Sắp xếp tài khoản" class="form-control">
                         <option value="NEWEST" th:selected="${selectedSort == 'NEWEST'}">Mới nhất</option>
                         <option value="NAME_ASC" th:selected="${selectedSort == 'NAME_ASC'}">Tên A → Z</option>
                         <option value="NAME_DESC" th:selected="${selectedSort == 'NAME_DESC'}">Tên Z → A</option>
                     </select>
                 </label>
                 <label class="select-filter"><span class="visually-hidden">Lọc theo vai trò</span>
-                    <select name="role" aria-label="Lọc theo vai trò">
+                    <select name="role" aria-label="Lọc theo vai trò" class="form-control">
                         <option value="ALL" th:selected="${selectedRole == 'ALL'}">Tất cả vai trò</option>
                         <option th:each="availableRole : ${roles}" th:value="${availableRole.roleName}"
                                 th:text="${availableRole.roleName == 'ROLE_ADMIN' ? 'Quản trị viên' : (availableRole.roleName == 'ROLE_CUSTOMER' ? 'Khách hàng' : (availableRole.roleName == 'ROLE_DELIVERY_STAFF' ? 'Nhân viên giao hàng' : (availableRole.roleName == 'ROLE_STORE_MANAGER' ? 'Quản lý cửa hàng' : availableRole.roleName)))}"
@@ -95,7 +90,7 @@
                     </select>
                 </label>
                 <label class="select-filter"><span class="visually-hidden">Lọc theo trạng thái</span>
-                    <select name="status" aria-label="Lọc theo trạng thái">
+                    <select name="status" aria-label="Lọc theo trạng thái" class="form-control">
                         <option value="ALL" th:selected="${selectedStatus == 'ALL'}">Tất cả trạng thái</option>
                         <option value="ACTIVE" th:selected="${selectedStatus == 'ACTIVE'}">Active</option>
                         <option value="INACTIVE" th:selected="${selectedStatus == 'INACTIVE'}">Inactive</option>
@@ -107,7 +102,7 @@
             </form>
 
             <div class="table-wrap">
-                <table>
+                <table class="table align-middle">
                     <thead>
                     <tr>
                         <th scope="col">TÀI KHOẢN</th>
@@ -152,6 +147,8 @@
 
         <p class="demo-disclaimer"><strong>Ghi chú:</strong> Tài khoản Inactive hoặc thay đổi role sẽ cần đăng nhập lại để quyền mới có hiệu lực.</p>
     </main>
+<footer th:replace="~{fragments/admin-workspace :: footer}"></footer>
+</div>
 
     <div id="role-options-source" hidden>
         <div data-role-option th:each="availableRole : ${roles}" th:if="${availableRole.roleName != 'ROLE_ADMIN'}"

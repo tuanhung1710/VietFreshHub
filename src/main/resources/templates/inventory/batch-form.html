@@ -5,15 +5,15 @@
     <head th:replace="~{fragments/product-inventory :: head('Xử lý lô hàng','inventory')}">
     </head>
 
-    <body>
+    <body class="vfo-app vfr-app vfr-product vfr-seller" data-vfr-section="inventory">
 
         <!-- Điều hướng Seller Portal -->
         <header th:replace="~{fragments/product-inventory :: nav('inventory')}">
         </header>
 
         <!-- Nội dung chính -->
-        <div class="vf-workspace">
-        <main class="container vf-main narrow vf-inventory-main">
+        <div class="vf-workspace" id="order-content" tabindex="-1">
+        <main class="container vf-main narrow vf-inventory-main vfr-page">
             <a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{${inventoryReturnUrl}}">
                 ← Quay lại
             </a>
@@ -168,5 +168,6 @@
         </div>
 
         <script defer th:src="@{/js/inventory/inventory.js}"></script>
-    </body>
+    <div class="vfr-product-footer"><footer th:replace="~{fragments/seller-orders :: footer}"></footer></div>
+</body>
 </html>

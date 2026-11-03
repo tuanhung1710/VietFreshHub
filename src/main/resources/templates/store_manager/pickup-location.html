@@ -4,42 +4,51 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Quản lý địa điểm lấy hàng | VietFresh Hub</title>
+    <th:block th:replace="~{fragments/seller-orders :: assets}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/order-service-pages.css}">
     <script th:src="@{/js/shop-pickup-location.js}" defer></script>
 </head>
-<body>
-<main>
-    <a th:href="@{/seller}">Trang chủ</a>
-    <h1>Quản lý địa điểm lấy hàng</h1>
-    <p th:if="${successMessage != null}" th:text="${successMessage}" role="status"></p>
-
-    <section aria-labelledby="current-location-heading">
-        <h2 id="current-location-heading">Địa điểm lấy hàng hiện tại</h2>
-        <form id="pickup-location-form" th:action="@{/seller/pickup-location}"
-              th:object="${pickupLocationForm}" method="post"
-              th:data-autocomplete-url="@{/api/vietmap/autocomplete}">
-            <div id="pickup-location-display" th:hidden="${#fields.hasAnyErrors()}">
-                <p th:if="${pickupLocation == null}">Cửa hàng chưa thiết lập địa điểm lấy hàng.</p>
-                <p id="current-pickup-address" th:if="${pickupLocation != null}"
-                   th:text="${pickupLocation.displayAddress}"></p>
-                <button id="change-pickup-location" type="button" aria-controls="pickup-location-editor">Thay đổi</button>
-            </div>
-            <div id="pickup-location-editor" th:hidden="${!#fields.hasAnyErrors()}">
-                <div th:if="${#fields.hasAnyErrors()}" role="alert">
-                    <ul>
-                        <li th:each="error : ${#fields.allErrors()}" th:text="${error}"></li>
-                    </ul>
+<body class="vfo-app vfp-app">
+<th:block th:replace="~{fragments/seller-orders :: navigation('pickup')}"></th:block>
+<div class="vfo-workspace">
+<main id="order-content" class="vfo-main vfp-main" tabindex="-1">
+    <nav aria-label="Đường dẫn trang"><ol class="breadcrumb vfo-breadcrumb"><li class="breadcrumb-item"><a th:href="@{/seller}">Kênh người bán</a></li><li class="breadcrumb-item active" aria-current="page">Địa điểm lấy hàng</li></ol></nav>
+    <header class="vfo-page-heading">
+        <div><h1>Quản lý địa điểm lấy hàng</h1><p class="vfo-page-description">Cập nhật địa chỉ bàn giao hàng cho nhân viên giao hàng.</p></div>
+        <a class="btn vfo-btn-secondary" th:href="@{/seller}"><span aria-hidden="true">←</span> Trang chủ</a>
+    </header>
+    <p class="vfc-notice vfp-success" th:if="${successMessage != null}" th:text="${successMessage}" role="status"></p>
+    <div class="vfp-layout">
+        <section class="card vfp-location-card" aria-labelledby="current-location-heading">
+            <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-pin"/></svg></span><h2 id="current-location-heading">Địa điểm lấy hàng hiện tại</h2></div>
+            <form id="pickup-location-form" th:action="@{/seller/pickup-location}" th:object="${pickupLocationForm}" method="post" th:data-autocomplete-url="@{/api/vietmap/autocomplete}">
+                <div id="pickup-location-display" th:hidden="${#fields.hasAnyErrors()}">
+                    <div class="vfp-location-display-content">
+                        <span class="vfp-location-pin"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-pin"/></svg></span>
+                        <div><span class="vfp-location-label">Địa chỉ lấy hàng</span><p class="vfp-no-location" th:if="${pickupLocation == null}">Cửa hàng chưa thiết lập địa điểm lấy hàng.</p><p id="current-pickup-address" th:if="${pickupLocation != null}" th:text="${pickupLocation.displayAddress}"></p></div>
+                    </div>
+                    <div class="vfp-location-actions"><button class="btn vfo-btn-primary" id="change-pickup-location" type="button" aria-controls="pickup-location-editor"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-pin"/></svg>Thay đổi</button></div>
                 </div>
-                <input type="search" th:field="*{searchText}" autocomplete="off"
-                       aria-label="Địa điểm lấy hàng" aria-describedby="autocomplete-status"
-                       style="width: 100%; max-width: 60rem; box-sizing: border-box;">
-                <input type="hidden" th:field="*{refId}">
-                <p id="autocomplete-status" role="status" aria-live="polite"></p>
-                <ul id="address-suggestions" aria-label="Gợi ý địa chỉ"></ul>
-                <button id="save-pickup-location" type="submit"
-                        th:disabled="${#strings.isEmpty(pickupLocationForm.refId)}">Lưu</button>
-            </div>
-        </form>
-    </section>
+                <div id="pickup-location-editor" th:hidden="${!#fields.hasAnyErrors()}">
+                    <div class="vfc-notice vfc-notice-danger" th:if="${#fields.hasAnyErrors()}" role="alert"><ul><li th:each="error : ${#fields.allErrors()}" th:text="${error}"></li></ul></div>
+                    <label class="vfp-search-label" for="searchText">Tìm địa điểm lấy hàng</label>
+                    <div class="vfp-search-field"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-search"/></svg><input class="form-control" type="search" th:field="*{searchText}" autocomplete="off" aria-label="Địa điểm lấy hàng" aria-describedby="autocomplete-status"></div>
+                    <input type="hidden" th:field="*{refId}">
+                    <p id="autocomplete-status" role="status" aria-live="polite"></p>
+                    <ul id="address-suggestions" aria-label="Gợi ý địa chỉ"></ul>
+                    <div class="vfp-location-actions"><button class="btn vfo-btn-primary" id="save-pickup-location" type="submit" th:disabled="${#strings.isEmpty(pickupLocationForm.refId)}"><svg class="vfo-icon vfo-icon-sm" aria-hidden="true"><use href="#vfo-check"/></svg>Lưu</button></div>
+                </div>
+            </form>
+        </section>
+        <aside class="vfp-help-card" aria-labelledby="pickup-help-heading">
+            <span class="vfp-help-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-shop"/></svg></span>
+            <h2 id="pickup-help-heading">Chọn địa chỉ chính xác</h2>
+            <p>Địa điểm lấy hàng là nơi bạn bàn giao đơn hàng cho nhân viên giao hàng.</p>
+            <ol><li><span>1</span><div><strong>Tìm địa chỉ</strong><p>Nhập ít nhất 2 ký tự để tìm gợi ý địa chỉ.</p></div></li><li><span>2</span><div><strong>Chọn gợi ý phù hợp</strong><p>Chọn địa chỉ chính xác trong danh sách gợi ý.</p></div></li><li><span>3</span><div><strong>Lưu địa điểm</strong><p>Kiểm tra lại địa chỉ đã chọn rồi nhấn Lưu.</p></div></li></ol>
+        </aside>
+    </div>
 </main>
+<footer th:replace="~{fragments/seller-orders :: footer}"></footer>
+</div>
 </body>
 </html>

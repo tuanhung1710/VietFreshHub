@@ -3,11 +3,11 @@
   <head
     th:replace="~{fragments/product-inventory :: head('Quản lý sản phẩm','product')}"
   ></head>
-  <body>
+  <body class="vfo-app vfr-app vfr-product vfr-seller" data-vfr-section="product">
     <div th:replace="~{fragments/product-inventory :: nav('product')}"></div>
-    <div class="vf-workspace">
+    <div class="vf-workspace" id="order-content" tabindex="-1">
     <main
-      class="container vf-main vf-list-page vf-product-catalog"
+      class="container vf-main vf-list-page vf-product-catalog vfr-page"
       data-vf-live-list
       th:attr="data-vf-selection-scope=${selectionScope},data-vf-completed-selection=${completedBulkProductIds != null ? #strings.listJoin(completedBulkProductIds, ',') : ''}"
     >
@@ -897,5 +897,6 @@
     <div th:replace="~{fragments/product-inventory :: variantDeleteModal(true)}"></div>
     <div th:replace="~{fragments/product-inventory :: variantActionModal(true)}"></div>
     <script defer th:src="@{/js/product/catalog.js}"></script>
-  </body>
+  <div class="vfr-product-footer"><footer th:replace="~{fragments/seller-orders :: footer}"></footer></div>
+</body>
 </html>

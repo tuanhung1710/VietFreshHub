@@ -5,15 +5,15 @@
     <head th:replace="~{fragments/product-inventory :: head('Không thể thực hiện thao tác','product')}">
     </head>
 
-    <body>
+    <body class="vfo-app vfr-app vfr-product vfr-seller" data-vfr-section="product">
 
         <!-- Điều hướng Seller Portal -->
         <header th:replace="~{fragments/product-inventory :: nav('product')}">
         </header>
 
         <!-- Nội dung chính -->
-        <div class="vf-workspace">
-        <main class="container vf-main narrow">
+        <div class="vf-workspace" id="order-content" tabindex="-1">
+        <main class="container vf-main narrow vfr-page">
 
             <section class="card p-4">
                 <h1 class="mb-3">
@@ -35,5 +35,6 @@
 
         </div>
 
-    </body>
+    <div class="vfr-product-footer"><footer th:replace="~{fragments/seller-orders :: footer}"></footer></div>
+</body>
 </html>

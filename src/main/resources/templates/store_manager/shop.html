@@ -3,51 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Cửa hàng của tôi · VietFresh Hub</title>
+    <title>Tổng quan cửa hàng | VietFresh Hub</title>
+    <th:block th:replace="~{fragments/seller-orders :: assets}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/workspace-management.css}">
 </head>
-<body>
-<span th:replace="~{fragments/notifications :: bell}"></span>
-<form th:action="@{/logout}" method="post">
-    <button type="submit">Đăng xuất</button>
-</form>
-<h1>SHOP</h1>
-<p th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}"><a th:href="@{/home}">← Quay lại mua sắm</a></p>
-<p><a th:href="@{/seller/announcements}">Thông báo từ hệ thống và quản trị viên</a></p>
-<p><a th:href="@{/seller/profile}">Hồ sơ cửa hàng và trạng thái nhận đơn</a></p>
-<p>Mã shop: <span th:text="${shopCode}"></span>
-<button type="button" th:attr="data-vf-copy-code=${shopCode},aria-label=${'Sao chép mã shop '+shopCode}">Sao chép</button></p>
-<p><a th:href="@{/store_manager/chat}">Mở tin nhắn khách hàng</a></p>
-<p><a th:href="@{/seller/pickup-location}">Quản lý địa điểm lấy hàng</a></p>
-<p><a th:href="@{/seller/payout-account}">Tài khoản ngân hàng</a></p>
-
-<p><a th:href="@{/seller/deliveries}">Giám sát giao hàng</a></p>
-
-<h2>QUẢN LÝ ĐƠN HÀNG</h2>
-<nav aria-label="Quản lý đơn hàng">
-    <ul>
-        <li><a th:href="@{/seller/orders}" th:text="${'Tất cả đơn (' + orderCounts.totalOrders + ')'}">Tất cả đơn</a></li>
-        <li><a th:href="@{/seller/incoming-orders}" th:text="${'Đơn mới (' + orderCounts.incomingOrders + ')'}">Đơn mới</a></li>
-        <li><a th:href="@{/seller/confirmed-orders}" th:text="${'Đã xác nhận (' + orderCounts.confirmedOrders + ')'}">Đã xác nhận</a></li>
-        <li><a th:href="@{/seller/preparing-orders}" th:text="${'Đang chuẩn bị (' + orderCounts.preparingOrders + ')'}">Đang chuẩn bị</a></li>
-        <li><a th:href="@{/seller/ready-orders}" th:text="${'Sẵn sàng giao (' + orderCounts.readyOrders + ')'}">Sẵn sàng giao</a></li>
-        <li><a th:href="@{/seller/completed-orders}" th:text="${'Đơn đã hoàn thành (' + orderCounts.completedOrders + ')'}">Đơn đã hoàn thành</a></li>
-    </ul>
-</nav>
-<h2>QUẢN LÝ SẢN PHẨM VÀ KHO</h2>
-<section th:if="${inventoryAttention.hasAlerts()}" aria-label="Kho cần chú ý">
-    <h3>Kho cần chú ý</h3>
-    <ul>
-        <li th:if="${inventoryAttention.lowVariants > 0}"><a th:href="@{/seller/inventory(stock='low')}" th:text="${inventoryAttention.lowVariants + ' phân loại sắp hết hàng'}"></a></li>
-        <li th:if="${inventoryAttention.nearBatches > 0}"><a th:href="@{/seller/inventory(expiry='near')}" th:text="${inventoryAttention.nearBatches + ' lô sắp hết hạn'}"></a></li>
-        <li th:if="${inventoryAttention.expiredBatches > 0}"><a th:href="@{/seller/inventory(expiry='expired')}" th:text="${inventoryAttention.expiredBatches + ' lô đã hết hạn'}"></a></li>
-    </ul>
-</section>
-<nav aria-label="Sản phẩm và kho">
-    <ul>
-        <li><a th:href="@{/seller/products}">SẢN PHẨM VÀ PHÂN LOẠI</a></li>
-        <li><a th:href="@{/seller/inventory}">KHO HÀNG THEO LÔ</a></li>
-    </ul>
-</nav>
+<body class="vfo-app vfs-app">
+<th:block th:replace="~{fragments/seller-orders :: navigation('dashboard')}"></th:block>
+<div id="workspace-content" class="vfo-workspace" tabindex="-1">
+<main id="order-content" class="vfo-main vfs-dashboard">
+    <nav aria-label="Đường dẫn trang"><ol class="breadcrumb vfo-breadcrumb"><li class="breadcrumb-item"><a th:href="@{/seller}">Kênh người bán</a></li><li class="breadcrumb-item active" aria-current="page">Tổng quan</li></ol></nav>
+    <header class="vfo-page-heading">
+        <div><h1>Tổng quan cửa hàng</h1><p class="vfo-page-description">Theo dõi đơn hàng và chăm sóc hoạt động kinh doanh của bạn.</p></div>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn vfo-btn-secondary" th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" th:href="@{/home}"><span aria-hidden="true">←</span> Quay lại mua sắm</a>
+            <a class="btn vfo-btn-primary" th:href="@{/seller/orders}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-order"/></svg>Quản lý đơn hàng <span aria-hidden="true">→</span></a>
+        </div>
+    </header>
+    <section class="vfs-store-banner" aria-label="Cửa hàng của tôi">
+        <span class="vfs-store-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-leaf"/></svg></span>
+        <div><p class="vfs-store-caption">Gian hàng của bạn</p><div class="vfs-shop-code"><span>Mã shop</span><strong th:text="${shopCode}"></strong><button class="vfo-copy-button" type="button" th:attr="data-vf-copy-code=${shopCode},aria-label=${'Sao chép mã shop '+shopCode}">Sao chép</button></div></div>
+        <a class="btn vfo-btn-secondary" th:href="@{/seller/profile}">Hồ sơ cửa hàng và trạng thái nhận đơn <span aria-hidden="true">↗</span></a>
+    </section>
+    <section aria-labelledby="seller-orders-heading">
+        <div class="vfs-section-heading"><div><p class="vfo-eyebrow">Hoạt động đơn hàng</p><h2 id="seller-orders-heading">Quản lý đơn hàng</h2></div><a th:href="@{/seller/orders}">Xem tất cả <span aria-hidden="true">→</span></a></div>
+        <nav class="vfs-order-grid" aria-label="Quản lý đơn hàng">
+            <a class="vfs-order-metric vfs-metric-featured" th:href="@{/seller/orders}"><span class="vfs-metric-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-order"/></svg></span><h3>Tất cả đơn</h3><strong th:text="${orderCounts.totalOrders}"></strong><span class="vfs-metric-action">Xem đơn hàng <span aria-hidden="true">↗</span></span></a>
+            <a class="card vfs-order-metric vfs-metric-pending" th:href="@{/seller/incoming-orders}"><span class="vfs-metric-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-bell"/></svg></span><h3>Đơn mới</h3><strong th:text="${orderCounts.incomingOrders}"></strong><span class="vfs-metric-action">Xem đơn mới <span aria-hidden="true">↗</span></span></a>
+            <a class="card vfs-order-metric" th:href="@{/seller/confirmed-orders}"><span class="vfs-metric-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-check"/></svg></span><h3>Đã xác nhận</h3><strong th:text="${orderCounts.confirmedOrders}"></strong><span class="vfs-metric-action">Xem đơn đã xác nhận <span aria-hidden="true">↗</span></span></a>
+            <a class="card vfs-order-metric" th:href="@{/seller/preparing-orders}"><span class="vfs-metric-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-box"/></svg></span><h3>Đang chuẩn bị</h3><strong th:text="${orderCounts.preparingOrders}"></strong><span class="vfs-metric-action">Xem đơn đang chuẩn bị <span aria-hidden="true">↗</span></span></a>
+            <a class="card vfs-order-metric" th:href="@{/seller/ready-orders}"><span class="vfs-metric-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg></span><h3>Sẵn sàng giao</h3><strong th:text="${orderCounts.readyOrders}"></strong><span class="vfs-metric-action">Xem đơn sẵn sàng giao <span aria-hidden="true">↗</span></span></a>
+            <a class="card vfs-order-metric vfs-metric-completed" th:href="@{/seller/completed-orders}"><span class="vfs-metric-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-award"/></svg></span><h3>Đơn đã hoàn thành</h3><strong th:text="${orderCounts.completedOrders}"></strong><span class="vfs-metric-action">Xem đơn hoàn thành <span aria-hidden="true">↗</span></span></a>
+        </nav>
+    </section>
+    <div class="vfs-dashboard-grid">
+        <section class="card vfs-inventory-panel" aria-labelledby="seller-inventory-heading">
+            <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-box"/></svg></span><h2 id="seller-inventory-heading">Quản lý sản phẩm và kho</h2></div>
+            <div class="vfs-panel-body">
+                <p class="vfm-notice vfm-notice-warning" th:if="${inventoryLoadError}">Không thể tải dữ liệu tồn kho. Vui lòng thử lại sau.</p>
+                <section class="vfs-inventory-attention" th:if="${inventoryAttention != null and inventoryAttention.hasAlerts()}" aria-label="Kho cần chú ý">
+                    <h3><span aria-hidden="true">!</span> Kho cần chú ý</h3>
+                    <ul>
+                        <li th:if="${inventoryAttention.lowVariants > 0}"><a th:href="@{/seller/inventory(stock='low')}" th:text="${inventoryAttention.lowVariants + ' phân loại sắp hết hàng'}"></a></li>
+                        <li th:if="${inventoryAttention.nearBatches > 0}"><a th:href="@{/seller/inventory(expiry='near')}" th:text="${inventoryAttention.nearBatches + ' lô sắp hết hạn'}"></a></li>
+                        <li th:if="${inventoryAttention.expiredBatches > 0}"><a th:href="@{/seller/inventory(expiry='expired')}" th:text="${inventoryAttention.expiredBatches + ' lô đã hết hạn'}"></a></li>
+                    </ul>
+                </section>
+                <nav class="vfs-catalog-links" aria-label="Sản phẩm và kho">
+                    <a th:href="@{/seller/products}"><span class="vfs-link-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-product"/></svg></span><span><strong>Sản phẩm và phân loại</strong><small>Quản lý danh sách sản phẩm</small></span><svg class="vfo-icon vfo-icon-sm" aria-hidden="true"><use href="#vfo-arrow"/></svg></a>
+                    <a th:href="@{/seller/inventory}"><span class="vfs-link-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-box"/></svg></span><span><strong>Kho hàng theo lô</strong><small>Theo dõi các lô hàng trong kho</small></span><svg class="vfo-icon vfo-icon-sm" aria-hidden="true"><use href="#vfo-arrow"/></svg></a>
+                </nav>
+            </div>
+        </section>
+        <section class="card vfs-shortcuts-panel" aria-labelledby="seller-shortcuts-heading">
+            <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-grid"/></svg></span><h2 id="seller-shortcuts-heading">Lối tắt quản lý</h2></div>
+            <nav class="vfs-shortcut-list" aria-label="Các chức năng cửa hàng">
+                <a th:href="@{/seller/deliveries}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg><span>Giám sát giao hàng</span><span aria-hidden="true">↗</span></a>
+                <a th:href="@{/store_manager/chat}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-chat"/></svg><span>Mở tin nhắn khách hàng</span><span aria-hidden="true">↗</span></a>
+                <a th:href="@{/seller/announcements}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-promotion"/></svg><span>Thông báo từ hệ thống và quản trị viên</span><span aria-hidden="true">↗</span></a>
+                <a th:href="@{/seller/pickup-location}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-pin"/></svg><span>Quản lý địa điểm lấy hàng</span><span aria-hidden="true">↗</span></a>
+                <a th:href="@{/seller/payout-account}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-bank"/></svg><span>Tài khoản ngân hàng</span><span aria-hidden="true">↗</span></a>
+            </nav>
+        </section>
+    </div>
+</main>
+<footer th:replace="~{fragments/seller-orders :: footer}"></footer>
+</div>
 <script th:src="@{/js/product/module.js}" defer></script>
 </body>
 </html>

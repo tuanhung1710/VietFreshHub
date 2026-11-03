@@ -1,54 +1,65 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nhận đơn mới | VIETFRESH HUB</title>
-    <link th:replace="~{fragments/pagination :: styles}">
-</head>
-<body>
-<header>
-    <a th:href="@{/delivery}">Trang chủ giao hàng</a>
-</header>
-<main>
-    <h1>Đơn giao hàng có thể nhận</h1>
-    <p th:if="${errorMessage != null}" th:text="${errorMessage}" role="alert"></p>
-    <p id="available-refresh-status" role="status" hidden></p>
-    <section id="available-deliveries" th:fragment="deliveries"
-             th:attr="data-refresh-url=@{/delivery/available(fragment=true,page=${availablePage.number + 1},size=${availablePage.size})},data-page-size=${availablePage.size}">
-        <p th:if="${#lists.isEmpty(availableDeliveries)}">Hiện chưa có đơn giao hàng nào có thể nhận.</p>
-        <table th:unless="${#lists.isEmpty(availableDeliveries)}">
-            <thead>
-            <tr>
-                <th scope="col">Mã đơn hàng</th>
-                <th scope="col">Cửa hàng lấy hàng</th>
-                <th scope="col">Địa chỉ lấy hàng</th>
-                <th scope="col">Địa chỉ giao hàng</th>
-                <th scope="col">Nhận đơn</th>
-                <th scope="col">Chi tiết</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="delivery : ${availableDeliveries}">
-                <td th:text="${delivery.orderCode}"></td>
-                <td th:text="${delivery.shopName ?: 'Chưa có thông tin'}"></td>
-                <td th:insert="~{delivery/available :: address(location=${delivery.pickupLocation})}"></td>
-                <td th:insert="~{delivery/available :: address(location=${delivery.deliveryLocation})}"></td>
-                <td>
-                    <form method="post" th:action="@{/delivery/available/{deliveryId}/claim(deliveryId=${delivery.deliveryId})}">
-                        <button type="submit">Nhận đơn</button>
-                    </form>
-                </td>
-                <td><a th:href="@{/delivery/available/{deliveryId}(deliveryId=${delivery.deliveryId})}">Xem chi tiết</a></td>
-            </tr>
-            </tbody>
-        </table>
-        <div th:replace="~{fragments/pagination :: panel(${availablePage},
-            @{/delivery/available(page=${availablePage.number},size=${availablePage.size})},
-            @{/delivery/available(page=${availablePage.number + 2},size=${availablePage.size})},
-            @{/delivery/available}, ${ {:} }, 'Phân trang đơn có thể nhận', 'đơn hàng', 'Đơn hàng mỗi trang')}"></div>
-    </section>
-</main>
+<head th:replace="~{fragments/delivery-layout :: head('Nhận đơn mới')}"></head>
+<body class="vfo-app vfd-app">
+<th:block th:replace="~{fragments/delivery-layout :: navigation('available')}"></th:block>
+<div id="delivery-content" class="vfo-workspace" tabindex="-1">
+    <main class="vfo-main">
+        <nav th:replace="~{fragments/delivery-layout :: breadcrumb('Nhận đơn mới')}"></nav>
+        <header class="vfo-page-heading">
+            <div><h1>Nhận đơn mới</h1><p class="vfo-page-description">Xem cửa hàng, địa điểm lấy hàng và địa chỉ giao trước khi nhận đơn.</p></div>
+            <a class="btn vfo-btn-secondary" th:href="@{/delivery}"><span aria-hidden="true">←</span> Đơn giao hàng của tôi</a>
+        </header>
+        <nav th:replace="~{fragments/delivery-layout :: tabs('available')}"></nav>
+        <p class="vfd-alert vfd-alert-danger" th:if="${errorMessage != null}" th:text="${errorMessage}" role="alert"></p>
+        <p id="available-refresh-status" class="vfd-alert vfd-alert-warning" role="status" hidden></p>
+        <section id="available-deliveries" class="card vfo-list-card" th:fragment="deliveries"
+                 th:attr="data-refresh-url=@{/delivery/available(fragment=true,page=${availablePage.number + 1},size=${availablePage.size})},data-page-size=${availablePage.size}">
+            <div class="vfo-list-heading">
+                <div><span class="vfo-section-marker" aria-hidden="true"></span><h2>Đơn giao hàng có thể nhận</h2><span class="vfo-count" th:text="${availablePage.totalElements}"></span></div>
+                <span class="vfd-refresh-note"><span aria-hidden="true"></span>Danh sách tự cập nhật</span>
+            </div>
+            <div class="vfo-empty-state" th:if="${#lists.isEmpty(availableDeliveries)}">
+                <span class="vfo-empty-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-box"/></svg></span>
+                <h3>Chưa có đơn mới</h3><p>Hiện chưa có đơn giao hàng nào có thể nhận.</p>
+            </div>
+            <div class="table-responsive" th:unless="${#lists.isEmpty(availableDeliveries)}">
+                <table class="table table-hover align-middle mb-0 vfd-available-table">
+                    <caption class="visually-hidden">Đơn giao hàng có thể nhận</caption>
+                    <thead>
+                    <tr>
+                        <th scope="col">Mã đơn hàng</th>
+                        <th scope="col">Cửa hàng lấy hàng</th>
+                        <th scope="col">Địa chỉ lấy hàng</th>
+                        <th scope="col">Địa chỉ giao hàng</th>
+                        <th scope="col">Nhận đơn</th>
+                        <th scope="col" class="text-end">Chi tiết</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="delivery : ${availableDeliveries}">
+                        <td class="vfo-order-code" th:text="${delivery.orderCode}"></td>
+                        <td class="vfo-customer-name" th:text="${delivery.shopName ?: 'Chưa có thông tin'}"></td>
+                        <td class="vfd-address-cell" th:insert="~{delivery/available :: address(location=${delivery.pickupLocation})}"></td>
+                        <td class="vfd-address-cell" th:insert="~{delivery/available :: address(location=${delivery.deliveryLocation})}"></td>
+                        <td>
+                            <form method="post" th:action="@{/delivery/available/{deliveryId}/claim(deliveryId=${delivery.deliveryId})}">
+                                <button class="btn vfo-btn-primary vfd-claim-button" type="submit">Nhận đơn</button>
+                            </form>
+                        </td>
+                        <td class="text-end"><a class="btn vfo-detail-link" th:href="@{/delivery/available/{deliveryId}(deliveryId=${delivery.deliveryId})}">Xem chi tiết<svg class="vfo-icon vfo-icon-sm" aria-hidden="true"><use href="#vfo-arrow"/></svg></a></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div th:replace="~{fragments/pagination :: panel(${availablePage},
+                @{/delivery/available(page=${availablePage.number},size=${availablePage.size})},
+                @{/delivery/available(page=${availablePage.number + 2},size=${availablePage.size})},
+                @{/delivery/available}, ${ {:} }, 'Phân trang đơn có thể nhận', 'đơn hàng', 'Đơn hàng mỗi trang')}"></div>
+        </section>
+    </main>
+    <footer th:replace="~{fragments/delivery-layout :: footer}"></footer>
+</div>
 <template>
 <th:block th:fragment="address(location)">
     <span th:if="${location == null}">Chưa có thông tin địa chỉ</span>

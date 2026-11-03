@@ -3,22 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+    
+    
     <title>Cấu hình quy tắc dùng tiền thưởng | VietFresh Hub</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-          rel="stylesheet"
-          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
-          crossorigin="anonymous">
+    
     <link rel="stylesheet" th:href="@{/css/admin-accounts.css}">
     <link rel="stylesheet" th:href="@{/css/admin-dashboard.css}">
     <link rel="stylesheet" th:href="@{/css/admin-loyalty.css}">
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body class="loyalty-page">
+<body class="loyalty-page vfo-app vfr-app vfr-admin" data-vfr-section="loyalty">
+<th:block th:replace="~{fragments/interface-layout :: navigation('admin','loyalty')}"></th:block>
+
 <div class="app-shell">
-    <header class="topbar">
-        <a class="brand" th:href="@{/admin/accounts}" aria-label="VietFresh Hub, trung tâm quản trị"><span class="brand-mark" aria-hidden="true">V</span><span><strong>VietFresh Hub</strong><small>TRUNG TÂM QUẢN TRỊ</small></span></a>
-        <div class="topbar-right"><span th:replace="~{fragments/notifications :: bell}"></span><span class="admin-label">QUẢN TRỊ VIÊN</span><span class="admin-avatar" aria-label="Quản trị viên">AD</span></div>
-    </header>
-<main class="page-content">
+    
+<div class="vfo-workspace vfr-workspace" id="workspace-content" tabindex="-1">
+<main class="page-content vfr-page">
     <nav class="breadcrumbs" aria-label="Điều hướng"><a th:href="@{/admin/accounts}">Quản trị</a><span aria-hidden="true">/</span><strong>Quy tắc dùng tiền thưởng</strong></nav>
     <section class="page-heading"><div><p class="eyebrow">LOYALTY</p><h1>Cấu hình quy tắc dùng tiền thưởng</h1></div></section>
     <nav class="loyalty-nav" aria-label="Cấu hình tiền thưởng">
@@ -84,6 +86,8 @@
         </div>
     </div>
 </main>
+<footer th:replace="~{fragments/admin-workspace :: footer}"></footer>
+</div>
 </div>
 </body>
 </html>
