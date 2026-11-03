@@ -4,79 +4,82 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f4f8f4">
-    <title>Reporting &amp; Dashboard Â· VietFresh Hub</title>
+    <title>Báo cáo và Thống kê · VietFresh Hub</title>
     <link rel="stylesheet" th:href="@{/css/admin-accounts.css}">
     <link rel="stylesheet" th:href="@{/css/admin-dashboard.css}">
 </head>
 <body>
 <div class="app-shell">
     <header class="topbar">
-        <a class="brand" th:href="@{/admin/dashboard}" aria-label="VietFresh Hub, Admin Dashboard">
+        <a class="brand" th:href="@{/admin/dashboard}" aria-label="VietFresh Hub, trang quản trị báo cáo">
             <span class="brand-mark" aria-hidden="true">V</span>
-            <span><strong>VietFresh Hub</strong><small>TRUNG TÃ‚M QUáº¢N TRá»Š</small></span>
+            <span><strong>VietFresh Hub</strong><small>TRUNG TÂM QUẢN TRỊ</small></span>
         </a>
         <div class="topbar-right">
             <span th:replace="~{fragments/notifications :: bell}"></span>
-            <a class="admin-label" th:href="@{/admin/reviews/pending}">KIá»‚M DUYá»†T ÄÃNH GIÃ</a>
-            <span class="admin-avatar" aria-label="Quáº£n trá»‹ viÃªn">AD</span>
+            <a class="admin-label" th:href="@{/admin/reviews/pending}">KIỂM DUYỆT ĐÁNH GIÁ</a>
+            <span class="admin-avatar" aria-label="Quản trị viên">AD</span>
         </div>
     </header>
 
     <main class="page-content">
-        <nav class="breadcrumbs" aria-label="Äiá»u hÆ°á»›ng">
-            <a th:href="@{/admin/admin}">Quáº£n trá»‹</a><span aria-hidden="true">/</span><strong>Reporting &amp; Dashboard</strong>
+        <nav class="breadcrumbs" aria-label="Điều hướng">
+            <a th:href="@{/admin/accounts}">Quản trị</a><span aria-hidden="true">/</span><strong>Báo cáo và Thống kê</strong>
         </nav>
         <section class="page-heading">
             <div>
-                <p class="eyebrow">BÃO CÃO &amp; THá»NG KÃŠ</p>
-                <h1>Admin Dashboard</h1>
-                <p class="subheading">Dá»¯ liá»‡u tá»•ng há»£p toÃ n há»‡ thá»‘ng tá»« Ä‘Æ¡n hÃ ng, giao hÃ ng, sáº£n pháº©m, tá»“n kho vÃ  tÃ i khoáº£n.</p>
+                <p class="eyebrow">BÁO CÁO VÀ THỐNG KÊ</p>
+                <h1>Báo cáo và Thống kê</h1>
             </div>
-            <span class="live-data-badge"><span></span>Dá»® LIá»†U Tá»ª DATABASE</span>
         </section>
 
         <form class="report-filter" method="get" th:action="@{/admin/dashboard}">
-            <label for="period">Khoáº£ng thá»i gian</label>
-            <select id="period" name="period">
-                <option value="TODAY" th:selected="${period == 'TODAY'}">Today</option>
-                <option value="LAST_7_DAYS" th:selected="${period == 'LAST_7_DAYS'}">Last 7 Days</option>
-                <option value="LAST_30_DAYS" th:selected="${period == 'LAST_30_DAYS'}">Last 30 Days</option>
-                <option value="THIS_MONTH" th:selected="${period == 'THIS_MONTH'}">This Month</option>
-                <option value="CUSTOM_RANGE" th:selected="${period == 'CUSTOM_RANGE'}">Custom Range</option>
-            </select>
-            <label for="from">Tá»« ngÃ y</label>
-            <input id="from" name="from" type="date" th:value="${from}">
-            <label for="to">Äáº¿n ngÃ y</label>
-            <input id="to" name="to" type="date" th:value="${to}">
-            <button class="filter-submit" type="submit">Ãp dá»¥ng</button>
+            <div class="filter-field"><label for="period">Khoảng thời gian</label>
+                <select id="period" name="period">
+                    <option value="TODAY" th:selected="${period == 'TODAY'}">Hôm nay</option>
+                    <option value="LAST_7_DAYS" th:selected="${period == 'LAST_7_DAYS'}">7 ngày qua</option>
+                    <option value="LAST_30_DAYS" th:selected="${period == 'LAST_30_DAYS'}">30 ngày qua</option>
+                    <option value="THIS_MONTH" th:selected="${period == 'THIS_MONTH'}">Tháng này</option>
+                    <option value="CUSTOM_RANGE" th:selected="${period == 'CUSTOM_RANGE'}">Khoảng thời gian tùy chọn</option>
+                </select>
+            </div>
+            <div class="filter-field"><label for="from">Từ ngày</label><input id="from" name="from" type="date" th:value="${from}"></div>
+            <div class="filter-field"><label for="to">Đến ngày</label><input id="to" name="to" type="date" th:value="${to}"></div>
+            <button class="filter-submit" type="submit">Áp dụng</button>
         </form>
         <div class="flash-message flash-error" role="alert" th:if="${filterError}" th:text="${filterError}"></div>
 
         <div th:if="${dashboard}" class="dashboard-content">
-            <p class="range-caption" th:text="${'Dá»¯ liá»‡u theo ngÃ y Ä‘áº·t hÃ ng: ' + #temporals.format(dashboard.from, 'dd/MM/yyyy') + ' â€“ ' + #temporals.format(dashboard.to, 'dd/MM/yyyy') + ' (Asia/Ho_Chi_Minh)'}"></p>
-
+            <nav class="report-nav" aria-label="Điều hướng báo cáo">
+                <strong>Báo cáo</strong>
+                <a href="#sales-heading">Bán hàng</a>
+                <a href="#revenue-heading">Tổng doanh thu</a>
+                <a href="#product-heading">Thống kê sản phẩm</a>
+                <a href="#inventory-heading">Báo cáo tồn kho</a>
+                <a href="#orders-heading">Thống kê đơn hàng</a>
+                <a href="#customers-heading">Thống kê khách hàng</a>
+            </nav>
+            <div class="dashboard-sections">
             <section class="report-section" aria-labelledby="sales-heading">
-                <div class="section-heading"><div><p class="eyebrow">01 Â· SALES REPORTS</p><h2 id="sales-heading">BÃ¡n hÃ ng</h2></div></div>
+                <div class="section-heading"><div><h2 id="sales-heading">Bán hàng</h2></div></div>
                 <div class="metric-grid">
-                    <article class="metric-card"><span>Tá»•ng Ä‘Æ¡n hÃ ng trong ká»³</span><strong th:text="${dashboard.totalOrders}">0</strong></article>
-                    <article class="metric-card"><span>ÄÆ¡n hoÃ n táº¥t trong ká»³</span><strong th:text="${dashboard.deliveredOrders}">0</strong><small>Orders cÃ³ tráº¡ng thÃ¡i COMPLETED</small></article>
+                    <article class="metric-card"><span>Tổng số đơn hàng</span><strong th:text="${dashboard.totalOrders}">0</strong></article>
+                    <article class="metric-card"><span>Đơn hàng giao thành công</span><strong th:text="${dashboard.deliveredOrders}">0</strong></article>
                 </div>
             </section>
 
             <section class="report-section" aria-labelledby="revenue-heading">
-                <div class="section-heading"><div><p class="eyebrow">02 Â· REVENUE REPORTS</p><h2 id="revenue-heading">Doanh thu Ä‘Æ¡n giao thÃ nh cÃ´ng</h2></div></div>
+                <div class="section-heading"><div><h2 id="revenue-heading">Tổng doanh thu</h2></div></div>
                 <article class="metric-card revenue-card">
-                    <span>GiÃ¡ trá»‹ shop order Ä‘Ã£ giao trong ká»³</span>
-                    <strong th:text="${#numbers.formatDecimal(dashboard.deliveredOrderValue, 1, 'WHITESPACE', 0, 'POINT') + ' â‚«'}">0 â‚«</strong>
-                    <small th:text="${dashboard.deliveredShopOrders + ' shop order giao thÃ nh cÃ´ng'}">0 shop order giao thÃ nh cÃ´ng</small>
-                    <small>Tá»•ng lÆ°u táº¡i shop_orders.total_amount: subtotal âˆ’ discount_total + shipping_fee.</small>
+                    <span>Giá trị đơn hàng giao thành công</span>
+                    <strong th:text="${#numbers.formatDecimal(dashboard.deliveredOrderValue, 1, 'POINT', 0, 'COMMA') + 'đ'}">0đ</strong>
                 </article>
                 <div class="panel chart-panel">
-                    <div class="panel-heading"><div><h2>Doanh thu theo ngÃ y giao</h2><p class="muted">CÃ¹ng Ä‘iá»u kiá»‡n DELIVERED vÃ  cÃ¹ng tá»•ng tiá»n nhÆ° tháº» doanh thu.</p></div></div>
-                    <p class="empty-state" th:if="${#lists.isEmpty(dashboard.revenue)}">KhÃ´ng cÃ³ shop order giao thÃ nh cÃ´ng trong khoáº£ng ngÃ y nÃ y.</p>
-                    <div class="revenue-chart" role="img" aria-label="Biá»ƒu Ä‘á»“ giÃ¡ trá»‹ shop order giao thÃ nh cÃ´ng theo ngÃ y" th:unless="${#lists.isEmpty(dashboard.revenue)}">
+                    <div class="panel-heading"><div><h2>Doanh thu theo ngày</h2></div></div>
+                    <p class="empty-state" th:if="${#lists.isEmpty(dashboard.revenue)}">Không có đơn hàng giao thành công trong khoảng ngày này.</p>
+                    <div class="revenue-chart" role="img" aria-label="Biểu đồ giá trị đơn hàng giao thành công theo ngày" th:unless="${#lists.isEmpty(dashboard.revenue)}">
                         <div class="chart-column" th:each="point : ${dashboard.revenue}">
-                            <span class="chart-value" th:text="${#numbers.formatDecimal(point.amount, 1, 'WHITESPACE', 0, 'POINT') + ' â‚«'}">0 â‚«</span>
+                            <span class="chart-value" th:text="${#numbers.formatDecimal(point.amount, 1, 'POINT', 0, 'COMMA') + 'đ'}">0đ</span>
                             <div class="chart-track"><div class="chart-bar" th:style="|height:${point.heightPercent}%|"></div></div>
                             <time class="chart-date" th:text="${#temporals.format(point.date, 'dd/MM')}">01/01</time>
                         </div>
@@ -85,59 +88,60 @@
             </section>
 
             <section class="report-section" aria-labelledby="product-heading">
-                <div class="section-heading"><div><p class="eyebrow">03 · PRODUCT STATISTICS</p><h2 id="product-heading">Products across all shops</h2><p class="muted">Current product state is not time-filtered. Best sellers use successful deliveries in the selected range.</p></div></div>
-                <div class="metric-grid"><article class="metric-card"><span>Total products (excluding deleted)</span><strong th:text="${dashboard.totalProducts}">0</strong></article><article class="metric-card"><span>Active products</span><strong th:text="${dashboard.activeProducts}">0</strong></article><article class="metric-card"><span>Inactive products</span><strong th:text="${dashboard.inactiveProducts}">0</strong></article><article class="metric-card"><span>Products with no recorded orders</span><strong th:text="${dashboard.productsWithoutOrdersCount}">0</strong></article></div>
-                <div class="panel"><div class="panel-heading"><div><h2>Best-selling products</h2><p class="muted">Quantities are grouped by product name and variant sale unit.</p></div></div>
-                    <p class="empty-state" th:if="${#lists.isEmpty(dashboard.bestSellers)}">No successfully delivered products in this date range.</p>
-                    <div class="table-wrap" th:unless="${#lists.isEmpty(dashboard.bestSellers)}"><table><thead><tr><th>PRODUCT</th><th>UNIT</th><th>QUANTITY SOLD</th></tr></thead><tbody><tr th:each="item : ${dashboard.bestSellers}"><td th:text="${item.productName}">Product</td><td th:text="${item.unit}">kg</td><td th:text="${item.unitsSold}">0</td></tr></tbody></table></div>
+                <div class="section-heading"><div><h2 id="product-heading">Thống kê sản phẩm</h2></div></div>
+                <div class="metric-grid"><article class="metric-card"><span>Tổng số sản phẩm</span><strong th:text="${dashboard.totalProducts}">0</strong></article><article class="metric-card"><span>Sản phẩm đang kinh doanh</span><strong th:text="${dashboard.activeProducts}">0</strong></article><article class="metric-card"><span>Sản phẩm ngừng kinh doanh</span><strong th:text="${dashboard.inactiveProducts}">0</strong></article><article class="metric-card"><span>Sản phẩm chưa phát sinh đơn hàng</span><strong th:text="${dashboard.productsWithoutOrdersCount}">0</strong></article></div>
+                <div class="panel"><div class="panel-heading"><div><h2>Sản phẩm bán chạy</h2></div></div>
+                    <p class="empty-state" th:if="${#lists.isEmpty(dashboard.bestSellers)}">Không có sản phẩm nào được giao thành công trong khoảng thời gian này.</p>
+                    <div class="table-wrap" th:unless="${#lists.isEmpty(dashboard.bestSellers)}"><table><thead><tr><th>Tên sản phẩm</th><th>Đơn vị</th><th>Số lượng đã bán</th></tr></thead><tbody><tr th:each="item : ${dashboard.bestSellers}"><td th:text="${item.productName}">Sản phẩm</td><td th:text="${item.unit}">kg</td><td th:text="${item.unitsSold}">0</td></tr></tbody></table></div>
                 </div>
-                <div class="panel"><div class="panel-heading"><div><h2>Products with no recorded orders</h2><p class="muted">All shops · current records, independent of date filter.</p></div></div>
-                    <p class="empty-state" th:if="${dashboard.productsWithoutOrdersCount == 0}">Every current product has at least one order item record.</p>
-                    <div class="table-wrap" th:if="${dashboard.productsWithoutOrdersCount > 0}"><table><thead><tr><th>PRODUCT</th><th>SHOP</th></tr></thead><tbody><tr th:each="item : ${dashboard.productsWithoutOrders}"><td th:text="${item.productName}">Product</td><td th:text="${item.shopName}">Shop</td></tr></tbody></table></div>
-                    <footer class="table-footer" th:if="${dashboard.productsWithoutOrdersPages > 1}"><span th:text="${'Page ' + dashboard.productsWithoutOrdersPage + ' / ' + dashboard.productsWithoutOrdersPages}">Page</span><nav class="pagination" aria-label="Products without orders pages"><a th:if="${dashboard.productsWithoutOrdersPage > 1}" th:href="@{/admin/dashboard(period=${period},from=${from},to=${to},noOrderPage=${dashboard.productsWithoutOrdersPage - 1})}" aria-label="Previous page">‹</a><span class="page-count" th:text="${dashboard.productsWithoutOrdersPage}">1</span><a th:if="${dashboard.productsWithoutOrdersPage < dashboard.productsWithoutOrdersPages}" th:href="@{/admin/dashboard(period=${period},from=${from},to=${to},noOrderPage=${dashboard.productsWithoutOrdersPage + 1})}" aria-label="Next page">›</a></nav></footer>
+                <div class="panel"><div class="panel-heading"><div><h2>Sản phẩm chưa có đơn hàng</h2></div></div>
+                    <p class="empty-state" th:if="${dashboard.productsWithoutOrdersCount == 0}">Mỗi sản phẩm hiện tại đều đã có ít nhất một chi tiết đơn hàng.</p>
+                    <div class="table-wrap" th:if="${dashboard.productsWithoutOrdersCount > 0}"><table><thead><tr><th>Tên sản phẩm</th><th>Cửa hàng</th></tr></thead><tbody><tr th:each="item : ${dashboard.productsWithoutOrders}"><td th:text="${item.productName}">Sản phẩm</td><td th:text="${item.shopName}">Cửa hàng</td></tr></tbody></table></div>
+                    <footer class="table-footer" th:if="${dashboard.productsWithoutOrdersPages > 1}"><span th:text="${'Trang ' + dashboard.productsWithoutOrdersPage + ' / ' + dashboard.productsWithoutOrdersPages}">Trang</span><nav class="pagination" aria-label="Các trang sản phẩm chưa có đơn hàng"><a th:if="${dashboard.productsWithoutOrdersPage > 1}" th:href="@{/admin/dashboard(period=${period},from=${from},to=${to},noOrderPage=${dashboard.productsWithoutOrdersPage - 1})}" aria-label="Trang trước">‹</a><span class="page-count" th:text="${dashboard.productsWithoutOrdersPage}">1</span><a th:if="${dashboard.productsWithoutOrdersPage < dashboard.productsWithoutOrdersPages}" th:href="@{/admin/dashboard(period=${period},from=${from},to=${to},noOrderPage=${dashboard.productsWithoutOrdersPage + 1})}" aria-label="Trang sau">›</a></nav></footer>
                 </div>
             </section>
 
             <section class="report-section" aria-labelledby="inventory-heading">
-                <div class="section-heading"><div><p class="eyebrow">04 · INVENTORY REPORTS</p><h2 id="inventory-heading">Current inventory</h2><p class="muted">Current active, unexpired batches. Time filter does not apply. Quantities are grouped by sale unit.</p></div></div>
+                <div class="section-heading"><div><h2 id="inventory-heading">Báo cáo tồn kho</h2></div></div>
                 <div class="panel">
-                    <div class="panel-heading"><div><h2>Inventory quantity by product variant</h2><p class="muted">On hand includes reserved quantity; available quantity subtracts reservations. Variants remain separate to avoid adding unlike units.</p></div></div>
-                    <p class="empty-state" th:if="${#lists.isEmpty(dashboard.inventoryTotals)}">No current inventory.</p>
-                    <div class="table-wrap" th:unless="${#lists.isEmpty(dashboard.inventoryTotals)}"><table><thead><tr><th>PRODUCT / VARIANT</th><th>UNIT</th><th>ON HAND</th><th>AVAILABLE</th></tr></thead><tbody><tr th:each="row : ${dashboard.inventoryTotals}"><td><strong th:text="${row.productName}">Product</strong><small class="table-subline" th:text="${row.variantName}">Variant</small></td><td th:text="${row.unit}">kg</td><td th:text="${row.quantityOnHand}">0</td><td th:text="${row.availableQuantity}">0</td></tr></tbody></table></div>
+                    <div class="panel-heading"><div><h2>Số lượng tồn kho theo phiên bản sản phẩm</h2></div></div>
+                    <p class="empty-state" th:if="${#lists.isEmpty(dashboard.inventoryTotals)}">Hiện không có hàng tồn kho.</p>
+                    <div class="table-wrap" th:unless="${#lists.isEmpty(dashboard.inventoryTotals)}"><table><thead><tr><th>Sản phẩm / phiên bản</th><th>Đơn vị</th><th>Tồn kho</th><th>Khả dụng</th></tr></thead><tbody><tr th:each="row : ${dashboard.inventoryTotals}"><td><strong th:text="${row.productName}">Sản phẩm</strong><small class="table-subline" th:text="${row.variantName}">Phiên bản</small></td><td th:text="${row.unit}">kg</td><td th:text="${row.quantityOnHand}">0</td><td th:text="${row.availableQuantity}">0</td></tr></tbody></table></div>
                 </div>
                 <div class="panel">
-                    <div class="panel-heading"><div><h2>Inventory by shop</h2></div></div>
-                    <p class="empty-state" th:if="${#lists.isEmpty(dashboard.inventoryByShop)}">No shop inventory.</p>
-                    <div class="table-wrap" th:unless="${#lists.isEmpty(dashboard.inventoryByShop)}"><table><thead><tr><th>SHOP</th><th>PRODUCT / VARIANT</th><th>UNIT</th><th>ON HAND</th><th>AVAILABLE</th></tr></thead><tbody><tr th:each="row : ${dashboard.inventoryByShop}"><td th:text="${row.shopName}">Shop</td><td><strong th:text="${row.productName}">Product</strong><small class="table-subline" th:text="${row.variantName}">Variant</small></td><td th:text="${row.unit}">kg</td><td th:text="${row.quantityOnHand}">0</td><td th:text="${row.availableQuantity}">0</td></tr></tbody></table></div>
+                    <div class="panel-heading"><div><h2>Tồn kho theo cửa hàng</h2></div></div>
+                    <p class="empty-state" th:if="${#lists.isEmpty(dashboard.inventoryByShop)}">Không có hàng tồn kho tại cửa hàng.</p>
+                    <div class="table-wrap" th:unless="${#lists.isEmpty(dashboard.inventoryByShop)}"><table><thead><tr><th>Cửa hàng</th><th>Sản phẩm / phiên bản</th><th>Đơn vị</th><th>Tồn kho</th><th>Khả dụng</th></tr></thead><tbody><tr th:each="row : ${dashboard.inventoryByShop}"><td th:text="${row.shopName}">Cửa hàng</td><td><strong th:text="${row.productName}">Sản phẩm</strong><small class="table-subline" th:text="${row.variantName}">Phiên bản</small></td><td th:text="${row.unit}">kg</td><td th:text="${row.quantityOnHand}">0</td><td th:text="${row.availableQuantity}">0</td></tr></tbody></table></div>
                 </div>
                 <div class="panel">
-                    <div class="panel-heading"><div><h2>Products approaching expiry</h2><p class="muted">Uses each product's configured expiry warning days.</p></div></div>
-                    <p class="empty-state" th:if="${dashboard.expiringInventoryTotal == 0}">No products are approaching expiry.</p>
-                    <div class="table-wrap" th:if="${dashboard.expiringInventoryTotal > 0}"><table><thead><tr><th>SHOP</th><th>PRODUCT / VARIANT</th><th>EXPIRY</th><th>AVAILABLE</th></tr></thead><tbody><tr th:each="row : ${dashboard.expiringInventory}"><td th:text="${row.shopName}">Shop</td><td><strong th:text="${row.productName}">Product</strong><small class="table-subline" th:text="${row.variantName + ' · ' + row.unit}">Variant · kg</small></td><td th:text="${#temporals.format(row.expiryDate, 'dd/MM/yyyy')}">01/01/2026</td><td th:text="${row.availableQuantity + ' ' + row.unit}">0</td></tr></tbody></table></div>
-                    <footer class="table-footer" th:if="${dashboard.expiringInventoryPages > 1}"><span th:text="${'Page ' + dashboard.expiringInventoryPage + ' / ' + dashboard.expiringInventoryPages + ' · ' + dashboard.expiringInventoryTotal + ' batches'}">Page</span><nav class="pagination" aria-label="Expiry inventory pages"><a th:if="${dashboard.expiringInventoryPage > 1}" th:href="@{/admin/dashboard(period=${period},from=${from},to=${to},expiringPage=${dashboard.expiringInventoryPage - 1})}" aria-label="Previous page">‹</a><span class="page-count" th:text="${dashboard.expiringInventoryPage}">1</span><a th:if="${dashboard.expiringInventoryPage < dashboard.expiringInventoryPages}" th:href="@{/admin/dashboard(period=${period},from=${from},to=${to},expiringPage=${dashboard.expiringInventoryPage + 1})}" aria-label="Next page">›</a></nav></footer>
+                    <div class="panel-heading"><div><h2>Sản phẩm sắp hết hạn</h2></div></div>
+                    <p class="empty-state" th:if="${dashboard.expiringInventoryTotal == 0}">Không có sản phẩm nào sắp hết hạn.</p>
+                    <div class="table-wrap" th:if="${dashboard.expiringInventoryTotal > 0}"><table><thead><tr><th>Cửa hàng</th><th>Sản phẩm / phiên bản</th><th>Hạn sử dụng</th><th>Khả dụng</th></tr></thead><tbody><tr th:each="row : ${dashboard.expiringInventory}"><td th:text="${row.shopName}">Cửa hàng</td><td><strong th:text="${row.productName}">Sản phẩm</strong><small class="table-subline" th:text="${row.variantName + ' · ' + row.unit}">Phiên bản · kg</small></td><td th:text="${#temporals.format(row.expiryDate, 'dd/MM/yyyy')}">01/01/2026</td><td th:text="${row.availableQuantity + ' ' + row.unit}">0</td></tr></tbody></table></div>
+                    <footer class="table-footer" th:if="${dashboard.expiringInventoryPages > 1}"><span th:text="${'Trang ' + dashboard.expiringInventoryPage + ' / ' + dashboard.expiringInventoryPages + ' · ' + dashboard.expiringInventoryTotal + ' lô hàng'}">Trang</span><nav class="pagination" aria-label="Các trang tồn kho sắp hết hạn"><a th:if="${dashboard.expiringInventoryPage > 1}" th:href="@{/admin/dashboard(period=${period},from=${from},to=${to},expiringPage=${dashboard.expiringInventoryPage - 1})}" aria-label="Trang trước">‹</a><span class="page-count" th:text="${dashboard.expiringInventoryPage}">1</span><a th:if="${dashboard.expiringInventoryPage < dashboard.expiringInventoryPages}" th:href="@{/admin/dashboard(period=${period},from=${from},to=${to},expiringPage=${dashboard.expiringInventoryPage + 1})}" aria-label="Trang sau">›</a></nav></footer>
                 </div>
             </section>
 
             <section class="report-section" aria-labelledby="orders-heading">
-                <div class="section-heading"><div><p class="eyebrow">05 · ORDER STATISTICS</p><h2 id="orders-heading">Platform orders</h2><p class="muted">Order status totals and volume use orders placed in the selected local date range; split shop orders count once.</p></div></div>
-                <div class="metric-grid"><article class="metric-card"><span>Orders in range</span><strong th:text="${dashboard.totalOrders}">0</strong></article><article class="metric-card"><span>Successfully delivered orders</span><strong th:text="${dashboard.successfullyDeliveredOrders}">0</strong><small>Completion time within the selected range; all shop orders have DELIVERED deliveries.</small></article><article class="metric-card"><span>Cancelled or currently failed orders</span><strong th:text="${dashboard.cancelledOrFailedOrders}">0</strong><small>Parent CANCELLED or at least one current delivery status FAILED; counted once.</small></article></div>
-                <div class="status-grid"><article class="status-card" th:each="item : ${dashboard.orderStatuses}"><span th:text="${item.status}">PENDING</span><strong th:text="${item.count}">0</strong></article></div>
-                <p class="empty-state" th:if="${dashboard.totalOrders == 0}">No orders were placed in this date range.</p>
-                <div class="panel"><div class="panel-heading"><div><h2>Order volume by day</h2></div></div>
-                    <p class="empty-state" th:if="${#lists.isEmpty(dashboard.orderVolume)}">No order volume in this date range.</p>
-                    <div class="table-wrap" th:unless="${#lists.isEmpty(dashboard.orderVolume)}"><table><thead><tr><th>DATE (HCMC)</th><th>ORDERS PLACED</th></tr></thead><tbody><tr th:each="point : ${dashboard.orderVolume}"><td th:text="${#temporals.format(point.date, 'dd/MM/yyyy')}">01/01/2026</td><td th:text="${point.count}">0</td></tr></tbody></table></div>
+                <div class="section-heading"><div><h2 id="orders-heading">Thống kê đơn hàng</h2></div></div>
+                <div class="metric-grid"><article class="metric-card"><span>Tổng số đơn hàng</span><strong th:text="${dashboard.totalOrders}">0</strong></article><article class="metric-card"><span>Đơn hàng giao thành công</span><strong th:text="${dashboard.successfullyDeliveredOrders}">0</strong></article><article class="metric-card"><span>Đơn hàng hủy / giao thất bại</span><strong th:text="${dashboard.cancelledOrFailedOrders}">0</strong></article></div>
+                <div class="status-grid"><article class="status-card" th:each="item : ${dashboard.orderStatuses}"><span th:text="${item.status == 'PENDING' ? 'Chờ xử lý' : (item.status == 'CONFIRMED' ? 'Đã xác nhận' : (item.status == 'PROCESSING' ? 'Đang xử lý' : (item.status == 'PARTIALLY_COMPLETED' ? 'Hoàn tất một phần' : (item.status == 'COMPLETED' ? 'Đã hoàn tất' : (item.status == 'CANCELLED' ? 'Đã hủy' : item.status)))))}">Chờ xử lý</span><strong th:text="${item.count}">0</strong></article></div>
+                <p class="empty-state" th:if="${dashboard.totalOrders == 0}">Không có đơn hàng nào được đặt trong khoảng thời gian này.</p>
+                <div class="panel"><div class="panel-heading"><div><h2>Số đơn hàng theo ngày</h2></div></div>
+                    <p class="empty-state" th:if="${#lists.isEmpty(dashboard.orderVolume)}">Không có đơn hàng trong khoảng thời gian này.</p>
+                    <div class="table-wrap" th:unless="${#lists.isEmpty(dashboard.orderVolume)}"><table><thead><tr><th>Ngày (giờ Việt Nam)</th><th>Số đơn đã đặt</th></tr></thead><tbody><tr th:each="point : ${dashboard.orderVolume}"><td th:text="${#temporals.format(point.date, 'dd/MM/yyyy')}">01/01/2026</td><td th:text="${point.count}">0</td></tr></tbody></table></div>
                 </div>
             </section>
 
             <section class="report-section" aria-labelledby="customers-heading">
-                <div class="section-heading"><div><p class="eyebrow">06 · CUSTOMER STATISTICS</p><h2 id="customers-heading">Platform customers</h2></div></div>
-                <div class="metric-grid"><article class="metric-card"><span>Total registered Customers</span><strong th:text="${dashboard.totalCustomers}">0</strong><small>Only users with CUSTOMER role.</small></article><article class="metric-card"><span>New Customers in range</span><strong th:text="${dashboard.newCustomers}">0</strong></article><article class="metric-card"><span>Customers with a successful purchase</span><strong th:text="${dashboard.customersWithSuccessfulPurchase}">0</strong><small>Cumulative: at least one successfully delivered customer order.</small></article><article class="metric-card"><span>Returning Customers</span><strong th:text="${dashboard.returningCustomers}">0</strong><small>Cumulative: at least two successfully delivered customer orders.</small></article></div>
-                <p class="empty-state" th:if="${dashboard.totalCustomers == 0}">No accounts have the Customer role.</p>
-                <div class="panel"><div class="panel-heading"><div><h2>New Customers over time</h2><p class="muted">Daily registrations, grouped by the Customer role and HCMC calendar date.</p></div></div>
-                    <p class="empty-state" th:if="${#lists.isEmpty(dashboard.newCustomerTrend)}">No new Customers in this date range.</p>
-                    <div class="table-wrap" th:unless="${#lists.isEmpty(dashboard.newCustomerTrend)}"><table><thead><tr><th>DATE (HCMC)</th><th>NEW CUSTOMERS</th></tr></thead><tbody><tr th:each="point : ${dashboard.newCustomerTrend}"><td th:text="${#temporals.format(point.date, 'dd/MM/yyyy')}">01/01/2026</td><td th:text="${point.count}">0</td></tr></tbody></table></div>
+                <div class="section-heading"><div><h2 id="customers-heading">Thống kê khách hàng</h2></div></div>
+                <div class="metric-grid"><article class="metric-card"><span>Tổng số khách hàng</span><strong th:text="${dashboard.totalCustomers}">0</strong></article><article class="metric-card"><span>Khách hàng mới</span><strong th:text="${dashboard.newCustomers}">0</strong></article><article class="metric-card"><span>Khách hàng đã mua hàng</span><strong th:text="${dashboard.customersWithSuccessfulPurchase}">0</strong></article><article class="metric-card"><span>Khách hàng mua hàng nhiều lần</span><strong th:text="${dashboard.returningCustomers}">0</strong></article></div>
+                <p class="empty-state" th:if="${dashboard.totalCustomers == 0}">Chưa có tài khoản nào mang vai trò khách hàng.</p>
+                <div class="panel"><div class="panel-heading"><div><h2>Khách hàng mới theo thời gian</h2></div></div>
+                    <p class="empty-state" th:if="${#lists.isEmpty(dashboard.newCustomerTrend)}">Không có khách hàng mới trong khoảng thời gian này.</p>
+                    <div class="table-wrap" th:unless="${#lists.isEmpty(dashboard.newCustomerTrend)}"><table><thead><tr><th>Ngày (giờ Việt Nam)</th><th>Khách hàng mới</th></tr></thead><tbody><tr th:each="point : ${dashboard.newCustomerTrend}"><td th:text="${#temporals.format(point.date, 'dd/MM/yyyy')}">01/01/2026</td><td th:text="${point.count}">0</td></tr></tbody></table></div>
                 </div>
             </section>
+            </div>
         </div>
     </main>
 </div>
