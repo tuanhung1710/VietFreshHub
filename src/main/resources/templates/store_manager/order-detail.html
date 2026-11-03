@@ -158,11 +158,17 @@
                 </tbody>
             </table>
         </div>
+        <p class="money">Tổng tiền hàng:
+            <span th:replace="~{store_manager/purchase-invoice :: money(${orderDetail.subtotal})}"></span>
+        </p>
+        <p class="money" th:if="${orderDetail.discountTotal.signum() != 0}">Giảm giá:
+            <span th:replace="~{store_manager/purchase-invoice :: money(${orderDetail.discountTotal.negate()})}"></span>
+        </p>
         <p class="money">Phí vận chuyển:
-            <span th:text="${#numbers.formatDecimal(orderDetail.shippingFee, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></span>
+            <span th:replace="~{store_manager/purchase-invoice :: money(${orderDetail.shippingFee})}"></span>
         </p>
         <p class="total">TỔNG CỘNG:
-            <span th:text="${#numbers.formatDecimal(orderDetail.totalAmount, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></span>
+            <span th:replace="~{store_manager/purchase-invoice :: money(${orderDetail.totalAmount})}"></span>
         </p>
     </section>
 
