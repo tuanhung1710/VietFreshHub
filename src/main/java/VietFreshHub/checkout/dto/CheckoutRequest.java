@@ -16,8 +16,7 @@ public class CheckoutRequest {
     @NotBlank(message="Phiên đặt hàng không hợp lệ. Vui lòng tải lại trang.")
     @Pattern(regexp="[0-9a-f]{32}",message="Phiên đặt hàng không hợp lệ. Vui lòng tải lại trang.")
     private String checkoutToken;
-    @Size(max = 100, message = "Mã coupon tối đa 100 ký tự")
-    private String couponCode;
+    private java.util.List<@Size(max = 100, message = "Mã coupon tối đa 100 ký tự") String> couponCodes = new java.util.ArrayList<>();
     @NotNull(message = "Vui lòng nhập số tiền thưởng sử dụng")
     @DecimalMin(value = "0", message = "Số tiền thưởng sử dụng không được âm")
     @Digits(integer = 16, fraction = 0, message = "Tiền thưởng phải là số đồng nguyên, tối đa 16 chữ số")

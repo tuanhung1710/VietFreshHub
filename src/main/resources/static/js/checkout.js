@@ -25,9 +25,23 @@ document.addEventListener('DOMContentLoaded', () => {
             url.searchParams.set('checkoutToken', form.elements.checkoutToken.value);
             url.searchParams.set('addressId', address.value);
             url.searchParams.set('selectionSubmitted', 'true');
-            url.searchParams.set('couponCode', form.elements.couponCode.value);
+            form.querySelectorAll('select[name="couponCodes"]').forEach(coupon => {
+                if (coupon.value) url.searchParams.append('couponCodes', coupon.value);
+            });
+            form.querySelectorAll('input[name="couponCodes"]').forEach(coupon => url.searchParams.append('couponCodes', coupon.value));
             url.searchParams.set('rewardAmountToUse', form.elements.rewardAmountToUse.value);
             window.location.assign(url.toString());
+        });
+    });
+    form.querySelectorAll('[data-coupon-error]').forEach(error => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'couponCodes';
+        input.value = error.dataset.couponError;
+        form.append(input);
+        error.querySelector('[data-remove-coupon]').addEventListener('click', () => {
+            input.remove();
+            error.remove();
         });
     });
     form.addEventListener('submit', event => {

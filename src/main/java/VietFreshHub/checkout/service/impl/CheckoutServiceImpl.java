@@ -158,7 +158,6 @@ public class CheckoutServiceImpl implements CheckoutService {
 
         // 3. Tạo đơn tổng, đơn từng shop, giữ kho và ghi nhận payment theo phương thức đã chọn.
         Order order = checkoutOrderService.createOrder(buyer, orderCode, subtotal, shippingFee, deliveryAddress);
-        if ("BANK_TRANSFER".equals(paymentMethod.getMethodCode())) order.setPaymentStatus("PENDING");
         CheckoutOrderService.CreatedShopOrders createdShopOrders = checkoutOrderService.createShopOrders(order, buyer, itemsByShopId, draft.shopQuotes());
         inventoryReservationService.reserve(createdShopOrders.reservations(), customerId);
         if ("BANK_TRANSFER".equals(paymentMethod.getMethodCode())) {
@@ -167,13 +166,14 @@ public class CheckoutServiceImpl implements CheckoutService {
             }
         }
 
-        if (request.getCouponCode() != null && !request.getCouponCode().isBlank()) {
+        if (request.getCouponCodes() != null && request.getCouponCodes().stream().anyMatch(code -> code != null && !code.isBlank())) {
             try {
-                couponApplicationService.applyToOrder(customerId, order.getOrderId(), request.getCouponCode());
+                couponApplicationService.applyToOrder(customerId, order.getOrderId(), request.getCouponCodes());
             } catch (IllegalArgumentException ex) {
                 throw new CheckoutException(ex.getMessage());
             }
         }
+        if ("BANK_TRANSFER".equals(paymentMethod.getMethodCode())) order.setPaymentStatus("PENDING");
         BigDecimal rewardAmountToUse = request.getRewardAmountToUse();
         if (rewardAmountToUse == null || rewardAmountToUse.signum() < 0
                 || rewardAmountToUse.stripTrailingZeros().scale() > 0

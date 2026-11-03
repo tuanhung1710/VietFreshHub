@@ -60,6 +60,9 @@ body:has(.storefront-header) main.checkout-page .checkout-summary { position: st
 .checkout-page .coupon-section > label, .checkout-page .loyalty-section h3 { display: block; margin: 0 0 12px; color: #172334; font-size: 14px; font-weight: 650; }
 .checkout-page .coupon-section select, .checkout-page .loyalty-section input[type=number] { display: block; box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #cbd5d1; border-radius: 8px; color: #172334; background: #fff; font: inherit; font-size: 12px; }
 .checkout-page .coupon-section select { text-overflow: ellipsis; }
+.checkout-page .coupon-shop-row { margin-bottom: 12px; }
+.checkout-page .coupon-heading { margin: 0 0 12px; color: #172334; font-size: 14px; font-weight: 650; }
+.checkout-page .coupon-shop-row label { display: block; margin-bottom: 6px; color: var(--checkout-muted); font-size: 12px; font-weight: 600; }
 .checkout-page .loyalty-section input[type=number]:disabled { background: #f7f9fc; color: var(--checkout-muted); cursor: not-allowed; }
 .checkout-page .loyalty-section > label { display: block; margin-bottom: 8px; color: var(--checkout-muted); font-size: 12px; }
 body:has(.storefront-header) main.checkout-page .checkout-summary .button.secondary { width: 100%; min-height: 40px; margin-top: 12px; padding: 8px 12px; border-color: #b9d2c3; background: #fff; color: var(--checkout-green); font-size: 12px; }
