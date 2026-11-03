@@ -11,8 +11,7 @@
 <th:block th:replace="~{fragments/seller-orders :: navigation('announcements')}"></th:block>
 <div id="workspace-content" class="vfo-workspace" tabindex="-1">
 <main id="order-content" class="vfo-main vfn-main">
-    <nav aria-label="Đường dẫn trang"><ol class="breadcrumb vfo-breadcrumb"><li class="breadcrumb-item"><a th:href="@{/seller}">Kênh người bán</a></li><li class="breadcrumb-item active" aria-current="page">Thông báo hệ thống</li></ol></nav>
-    <header class="vfo-page-heading"><div><h1>Thông báo hệ thống</h1><p class="vfo-page-description">Thông báo từ hệ thống và quản trị viên.</p></div><a class="btn vfo-btn-secondary" th:href="@{/seller}"><span aria-hidden="true">←</span> Cửa hàng của tôi</a></header>
+    <header class="vfo-page-heading"><div><h1>Thông báo hệ thống</h1></div></header>
     <nav class="nav nav-pills vfo-order-tabs" aria-label="Nhóm thông báo"><a class="nav-link" th:href="@{/notifications}">Tất cả thông báo</a><a class="nav-link active" aria-current="page" th:href="@{/seller/announcements}">Thông báo hệ thống</a></nav>
     <section class="card vfo-list-card vfn-inbox-card" aria-labelledby="announcements-heading">
         <div class="vfo-list-heading"><div><span class="vfo-section-marker" aria-hidden="true"></span><h2 id="announcements-heading">Thông báo từ hệ thống và quản trị viên</h2><span class="vfo-count" th:text="${announcementsPage.totalElements}"></span></div></div>

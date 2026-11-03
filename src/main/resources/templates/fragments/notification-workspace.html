@@ -17,7 +17,7 @@
     <th:block th:if="${!admin and !seller and !staff}">
         <a class="vfo-skip-link" href="#workspace-content">Đến nội dung chính</a>
         <svg th:replace="~{fragments/seller-orders :: icons}"></svg>
-        <header class="vfo-topbar navbar">
+        <header class="vfo-topbar navbar vfn-customer-header">
             <div class="vfo-brand-group">
                 <button class="btn vfo-menu-toggle d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#vfoSidebar" aria-controls="vfoSidebar" aria-label="Mở thanh điều hướng"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-menu"/></svg></button>
                 <a class="vfo-brand" th:href="@{/home}"><span class="vfo-brand-mark"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-leaf"/></svg></span><span><span class="vfo-brand-name"><strong>VietFresh</strong> Hub</span><span class="vfo-brand-tagline">Fresh from the heart</span></span></a>
@@ -40,10 +40,6 @@
         </aside>
     </th:block>
 </th:block>
-<footer th:fragment="footer" class="vfo-footer">
-    <div><a class="vfo-footer-brand" th:href="@{/}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-leaf"/></svg>VietFresh Hub</a><span>© VietFresh Hub · Thông báo của bạn</span></div>
-    <p>Luôn kết nối cùng VietFresh.</p>
-    <a th:href="@{/}">Về trang chính <span aria-hidden="true">↗</span></a>
-</footer>
+<footer th:fragment="footer" th:replace="~{fragments/footer :: footer}"></footer>
 </body>
 </html>

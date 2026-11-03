@@ -27,7 +27,7 @@ public class AdminAccountController {
 
     @GetMapping({"", "/"})
     public String adminHome() {
-        return "redirect:/admin/accounts";
+        return "redirect:/admin/dashboard";
     }
     
     @GetMapping("/accounts")

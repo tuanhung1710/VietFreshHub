@@ -7,12 +7,8 @@
 
 <div class="vfo-workspace vfr-workspace" id="order-content" tabindex="-1">
 <main class="container vfr-page">
-    <nav class="breadcrumb" aria-label="Đường dẫn">
-        <a th:href="@{/seller}">Cửa hàng của tôi</a> &nbsp;/&nbsp; <b>Hồ sơ cửa hàng</b>
-        &nbsp;·&nbsp; <a href="#pickup">Địa điểm lấy hàng</a>
-    </nav>
     <div class="page-heading">
-        <div><h1>Hồ sơ cửa hàng</h1><p>Xem và cập nhật thông tin gian hàng, quản lý trạng thái nhận đơn.</p></div>
+        <div><h1>Hồ sơ cửa hàng</h1></div>
         <a class="button primary" th:href="@{/seller/profile/edit}">Sửa hồ sơ</a>
     </div>
     <p class="inline-message" th:if="${successMessage}" th:text="${successMessage}" role="status"></p>

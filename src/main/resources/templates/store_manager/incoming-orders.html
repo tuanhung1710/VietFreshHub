@@ -5,15 +5,13 @@
 <th:block th:replace="~{fragments/seller-orders :: navigation('orders')}"></th:block>
 <div class="vfo-workspace">
 <main id="order-content" class="vfo-main">
-    <nav aria-label="Đường dẫn trang"><ol class="breadcrumb vfo-breadcrumb"><li class="breadcrumb-item"><a th:href="@{/seller}">Kênh người bán</a></li><li class="breadcrumb-item active" aria-current="page">Đơn hàng</li></ol></nav>
     <header class="vfo-page-heading">
-        <div><p class="vfo-eyebrow">Tận tâm từng đơn hàng</p><h1>Quản lý đơn hàng</h1><p class="vfo-page-description">Theo dõi, xác nhận và xử lý đơn hàng của cửa hàng.</p></div>
-        <a class="btn vfo-btn-secondary" th:href="@{/seller/deliveries}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg>Giám sát giao hàng<svg class="vfo-icon vfo-icon-sm" aria-hidden="true"><use href="#vfo-arrow"/></svg></a>
+        <div><h1>Quản lý đơn hàng</h1></div>
     </header>
     <nav th:replace="~{fragments/seller-orders :: tabs(${orderView})}"></nav>
     <div th:replace="~{store_manager/order-filters :: filters(${orderView}, ${filterAction}, ${showStatusFilter}, ${orderView != 'completed'}, ${totalElements})}"></div>
     <section class="card vfo-list-card" aria-labelledby="order-list-heading">
-        <div class="vfo-list-heading"><div><span class="vfo-section-marker" aria-hidden="true"></span><h2 id="order-list-heading" th:text="${pageTitle}">Đơn hàng</h2><span class="vfo-count" th:text="${totalElements}"></span></div><span class="vfo-list-caption">Danh sách đơn hàng</span></div>
+        <div class="vfo-list-heading"><div><span class="vfo-section-marker" aria-hidden="true"></span><h2 id="order-list-heading" th:text="${pageTitle}">Đơn hàng</h2><span class="vfo-count" th:text="${totalElements}"></span></div></div>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0 vfo-order-table">
                 <caption class="visually-hidden" th:text="${pageTitle}">Danh sách đơn hàng</caption>

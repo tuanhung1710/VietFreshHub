@@ -10,8 +10,7 @@
 
 
 <main class="container page checkout-page vfr-page" id="customer-content" tabindex="-1">
-    <nav class="checkout-steps" aria-label="Tiến trình mua hàng"><a th:href="@{/cart}">Giỏ hàng</a><span aria-hidden="true">›</span><strong aria-current="step">Đặt hàng</strong><span aria-hidden="true">›</span><span>Hoàn tất</span></nav>
-    <div class="page-heading"><h1 class="checkout-title">Kiểm tra và đặt hàng</h1><p class="muted">Xem lại địa chỉ nhận hàng, phương thức thanh toán và sản phẩm trước khi xác nhận đơn hàng.</p></div>
+    <div class="page-heading"><h1 class="checkout-title">Kiểm tra và đặt hàng</h1></div>
     <div th:replace="~{fragments/storefront :: messages}"></div>
     <p th:if="${cart.status == 'BUY_NOW'}" class="notice info">Mua ngay: chỉ đặt số lượng vừa chọn. Sản phẩm đang có trong giỏ hàng được giữ nguyên.</p>
     <form th:action="@{/customer/checkout}" th:object="${form}" method="post" id="checkout-form">

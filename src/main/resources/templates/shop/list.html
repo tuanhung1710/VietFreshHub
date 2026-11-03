@@ -4,7 +4,6 @@
 <body class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
 <header th:replace="~{fragments/customer-shop :: header}"></header>
 <main class="container vfr-page">
-    <div class="bread"><a th:href="@{/home}">Trang chủ</a> / <a th:href="@{/shops}">Gian hàng</a> / Đã lưu</div>
     <h1>Cửa hàng đã lưu</h1>
     <div th:replace="~{fragments/customer-shop :: messages}"></div>
     <p th:if="${shopsPage.empty}">Bạn chưa lưu cửa hàng nào.</p>

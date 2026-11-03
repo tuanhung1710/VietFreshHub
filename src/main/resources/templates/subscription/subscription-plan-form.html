@@ -21,8 +21,7 @@
     
 <div class="vfo-workspace vfr-workspace" id="workspace-content" tabindex="-1">
 <main class="page-content vfr-page">
-    <nav class="breadcrumbs" aria-label="Điều hướng"><a th:href="@{/admin/accounts}">Quản trị</a><span aria-hidden="true">/</span><a th:href="@{/admin/subscription-plans}">Gói dịch vụ</a><span aria-hidden="true">/</span><strong th:text="${editing ? 'Sửa gói' : 'Tạo gói mới'}">Tạo gói mới</strong></nav>
-    <section class="page-heading"><div><p class="eyebrow">QUẢN LÝ GÓI DỊCH VỤ</p><h1 th:text="${pageTitle != null ? pageTitle : (editing ? 'Sửa gói dịch vụ' : 'Tạo gói dịch vụ')}">Tạo gói dịch vụ</h1></div></section>
+    <section class="page-heading"><div><h1 th:text="${pageTitle != null ? pageTitle : (editing ? 'Sửa gói dịch vụ' : 'Tạo gói dịch vụ')}">Tạo gói dịch vụ</h1></div></section>
 
     <div class="accounts-panel subscription-form-card">
         <div class="subscription-card-body">

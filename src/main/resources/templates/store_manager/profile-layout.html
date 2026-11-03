@@ -40,6 +40,6 @@
         <div class="summary-line"><span>Nhận đơn</span><strong th:text="${shop.availabilityStatus == 'OPEN' ? 'Mở cửa' : 'Tạm đóng'}"></strong></div>
     </div>
 </section>
-<footer th:fragment="footer"><div class="container"><span>© VietFresh Hub · Quản lý cửa hàng</span><span>Hồ sơ &amp; trạng thái nhận đơn</span></div></footer>
+<footer th:fragment="footer" th:replace="~{fragments/footer :: footer}"></footer>
 </body>
 </html>

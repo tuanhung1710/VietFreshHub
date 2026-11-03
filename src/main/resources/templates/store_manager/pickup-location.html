@@ -12,9 +12,8 @@
 <th:block th:replace="~{fragments/seller-orders :: navigation('pickup')}"></th:block>
 <div class="vfo-workspace">
 <main id="order-content" class="vfo-main vfp-main" tabindex="-1">
-    <nav aria-label="Đường dẫn trang"><ol class="breadcrumb vfo-breadcrumb"><li class="breadcrumb-item"><a th:href="@{/seller}">Kênh người bán</a></li><li class="breadcrumb-item active" aria-current="page">Địa điểm lấy hàng</li></ol></nav>
     <header class="vfo-page-heading">
-        <div><h1>Quản lý địa điểm lấy hàng</h1><p class="vfo-page-description">Cập nhật địa chỉ bàn giao hàng cho nhân viên giao hàng.</p></div>
+        <div><h1>Quản lý địa điểm lấy hàng</h1></div>
         <a class="btn vfo-btn-secondary" th:href="@{/seller}"><span aria-hidden="true">←</span> Trang chủ</a>
     </header>
     <p class="vfc-notice vfp-success" th:if="${successMessage != null}" th:text="${successMessage}" role="status"></p>

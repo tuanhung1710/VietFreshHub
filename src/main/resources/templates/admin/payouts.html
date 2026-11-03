@@ -18,14 +18,8 @@
 <main class="page-shell vfr-page">
     <header class="page-header">
         <div>
-            <p class="eyebrow">TRUNG TÂM QUẢN TRỊ</p>
             <h1>Quản lý chi trả cho cửa hàng</h1>
-            <p>Sàn thu hoa hồng <strong th:text="|${commissionRate}%|">10%</strong> trên tiền hàng sau khi trừ coupon do shop tài trợ; không tính phí giao hàng.</p>
         </div>
-        <nav aria-label="Điều hướng quản trị">
-            <a th:href="@{/admin/accounts}">Quản lý tài khoản</a>
-            <a th:href="@{/admin/deliveries}">Giám sát giao hàng</a>
-        </nav>
     </header>
 
     <div th:if="${successMessage}" class="flash success" role="status" th:text="${successMessage}"></div>

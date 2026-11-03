@@ -29,6 +29,7 @@
 <th:block th:fragment="styles">
     <link rel="stylesheet" th:href="@{/css/interface-utilities.css}">
     <link rel="stylesheet" th:href="@{/css/interface-theme.css}">
+    <link rel="stylesheet" th:href="@{/css/customer-navigation.css}">
 </th:block>
 <th:block th:fragment="customerHeader(active)">
     <a class="vfo-skip-link" href="#customer-content">Đến nội dung chính</a>
@@ -36,23 +37,24 @@
     <header class="vfc-header">
         <div class="vfc-container vfc-header-main">
             <a class="vfo-brand" th:href="@{/home}" aria-label="VietFresh Hub — Trang chủ"><span class="vfo-brand-mark"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-leaf"/></svg></span><span><span class="vfo-brand-name"><strong>VietFresh</strong> Hub</span><span class="vfo-brand-tagline">Fresh from the heart</span></span></a>
-            <form class="vfc-header-search d-none d-lg-flex" th:action="@{/home}" method="get" role="search">
+            <div class="vfo-topbar-actions vfc-header-actions">
+                <span th:replace="~{fragments/notifications :: bell}"></span>
+                <span class="vfo-topbar-divider d-none d-sm-block"></span>
+                <th:block th:replace="~{fragments/account-menu :: menu}"></th:block>
+            </div>
+        </div>
+        <div class="vfc-container vfc-header-tools">
+            <form class="vfc-header-search" th:action="@{/home}" method="get" role="search">
                 <input th:if="${category != null and not #strings.isEmpty(category)}" type="hidden" name="category" th:value="${category}">
                 <svg class="vfo-icon" aria-hidden="true"><use href="#vfo-search"/></svg>
                 <input class="form-control" aria-label="Tìm kiếm trái cây" name="keyword" maxlength="100" th:value="${keyword}" placeholder="Tìm kiếm trái cây tươi, bưởi da xanh, xoài cát..." type="search">
                 <button class="btn vfo-btn-primary" type="submit">Tìm kiếm</button>
             </form>
-            <div class="vfo-topbar-actions vfc-header-actions">
-                <span th:replace="~{fragments/notifications :: bell}"></span>
-                <a class="vfc-cart-link" th:attr="aria-current=${active == 'cart' ? 'page' : null}" th:href="@{/cart}" title="Giỏ hàng" aria-label="Giỏ hàng"><svg class="vfo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h3l3 13h11l3-9H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg><span th:text="${cartBadgeTotal != null ? cartBadgeTotal : (cart != null ? cart.totalItems : 0)}">0</span></a>
-                <span class="vfo-topbar-divider d-none d-sm-block"></span>
-                <th:block th:replace="~{fragments/account-menu :: menu}"></th:block>
-            </div>
+            <a class="vfc-cart-link" th:attr="aria-current=${active == 'cart' ? 'page' : null}" th:href="@{/cart}" title="Giỏ hàng"><svg class="vfo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h3l3 13h11l3-9H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg><span class="vfc-cart-label">Giỏ hàng</span><span class="vfc-cart-count" th:text="${cartBadgeTotal != null ? cartBadgeTotal : (cart != null ? cart.totalItems : 0)}">0</span></a>
         </div>
         <nav class="vfc-header-nav" aria-label="Điều hướng mua sắm"><div class="vfc-container">
             <a th:href="@{/home}">Trang chủ</a><a th:href="@{/shops}">Hệ thống cửa hàng</a>
             <a th:classappend="${active == 'orders' ? 'active' : ''}" th:attr="aria-current=${active == 'orders' ? 'location' : null}" th:href="@{/customer/orders}">Đơn hàng của tôi</a>
-            <a th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" th:classappend="${active == 'loyalty' ? 'active' : ''}" th:attr="aria-current=${active == 'loyalty' ? 'page' : null}" th:href="@{/customer/loyalty}">Tiền thưởng</a>
         </div></nav>
     </header>
 </th:block>
@@ -62,9 +64,7 @@
     <th:block th:if="${role == 'customer' or role == 'public'}"><th:block th:replace="~{fragments/interface-layout :: customerHeader(${active})}"></th:block></th:block>
 </th:block>
 <th:block th:fragment="footer(role)">
-    <th:block th:if="${role == 'admin'}"><footer th:replace="~{fragments/admin-workspace :: footer}"></footer></th:block>
-    <th:block th:if="${role == 'seller'}"><footer th:replace="~{fragments/seller-orders :: footer}"></footer></th:block>
-    <th:block th:if="${role == 'customer' or role == 'public'}"><footer th:replace="~{fragments/customer-service :: footer}"></footer></th:block>
+    <th:block th:replace="~{fragments/footer :: footer}"></th:block>
 </th:block>
 </body>
 </html>

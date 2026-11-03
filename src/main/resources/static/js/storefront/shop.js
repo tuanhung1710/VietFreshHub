@@ -138,8 +138,6 @@ async function start() {
     options = await request('/options');
     $('topnav').innerHTML = '<button data-shop-category="">Tất cả sản phẩm</button>' + options.categories.map(category =>
         `<button data-shop-category="${Number(category.id)}">${html(category.name)}</button>`).join('');
-    $('footerCategories').innerHTML = options.categories.slice(0, 3).map(category =>
-        `<p><button class="textlink" data-shop-category="${Number(category.id)}">${html(category.name)}</button></p>`).join('');
     $('size').innerHTML = options.pageSizes.map(size => `<option value="${size}">${size}</option>`).join('');
     readLocation();
     document.addEventListener('click', event => {

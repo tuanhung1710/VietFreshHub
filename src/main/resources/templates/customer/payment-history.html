@@ -4,25 +4,13 @@
 <body class="purchase-page vfo-app vfr-app vfc-app vfr-customer" data-vfr-section="orders">
 <th:block th:replace="~{fragments/interface-layout :: navigation('customer','orders')}"></th:block>
 
-<main class="container page purchase-layout vfr-page" id="customer-content" tabindex="-1"><aside class="purchase-sidebar">
-<div class="purchase-profile"><span class="purchase-avatar"><svg th:replace="~{fragments/account-menu :: icon('person')}"></svg></span><div><strong th:text="${headerAccountName != null ? headerAccountName : #authentication.name}"></strong><span class="purchase-role">Khách hàng</span></div></div>
-<nav aria-label="Tài khoản của tôi"><a th:href="@{/customer/profile}" ><svg th:replace="~{fragments/account-menu :: icon('person')}"></svg>Thông tin tài khoản</a>
-<a th:href="@{/customer/orders}" ><svg th:replace="~{fragments/account-menu :: icon('orders')}"></svg>Đơn hàng của tôi</a>
-<a class="active" aria-current="page" th:href="@{/customer/payments}" ><svg th:replace="~{fragments/account-menu :: icon('orders')}"></svg>Lịch sử thanh toán</a>
-<a th:href="@{/customer/addresses}" ><svg th:replace="~{fragments/account-menu :: icon('location')}"></svg>Địa chỉ nhận hàng</a>
-<a th:href="@{/cart}" ><svg th:replace="~{fragments/account-menu :: icon('cart')}"></svg>Giỏ hàng</a><form th:action="@{/logout}" method="post"><button type="submit" class="btn btn-success"><svg th:replace="~{fragments/account-menu :: icon('logout')}"></svg>Đăng xuất</button></form></nav><div class="purchase-landscape" aria-hidden="true"><span>♧</span></div>
-</aside>
+<main class="container page purchase-layout vfr-page" id="customer-content" tabindex="-1">
 <div class="purchase-content order-history-page payment-history-page payment-template">
-    <nav class="purchase-breadcrumb" aria-label="Đường dẫn"><a th:href="@{/home}">Trang chủ</a><span>›</span><span>Lịch sử thanh toán</span></nav><div class="page-heading payments-heading">
-        <div><p class="eyebrow">Thanh toán của bạn</p><h1 class="checkout-title">Lịch sử thanh toán</h1>
-            <p class="muted">Theo dõi các khoản thanh toán và trạng thái xử lý thanh toán của đơn hàng.</p></div>
+    <div class="page-heading payments-heading">
+        <div><h1 class="checkout-title">Lịch sử thanh toán</h1></div>
         <a class="button secondary" th:href="@{/customer/orders}">Đơn hàng của tôi <span aria-hidden="true">↗</span></a>
     </div>
 <div class="payment-overview" th:unless="${invalidFilter}"><div><span>Tổng mục thanh toán phù hợp</span><strong th:text="${paymentPage.totalElements}"></strong></div><div><span>Đã thanh toán · trang này</span><strong th:text="${#lists.size(paymentPage.content.?[displayStatus == 'PAID'])}"></strong></div><div><span>Đang xử lý hoàn tiền · trang này</span><strong th:text="${#lists.size(paymentPage.content.?[displayStatus == 'REFUND_PROCESSING'])}"></strong></div><div><span>Đã hủy / Thất bại · trang này</span><strong th:text="${#lists.size(paymentPage.content.?[displayStatus == 'CANCELLED' or displayStatus == 'FAILED'])}"></strong></div></div>
-    <div class="notice info payments-explanation">
-        <strong>Mỗi đơn cửa hàng có trạng thái thanh toán riêng.</strong>
-        <p>Khoản chờ thanh toán, thất bại hoặc đã hủy không phải số tiền đã thu. Một giao dịch online có thể thanh toán nhiều đơn cửa hàng; số tiền bên dưới là giá trị của từng đơn.</p>
-    </div>
     <p th:if="${filterError != null}" class="notice error" role="alert" th:text="${filterError}"></p>
     <p th:if="${pageNotice != null}" class="notice info" role="status" th:text="${pageNotice}"></p>
     <form class="panel purchase-filters" th:action="@{/customer/payments}" th:object="${filter}" method="get" aria-label="Lọc bản ghi thanh toán">

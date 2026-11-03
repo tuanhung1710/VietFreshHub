@@ -1,15 +1,14 @@
 package VietFreshHub.exception;
 
 import VietFreshHub.auth.exception.RegistrationException;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.ui.Model;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-@Slf4j
+import java.io.IOException;
+
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -22,9 +21,9 @@ public class GlobalExceptionHandler {
         return "redirect:/register";
     }
 
-    @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<Void> handleNoResource(NoResourceFoundException ex) {
-        // Không log ERROR, chỉ trả 404
-        return ResponseEntity.notFound().build();
+    @ExceptionHandler({NoResourceFoundException.class, ResourceNotFoundException.class})
+    public void handleNotFound(HttpServletResponse response) throws IOException {
+        // Chuyển qua /error để hiển thị trang lỗi và giữ đúng mã HTTP 404.
+        response.sendError(HttpServletResponse.SC_NOT_FOUND);
     }
 }

@@ -10,9 +10,7 @@
     <section class="max-w-[960px] mx-auto px-margin py-space-lg">
         <a th:href="@{/customer/home}" class="text-primary hover:underline">← Trang khách hàng</a>
         <div class="mt-space-md mb-space-lg">
-            <p class="text-label-md text-primary font-semibold">TÀI KHOẢN CỦA TÔI</p>
             <h1 class="mt-2 text-3xl font-bold">Thông tin cá nhân</h1>
-            <p class="mt-2 text-on-surface-variant">Cập nhật thông tin liên hệ để thuận tiện khi mua sắm.</p>
         </div>
 
         <div th:if="${successMessage}" class="mb-space-md rounded-lg bg-green-50 px-4 py-3 text-green-800" role="status" th:text="${successMessage}"></div>

@@ -5,15 +5,11 @@
 <th:block th:replace="~{fragments/delivery-layout :: navigation('cod')}"></th:block>
 <div id="delivery-content" class="vfo-workspace" tabindex="-1">
     <main class="vfo-main vfd-cod-page">
-        <nav th:replace="~{fragments/delivery-layout :: breadcrumb('Tổng hợp COD')}"></nav>
         <header class="vfo-page-heading">
             <div>
                 <h1>Tổng hợp COD trong ngày</h1>
-                <p class="vfo-page-description">Tra cứu số tiền COD và số đơn giao thành công theo ngày.</p>
             </div>
-            <a class="btn vfo-btn-secondary" th:href="@{/delivery}"><span aria-hidden="true">←</span> Trang chủ giao hàng</a>
         </header>
-        <nav th:replace="~{fragments/delivery-layout :: tabs('cod')}"></nav>
         <section class="card vfd-cod-filter" aria-labelledby="cod-date-heading">
             <div class="vfd-cod-date-heading">
                 <span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-history"/></svg></span>

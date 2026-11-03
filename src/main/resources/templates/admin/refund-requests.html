@@ -5,10 +5,8 @@
 <th:block th:replace="~{fragments/admin-workspace :: navigation('refunds')}"></th:block>
 <div id="workspace-content" class="vfo-workspace" tabindex="-1">
 <main class="vfo-main vfa-refund-page">
-    <nav th:replace="~{fragments/admin-workspace :: breadcrumb('Yêu cầu hoàn tiền')}"></nav>
     <header class="vfo-page-heading">
-        <div><h1>Yêu cầu hoàn tiền</h1><p class="vfo-page-description">Tra cứu thông tin hoàn tiền theo khoảng thời gian và xuất danh sách yêu cầu.</p></div>
-        <a class="btn vfo-btn-secondary" th:href="@{/admin/deliveries}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg>Giám sát giao hàng</a>
+        <div><h1>Yêu cầu hoàn tiền</h1></div>
     </header>
     <section class="card vfa-filter-card" aria-labelledby="refund-filter-heading">
         <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-filter"/></svg></span><h2 id="refund-filter-heading">Khoảng thời gian gửi yêu cầu</h2></div>

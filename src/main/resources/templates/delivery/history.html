@@ -5,12 +5,9 @@
 <th:block th:replace="~{fragments/delivery-layout :: navigation('history')}"></th:block>
 <div id="delivery-content" class="vfo-workspace" tabindex="-1">
 <main class="vfo-main vfd-history-page">
-    <nav th:replace="~{fragments/delivery-layout :: breadcrumb('Lịch sử giao hàng')}"></nav>
     <header class="vfo-page-heading">
-        <div><h1>Lịch sử giao hàng</h1><p class="vfo-page-description">Tra cứu kết quả giao hàng, thanh toán COD và trạng thái trả hàng.</p></div>
-        <a class="btn vfo-btn-secondary" th:href="@{/delivery}"><span aria-hidden="true">←</span> Đơn giao hàng của tôi</a>
+        <div><h1>Lịch sử giao hàng</h1></div>
     </header>
-    <nav th:replace="~{fragments/delivery-layout :: tabs('history')}"></nav>
     <p class="vfd-alert vfd-alert-warning" th:if="${history.unresolvedCount > 0}" role="status"
        th:text="|Có ${history.unresolvedCount} hồ sơ cũ chưa đủ dữ liệu xác định đầy đủ các lần giao. Những kết quả chưa xác định được không được tự động gán cho bạn hoặc cộng vào COD.|"></p>
     <p th:if="${errorMessage != null}" class="error vfd-alert vfd-alert-danger" role="alert" th:text="${errorMessage}"></p>
@@ -126,7 +123,7 @@
     </form>
     
     <section class="card vfo-list-card vfd-history-results" th:if="${errorMessage == null}" th:with="page=${history.records}">
-        <div class="vfo-list-heading"><div><span class="vfo-section-marker" aria-hidden="true"></span><h2>Danh sách lịch sử giao hàng</h2><span class="vfo-count" th:text="${page.totalElements}"></span></div><span class="vfo-list-caption">Kết quả giao hàng đã ghi nhận</span></div>
+        <div class="vfo-list-heading"><div><span class="vfo-section-marker" aria-hidden="true"></span><h2>Danh sách lịch sử giao hàng</h2><span class="vfo-count" th:text="${page.totalElements}"></span></div></div>
         <p class="vfd-table-empty" th:if="${page.empty and history.allTimeCount == 0}">Bạn chưa có lịch sử giao hàng.</p>
         <p class="vfd-table-empty" th:if="${page.empty and history.allTimeCount > 0}">Không tìm thấy đơn giao hàng phù hợp với điều kiện tìm kiếm.</p>
         <div class="table-container table-responsive" th:unless="${page.empty}">

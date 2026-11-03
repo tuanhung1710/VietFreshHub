@@ -9,4 +9,105 @@
 .header-account-links{display:flex;flex-direction:column}
 .utility:has(.header-account){align-items:center;gap:12px;flex-wrap:wrap}
 .header-account-guest{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.header-account.header-account-customer .header-account-dropdown { width: 306px; padding: 10px; border-color: #dfe7d8; border-radius: 14px; }
+.header-account-customer .header-account-heading { margin-bottom: 8px; padding: 12px; border: 0; border-radius: 9px; background: #f3f7ed; }
+.header-account-customer .header-customer-links { gap: 8px; }
+.header-account-customer .header-account-group + .header-account-group { padding-top: 8px; border-top: 1px solid #edf0e6; }
+.header-account-customer .header-account-section-label { margin: 4px 10px 5px; color: #839175; font-size: 10px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; }
+.header-account-customer .header-customer-links a { min-height: 39px; gap: 10px; padding: 9px 10px; color: #4e6748; font-size: 12px; }
+.header-account-customer .header-customer-links svg { width: 18px; height: 18px; }
 @media(max-width:640px){.utility .header-account-label{display:flex;max-width:140px}.utility>.header-account{margin-left:auto}}
+
+/* Compact account card for seller, delivery and admin. */
+.header-account.header-account-workspace .header-account-trigger {
+    gap: 10px;
+    padding: 7px 10px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+}
+.header-account.header-account-workspace .header-account-trigger:hover,
+.header-account.header-account-workspace[open] .header-account-trigger {
+    border-color: #dfe7d7;
+    background: #f5f8f0;
+}
+.header-account.header-account-workspace .header-account-avatar {
+    width: 38px;
+    height: 38px;
+    border: 1px solid #dce6d3;
+    background: #edf3e6;
+    color: #30634e;
+}
+.header-account.header-account-workspace .header-account-dropdown {
+    width: 284px;
+    padding: 10px;
+    border-color: #dfe7d8;
+    border-radius: 16px;
+    box-shadow: 0 16px 40px #243d2b1f, 0 3px 8px #243d2b08;
+}
+.header-account.header-account-workspace .header-account-heading {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 10px;
+    padding: 16px 12px;
+    border: 0;
+    border-radius: 10px;
+    background: #f3f7ed;
+}
+.header-account.header-account-workspace .header-account-profile-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border: 1px solid #d8e4cd;
+    border-radius: 50%;
+    background: #e7efdd;
+    color: #30634e;
+}
+.header-account.header-account-workspace .header-account-identity { min-width: 0; }
+.header-account.header-account-workspace .header-account-identity strong {
+    display: block;
+    color: #294335;
+    font-size: 14px;
+    line-height: 1.5;
+}
+.header-account.header-account-workspace .header-account-role {
+    display: block;
+    margin-top: 3px;
+    color: #75836a;
+    font-size: 11px;
+    line-height: 1.5;
+}
+.header-account.header-account-workspace .header-account-logout {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+.header-account.header-account-workspace .header-account-logout button {
+    justify-content: center;
+    gap: 9px;
+    min-height: 44px;
+    border: 1px solid #efddd7;
+    border-radius: 10px;
+    background: #fff8f5;
+    color: #a7443b;
+    font-weight: 600;
+}
+.header-account.header-account-workspace .header-account-logout button:hover {
+    border-color: #e5c6bd;
+    background: #faece7;
+    color: #91372f;
+}
+.header-account.header-account-workspace .header-account-logout svg { width: 18px; height: 18px; }
+.header-account.header-account-workspace .header-workspace-links { gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #e3e9db; }
+.header-account.header-account-workspace .header-account-section-label { margin: 4px 10px 5px; color: #839175; font-size: 10px; font-weight: 600; line-height: 1.5; letter-spacing: .5px; text-transform: uppercase; }
+.header-account.header-account-workspace .header-workspace-links a { gap: 10px; min-height: 40px; padding: 9px 10px; border-radius: 8px; color: #4e6748; font-size: 12px; }
+.header-account.header-account-workspace .header-workspace-links a:hover,
+.header-account.header-account-workspace .header-workspace-links a.active { background: #edf3e6; color: #30634e; }
+.header-account.header-account-workspace .header-workspace-links a.active { font-weight: 600; }
+.header-account.header-account-workspace .header-workspace-links svg { width: 18px; height: 18px; }
+@media(max-width:640px) {
+    .header-account.header-account-workspace .header-account-trigger { gap: 4px; padding: 5px; }
+    .header-account.header-account-workspace .header-account-avatar { width: 32px; height: 32px; }
+}

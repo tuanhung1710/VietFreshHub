@@ -69,8 +69,6 @@ function renderChips() {
 function renderNavigation() {
     $('headcats').innerHTML = '<button data-all>Tất cả sản phẩm</button>' + options.categories.map(category =>
         `<button data-cat="${category.id}">${html(category.name)}</button>`).join('');
-    $('footerCategories').innerHTML = '<h3>Danh mục trái cây</h3>' + options.categories.slice(0, 4).map(category =>
-        `<button data-cat="${category.id}">${html(category.name)}</button>`).join('') + '<button data-all>Xem tất cả</button>';
 }
 
 function renderOptions() {
@@ -106,7 +104,6 @@ async function catalog(push = true) {
     renderChips();
     const title = category(state.categoryId)?.name || 'Tất cả sản phẩm';
     $('catTitle').textContent = title;
-    $('breadcrumb').textContent = title;
     if (push) saveLocation();
     $('results').setAttribute('aria-busy', 'true');
     try {

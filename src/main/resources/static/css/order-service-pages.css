@@ -9,7 +9,8 @@
 .vfc-main .vfo-page-description { max-width: 700px; }
 
 /* Shopping navigation retains search, cart, notifications and the account menu. */
-.vfc-header { position: sticky; top: 0; z-index: 1030; border-bottom: 1px solid var(--vfo-border); background: #fff; box-shadow: 0 2px 12px #28493603; }
+.vfc-header { position: relative; top: auto; z-index: 1030; border-bottom: 1px solid var(--vfo-border); background: #fff; box-shadow: 0 2px 12px #28493603; }
+.vfc-refund-app .vfc-header { position: static; }
 .vfc-header-main { display: flex; align-items: center; justify-content: space-between; gap: 28px; min-height: 94px; padding-top: 16px; padding-bottom: 16px; }
 .vfc-header-search { display: flex; align-items: center; flex: 1; gap: 10px; min-width: 0; max-width: 510px; padding: 5px 6px 5px 13px; border: 1px solid #e1e7d8; border-radius: 10px; background: #f9fbf5; }
 .vfc-header-search > .vfo-icon { width: 18px; height: 18px; color: #97a68a; }

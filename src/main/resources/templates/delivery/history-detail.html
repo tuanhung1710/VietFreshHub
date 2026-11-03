@@ -5,10 +5,8 @@
 <th:block th:replace="~{fragments/delivery-layout :: navigation('history')}"></th:block>
 <div id="delivery-content" class="vfo-workspace" tabindex="-1">
 <main class="vfo-main vfd-history-detail-page">
-    <nav aria-label="Đường dẫn trang"><ol class="breadcrumb vfo-breadcrumb"><li class="breadcrumb-item"><a th:href="@{/delivery}">Kênh giao hàng</a></li><li class="breadcrumb-item"><a th:href="@{/delivery/history}">Lịch sử giao hàng</a></li><li class="breadcrumb-item active" aria-current="page">Chi tiết lịch sử</li></ol></nav>
     <header class="vfo-page-heading">
         <div><h1>Chi tiết lịch sử giao hàng</h1><p class="vfo-page-description">Thông tin đơn hàng, người nhận, tiến độ và COD đã ghi nhận.</p></div>
-        <a class="btn vfo-btn-secondary" th:href="@{/delivery/history}"><span aria-hidden="true">←</span> Lịch sử giao hàng</a>
     </header>
     <div class="vfd-detail-grid vfd-history-detail-grid">
         <section class="card vfd-information-card" aria-labelledby="order-heading">

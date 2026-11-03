@@ -70,6 +70,18 @@
 .vfo-side-nav .nav-link:hover { background: #eef1e7; color: var(--vfo-green); }
 .vfo-side-nav .nav-link.active { background: #e5eddd; color: var(--vfo-green); font-weight: 650; }
 .vfo-side-nav .nav-link.active::after { content: ""; position: absolute; right: 13px; width: 5px; height: 5px; border-radius: 50%; background: var(--vfo-green); }
+.vfo-grouped-nav { gap: 8px; padding-bottom: 20px; }
+.vfo-nav-group { margin: 0; }
+.vfo-grouped-nav .vfo-nav-group > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 11px 12px; border-radius: 8px; color: #607153; font-size: 12px; font-weight: 650; line-height: 1.5; list-style: none; cursor: pointer; }
+.vfo-nav-group > summary::-webkit-details-marker { display: none; }
+.vfo-nav-group > summary::after { content: ""; width: 7px; height: 7px; flex-shrink: 0; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); }
+.vfo-grouped-nav .vfo-nav-group > summary:hover,
+.vfo-grouped-nav .vfo-nav-group[open] > summary { background: #edf2e6; color: var(--vfo-green); }
+.vfo-nav-group[open] > summary::after { transform: rotate(225deg); }
+.vfo-group-links { display: flex; flex-direction: column; gap: 3px; margin: 4px 6px 0; padding: 0 0 4px 7px; border-left: 1px solid #dfe6d5; }
+.vfo-nav-group:not([open]) > .vfo-group-links { display: none; }
+.vfo-grouped-nav .vfo-nav-group .nav-link { gap: 10px; min-height: 40px; padding: 9px 10px; font-size: 12px; }
+.vfo-grouped-nav .vfo-nav-group .nav-link .vfo-icon { width: 18px; height: 18px; }
 .vfo-sidebar-bottom { margin-top: auto; padding: 24px 14px 20px; }
 .vfo-sidebar-bottom a { display: block; padding-top: 18px; border-top: 1px solid var(--vfo-border); font-size: 12px; }
 .vfo-sidebar-bottom p { margin: 8px 0 0; color: #93988b; font-size: 10px; }
@@ -395,8 +407,49 @@
 }
 @media print {
     .vfo-app { background: #fff; color: #000; }
-    .vfo-topbar, .vfo-sidebar, .vfo-footer, .vfo-skip-link, .vfo-order-actions, .vfo-page-heading > .btn { display: none !important; }
+    .vfo-topbar, .vfo-sidebar, .vfo-sidebar-toggle, .vfo-footer, .vfo-skip-link, .vfo-order-actions, .vfo-page-heading > .btn { display: none !important; }
     .vfo-workspace { min-height: 0; margin: 0; padding: 0; }
     .vfo-main { max-width: none; margin: 0; padding: 0; }
     .vfo-app .card { box-shadow: none; }
+}
+
+/* Seller, delivery and admin headers scroll with the document. */
+@media screen {
+    body.vfo-shell .vfo-topbar { position: relative; inset: auto; }
+    body.vfo-shell .vfo-workspace { min-height: calc(100vh - var(--vfo-topbar-height)); padding-top: 0; }
+    body.vfo-shell .vf-workspace { padding-top: 0; }
+    body.vfo-shell .vf-list-page { --vf-list-top: 0px; }
+    body.vfo-shell .vfo-main { scroll-margin-top: 20px; }
+    body.vfo-shell .vfr-chat-workspace .chat-app { margin-top: 20px; }
+    body.vfo-shell .vfo-sidebar-toggle {
+        position: relative;
+        z-index: 1025;
+        display: flex;
+        width: 36px;
+        height: 36px;
+        min-height: 36px;
+        margin: 12px 20px 0;
+        padding: 6px;
+        border: 1px solid #d6dfce;
+        border-radius: 10px;
+        background: #fff;
+        box-shadow: 0 3px 10px #29432c0d;
+    }
+    body.vfo-shell .vfo-sidebar-toggle:hover { background: #edf3e6; }
+    body.vfo-shell .vfo-sidebar-toggle .vfo-icon { width: 20px; height: 20px; }
+}
+
+@media screen and (min-width: 992px) {
+    body.vfo-shell .vfo-sidebar { top: var(--vfo-sidebar-top, var(--vfo-topbar-height)); }
+    body.vfo-shell .vfo-sidebar-toggle {
+        position: fixed;
+        top: calc(var(--vfo-sidebar-top, var(--vfo-topbar-height)) + 16px);
+        left: calc(var(--vfo-sidebar-width) - 18px);
+        margin: 0;
+    }
+    body.vfo-shell.vfo-sidebar-collapsed .vfo-sidebar-toggle { left: 10px; }
+    body.vfo-shell.vfo-sidebar-collapsed .vfo-sidebar { display: none !important; }
+    body.vfo-shell.vfo-sidebar-collapsed .vfo-workspace,
+    body.vfo-shell.vfo-sidebar-collapsed .vf-workspace { width: calc(100% - 56px); margin-left: 56px; }
+    body.vfo-shell.vfo-sidebar-collapsed .vfr-product-footer { margin-left: 56px; }
 }

@@ -20,21 +20,11 @@
 
     <div class="vfo-workspace vfr-workspace" id="workspace-content" tabindex="-1">
 <main class="page-content vfr-page">
-        <nav class="breadcrumbs" aria-label="Điều hướng">
-            <a th:href="@{/admin/accounts}">Quản trị</a><span aria-hidden="true">/</span>
-            <strong>Quản lý shop</strong>
-            <a th:href="@{/admin/accounts}">Quản lý tài khoản</a>
-            <a th:href="@{/admin/products}">Hậu kiểm sản phẩm</a>
-            <a th:href="@{/admin/categories}">Quản lý danh mục</a>
-        </nav>
 
         <section class="page-heading">
             <div>
-                <p class="eyebrow">GIAN HÀNG TRÊN SÀN</p>
                 <h1>Quản lý shop</h1>
-                <p class="subheading">Tra cứu thông tin và kiểm soát trạng thái hoạt động của các shop.</p>
             </div>
-            <span class="live-data-badge"><span></span> DỮ LIỆU TỪ DATABASE</span>
         </section>
 
         <div th:if="${successMessage}" class="flash-message flash-success" role="status" th:text="${successMessage}"></div>

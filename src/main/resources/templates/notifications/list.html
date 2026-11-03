@@ -7,14 +7,13 @@
     <span id="order-content" class="vfn-skip-target" tabindex="-1"></span>
     <span id="delivery-content" class="vfn-skip-target" tabindex="-1"></span>
     <main id="notification-inbox" class="vfo-main vfn-main">
-        <nav aria-label="Đường dẫn trang"><ol class="breadcrumb vfo-breadcrumb"><li class="breadcrumb-item"><a th:href="@{/}">Trang chính</a></li><li class="breadcrumb-item active" aria-current="page">Thông báo</li></ol></nav>
         <header class="vfo-page-heading">
-            <div><h1>Thông báo</h1><p class="vfo-page-description">Cập nhật mới nhất về đơn hàng, giao hàng và hoạt động của bạn.</p></div>
-            <a class="btn vfo-btn-secondary" th:href="@{/}"><span aria-hidden="true">←</span> Về trang chính</a>
+            <div><h1>Thông báo</h1></div>
+            <a class="btn vfo-btn-secondary" th:if="${#authorization.expression('!hasAnyRole(''DELIVERY_STAFF'',''STORE_MANAGER'')')}" th:href="@{/}"><span aria-hidden="true">←</span> Về trang chính</a>
         </header>
         <p id="notification-refresh-status" class="vfm-notice vfm-notice-warning vfn-refresh-status" role="status"></p>
         <section class="card vfo-list-card vfn-inbox-card" aria-labelledby="inbox-heading">
-            <div class="vfo-list-heading"><div><span class="vfo-section-marker" aria-hidden="true"></span><h2 id="inbox-heading">Hộp thư thông báo</h2><span class="vfo-count" th:text="${notificationsPage.totalElements}"></span></div><span class="vfo-list-caption">Thông báo của bạn</span></div>
+            <div class="vfo-list-heading"><div><span class="vfo-section-marker" aria-hidden="true"></span><h2 id="inbox-heading">Hộp thư thông báo</h2><span class="vfo-count" th:text="${notificationsPage.totalElements}"></span></div><span class="vfo-list-caption" th:if="${#authorization.expression('!hasRole(''STORE_MANAGER'')')}">Thông báo của bạn</span></div>
             <div class="vfo-empty-state" th:if="${notificationsPage.empty}"><span class="vfo-empty-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-bell"/></svg></span><h3>Hộp thư đang trống</h3><p>Bạn chưa có thông báo nào.</p></div>
             <ul class="vfn-notification-list" th:unless="${notificationsPage.empty}">
                 <li th:each="notification : ${notificationsPage}">
