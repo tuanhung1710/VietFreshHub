@@ -1,6 +1,8 @@
 package VietFreshHub.auth.controller;
 
 import VietFreshHub.auth.repository.UserRepository;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -13,7 +15,11 @@ public class HeaderAccountAdvice {
     private final UserRepository users;
 
     @ModelAttribute("headerAccountName")
-    public String accountName(Authentication authentication) {
+    public String accountName(Authentication authentication, HttpServletRequest request) {
+        // Trang lỗi không truy vấn tài khoản, kể cả khi cơ sở dữ liệu đang gặp sự cố.
+        if (request.getDispatcherType() == DispatcherType.ERROR || "/error".equals(request.getServletPath())) {
+            return null;
+        }
         if (authentication == null || !authentication.isAuthenticated()
                 || authentication instanceof AnonymousAuthenticationToken) {
             return null;

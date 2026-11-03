@@ -4,10 +4,10 @@ import VietFreshHub.order.dto.IncomingOrderResponse;
 import VietFreshHub.order.dto.OrderFilterRequest;
 import VietFreshHub.order.service.OrderService;
 import VietFreshHub.order.service.OrderLabels;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.CacheControl;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import java.io.IOException;
 
 @Controller
 @RequiredArgsConstructor
@@ -137,7 +139,7 @@ public class OrderController {
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<Void> handleAccessDenied() {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    public void handleAccessDenied(HttpServletResponse response) throws IOException {
+        response.sendError(HttpServletResponse.SC_FORBIDDEN);
     }
 }
