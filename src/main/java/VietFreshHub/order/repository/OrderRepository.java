@@ -70,7 +70,8 @@ public interface OrderRepository extends JpaRepository<Order,Long> {
     String CUSTOMER_SHOP_STATUS = """
             case
                 when s.status in ('CANCELLED', 'COMPLETED') then s.status
-                when d.status in ('ACCEPTED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED', 'FAILED', 'REDELIVERY_SCHEDULED') then d.status
+                when d.status in ('ACCEPTED', 'PICKED_UP') then 'READY_FOR_DELIVERY'
+                when d.status in ('OUT_FOR_DELIVERY', 'DELIVERED', 'FAILED', 'REDELIVERY_SCHEDULED') then d.status
                 else s.status
             end
             """;

@@ -218,6 +218,7 @@ public class ShopCustomerOrderServiceImpl implements ShopCustomerOrderService {
                     .forEach(h -> timeline.add(new OrderTrackingResponse.Event(OrderLabels.local(h.getCreatedAt()),OrderLabels.customerStatus(h.getStatus()),h.getNote(),"ORDER")));
             if(delivery!=null) {
                 for(var event:deliveryEvents) {
+                    if("ACCEPTED".equals(event.getStatus()) || "PICKED_UP".equals(event.getStatus())) continue;
                     String staffName=event.getChangedBy()==null ? null : trackingStaffName(staff,delivery.getDeliveryId(),event.getChangedBy());
                     boolean goodsReturned="FAILED".equals(event.getStatus()) && event.getChangedBy()!=null
                             && event.getNote()!=null && event.getNote().startsWith(DeliveryStatusHistoryWriter.GOODS_RETURN_NOTE_PREFIX);
@@ -233,10 +234,6 @@ public class ShopCustomerOrderServiceImpl implements ShopCustomerOrderService {
             if(delivery!=null && "COMPLETED".equals(child.getStatus()) && "DELIVERED".equals(delivery.getStatus()))
                 deliveryStatusCode=delivery.getStatus();
             String label=OrderLabels.customerStatus(deliveryStatusCode);
-            if(delivery!=null && "ACCEPTED".equals(deliveryStatusCode)) {
-                String staffName=trackingStaffName(staff,delivery.getDeliveryId(),null);
-                label=trackingDeliveryLabel(deliveryStatusCode,staffName);
-            }
             return new OrderTrackingResponse.ShopTracking(child.getShopOrderId(),child.getShop().getShopName(),OrderLabels.customerStatus(child.getStatus()),
                     child.getStatus(),label,deliveryStatusCode,List.copyOf(timeline));
         }).toList();

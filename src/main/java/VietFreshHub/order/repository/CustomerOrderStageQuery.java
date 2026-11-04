@@ -13,7 +13,7 @@ public final class CustomerOrderStageQuery {
 
     private static final String TRANSPORT_STARTED = """
             exists (select d.deliveryId from OrderDeliveryView d where d.shopOrder = s
-                and d.status in ('PICKED_UP','OUT_FOR_DELIVERY','DELIVERED','FAILED','REDELIVERY_SCHEDULED'))
+                and d.status in ('OUT_FOR_DELIVERY','DELIVERED','FAILED','REDELIVERY_SCHEDULED'))
             """;
     public static final String EXPRESSION = """
             case
