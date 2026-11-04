@@ -114,6 +114,7 @@
             <table class="table table-hover align-middle mb-0 vf-inventory-list-table">
                 <thead>
                 <tr>
+                    <th scope="col" class="text-center text-nowrap">STT</th>
                     <th scope="col" th:unless="${skuView}">Mã lô</th>
                     <th scope="col">Sản phẩm / SKU</th>
                     <th scope="col" th:unless="${skuView}">Ngày nhập</th>
@@ -128,7 +129,9 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="row : ${rows}">
+                <tr th:each="row, rowStat : ${rows}">
+                    <td class="text-center text-nowrap" data-label="STT"
+                        th:text="${rows.number * rows.size + rowStat.count}"></td>
                     <td data-label="Mã lô" th:unless="${skuView}">
                         <a class="fw-semibold text-success" th:text="${row.batchCode()}"
                            th:href="@{/seller/inventory/batches/{id}/label(id=${row.batchId},returnTo=${inventoryCurrentUrl})}"></a>

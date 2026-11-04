@@ -216,6 +216,7 @@
               </caption>
               <colgroup>
                 <col class="vf-col-select" />
+                <col class="vf-col-index" />
                 <col class="vf-col-product" />
                 <col class="vf-col-price" />
                 <col class="vf-col-status" />
@@ -233,6 +234,7 @@
                       aria-label="Chọn tất cả sản phẩm trên trang"
                     />
                   </th>
+                  <th scope="col" class="text-center">STT</th>
                   <th scope="col">Sản phẩm</th>
                   <th scope="col">Giá bán</th>
                   <th scope="col">Trạng thái kinh doanh</th>
@@ -242,7 +244,7 @@
                 </tr>
               </thead>
               <tbody
-                th:each="r : ${rows}"
+                th:each="r, productStat : ${rows}"
                 th:with="p=${r.product},vs=${r.visibleVariants}"
               >
                 <tr
@@ -258,6 +260,8 @@
                       th:attr="aria-label=${'Chọn ' + p.name},data-can-hide=${r.managementState.canHide},data-can-open=${r.managementState.canOpen},data-product-name=${p.name},data-product-code=${p.productCode}"
                     />
                   </td>
+                  <td class="text-center text-body-secondary" data-label="STT"
+                      th:text="${rows.number * rows.size + productStat.count}"></td>
                   <td>
                     <div class="vf-catalog-product">
                       <a
@@ -397,7 +401,7 @@
                   </td>
                 </tr>
                 <tr class="vf-catalog-detail-row">
-                  <td colspan="7">
+                  <td colspan="8">
                     <div
                       class="collapse"
                       th:id="${'product-variants-' + p.productId}"

@@ -5,6 +5,11 @@
     min-width: 0;
 }
 
+body.vfr-product .vf-inventory-main .vf-inventory-list-card,
+body.vfr-product .vf-inventory-main .vf-inventory-list-card > .table-responsive {
+    border-radius: 0;
+}
+
 .vf-inventory-metrics {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -22,7 +27,7 @@
 .vf-inventory-main .table th { background: #f5f8fa; color: #475569; }
 .vf-inventory-main .table td { overflow-wrap: anywhere; }
 .vf-inventory-main .table .text-end { font-variant-numeric: tabular-nums; }
-.vf-inventory-list-table td:first-child a,
+.vf-inventory-list-table td[data-label="Mã lô"] a,
 .vf-allocation-order-code { white-space: nowrap; }
 
 .vf-activity-filter-grid {

@@ -1,4 +1,4 @@
-:root { color-scheme: light; font-family: Inter, "Segoe UI", sans-serif; color: #20382a; background: #f4f8f4; }
+:root { color-scheme: light; font-family: var(--vf-font-family); color: #20382a; background: #f4f8f4; }
 * { box-sizing: border-box; }
 body { margin: 0; }
 .payout-page { width: min(680px, calc(100% - 32px)); margin: 32px auto 64px; }

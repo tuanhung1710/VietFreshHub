@@ -14,9 +14,9 @@ body.vfo-app.vfr-app {
     --bs-link-color:#30634e; --bs-link-color-rgb:48,99,78; --bs-link-hover-color:#254e3c; --bs-link-hover-color-rgb:37,78,60;
     --bs-tertiary-bg:#f1f4e9; --bs-success-bg-subtle:#edf3e5; --bs-primary-bg-subtle:#edf3e5;
     --bs-body-bg:#f8f8f0; --bs-body-color:#293a30; --bs-border-color:#e3e7dc;
-    --bs-body-font-family:"Segoe UI",Arial,sans-serif;
+    --bs-body-font-family:var(--vf-font-family);
     display:block; min-width:0; max-width:none; margin:0; padding:0;
-    background:#f8f8f0; color:#293a30; font:14px/1.65 "Segoe UI",Arial,sans-serif;
+    background:#f8f8f0; color:#293a30; font:14px/1.65 var(--vf-font-family);
 }
 body.vfr-app.vfr-customer:not(.vfr-retail) { display:flex; flex-direction:column; min-height:100vh; }
 .vfr-app [hidden] { display:none!important; }
@@ -27,7 +27,7 @@ body.vfr-app.vfr-customer:not(.vfr-retail) { display:flex; flex-direction:column
 .vfr-workspace { min-width:0; }
 .vfr-workspace > .vfr-page { flex:1; }
 .vfr-workspace:focus { outline:none; }
-.vfr-app .vfr-page h1 { margin-top:0; margin-bottom:17px; color:#293a30; font:400 clamp(30px,2.8vw,43px)/1.25 Georgia,"Times New Roman",serif; letter-spacing:-1px; text-transform:none; overflow-wrap:anywhere; }
+.vfr-app .vfr-page h1 { margin-top:0; margin-bottom:17px; color:#293a30; font:400 var(--vf-page-title-size)/1.35 var(--vf-font-display); letter-spacing:var(--vf-page-title-spacing); text-transform:none; overflow-wrap:anywhere; }
 .vfr-app .vfr-page :is(h2,h3) { color:#47613e; text-transform:none; }
 .vfr-app .vfr-page h2 { font-size:18px; line-height:1.5; }
 .vfr-app .vfr-page h3 { font-size:15px; line-height:1.55; }
@@ -120,12 +120,12 @@ body.vfr-app.vfr-customer:not(.vfr-retail) { display:flex; flex-direction:column
 .vfr-retail .vfr-page { max-width:1320px; padding:26px 20px 65px; }
 .vfr-retail > header { border-bottom:1px solid #e0e7d6; background:#fff; }
 .vfr-retail > header :is(.container,.wrap) { max-width:1320px; padding-right:24px; padding-left:24px; }
-.vfr-retail > header .utility { border-color:#edf0e6; color:#8b987c; font:11px/1.6 "Segoe UI",Arial,sans-serif; }
+.vfr-retail > header .utility { border-color:#edf0e6; color:#8b987c; font:11px/1.6 var(--vf-font-family); }
 .vfr-retail > header :is(.headmain,.headrow) { gap:24px; padding-top:21px; padding-bottom:21px; }
-.vfr-retail > header :is(.brand,.logo) { border:0; background:transparent; color:#30634e; font:700 29px/1.2 Georgia,serif; letter-spacing:-.8px; text-decoration:none; }
-.vfr-retail > header :is(.search,.searchbar) input { min-height:43px; border:1px solid #dce5d2; border-radius:9px; background:#fafcf6; color:#647e52; font:12px "Segoe UI",Arial,sans-serif; }
-.vfr-retail > header :is(.search,.searchbar) button { min-height:43px; border:1px solid #30634e; border-radius:8px; background:#30634e; color:#fff; font:600 11px "Segoe UI",Arial,sans-serif; }
-.vfr-retail > header :is(#cart,.cart-button,.basket) { border:1px solid #dce5d2!important; border-radius:9px; color:#6c875a; font:12px "Segoe UI",Arial,sans-serif; }
+.vfr-retail > header :is(.brand,.logo) { border:0; background:transparent; color:#30634e; font:700 29px/1.2 var(--vf-font-display); letter-spacing:-.8px; text-decoration:none; }
+.vfr-retail > header :is(.search,.searchbar) input { min-height:43px; border:1px solid #dce5d2; border-radius:9px; background:#fafcf6; color:#647e52; font:12px var(--vf-font-family); }
+.vfr-retail > header :is(.search,.searchbar) button { min-height:43px; border:1px solid #30634e; border-radius:8px; background:#30634e; color:#fff; font:600 11px var(--vf-font-family); }
+.vfr-retail > header :is(#cart,.cart-button,.basket) { border:1px solid #dce5d2!important; border-radius:9px; color:#6c875a; font:12px var(--vf-font-family); }
 .vfr-retail .headcats { gap:6px; border-color:#e7ecdf; padding-top:10px; padding-bottom:10px; }
 .vfr-retail .headcats button { border:0; border-radius:7px; color:#7b906a; font-size:12px; }
 .vfr-retail .headcats button.active { background:#edf4e5; color:#30634e; text-decoration:none; }
@@ -138,7 +138,7 @@ body.vfr-app.vfr-customer:not(.vfr-retail) { display:flex; flex-direction:column
 .vfr-retail .vfr-page :is(.sectiontop,.sectionhead) { padding:19px 22px; border-radius:12px 12px 0 0; background:#fdfefb; }
 .vfr-retail .vfr-page :is(.sectiontop h2,.sectionhead h2) { margin:0; font-size:17px; font-weight:600; }
 .vfr-retail .vfr-page .categories { gap:10px; padding:18px; }
-.vfr-retail .vfr-page .cat { padding:20px 10px; border:1px solid #e4eadb; border-radius:10px; background:#fafcf6; color:#7b9467; font:600 12px/1.6 "Segoe UI",Arial,sans-serif; }
+.vfr-retail .vfr-page .cat { padding:20px 10px; border:1px solid #e4eadb; border-radius:10px; background:#fafcf6; color:#7b9467; font:600 12px/1.6 var(--vf-font-family); }
 .vfr-retail .vfr-page .catIcon { filter:none; }
 .vfr-retail .vfr-page :is(.products,.related) { gap:14px; padding:18px; }
 .vfr-retail .vfr-page :is(.p-card,.product,.productcard) { margin:0; border:1px solid #e2e9d9; border-radius:11px; background:#fff; overflow:hidden; }
@@ -150,8 +150,8 @@ body.vfr-app.vfr-customer:not(.vfr-retail) { display:flex; flex-direction:column
 .vfr-retail .vfr-page .mainphoto { border-color:#e2e9d8; border-radius:10px; background:#f8faf3; }
 .vfr-retail .vfr-page .thumb.active { outline-color:#799a64; }
 .vfr-retail .vfr-page :is(.p-body,.productbody) { padding:14px; }
-.vfr-retail .vfr-page :is(.p-name,.productname,.productcard .name) { color:#526f45; font:600 13px/1.6 "Segoe UI",Arial,sans-serif; }
-.vfr-retail .vfr-page :is(.price,.price2,.p-price) { color:#30634e; font-family:"Segoe UI",Arial,sans-serif; font-weight:600; }
+.vfr-retail .vfr-page :is(.p-name,.productname,.productcard .name) { color:#526f45; font:600 13px/1.6 var(--vf-font-family); }
+.vfr-retail .vfr-page :is(.price,.price2,.p-price) { color:#30634e; font-family:var(--vf-font-family); font-weight:600; }
 .vfr-retail .vfr-page :is(.p-meta,.meta,.minor,.muted,.photo-caption,.stock,.summarysmall) { color:#819471; font-family:inherit; font-size:11px; }
 .vfr-retail .vfr-page .identity { border-color:#e2e9d8; border-radius:12px; background-color:#f3f7eb; }
 .vfr-retail .vfr-page :is(.avatar,.storeavatar) { border-color:#dce6d0; border-radius:16px; filter:none; }
@@ -171,7 +171,7 @@ body.vfr-app.vfr-customer:not(.vfr-retail) { display:flex; flex-direction:column
 /* Account, authentication, application and checkout layouts use native CSS utilities. */
 .vfr-utility .material-symbols-outlined { font-family:'Material Symbols Outlined'; font-weight:400; font-style:normal; font-size:24px; line-height:1; letter-spacing:normal; text-transform:none; display:inline-block; white-space:nowrap; word-wrap:normal; direction:ltr; -webkit-font-feature-settings:'liga'; font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; }
 .vfr-customer:not(.vfr-retail) .vfr-page :is(.panel,.address-card,.profile-card,.checkout-shop,.history-order) { border-color:#e0e7d6; background:#fff; }
-.vfr-customer:not(.vfr-retail) .vfr-page .checkout-title { font-family:Georgia,serif; font-weight:400; }
+.vfr-customer:not(.vfr-retail) .vfr-page .checkout-title { font-family:var(--vf-font-display); font-weight:400; }
 .vfr-customer:not(.vfr-retail) .vfr-page :is(.summary-line,.order-shop-totals,.checkout-line) { border-color:#e6ecde; }
 .vfr-customer:not(.vfr-retail) .vfr-page .button { border-color:#30634e; border-radius:8px; background:#30634e; color:#fff; }
 .vfr-customer:not(.vfr-retail) .vfr-page .button.secondary { border-color:#d2dec5; background:#fff; color:#6b8757; }
@@ -210,7 +210,7 @@ body.vfr-app.vfr-customer:not(.vfr-retail) { display:flex; flex-direction:column
 .vfr-chat .vfo-workspace .chat-app { height:calc(100dvh - 135px); }
 .vfr-chat .chat-sidebar { border-color:#e3e9db; background:#fdfefb; }
 .vfr-chat :is(.sidebar-header,.shop-picker,.message-header,.message-form) { border-color:#e4eadd; }
-.vfr-chat .sidebar-header h1 { color:#3d633f; font-family:Georgia,serif; font-weight:400; }
+.vfr-chat .sidebar-header h1 { color:#3d633f; font-family:var(--vf-font-display); font-weight:400; }
 .vfr-chat .shop-picker { background:#f3f7eb; }
 .vfr-chat :is(.message-form button,.shop-picker button) { background:#30634e; color:#fff; }
 .vfr-chat .conversation-item.selected { border-left-color:#7a9a66; background:#eef4e6; }
@@ -226,7 +226,7 @@ body.vfr-app.vfr-customer:not(.vfr-retail) { display:flex; flex-direction:column
 }
 @media(min-width:1800px) {
     .vfr-app .vfr-page { padding-right:44px; padding-left:44px; }
-    .vfr-app .vfr-page h1 { font-size:46px; }
+    .vfr-app .vfr-page h1 { font-size:var(--vf-page-title-size); }
     .vfr-retail .vfr-page { max-width:1480px; }
 }
 @media(max-width:1250px) {
@@ -234,14 +234,14 @@ body.vfr-app.vfr-customer:not(.vfr-retail) { display:flex; flex-direction:column
     .vfr-retail .vfr-page :is(.products,.related) { gap:12px; padding:15px; }
 }
 @media(max-width:991px) {
-    .vfr-app .vfr-page h1 { font-size:35px; }
+    .vfr-app .vfr-page h1 { font-size:var(--vf-page-title-size); }
     .vfr-app.vfr-customer:not(.vfr-retail) .vfr-page { width:calc(100% - 40px); }
     .vfr-product .vf-workspace { width:100%; margin-left:0; }
     .vfr-app.vfr-chat .chat-app { grid-template-columns:minmax(230px,.75fr) minmax(0,1.3fr); width:calc(100% - 36px); }
 }
 @media(max-width:767px) {
     .vfr-app .vfr-page { padding:22px 18px 35px; }
-    .vfr-app .vfr-page h1 { font-size:32px; }
+    .vfr-app .vfr-page h1 { font-size:var(--vf-page-title-size); }
     .vfr-app.vfr-customer:not(.vfr-retail) .vfr-page { width:calc(100% - 36px); padding:24px 0 40px; }
     .vfr-app .vfr-page :is(.page-heading,.page-header,.heading) { gap:14px; margin-bottom:22px; }
     .vfr-app .vfr-page > article:not([class]), .vfr-app .vfr-page > section:not([class]), .vfr-app .vfr-section { padding:20px; }
@@ -262,7 +262,7 @@ body.vfr-app.vfr-customer:not(.vfr-retail) { display:flex; flex-direction:column
 @media(max-width:480px) {
     .vfr-app .vfr-page { padding:20px 14px 30px; }
     .vfr-app.vfr-customer:not(.vfr-retail) .vfr-page { width:calc(100% - 28px); }
-    .vfr-app .vfr-page h1 { font-size:30px; }
+    .vfr-app .vfr-page h1 { font-size:var(--vf-page-title-size); }
     .vfr-app .vfr-page > :is(.panel,.card,.accounts-panel) { min-width:0; }
     .vfr-app .vfr-page .filter-bar { flex-direction:column; align-items:stretch; }
     .vfr-app .vfr-page :is(.search-box,.select-filter) { width:100%; }
