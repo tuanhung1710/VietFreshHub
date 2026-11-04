@@ -20,14 +20,13 @@ public class AdminDashboardController {
             @RequestParam(defaultValue = "LAST_30_DAYS") String period,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-            @RequestParam(defaultValue = "1") int expiringPage,
             @RequestParam(defaultValue = "1") int noOrderPage,
             Model model) {
         model.addAttribute("period", period);
         model.addAttribute("from", from);
         model.addAttribute("to", to);
         try {
-            model.addAttribute("dashboard", dashboardService.getDashboard(period, from, to, expiringPage, noOrderPage));
+            model.addAttribute("dashboard", dashboardService.getDashboard(period, from, to, noOrderPage));
         } catch (IllegalArgumentException exception) {
             model.addAttribute("filterError", exception.getMessage());
         }

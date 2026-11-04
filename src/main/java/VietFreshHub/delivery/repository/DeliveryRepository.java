@@ -25,11 +25,6 @@ import java.time.LocalDateTime;
 @Repository
 public interface DeliveryRepository extends JpaRepository<Delivery, Long>, JpaSpecificationExecutor<Delivery> {
 
-    interface RevenueTotal {
-        BigDecimal getRevenue();
-        Long getDeliveredShopOrders();
-    }
-
     interface RevenueByHour {
         Integer getDeliveryYear();
         Integer getDeliveryMonth();
@@ -38,8 +33,13 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>, JpaSp
         BigDecimal getRevenue();
     }
 
+    interface DeliveredOrderTotals {
+        BigDecimal getProductValueAfterDiscount();
+        BigDecimal getShippingFees();
+    }
+
     @Query("""
-            select coalesce(sum(s.totalAmount), 0) as revenue, count(d) as deliveredShopOrders
+            select coalesce(sum(s.totalAmount), 0)
             from Delivery d join d.shopOrder s
             where d.status = VietFreshHub.delivery.entity.DeliveryStatus.DELIVERED
               and s.status = 'COMPLETED' and s.completedAt is not null
@@ -47,7 +47,20 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>, JpaSp
               and d.redeliveryScheduledAt is null
               and d.deliveredAt >= :from and d.deliveredAt < :to
             """)
-    RevenueTotal getDeliveredRevenue(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+    BigDecimal getDeliveredRevenue(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    @Query("""
+            select coalesce(sum(s.subtotal - s.discountTotal), 0) as productValueAfterDiscount,
+                   coalesce(sum(s.shippingFee), 0) as shippingFees
+            from Delivery d join d.shopOrder s
+            where d.status = VietFreshHub.delivery.entity.DeliveryStatus.DELIVERED
+              and s.status = 'COMPLETED' and s.completedAt is not null
+              and d.pickedUpAt is not null and d.failureReason is null and d.redeliveryRequestedAt is null
+              and d.redeliveryScheduledAt is null
+              and d.deliveredAt >= :from and d.deliveredAt < :to
+            """)
+    DeliveredOrderTotals getDeliveredOrderTotals(@Param("from") LocalDateTime from,
+                                                  @Param("to") LocalDateTime to);
 
     @Query("""
             select year(d.deliveredAt) as deliveryYear, month(d.deliveredAt) as deliveryMonth,
@@ -64,27 +77,6 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long>, JpaSp
             """)
     List<RevenueByHour> getDeliveredRevenueByHour(@Param("from") LocalDateTime from,
                                                   @Param("to") LocalDateTime to);
-
-    @Query("""
-            select count(o) from Order o
-            where o.status = VietFreshHub.order.entity.Order.Status.COMPLETED
-              and o.completedAt >= :from and o.completedAt < :to
-              and exists (select d.deliveryId from Delivery d where d.shopOrder.order = o
-                  and d.status = VietFreshHub.delivery.entity.DeliveryStatus.DELIVERED)
-              and not exists (select s.shopOrderId from ShopOrder s left join Delivery d on d.shopOrder = s
-                  where s.order = o
-                    and (d.deliveryId is null or d.status <> VietFreshHub.delivery.entity.DeliveryStatus.DELIVERED))
-            """)
-    long countSuccessfullyDeliveredOrders(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
-
-    @Query("""
-            select count(o) from Order o
-            where o.placedAt >= :from and o.placedAt < :to
-              and (o.status = VietFreshHub.order.entity.Order.Status.CANCELLED
-                or exists (select d.deliveryId from Delivery d where d.shopOrder.order = o
-                    and d.status = VietFreshHub.delivery.entity.DeliveryStatus.FAILED))
-            """)
-    long countCancelledOrFailedOrders(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     Optional<Delivery> findByShopOrder_ShopOrderId(Long shopOrderId);
 
