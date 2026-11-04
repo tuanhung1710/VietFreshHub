@@ -1,10 +1,17 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head><th:block th:replace="~{fragments/head :: assets}"></th:block><title>Giỏ hàng | VietFresh Hub</title><link rel="stylesheet" th:href="@{/css/storefront.css}"><link rel="stylesheet" th:href="@{/css/customer-shell.css}"><link rel="stylesheet" th:href="@{/css/cart.css}"><script defer th:src="@{/js/cart.js}"></script></head>
-<body>
-<header th:replace="~{fragments/storefront :: header}"></header>
-<main class="container page cart-page" th:attr="data-cart-id=${cart.cartId}">
-    <nav class="cart-breadcrumb" aria-label="Đường dẫn"><a th:href="@{/home}">⌂ &nbsp; Trang chủ</a><span>›</span><span>Giỏ hàng</span></nav><div class="page-heading cart-page-heading"><div><h1>Giỏ hàng <span class="heading-count" th:text="'(' + ${#lists.size(cart.items)} + ' sản phẩm)'"></span></h1></div>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    <title>Giỏ hàng | VietFresh Hub</title><link rel="stylesheet" th:href="@{/css/storefront.css}"><link rel="stylesheet" th:href="@{/css/customer-shell.css}"><link rel="stylesheet" th:href="@{/css/cart.css}"><script defer th:src="@{/js/cart.js}"></script>    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+</head>
+<body class="vfo-app vfr-app vfr-utility vfc-app vfr-customer" data-vfr-section="cart">
+<th:block th:replace="~{fragments/interface-layout :: navigation('customer','cart')}"></th:block>
+
+
+<main class="container page cart-page vfr-page" th:attr="data-cart-id=${cart.cartId}" id="customer-content" tabindex="-1">
+    <div class="page-heading cart-page-heading"><div><h1>Giỏ hàng <span class="heading-count" th:text="'(' + ${#lists.size(cart.items)} + ' sản phẩm)'"></span></h1></div>
         <a th:href="@{/home}">← Tiếp tục mua sắm</a></div>
     <div th:replace="~{fragments/storefront :: messages}"></div>
     <section th:if="${reorderSkipped != null and !#lists.isEmpty(reorderSkipped)}" class="notice error" aria-label="Sản phẩm chưa thể mua lại">
@@ -18,7 +25,7 @@
     <form id="checkout-selection" th:action="@{/customer/checkout}" method="get"><input type="hidden" name="selectionSubmitted" value="true"></form>
     <div th:unless="${#lists.isEmpty(cart.items)}" class="cart-layout">
         <section class="panel cart-products" aria-label="Sản phẩm trong giỏ">
-            <div class="cart-list-heading"><label class="select-all-label"><input type="checkbox" id="select-all-items" th:checked="${selectableCount > 0}" th:disabled="${selectableCount == 0}"> Chọn tất cả</label><span class="muted" id="selection-caption" aria-live="polite"></span></div>
+            <div class="cart-list-heading"><label class="select-all-label"><input type="checkbox" id="select-all-items" th:checked="${selectableCount > 0}" th:disabled="${selectableCount == 0}" class="form-check-input"> Chọn tất cả</label><span class="muted" id="selection-caption" aria-live="polite"></span></div>
             <div class="cart-columns" aria-hidden="true"><span>Sản phẩm</span><span>Đơn giá</span><span>Số lượng</span><span>Thành tiền</span><span>Thao tác</span></div>
             <section th:each="group : ${shopGroups}" class="shop-group">
                 <div class="shop-heading">
@@ -53,11 +60,11 @@
                             <form th:if="${item.quantityEditable}" th:action="@{/cart/update}" method="post" data-quantity-form>
                                 <input type="hidden" name="variantId" th:value="${item.variantId}">
                                 <div class="quantity">
-                                    <button type="button" data-step="-1" th:aria-label="'Giảm số lượng ' + ${item.productName}">−</button>
+                                    <button type="button" data-step="-1" th:aria-label="'Giảm số lượng ' + ${item.productName}" class="btn btn-success">−</button>
                                     <input type="number" inputmode="numeric" step="1" name="quantity" min="0" required th:max="${item.availableStock}"
-                                           th:value="${item.quantity}" th:aria-label="'Số lượng ' + ${item.productName}">
+                                           th:value="${item.quantity}" th:aria-label="'Số lượng ' + ${item.productName}" class="form-control">
                                     <button type="button" data-step="1" th:disabled="${item.quantity >= item.availableStock}"
-                                            th:aria-label="'Tăng số lượng ' + ${item.productName}">+</button>
+                                            th:aria-label="'Tăng số lượng ' + ${item.productName}" class="btn btn-success">+</button>
                                 </div>
                                 <noscript><button class="noscript-update" type="submit">Cập nhật số lượng</button></noscript>
                             </form>
@@ -88,5 +95,6 @@
         </aside>
     </div>
 <section class="cart-recommendations" th:if="${cartSuggestions != null and !#lists.isEmpty(cartSuggestions)}"><div class="cart-recommendations-heading"><h2>♧ Có thể bạn cũng thích</h2><a th:href="@{/home}">Xem thêm ›</a></div><div class="cart-suggestion-grid"><article class="cart-suggestion" th:each="product : ${cartSuggestions}"><a th:href="@{/product-detail/{id}(id=${product.selectedVariant.variantId})}"><img th:src="${product.imageUrl}" th:alt="${product.name}" width="100" height="100"></a><div><a th:href="@{/product-detail/{id}(id=${product.selectedVariant.variantId})}" th:text="${product.name}"></a><p class="muted" th:text="${product.selectedVariant.variantName}"></p><strong class="price" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'POINT')} + ' ₫'"></strong></div></article></div></section></main>
-<footer th:replace="~{fragments/storefront :: footer}"></footer>
+
+<footer th:replace="~{fragments/customer-service :: footer}"></footer>
 </body></html>

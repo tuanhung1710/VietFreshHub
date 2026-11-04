@@ -26,9 +26,7 @@ public final class OrderLabels {
             case "PENDING" -> "Chờ cửa hàng xác nhận đơn hàng";
             case "CONFIRMED" -> "Cửa hàng đã xác nhận đơn hàng";
             case "PREPARING" -> "Cửa hàng đang chuẩn bị đơn hàng";
-            case "READY_FOR_DELIVERY" -> "Sẵn sàng giao hàng";
-            case "ACCEPTED" -> "Nhân viên đã nhận nhiệm vụ";
-            case "PICKED_UP" -> "Nhân viên giao hàng đã lấy hàng";
+            case "READY_FOR_DELIVERY", "ACCEPTED", "PICKED_UP" -> "Sẵn sàng giao hàng";
             case "OUT_FOR_DELIVERY" -> "Đang giao hàng";
             case "DELIVERED" -> "Giao hàng thành công";
             case "COMPLETED" -> "Hoàn thành";
@@ -41,8 +39,8 @@ public final class OrderLabels {
 
     public static Map<String, String> customerStatusOptions() {
         Map<String, String> options = new LinkedHashMap<>();
-        for (String status : List.of("PENDING", "CONFIRMED", "PREPARING", "READY_FOR_DELIVERY", "ACCEPTED",
-                "PICKED_UP", "OUT_FOR_DELIVERY", "COMPLETED", "FAILED", "CANCELLED")) {
+        for (String status : List.of("PENDING", "CONFIRMED", "PREPARING", "READY_FOR_DELIVERY",
+                "OUT_FOR_DELIVERY", "COMPLETED", "FAILED", "CANCELLED")) {
             options.put(status, customerStatus(status));
         }
         return options;

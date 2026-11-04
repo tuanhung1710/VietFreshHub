@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/order-pages :: head('Đơn hàng của tôi')}"></head>
-<body>
-<header th:replace="~{fragments/storefront :: header}"></header>
-<main class="container page order-history-page my-orders-page">
+<head th:replace="~{fragments/interface-layout :: customerHead('Đơn hàng của tôi')}"></head>
+<body class="vfo-app vfr-app vfc-app vfr-customer" data-vfr-section="orders">
+<th:block th:replace="~{fragments/interface-layout :: navigation('customer','orders')}"></th:block>
+
+
+<main class="container page order-history-page my-orders-page vfr-page" id="customer-content" tabindex="-1">
     <div class="page-heading orders-heading">
-        <div><p class="eyebrow">Mua sắm của bạn</p><h1 class="checkout-title">Đơn hàng của tôi</h1>
-            <p class="muted">Theo dõi từng đơn hàng, từ lúc đặt đến khi nhận.</p></div>
+        <div><h1 class="checkout-title">Đơn hàng của tôi</h1></div>
         <a class="button secondary" th:href="@{/customer/payments}">Lịch sử thanh toán <span aria-hidden="true">↗</span></a>
     </div>
     <div th:replace="~{fragments/storefront :: messages}"></div>
@@ -14,12 +15,12 @@
     <p th:if="${pageNotice != null}" class="notice info" role="status" th:text="${pageNotice}"></p>
     <form class="panel order-filters" th:action="@{/customer/order-receipts}" th:object="${filter}" method="get" aria-label="Lọc đơn hàng">
         <input type="hidden" name="size" th:value="${filter.size}">
-        <div><label for="order-keyword">Mã lượt mua</label><input id="order-keyword" type="search" th:field="*{keyword}" maxlength="100" placeholder="Tìm theo mã đơn hàng"></div>
-        <div><label for="order-status">Trạng thái đơn hàng</label><select id="order-status" th:field="*{status}">
+        <div><label for="order-keyword">Mã lượt mua</label><input id="order-keyword" type="search" th:field="*{keyword}" maxlength="100" placeholder="Tìm theo mã đơn hàng" class="form-control"></div>
+        <div><label for="order-status">Trạng thái đơn hàng</label><select id="order-status" th:field="*{status}" class="form-control">
             <option value="">Tất cả</option><option th:if="${#fields.hasErrors('status')}" th:value="*{status}">Trạng thái không hợp lệ</option>
             <option th:each="state : ${statusOptions}" th:value="${state.key}" th:text="${state.value}"></option></select></div>
-        <div><label for="order-from">Từ ngày đặt</label><input id="order-from" type="date" min="0001-01-01" max="9999-12-31" th:field="*{fromDate}"></div>
-        <div><label for="order-to">Đến ngày đặt</label><input id="order-to" type="date" min="0001-01-01" max="9999-12-31" th:field="*{toDate}"></div>
+        <div><label for="order-from">Từ ngày đặt</label><input id="order-from" type="date" min="0001-01-01" max="9999-12-31" th:field="*{fromDate}" class="form-control"></div>
+        <div><label for="order-to">Đến ngày đặt</label><input id="order-to" type="date" min="0001-01-01" max="9999-12-31" th:field="*{toDate}" class="form-control"></div>
         <button class="button" type="submit">Lọc đơn hàng</button>
         <ul th:if="${invalidFilter}" class="filter-reset filter-errors field-error" role="alert"><li th:each="message : ${filterMessages}" th:text="${message}"></li></ul>
         <a class="filter-reset" th:href="@{/customer/order-receipts}">Xóa bộ lọc</a>
@@ -89,12 +90,13 @@
             <input type="hidden" name="fromDate" th:value="${filter.fromDate != null ? #temporals.format(filter.fromDate,'yyyy-MM-dd') : null}">
             <input type="hidden" name="toDate" th:value="${filter.toDate != null ? #temporals.format(filter.toDate,'yyyy-MM-dd') : null}">
             <label for="historyPageSize">Lượt mua mỗi trang</label>
-            <select name="size" id="historyPageSize">
+            <select name="size" id="historyPageSize" class="form-control">
                 <option th:each="size : ${T(VietFreshHub.common.PageSizes).OPTIONS}" th:value="${size}" th:selected="${filter.size == size}" th:text="${size}"></option>
             </select>
-            <button type="submit">Áp dụng</button>
+            <button type="submit" class="btn btn-success">Áp dụng</button>
         </form>
     </div>
 </main>
-<footer th:replace="~{fragments/storefront :: footer}"></footer>
+
+<footer th:replace="~{fragments/customer-service :: footer}"></footer>
 </body></html>

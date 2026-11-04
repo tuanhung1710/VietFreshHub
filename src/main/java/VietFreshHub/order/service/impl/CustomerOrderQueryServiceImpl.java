@@ -94,6 +94,7 @@ public class CustomerOrderQueryServiceImpl implements CustomerOrderQueryService 
             return null;
         }
         String label = switch (row.getStatus()) {
+            case "ACCEPTED", "PICKED_UP" -> OrderLabels.customerStatus(row.getStatus());
             case "FAILED" -> "Giao hàng thất bại";
             case "REDELIVERY_SCHEDULED" -> "Chờ giao lại";
             case "DELIVERED" -> "Đã giao hàng";

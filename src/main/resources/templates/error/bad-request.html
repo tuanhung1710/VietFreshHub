@@ -1,14 +1,22 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+    
     <title>Thông tin không hợp lệ | VietFresh Hub</title>
     <link rel="stylesheet" th:href="@{/css/storefront.css}">
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body><main class="container page"><section class="panel empty">
+<body class="vfo-app vfr-app vfc-app vfr-customer" data-vfr-section="account">
+<th:block th:replace="~{fragments/interface-layout :: navigation('customer','account')}"></th:block>
+<main class="container page vfr-page" id="customer-content" tabindex="-1"><section class="panel empty">
     <p class="eyebrow">VietFresh Hub</p><h1>Vui lòng kiểm tra lại thông tin</h1>
     <p class="muted" th:text="${message}"></p>
     <a class="button" th:href="@{/cart}">Về giỏ hàng</a>
     <a class="button" th:href="@{/home}">Khám phá sản phẩm</a>
-</section></main></body>
+</section></main><footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</body>
 </html>

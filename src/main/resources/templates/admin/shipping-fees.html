@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/interface-layout :: head('Cấu hình phí vận chuyển | VietFresh Hub')}"></head>
+<body class="vfo-app vfr-app vfr-admin" data-vfr-section="shipping-fees">
+<th:block th:replace="~{fragments/interface-layout :: navigation('admin','shipping-fees')}"></th:block>
+
+<div class="vfo-workspace vfr-workspace" id="workspace-content" tabindex="-1">
+<main class="vfo-main vfr-page">
+    <section class="page-heading">
+        <div>
+            <h1>Cấu hình phí vận chuyển</h1>
+        </div>
+    </section>
+
+    <div th:if="${successMessage}" class="alert alert-success" role="status" th:text="${successMessage}"></div>
+
+    <section class="card col-xl-8" aria-labelledby="shipping-fee-heading">
+        <div class="card-header px-4 py-3">
+            <h2 id="shipping-fee-heading" class="mb-0">Thông số phí vận chuyển</h2>
+        </div>
+        <div class="card-body p-4">
+            <form th:action="@{/admin/shipping-fees}" th:object="${form}" method="post">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                <div class="alert alert-danger" role="alert" th:if="${#fields.hasAnyErrors()}">
+                    <strong>Vui lòng kiểm tra lại:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li th:each="error : ${#fields.allErrors()}" th:text="${error}"></li>
+                    </ul>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="baseFee" class="form-label fw-semibold">Phí mở cửa (đồng) <span class="text-danger">*</span></label>
+                        <input id="baseFee" type="number" class="form-control" th:field="*{baseFee}"
+                               th:errorclass="is-invalid" min="0" max="9999999999999999" step="1" required>
+                        <div class="invalid-feedback" th:errors="*{baseFee}"></div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="includedDistanceKm" class="form-label fw-semibold">Áp dụng cho số km đầu tiên <span class="text-danger">*</span></label>
+                        <div class="input-group has-validation">
+                            <input id="includedDistanceKm" type="number" class="form-control" th:field="*{includedDistanceKm}"
+                                   th:errorclass="is-invalid" min="0" max="99999999.999" step="0.001" required>
+                            <span class="input-group-text">km</span>
+                            <div class="invalid-feedback" th:errors="*{includedDistanceKm}"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="additionalFeePerKm" class="form-label fw-semibold">Phí mỗi km tiếp theo (đồng/km) <span class="text-danger">*</span></label>
+                        <input id="additionalFeePerKm" type="number" class="form-control" th:field="*{additionalFeePerKm}"
+                               th:errorclass="is-invalid" min="0" max="9999999999999999" step="1" required>
+                        <div class="invalid-feedback" th:errors="*{additionalFeePerKm}"></div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="maxDeliveryDistanceKm" class="form-label fw-semibold">Phạm vi giao hàng tối đa (km) <span class="text-danger">*</span></label>
+                        <div class="input-group has-validation">
+                            <input id="maxDeliveryDistanceKm" type="number" class="form-control" th:field="*{maxDeliveryDistanceKm}"
+                                   th:errorclass="is-invalid" min="0.001" max="99999999.999" step="0.001" required>
+                            <span class="input-group-text">km</span>
+                            <div class="invalid-feedback" th:errors="*{maxDeliveryDistanceKm}"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                    <a th:href="@{/admin/shipping-fees}" class="btn btn-outline-secondary">Hủy thay đổi</a>
+                    <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </section>
+</main>
+<footer th:replace="~{fragments/admin-workspace :: footer}"></footer>
+</div>
+</body>
+</html>

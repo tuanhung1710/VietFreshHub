@@ -276,6 +276,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
 
     private String historyDeliveryLabel(String status) {
         return switch (status) {
+            case "ACCEPTED", "PICKED_UP" -> OrderLabels.customerStatus(status);
             case "OUT_FOR_DELIVERY" -> "Đang giao";
             case "FAILED" -> "Giao hàng thất bại";
             case "REDELIVERY_SCHEDULED" -> "Chờ giao lại";
@@ -480,6 +481,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
                     .forEach(h -> timeline.add(new OrderTrackingResponse.Event(OrderLabels.local(h.getCreatedAt()),trackingShopLabel(h.getStatus()),h.getNote(),"ORDER")));
             if(delivery!=null) {
                 for(var event:deliveryEvents) {
+                    if("ACCEPTED".equals(event.getStatus()) || "PICKED_UP".equals(event.getStatus())) continue;
                     String staffName=event.getChangedBy()==null ? null : trackingStaffName(staff,delivery.getDeliveryId(),event.getChangedBy());
                     String eventLabel=trackingDeliveryLabel(event.getStatus(),staffName);
                     if(eventLabel!=null) timeline.add(new OrderTrackingResponse.Event(OrderLabels.local(event.getCreatedAt()),eventLabel,null,"DELIVERY"));
@@ -492,7 +494,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
             String label=trackingShopLabel(child.getStatus());
             String deliveryStatusCode=child.getStatus();
             if(delivery!=null && !"CANCELLED".equals(child.getStatus())
-                    && !Set.of("UNASSIGNED","ASSIGNED").contains(delivery.getStatus())) {
+                    && !Set.of("UNASSIGNED","ASSIGNED","ACCEPTED","PICKED_UP").contains(delivery.getStatus())) {
                 String staffName=trackingStaffName(staff,delivery.getDeliveryId(),null);
                 String deliveryLabel=trackingDeliveryLabel(delivery.getStatus(),staffName);
                 label=deliveryLabel==null ? "Thông tin giao hàng cần được kiểm tra." : deliveryLabel;

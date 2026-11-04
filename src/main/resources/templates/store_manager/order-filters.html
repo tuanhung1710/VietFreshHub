@@ -1,218 +1,17 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <style th:fragment="styles">
-        .order-filter-toolbar {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 12px;
-            max-width: 760px;
-            margin: 20px 0;
-        }
-
-        .order-search-form {
-            display: flex;
-            flex: 1;
-            min-width: 0;
-            gap: 8px;
-        }
-
-        .order-sort-form {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .order-sort-form select {
-            max-width: 100%;
-            font: inherit;
-        }
-
-        .order-search-form input {
-            width: 100%;
-            min-width: 0;
-            padding: 10px 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            font: inherit;
-        }
-
-        .order-search-button, .order-filter-button, .order-filter-clear, .order-filter-apply {
-            padding: 10px 16px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            background: white;
-            color: #1e293b;
-            font: inherit;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .order-filter-dialog {
-            box-sizing: border-box;
-            width: min(640px, calc(100% - 32px));
-            max-height: calc(100vh - 48px);
-            padding: 24px;
-            border: 1px solid #cbd5e1;
-            border-radius: 12px;
-            background: white;
-            color: #1e293b;
-            box-shadow: 0 12px 40px #0003;
-            overflow: auto;
-        }
-
-        .order-filter-dialog::backdrop {
-            background: #0f172a80;
-        }
-
-        .order-filter-header, .order-filter-actions {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-        }
-
-        .order-filter-header {
-            margin-bottom: 24px;
-        }
-
-        .order-filter-header h2 {
-            margin: 0;
-            font-size: 20px;
-        }
-
-        .order-filter-close {
-            border: 0;
-            background: transparent;
-            font-size: 28px;
-            cursor: pointer;
-        }
-
-        .order-filter-dialog fieldset {
-            margin: 0 0 24px;
-            padding: 0;
-            border: 0;
-        }
-
-        .order-filter-dialog legend {
-            margin-bottom: 10px;
-            padding: 0;
-            font-weight: bold;
-        }
-
-        .order-filter-options {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .order-filter-dates {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-            gap: 6px 8px;
-        }
-
-        .order-filter-dates label {
-            grid-row: 1;
-        }
-
-        .order-filter-dates [for="fromDate"], #fromDate, #fromDate-error {
-            grid-column: 1;
-        }
-
-        .order-filter-dates [for="toDate"], #toDate, #toDate-error {
-            grid-column: 3;
-        }
-
-        .order-filter-dates input {
-            grid-row: 2;
-            min-width: 0;
-            padding: 8px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            font: inherit;
-        }
-
-        .order-filter-dates input[aria-invalid="true"] {
-            border-color: #b91c1c;
-        }
-
-        .order-filter-date-separator {
-            grid-column: 2;
-            grid-row: 2;
-            align-self: center;
-        }
-
-        .order-filter-date-error {
-            grid-row: 3;
-            min-height: 1.25em;
-            margin: 0;
-            color: #b91c1c;
-            font-size: 0.875em;
-        }
-
-        .order-filter-options label {
-            position: relative;
-            cursor: pointer;
-        }
-
-        .order-filter-options input {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            opacity: 0;
-        }
-
-        .order-filter-options span {
-            display: block;
-            padding: 8px 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-        }
-
-        .order-filter-options input:checked + span {
-            border-color: #2563eb;
-            background: #eff6ff;
-            color: #1d4ed8;
-        }
-
-        .order-filter-options input:focus-visible + span {
-            outline: 2px solid #2563eb;
-            outline-offset: 2px;
-        }
-
-        .order-filter-actions {
-            padding-top: 16px;
-            border-top: 1px solid #e2e8f0;
-        }
-
-        .order-filter-apply {
-            border-color: #2563eb;
-            background: #2563eb;
-            color: white;
-        }
-
-        .order-filter-apply:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .order-filter-error {
-            color: #b91c1c;
-        }
-    </style>
+    <link th:fragment="styles" rel="stylesheet" th:href="@{/css/store-manager-orders.css}">
 </head>
 <body>
-<div th:fragment="filters(orderView, filterAction, showStatusFilter, showPaymentFilter, resultCount)">
+<div class="vfo-filter-region" th:fragment="filters(orderView, filterAction, showStatusFilter, showPaymentFilter, resultCount)">
     <div class="order-filter-toolbar">
         <form class="order-search-form" method="get" role="search" th:action="@{${filterAction}}">
             <input type="hidden" name="size" th:value="${filter.size}">
-            <input type="search" name="keyword" th:value="${filter.keyword}"
+            <input class="form-control" type="search" name="keyword" th:value="${filter.keyword}"
                    aria-label="Tìm theo mã đơn hàng hoặc khách hàng"
                    placeholder="Tìm theo mã đơn hàng hoặc khách hàng">
-            <button class="order-search-button" type="submit">TÌM</button>
+            <button class="btn order-search-button" type="submit"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-search"/></svg>Tìm kiếm</button>
             <input type="hidden" name="fromDate" th:value="${filter.fromDate}">
             <input type="hidden" name="toDate" th:value="${filter.toDate}">
             <input type="hidden" name="priceRange" th:each="value : ${filter.priceRange}" th:value="${value}">
@@ -223,7 +22,7 @@
         <form class="order-sort-form" method="get" th:action="@{${filterAction}}">
             <input type="hidden" name="size" th:value="${filter.size}">
             <label for="order-sort">Sắp xếp theo</label>
-            <select id="order-sort" name="sort">
+            <select class="form-select" id="order-sort" name="sort">
                 <option value="NEWEST" th:selected="${filter.sort == 'NEWEST'}">Ngày đặt hàng: Mới nhất trước</option>
                 <option value="OLDEST" th:selected="${filter.sort == 'OLDEST'}">Ngày đặt hàng: Cũ nhất trước</option>
                 <option value="PRICE_HIGH" th:selected="${filter.sort == 'PRICE_HIGH'}">Giá trị đơn hàng: Cao nhất trước</option>
@@ -238,12 +37,12 @@
             <input th:if="${showStatusFilter}" type="hidden" name="status" th:each="value : ${filter.status}" th:value="${value}">
             <input th:if="${showPaymentFilter}" type="hidden" name="paymentStatus" th:each="value : ${filter.paymentStatus}" th:value="${value}">
         </form>
-        <button id="open-order-filter" class="order-filter-button" type="button"
-                aria-haspopup="dialog" aria-controls="order-filter-dialog">Bộ lọc</button>
+        <button id="open-order-filter" class="btn order-filter-button" type="button"
+                aria-haspopup="dialog" aria-controls="order-filter-dialog"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-filter"/></svg>Bộ lọc</button>
     </div>
     <dialog id="order-filter-dialog" class="order-filter-dialog" aria-labelledby="order-filter-title">
         <div class="order-filter-header">
-            <h2 id="order-filter-title">BỘ LỌC</h2>
+            <div><p class="vfo-eyebrow">Tìm đúng đơn hàng bạn cần</p><h2 id="order-filter-title">Bộ lọc đơn hàng</h2></div>
             <button id="close-order-filter" class="order-filter-close" type="button" aria-label="Đóng bộ lọc">×</button>
         </div>
         <form id="order-filter-form" method="get" novalidate th:action="@{${filterAction}}"
@@ -255,11 +54,11 @@
                 <legend>Ngày đặt hàng</legend>
                 <div class="order-filter-dates">
                     <label for="fromDate">Từ ngày</label>
-                    <input id="fromDate" name="fromDate" type="date" th:value="${filter.fromDate}" aria-describedby="fromDate-error">
+                    <input class="form-control" id="fromDate" name="fromDate" type="date" th:value="${filter.fromDate}" aria-describedby="fromDate-error">
                     <p id="fromDate-error" class="order-filter-date-error" aria-live="polite"></p>
                     <span class="order-filter-date-separator" aria-hidden="true">-</span>
                     <label for="toDate">Đến ngày</label>
-                    <input id="toDate" name="toDate" type="date" th:value="${filter.toDate}" aria-describedby="toDate-error">
+                    <input class="form-control" id="toDate" name="toDate" type="date" th:value="${filter.toDate}" aria-describedby="toDate-error">
                     <p id="toDate-error" class="order-filter-date-error" aria-live="polite"></p>
                 </div>
             </fieldset>
@@ -316,8 +115,8 @@
             </fieldset>
             <p id="order-filter-error" class="order-filter-error" role="alert" hidden></p>
             <div class="order-filter-actions">
-                <a class="order-filter-clear" th:href="@{${filterAction}(keyword=${filter.keyword},sort=${filter.sort})}">XÓA BỘ LỌC</a>
-                <button id="apply-order-filter" class="order-filter-apply" type="submit" aria-live="polite"
+                <a class="btn order-filter-clear" th:href="@{${filterAction}(keyword=${filter.keyword},sort=${filter.sort})}">Xóa bộ lọc</a>
+                <button id="apply-order-filter" class="btn order-filter-apply" type="submit" aria-live="polite"
                         th:text="${resultCount + ' KẾT QUẢ'}">KẾT QUẢ</button>
             </div>
         </form>

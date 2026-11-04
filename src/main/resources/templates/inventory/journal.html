@@ -5,24 +5,21 @@
     <head th:replace="~{fragments/product-inventory :: head('Biến động kho','inventory')}">
     </head>
 
-    <body>
+    <body class="vfo-app vfr-app vfr-product vfr-seller" data-vfr-section="journal">
 
         <!-- Điều hướng Seller Portal -->
         <header th:replace="~{fragments/product-inventory :: nav('inventory')}">
         </header>
 
         <!-- Nội dung chính -->
-        <div class="vf-workspace">
-        <main class="container vf-main vf-inventory-main">
+        <div class="vf-workspace" id="order-content" tabindex="-1">
+        <main class="container vf-main vf-inventory-main vfr-page">
             <a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{/seller/inventory}">
                 ← Quản lý tồn kho
             </a>
             <h1>
                 Biến động kho
             </h1>
-            <p class="text-body-secondary mb-4">
-                Theo dõi nhập kho, giữ hàng cho đơn, giải phóng hàng giữ, xuất bán, nhận hàng hoàn, điều chỉnh và hủy hàng. Thời gian hiển thị theo giờ Việt Nam.
-            </p>
 
             <div class="d-flex flex-wrap align-items-center gap-3 mb-3" th:if="${batch!=null}">
                 <strong th:text="${'Lịch sử tồn kho lô '+batchCode}"></strong>
@@ -153,7 +150,7 @@
                                 </td>
 
                                 <td data-label="Lý do / Thông tin liên quan">
-                                    <span th:text="${e.event.note}">
+                                    <span th:text="${e.displayNote}">
                                     </span>
                                     <small class="d-block text-body-secondary" th:text="${e.displayActorName}"></small>
                                     <small
@@ -192,5 +189,6 @@
 
         </div>
 
-    </body>
+    <div class="vfr-product-footer"><footer th:replace="~{fragments/seller-orders :: footer}"></footer></div>
+</body>
 </html>

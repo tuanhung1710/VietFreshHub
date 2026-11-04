@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/head :: head('Đăng nhập | VietFresh Hub')}"></head>
-<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen">
-<main class="w-full min-h-screen flex items-center justify-center bg-surface px-4 py-6"><div class="w-full max-w-[1280px] mx-auto py-space-lg"><div class="flex flex-col w-full">
+<head th:replace="~{fragments/interface-layout :: head('Đăng nhập | VietFresh Hub')}"></head>
+<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen vfo-app vfr-app vfr-utility vfc-app vfr-customer vfr-public" data-vfr-section="account">
+
+<main class="w-full min-h-screen flex items-center justify-center bg-surface px-4 py-6 vfr-page" id="customer-content" tabindex="-1"><div class="w-full max-w-[1280px] mx-auto py-space-lg"><div class="flex flex-col w-full">
     <div class="relative w-full py-space-lg flex items-center justify-center">
         <!-- Organic Background Accents -->
         <div class="absolute -top-16 -left-12 w-96 h-96 bg-primary-fixed/30 rounded-full blur-3xl pointer-events-none -z-10"></div>
@@ -182,4 +183,5 @@
         }
     </script>
 </div></div></main>
+<footer th:replace="~{fragments/customer-service :: footer}"></footer>
 </body></html>

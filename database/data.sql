@@ -24,6 +24,8 @@ IF OBJECT_ID('dbo.tr_order_items_shop_match','TR') IS NULL
  OR COL_LENGTH('dbo.loyalty_accounts','reward_balance') IS NULL
  OR COL_LENGTH('dbo.loyalty_transactions','balance_after_amount') IS NULL
  OR OBJECT_ID('dbo.loyalty_rules','U') IS NULL
+ OR OBJECT_ID('dbo.shipping_fee_settings','U') IS NULL
+ OR OBJECT_ID('dbo.tr_shipping_fee_settings_guard','TR') IS NULL
  OR OBJECT_ID('dbo.refund_requests','U') IS NULL
  OR OBJECT_ID('dbo.seller_payout_batch_items','U') IS NULL
  OR OBJECT_ID('dbo.tr_refund_requests_limits','TR') IS NULL
@@ -36,6 +38,8 @@ BEGIN TRANSACTION;
 EXEC @lock=sys.sp_getapplock @Resource=N'VietFreshHub.Demo.20261017',@LockMode='Exclusive',@LockOwner='Transaction',@LockTimeout=10000;
  IF @lock<0 THROW 58002,N'Khong lay duoc khoa nap demo.',1;
  -- Configuration is idempotent for both a fresh schema and an upgraded database.
+ IF NOT EXISTS(SELECT 1 FROM dbo.shipping_fee_settings WHERE settings_id=1)
+  INSERT dbo.shipping_fee_settings(settings_id) VALUES(1);
  IF NOT EXISTS(SELECT 1 FROM dbo.loyalty_rules WHERE rule_id=1) INSERT dbo.loyalty_rules(rule_id) VALUES(1);
  IF NOT EXISTS(SELECT 1 FROM dbo.subscription_plans WHERE name=N'Free')
   INSERT dbo.subscription_plans(name,description,price,billing_period,benefits,max_products)
@@ -1021,7 +1025,7 @@ SET @total=@subtotal-@discount+@shipping;
    VALUES(@customer,'TMP-'+CONVERT(VARCHAR(36),NEWID()),CASE WHEN @status='COMPLETED' THEN 'COMPLETED' WHEN @status='CANCELLED' THEN 'CANCELLED' WHEN @status='PENDING' THEN 'PENDING' WHEN @status='CONFIRMED' THEN 'CONFIRMED' ELSE 'PROCESSING' END,
     CASE WHEN @refunded=1 THEN 'REFUNDED' WHEN @paid=1 THEN 'PAID' ELSE 'UNPAID' END,@subtotal,@discount,@shipping,@total,@placed,CASE WHEN @status='COMPLETED' THEN DATEADD(HOUR,3,@placed) END,CASE WHEN @status='CANCELLED' THEN DATEADD(HOUR,2,@placed) END);
   SET @order=SCOPE_IDENTITY();
-UPDATE dbo.orders SET order_code='ORD-'+CASE WHEN LEN(CONVERT(VARCHAR(20),@order))<6 THEN REPLICATE('0',6-LEN(CONVERT(VARCHAR(20),@order))) ELSE '' END+CONVERT(VARCHAR(20),@order) WHERE order_id=@order;
+UPDATE dbo.orders SET order_code='VFH-'+CASE WHEN LEN(CONVERT(VARCHAR(20),@order))<6 THEN REPLICATE('0',6-LEN(CONVERT(VARCHAR(20),@order))) ELSE '' END+CONVERT(VARCHAR(20),@order) WHERE order_id=@order;
 INSERT dbo.order_addresses(order_id,recipient_name,phone,province,ward,address_line,formatted_address,latitude,longitude)
 SELECT @order,recipient_name,phone,province,ward,address_line,formatted_address,latitude,longitude FROM dbo.addresses WHERE user_id=@customer AND is_default=1;
 -- Insert lines while PENDING so preparation snapshot triggers run normally.

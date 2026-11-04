@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title + ' | VietFresh Hub'}">VietFresh Hub</title>
+    <th:block th:replace="~{fragments/seller-orders :: assets}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/workspace-management.css}">
+</head>
+<body>
+<th:block th:fragment="navigation(active)">
+    <a class="vfo-skip-link" href="#workspace-content">Đến nội dung chính</a>
+    <svg th:replace="~{fragments/seller-orders :: icons}"></svg>
+    <header class="vfo-topbar navbar" data-workspace-header>
+        <div class="vfo-brand-group">
+            <a class="vfo-brand" th:href="@{/admin/dashboard}" aria-label="VietFresh Hub — Trung tâm quản trị">
+                <span class="vfo-brand-mark"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-leaf"/></svg></span>
+                <span><span class="vfo-brand-name"><strong>VietFresh</strong> Hub</span><span class="vfo-brand-tagline">Fresh from the heart</span></span>
+            </a>
+            <span class="vfo-portal-label d-none d-xl-inline">Trung tâm quản trị</span>
+        </div>
+        <div class="vfo-topbar-actions">
+            <th:block th:replace="~{fragments/account-menu :: menu}"></th:block>
+        </div>
+    </header>
+    <button class="btn vfo-menu-toggle vfo-sidebar-toggle" type="button" data-workspace-sidebar-toggle data-bs-toggle="offcanvas" data-bs-target="#vfoSidebar" aria-controls="vfoSidebar" aria-expanded="true" aria-label="Ẩn thanh điều hướng"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-menu"/></svg></button>
+    <aside class="offcanvas-lg offcanvas-start vfo-sidebar" tabindex="-1" id="vfoSidebar" aria-labelledby="vfaSidebarTitle">
+        <div class="offcanvas-header d-lg-none">
+            <h2 class="offcanvas-title" id="vfaSidebarTitle">Trung tâm quản trị</h2>
+            <button class="btn-close" type="button" data-bs-dismiss="offcanvas" data-bs-target="#vfoSidebar" aria-label="Đóng menu"></button>
+        </div>
+        <div class="offcanvas-body">
+            <nav th:replace="~{fragments/workspace-navigation :: admin(${active})}"></nav>
+        </div>
+    </aside>
+</th:block>
+<footer th:fragment="footer" th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

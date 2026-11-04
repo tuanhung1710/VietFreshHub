@@ -1,7 +1,14 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title>Đánh giá · VietFresh Hub</title></head>
-<body><main>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    <title>Đánh giá · VietFresh Hub</title>    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+</head>
+<body class="vfo-app vfr-app vfc-app vfr-customer" data-vfr-section="account">
+<th:block th:replace="~{fragments/interface-layout :: navigation('customer','account')}"></th:block>
+<main class="vfr-page" id="customer-content" tabindex="-1">
     <h1 th:text="${targetType == 'product' ? 'Đánh giá sản phẩm' : 'Đánh giá cửa hàng'}">Đánh giá</h1>
     <p th:text="${'Điểm trung bình: ' + (rating.averageRating == null ? 'Chưa có' : #numbers.formatDecimal(rating.averageRating,1,1)) + ' · ' + rating.ratingCount + ' đánh giá'}">Xếp hạng</p>
     <p><a th:href="@{/reviews/mine}" th:if="${canReview}">Quản lý đánh giá của tôi</a></p>
@@ -9,17 +16,17 @@
         <h2>Đánh giá sau khi mua</h2>
         <form th:if="${targetType == 'product'}" method="post" th:action="@{/reviews/product/{id}(id=${targetId})}" th:object="${reviewForm}">
             <label for="orderItemId">Đơn hàng đã hoàn thành</label>
-            <select id="orderItemId" name="orderItemId" required><option th:each="id : ${eligiblePurchases}" th:value="${id}" th:text="${'Dòng đơn hàng #' + id}"></option></select>
-            <label for="rating-product">Điểm từ 1 đến 5</label><input id="rating-product" type="number" min="1" max="5" th:field="*{rating}" required>
-            <label for="content-product">Nội dung (không bắt buộc)</label><textarea id="content-product" maxlength="3000" th:field="*{content}"></textarea>
-            <button type="submit">Gửi đánh giá</button>
+            <select id="orderItemId" name="orderItemId" required class="form-control"><option th:each="id : ${eligiblePurchases}" th:value="${id}" th:text="${'Dòng đơn hàng #' + id}"></option></select>
+            <label for="rating-product">Điểm từ 1 đến 5</label><input id="rating-product" type="number" min="1" max="5" th:field="*{rating}" required class="form-control">
+            <label for="content-product">Nội dung (không bắt buộc)</label><textarea id="content-product" maxlength="3000" th:field="*{content}" class="form-control"></textarea>
+            <button type="submit" class="btn btn-success">Gửi đánh giá</button>
         </form>
         <form th:if="${targetType == 'shop'}" method="post" th:action="@{/reviews/shop/{id}(id=${targetId})}" th:object="${reviewForm}">
             <label for="shopOrderId">Đơn hàng đã hoàn thành</label>
-            <select id="shopOrderId" name="shopOrderId" required><option th:each="id : ${eligiblePurchases}" th:value="${id}" th:text="${'Đơn cửa hàng #' + id}"></option></select>
-            <label for="rating-shop">Điểm từ 1 đến 5</label><input id="rating-shop" type="number" min="1" max="5" th:field="*{rating}" required>
-            <label for="content-shop">Nội dung (không bắt buộc)</label><textarea id="content-shop" maxlength="3000" th:field="*{content}"></textarea>
-            <button type="submit">Gửi đánh giá</button>
+            <select id="shopOrderId" name="shopOrderId" required class="form-control"><option th:each="id : ${eligiblePurchases}" th:value="${id}" th:text="${'Đơn cửa hàng #' + id}"></option></select>
+            <label for="rating-shop">Điểm từ 1 đến 5</label><input id="rating-shop" type="number" min="1" max="5" th:field="*{rating}" required class="form-control">
+            <label for="content-shop">Nội dung (không bắt buộc)</label><textarea id="content-shop" maxlength="3000" th:field="*{content}" class="form-control"></textarea>
+            <button type="submit" class="btn btn-success">Gửi đánh giá</button>
         </form>
     </section>
     <p th:if="${canReview and #lists.isEmpty(eligiblePurchases)}">Chỉ tài khoản có đơn hoàn thành chưa được đánh giá mới có thể gửi đánh giá.</p>
@@ -30,9 +37,9 @@
         <form th:if="${canReview}" method="post" th:action="@{/reviews/{id}/report(id=${review.reviewId})}" th:object="${reportForm}">
             <input type="hidden" name="returnTo" th:value="${'/reviews/' + targetType + '/' + targetId}">
             <label th:for="${'reason-' + review.reviewId}">Báo cáo đánh giá</label>
-            <input th:id="${'reason-' + review.reviewId}" th:field="*{reason}" maxlength="100" placeholder="Lý do" required>
-            <textarea th:field="*{description}" maxlength="1000" placeholder="Mô tả thêm (không bắt buộc)"></textarea>
-            <button type="submit">Báo cáo</button>
+            <input th:id="${'reason-' + review.reviewId}" th:field="*{reason}" maxlength="100" placeholder="Lý do" required class="form-control">
+            <textarea th:field="*{description}" maxlength="1000" placeholder="Mô tả thêm (không bắt buộc)" class="form-control"></textarea>
+            <button type="submit" class="btn btn-success">Báo cáo</button>
         </form>
     </article>
     <nav th:if="${reviews.totalPages > 1}" aria-label="Trang đánh giá">
@@ -41,4 +48,5 @@
         <a th:if="${reviews.hasNext()}" th:href="@{/reviews/{type}/{id}(type=${targetType},id=${targetId},page=${reviews.number + 1})}">Sau</a>
     </nav>
     <a th:href="@{/home}">Về trang chủ</a>
-</main></body></html>
+</main><footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</body></html>

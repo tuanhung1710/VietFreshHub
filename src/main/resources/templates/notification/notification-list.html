@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+    
+    
     <title>Thông báo</title>
     <style>
         body { margin: 0; background: #f5f7f6; color: #24342b; font-family: Arial, sans-serif; }
@@ -15,9 +19,12 @@
         button, .pagination a { display: inline-block; padding: 9px 14px; border: 0; border-radius: 6px; background: #198754; color: white; cursor: pointer; text-decoration: none; }
         .pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 24px 0; }
     </style>
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body>
-<main>
+<body class="vfo-app vfr-app vfc-app vfr-customer" data-vfr-section="account">
+<th:block th:replace="~{fragments/interface-layout :: navigation('customer','account')}"></th:block>
+
+<main class="vfr-page" id="customer-content" tabindex="-1">
     <h1>Thông báo của bạn</h1>
     <p th:if="${notificationPage.empty}" class="muted">Bạn chưa có thông báo nào.</p>
     <article th:each="item : ${notificationPage.content}"
@@ -31,7 +38,7 @@
         </p>
         <form th:if="${item.readAt == null}"
               th:action="@{/notifications/{id}/read(id=${item.notificationId})}" method="post">
-            <button type="submit">Đánh dấu đã đọc</button>
+            <button type="submit" class="btn btn-success">Đánh dấu đã đọc</button>
         </form>
     </article>
     <nav class="pagination" aria-label="Phân trang thông báo" th:if="${notificationPage.totalPages > 1}">
@@ -40,5 +47,6 @@
         <a th:if="${notificationPage.hasNext()}" th:href="@{/notifications(page=${notificationPage.number + 1})}">Trang sau</a>
     </nav>
 </main>
+<footer th:replace="~{fragments/customer-service :: footer}"></footer>
 </body>
 </html>

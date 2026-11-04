@@ -94,7 +94,7 @@ body:has(.storefront-header) main.order-detail-page .detail-actions .button{min-
 .shop-receipt-page .detail-actions .cancel-order{margin:0}
 .shop-receipt-page .detail-actions .cancel-order>summary{background:#fff;color:#637169;border-color:#cbd4cd}
 .shop-receipt-page .detail-actions .muted{font-size:11px;line-height:1.8}
-.mockup-bottom{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:18px;margin-top:18px}
+.mockup-bottom{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;margin-top:18px}
 .mockup-bottom h2{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:700;margin-bottom:12px}
 .mockup-bottom h2 .material-symbols-outlined{color:#00862e;font-size:23px}
 .mockup-history>h2{border-bottom:1px solid #e5ebe6;padding-bottom:12px}

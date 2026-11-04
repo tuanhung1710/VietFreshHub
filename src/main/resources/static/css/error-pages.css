@@ -1,0 +1,99 @@
+body.vfo-app.vfr-error {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+.vfr-error-header {
+    display: flex;
+    justify-content: center;
+    padding: 22px 24px;
+    border-bottom: 1px solid var(--vfo-border);
+    background: #fff;
+}
+
+.vfr-error .vfr-error-main {
+    display: grid;
+    flex: 1;
+    place-items: center;
+    max-width: 1080px;
+    padding: 48px 24px;
+}
+
+.vfr-error-card {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+    width: 100%;
+    overflow: hidden;
+    border: 1px solid var(--vfo-border);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 10px 35px #2e513508;
+}
+
+.vfr-error-visual {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 48px 24px;
+    background: var(--green-100);
+    color: var(--vfo-green);
+}
+
+.vfr-error-visual .vfo-icon {
+    width: 52px;
+    height: 52px;
+    stroke-width: 1.2;
+}
+
+.vfr-error-code {
+    font: 400 clamp(80px, 10vw, 124px)/1 Georgia, "Times New Roman", serif;
+    letter-spacing: -5px;
+}
+
+.vfr-error-content {
+    align-self: center;
+    padding: 48px 40px;
+}
+
+.vfr-error-label {
+    margin: 0 0 14px;
+    color: var(--vfo-green);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+.vfr-error-description {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.9;
+}
+
+.vfr-error-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 28px;
+}
+
+.vfr-error-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-height: 44px;
+}
+
+@media (max-width: 640px) {
+    .vfr-error .vfr-error-main { padding: 28px 16px; }
+    .vfr-error-card { grid-template-columns: minmax(0, 1fr); }
+    .vfr-error-visual { gap: 12px; padding: 28px 20px; }
+    .vfr-error-visual .vfo-icon { width: 36px; height: 36px; }
+    .vfr-error-content { padding: 28px 24px; text-align: center; }
+    .vfr-error-actions { justify-content: center; }
+}

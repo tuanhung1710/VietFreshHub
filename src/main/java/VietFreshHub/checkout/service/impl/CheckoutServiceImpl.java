@@ -141,8 +141,8 @@ public class CheckoutServiceImpl implements CheckoutService {
 
         validateDraft(customerId, draft, request);
         User buyer = lockBuyer(customerId);
-        String orderCode = "VF-" + draft.token();
-        Optional<Order> existingOrder = orderRepository.findByOrderCodeAndCustomerUserId(orderCode, customerId);
+        String checkoutReference = "VF-" + draft.token();
+        Optional<Order> existingOrder = orderRepository.findByOrderCodeAndCustomerUserId(checkoutReference, customerId);
         if (existingOrder.isPresent()) {
             return toCheckoutResult(existingOrder.get());
         }

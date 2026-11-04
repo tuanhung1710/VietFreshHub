@@ -3,35 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+    
+    
     <meta name="theme-color" content="#f5f8f5">
     <title>Quản lý danh mục · VietFresh Hub</title>
     <link rel="stylesheet" th:href="@{/css/admin-categories.css}">
     <script th:src="@{/js/admin-categories.js}" defer></script>
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body>
-<header class="topbar">
-    <a class="brand" th:href="@{/admin/accounts}" aria-label="VietFresh Hub, trung tâm quản trị">
-        <span class="brand-mark" aria-hidden="true">V</span>
-        <span class="brand-copy"><strong>VietFresh Hub</strong><small>TRUNG TÂM QUẢN TRỊ</small></span>
-    </a>
-    <nav class="admin-links" aria-label="Điều hướng quản trị">
-        <a th:href="@{/admin/accounts}">Tài khoản</a>
-        <a th:href="@{/admin/products}">Hậu kiểm sản phẩm</a>
-        <a th:href="@{/admin/payouts}">Đối soát payout</a>
-        <a th:href="@{/admin/deliveries}">Giám sát giao hàng</a>
-        <strong aria-current="page">Danh mục</strong>
-    </nav>
-</header>
+<body class="vfo-app vfr-app vfr-admin" data-vfr-section="categories">
+<th:block th:replace="~{fragments/interface-layout :: navigation('admin','categories')}"></th:block>
 
-<main class="page">
-    <nav class="breadcrumbs" aria-label="Điều hướng">
-        <a th:href="@{/admin/accounts}">Quản trị</a><span aria-hidden="true">/</span><strong>Quản lý danh mục</strong>
-    </nav>
+
+
+<div class="vfo-workspace vfr-workspace" id="workspace-content" tabindex="-1">
+<main class="page vfr-page">
 
     <section class="heading">
         <div>
             <h1>Quản lý danh mục</h1>
-            <p>Tạo cây danh mục và kiểm soát danh mục nào được hiển thị trong catalog.</p>
         </div>
     </section>
 
@@ -57,20 +49,20 @@
 
                 <div class="field">
                     <label for="name">Tên danh mục <span aria-hidden="true">*</span></label>
-                    <input id="name" type="text" maxlength="150" required th:field="*{name}" autocomplete="off">
+                    <input id="name" type="text" maxlength="150" required th:field="*{name}" autocomplete="off" class="form-control">
                     <small class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></small>
                 </div>
 
                 <div class="field">
                     <label for="slug">Slug</label>
-                    <input id="slug" type="text" maxlength="200" th:field="*{slug}" autocomplete="off" placeholder="Để trống để tự tạo từ tên">
+                    <input id="slug" type="text" maxlength="200" th:field="*{slug}" autocomplete="off" placeholder="Để trống để tự tạo từ tên" class="form-control">
                     <small>Chỉ dùng chữ không dấu, số và dấu gạch ngang. Slug phải duy nhất.</small>
                     <small class="field-error" th:if="${#fields.hasErrors('slug')}" th:errors="*{slug}"></small>
                 </div>
 
                 <div class="field">
                     <label for="parentCategoryId">Danh mục cha</label>
-                    <select id="parentCategoryId" th:field="*{parentCategoryId}">
+                    <select id="parentCategoryId" th:field="*{parentCategoryId}" class="form-control">
                         <option value="">Danh mục gốc</option>
                         <option th:each="row : ${parentOptions}"
                                 th:value="${row.category.categoryId}"
@@ -111,7 +103,7 @@
 
                 <div class="field">
                     <label for="description">Mô tả</label>
-                    <textarea id="description" maxlength="1000" th:field="*{description}"></textarea>
+                    <textarea id="description" maxlength="1000" th:field="*{description}" class="form-control"></textarea>
                     <small class="field-error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></small>
                 </div>
 
@@ -132,8 +124,8 @@
             <p class="notice">Ngừng hoạt động danh mục cha sẽ làm ẩn cả các danh mục con khỏi catalog. Danh mục và liên kết sản phẩm vẫn được giữ trong hệ thống.</p>
 
             <form class="filter" method="get" th:action="@{/admin/categories}">
-                <input type="search" name="keyword" maxlength="100" placeholder="Tìm tên, slug hoặc mô tả" th:value="${keyword}" aria-label="Từ khóa tìm kiếm">
-                <select name="status" aria-label="Lọc trạng thái">
+                <input type="search" name="keyword" maxlength="100" placeholder="Tìm tên, slug hoặc mô tả" th:value="${keyword}" aria-label="Từ khóa tìm kiếm" class="form-control">
+                <select name="status" aria-label="Lọc trạng thái" class="form-control">
                     <option value="ALL" th:selected="${selectedStatus == 'ALL'}">Mọi trạng thái</option>
                     <option value="ACTIVE" th:selected="${selectedStatus == 'ACTIVE'}">Đang hoạt động</option>
                     <option value="INACTIVE" th:selected="${selectedStatus == 'INACTIVE'}">Ngừng hoạt động</option>
@@ -143,7 +135,7 @@
             </form>
 
             <div class="table-wrap">
-                <table>
+                <table class="table align-middle">
                     <thead>
                     <tr>
                         <th scope="col">Danh mục</th>
@@ -200,5 +192,7 @@
         </section>
     </div>
 </main>
+<footer th:replace="~{fragments/admin-workspace :: footer}"></footer>
+</div>
 </body>
 </html>

@@ -7,24 +7,21 @@
     >
     </head>
 
-    <body>
+    <body class="vfo-app vfr-app vfr-product vfr-seller" data-vfr-section="product">
 
         <!-- Điều hướng Seller Portal -->
         <header th:replace="~{fragments/product-inventory :: nav('product')}">
         </header>
 
         <!-- Nội dung chính -->
-        <div class="vf-workspace">
-        <main class="container vf-main narrow">
+        <div class="vf-workspace" id="order-content" tabindex="-1">
+        <main class="container vf-main narrow vfr-page">
             <a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{/seller/products}">
                 ← Sản phẩm
             </a>
             <div class="mb-4">
                 <h1 th:text="${productId==null?'Thêm sản phẩm':'Chỉnh sửa sản phẩm'}">
                 </h1>
-                <p class="text-body-secondary mb-0">
-                    Sản phẩm đủ điều kiện có thể mở bán ngay. Chỉnh sửa thông tin không thay đổi lựa chọn bán/ẩn hoặc khóa vi phạm.
-                </p>
             </div>
 
             <!-- Biểu mẫu -->
@@ -236,5 +233,6 @@
         </div>
 
         <script defer th:src="@{/js/product/product.js}"></script>
-    </body>
+    <div class="vfr-product-footer"><footer th:replace="~{fragments/seller-orders :: footer}"></footer></div>
+</body>
 </html>

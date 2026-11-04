@@ -13,6 +13,7 @@ public record PaymentHistoryRow(Long paymentId, Long orderId, String orderCode, 
         public String orderCode() { return VietFreshHub.common.BusinessCodes.format("VFH", shopOrderId); }
     }
     public PaymentHistoryRow {
+        orderCode = VietFreshHub.common.OrderCodes.display(orderCode, orderId);
         displayStatus = displayStatus == null ? switch (status) {
             case PENDING, PROCESSING -> "PENDING"; case PAID -> "PAID"; case FAILED -> "FAILED";
             case CANCELLED -> "CANCELLED"; case REFUNDED, PARTIALLY_REFUNDED -> "REFUND_PROCESSING";
