@@ -1,104 +1,141 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
-    
-
-
-<title>VietFresh Hub | Trái cây tươi mỗi ngày</title>
-<link rel="stylesheet" th:href="@{/css/customer-shop.css}" href="/css/customer-shop.css">
-<link rel="stylesheet" th:href="@{/css/discount-pricing.css}">
-
-<meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
-<meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
-<link rel="stylesheet" th:href="@{/css/customer-pagination.css}">
-    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
-</head>
-<body th:attr="data-initial-view=${initialView},data-shop-id=${initialShopId},data-product-id=${initialProductId},data-variant-id=${initialVariantId}" class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
-<header th:replace="~{fragments/customer-shop :: header}"></header>
-<main class="container vfr-page">
-  <div id="notice" class="notice hide"></div>
-
-  <div id="home">
-    <section class="bannergrid" style="margin-top:22px">
-      <div class="hero">
-        <h1>Trái cây tươi mỗi ngày</h1>
-        <button data-all class="btn btn-success">Xem tất cả sản phẩm</button>
-      </div>
-      <div class="sidebanners">
-        <div class="sidebanner"><h3>Sản phẩm bán chạy</h3><p>Khám phá các loại trái cây được mua nhiều.</p><button data-best class="btn btn-success">Xem ngay</button></div>
-        <div class="sidebanner"><h3>Khám phá gian hàng</h3><p>Truy cập các shop trái cây để xem sản phẩm riêng.</p><button data-shops class="btn btn-success">Danh sách shop</button></div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="sectiontop"><h2>DANH MỤC TRÁI CÂY</h2><button class="textlink" data-all>Xem tất cả</button></div>
-      <div class="categories" id="homecategories"></div>
-    </section>
-
-    <section class="section">
-      <div class="sectiontop"><h2>TOP PRODUCTS – TRÁI CÂY BÁN CHẠY</h2><button class="textlink" data-best>Xem tất cả</button></div>
-      <div class="products" id="topproducts"></div>
-    </section>
-
-    <section class="section">
-      <div class="sectiontop"><h2>GIAN HÀNG NỔI BẬT</h2><button class="textlink" data-shops>Xem tất cả</button></div>
-      <div class="shopgrid" id="homeshops"></div>
-    </section>
-
-    <section class="section">
-      <div class="sectiontop"><h2>GỢI Ý HÔM NAY</h2><button class="textlink" data-all>Xem tất cả sản phẩm</button></div>
-      <div class="products" id="homeproducts"></div>
-      <div id="homePagination" class="customer-pagination-panel" aria-label="Phân trang gợi ý hôm nay"></div>
-    </section>
-  </div>
-
-  <div id="catalog" class="hide">
-    <h1 id="catTitle">Tất cả sản phẩm</h1>
-    <button id="toggleFilters" class="mobileonly">☰ Bộ lọc</button>
-    <div class="twocol">
-      <aside class="sidebar" id="sidebar">
-        <h3>BỘ LỌC TÌM KIẾM</h3>
-        <div class="filtergroup"><h3>Theo danh mục</h3><div id="filterCategories"></div></div>
-        <div class="filtergroup"><h3>Nơi gửi hàng (Shipped From)</h3><div id="locations"></div><button class="textlink" id="moreLocations">Xem thêm</button></div>
-        <div class="filtergroup"><h3>Nhà bán hàng</h3><div id="filterShops"></div></div>
-        <div class="filtergroup"><h3>Khoảng giá (VNĐ)</h3><div class="tinyinput"><input type="number" id="min" placeholder="TỪ" min="0" class="form-control"><input type="number" id="max" placeholder="ĐẾN" min="0" class="form-control"></div><button id="applyPrice" style="width:100%;margin-top:8px" class="btn btn-success">Áp dụng</button></div>
-        <div class="filtergroup"><h3>Đánh giá</h3><div id="ratings"></div></div>
-        <button id="reset" style="width:100%;margin-top:16px" class="btn btn-success">XÓA TẤT CẢ BỘ LỌC</button>
-      </aside>
-      <div>
-        <div class="toolbar">
-          <div class="sort-actions" aria-label="Sắp xếp sản phẩm">
-            <span>Sắp xếp theo:</span>
-            <button type="button" data-sort="popular" class="active">Phổ biến</button>
-            <button type="button" data-sort="latest" class="btn btn-success">Mới nhất</button>
-            <button type="button" data-sort="sales" class="btn btn-success">Bán chạy</button>
-            <select id="sort" aria-label="Sắp xếp theo giá" class="form-control">
-              <option value="none">Giá</option>
-              <option value="asc">Giá: Thấp đến cao</option>
-              <option value="desc">Giá: Cao đến thấp</option>
-            </select>
-          </div>
-          <span class="countline">Tìm thấy <strong id="count">0</strong> sản phẩm</span>
-        </div>
-        <div id="chips" class="chips"></div>
-        <div id="results" class="products"></div>
-        <div id="pagination" class="customer-pagination-panel" aria-label="Phân trang sản phẩm"></div>
-      </div>
-    </div>
-  </div>
-
-  <div id="shopspage" class="hide">
-    <h1>Danh sách gian hàng</h1>
-    <div id="shoplist" class="shopgrid"></div>
-  </div>
-
-  <div id="shopdetail" class="hide"></div>
-</main>
-<footer th:replace="~{fragments/footer :: footer}"></footer>
-<div id="modal"></div>
-<script type="module" th:src="@{/js/storefront/storefront.js}" src="/js/storefront/storefront.js"></script>
-</body>
+    <head th:replace="~{fragments/customer-shop :: head('Trang chủ')}">
+    </head>
+    <body class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
+        <header th:replace="~{fragments/customer-shop :: header}">
+        </header>
+        <main class="container vfr-page">
+            <div th:replace="~{fragments/customer-shop :: messages}">
+            </div>
+            <div id="home">
+                <!-- Banner trang chủ. -->
+                <section class="bannergrid home-banner">
+                    <div class="hero">
+                        <h1>
+                            Trái cây tươi mỗi ngày
+                        </h1>
+                        <p>
+                            Khám phá các loại trái cây nội địa và nhập khẩu từ nhiều gian hàng trên VietFresh Hub.
+                        </p>
+                        <a class="button" th:href="@{/products}">
+                            Xem tất cả sản phẩm
+                        </a>
+                    </div>
+                    <div class="sidebanners">
+                        <div class="sidebanner">
+                            <h3>
+                                Sản phẩm bán chạy
+                            </h3>
+                            <p>
+                                Khám phá các loại trái cây được mua nhiều.
+                            </p>
+                            <a class="button" th:href="@{/products(sort='sales')}">
+                                Xem ngay
+                            </a>
+                        </div>
+                        <div class="sidebanner">
+                            <h3>
+                                Khám phá gian hàng
+                            </h3>
+                            <p>
+                                Truy cập các shop trái cây để xem sản phẩm riêng.
+                            </p>
+                            <a class="button" th:href="@{/shops}">
+                                Danh sách shop
+                            </a>
+                        </div>
+                    </div>
+                </section>
+                <!-- Danh mục sản phẩm. -->
+                <section class="section">
+                    <div class="sectiontop">
+                        <h2>
+                            DANH MỤC TRÁI CÂY
+                        </h2>
+                        <a class="textlink" th:href="@{/products}">
+                            Xem tất cả
+                        </a>
+                    </div>
+                    <div class="categories" id="homecategories">
+                        <a class="cat" th:each="category : ${categories}"
+                           th:href="@{/products(category=${category.categoryId})}" th:text="${category.name}">
+                        </a>
+                    </div>
+                    <p class="empty-products" th:if="${#lists.isEmpty(categories)}">
+                        Chưa có danh mục trái cây.
+                    </p>
+                </section>
+                <!-- Sản phẩm bán chạy. -->
+                <section class="section">
+                    <div class="sectiontop">
+                        <h2>
+                            TOP PRODUCTS – TRÁI CÂY BÁN CHẠY
+                        </h2>
+                        <a class="textlink" th:href="@{/products(sort='sales')}">
+                            Xem tất cả
+                        </a>
+                    </div>
+                    <div class="products" id="topproducts">
+                        <th:block th:each="product : ${topProducts}">
+                            <a th:replace="~{fragments/storefront-catalog :: productCard(${product})}">
+                            </a>
+                        </th:block>
+                        <p class="empty-products" th:if="${#lists.isEmpty(topProducts)}">
+                            Chưa có sản phẩm đang được bán.
+                        </p>
+                    </div>
+                </section>
+                <!-- Gian hàng đang mở. -->
+                <section class="section">
+                    <div class="sectiontop">
+                        <h2>
+                            GIAN HÀNG NỔI BẬT
+                        </h2>
+                        <a class="textlink" th:href="@{/shops}">
+                            Xem tất cả
+                        </a>
+                    </div>
+                    <div class="shopgrid" id="homeshops">
+                        <th:block th:each="shop,iter : ${shops}" th:if="${iter.index < 4}">
+                            <a th:replace="~{fragments/storefront-catalog :: shopCard(${shop})}">
+                            </a>
+                        </th:block>
+                        <p class="empty-products" th:if="${#lists.isEmpty(shops)}">
+                            Chưa có gian hàng đang mở.
+                        </p>
+                    </div>
+                </section>
+                <!-- Danh sách gợi ý và phân trang. -->
+                <section class="section">
+                    <div class="sectiontop">
+                        <h2>
+                            GỢI Ý HÔM NAY
+                        </h2>
+                        <a class="textlink" th:href="@{/products}">
+                            Xem tất cả sản phẩm
+                        </a>
+                    </div>
+                    <div class="products" id="homeproducts">
+                        <th:block th:each="product : ${rows.content}">
+                            <a th:replace="~{fragments/storefront-catalog :: productCard(${product})}">
+                            </a>
+                        </th:block>
+                        <p class="empty-products" th:if="${rows.empty}">
+                            Chưa có sản phẩm đang được bán.
+                        </p>
+                    </div>
+                    <nav class="customer-pagination-panel" id="homePagination" aria-label="Phân trang gợi ý hôm nay">
+                        <div th:replace="~{fragments/storefront-catalog :: pagination(${rows},@{/home(page=${rows.number},size=${rows.size})},@{/home(page=${rows.number + 2},size=${rows.size})})}">
+                        </div>
+                        <form class="customer-page-size" th:action="@{/home}" method="get">
+                            <th:block th:replace="~{fragments/storefront-catalog :: pageSize(${rows},'homePageSize')}">
+                            </th:block>
+                        </form>
+                    </nav>
+                </section>
+            </div>
+        </main>
+        <footer th:replace="~{fragments/footer :: footer}"></footer>
+    </body>
 </html>

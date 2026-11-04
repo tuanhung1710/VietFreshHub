@@ -1,12 +1,22 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/customer-shop :: head('Sản phẩm không còn được bán')}"></head>
-<body class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
-<header th:replace="~{fragments/customer-shop :: header}"></header>
-<main class="container vfr-page"><section class="notice">
-    <h1>Sản phẩm không còn được bán</h1><p class="muted" th:text="${message}"></p>
-    <a th:href="@{/home}">Khám phá sản phẩm khác</a>
-</section></main>
-<footer th:replace="~{fragments/customer-shop :: footer}"></footer>
-</body>
+    <head th:replace="~{fragments/customer-shop :: head(${errorTitle != null ? errorTitle : 'Sản phẩm không còn được bán'})}">
+    </head>
+    <body class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
+        <header th:replace="~{fragments/customer-shop :: header}">
+        </header>
+        <main class="container vfr-page">
+            <section class="notice">
+                <h1 th:text="${errorTitle != null ? errorTitle : 'Sản phẩm không còn được bán'}">
+                    Sản phẩm không còn được bán
+                </h1>
+                <p class="muted" th:text="${message}">
+                </p>
+                <a th:href="@{/products}">
+                    Khám phá sản phẩm khác
+                </a>
+            </section>
+        </main>
+        <footer th:replace="~{fragments/footer :: footer}"></footer>
+    </body>
 </html>

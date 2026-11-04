@@ -23,6 +23,6 @@
         <a th:if="${shopsPage.hasNext()}" th:href="@{/customer/favorite-shops(page=${shopsPage.number + 2})}">Trang tiếp</a>
     </nav>
 </main>
-<footer th:replace="~{fragments/customer-shop :: footer}"></footer>
+<footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>
 </html>

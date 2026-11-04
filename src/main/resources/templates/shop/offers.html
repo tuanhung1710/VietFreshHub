@@ -23,6 +23,6 @@
         <a th:if="${offersPage.hasNext()}" th:href="@{/shops/{id}/offers(id=${shop.shopId},page=${offersPage.number + 2})}">Trang tiếp →</a>
     </nav>
 </main>
-<footer th:replace="~{fragments/customer-shop :: footer}"></footer>
+<footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>
 </html>

@@ -69,7 +69,7 @@ public class SecurityConfig {
                             authentication.get().getAuthorities().stream()
                                     .noneMatch(authority -> "ROLE_DELIVERY_STAFF".equals(authority.getAuthority()))));
             authorize.requestMatchers(org.springframework.http.HttpMethod.GET,
-                    "/product-detail", "/product-detail/**", "/shops", "/shops/**",
+                    "/products", "/product-detail", "/product-detail/**", "/shops", "/shops/**",
                     "/storefront/api/options", "/storefront/api/home", "/storefront/api/products", "/storefront/api/products/**", "/storefront/api/cart").permitAll();
             authorize.requestMatchers(org.springframework.http.HttpMethod.POST, "/storefront/api/cart").hasRole("CUSTOMER");
             authorize.requestMatchers(
