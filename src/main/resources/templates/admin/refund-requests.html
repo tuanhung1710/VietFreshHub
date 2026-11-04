@@ -1,80 +1,50 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Yêu cầu hoàn tiền · VietFresh Hub</title>
-    <link rel="stylesheet" th:href="@{/css/admin-accounts.css}">
-    <link th:replace="~{fragments/pagination :: styles}">
-</head>
-<body>
-<div class="app-shell">
-    <header class="topbar">
-        <a class="brand" th:href="@{/admin/accounts}">
-            <span class="brand-mark" aria-hidden="true">V</span>
-            <span><strong>VietFresh Hub</strong><small>TRUNG TÂM QUẢN TRỊ</small></span>
-        </a>
-        <span class="admin-label">QUẢN TRỊ VIÊN</span>
+<head th:replace="~{fragments/admin-workspace :: head('Yêu cầu hoàn tiền')}"></head>
+<body class="vfo-app vfa-app">
+<th:block th:replace="~{fragments/admin-workspace :: navigation('refunds')}"></th:block>
+<div id="workspace-content" class="vfo-workspace" tabindex="-1">
+<main class="vfo-main vfa-refund-page">
+    <header class="vfo-page-heading">
+        <div><h1>Yêu cầu hoàn tiền</h1></div>
     </header>
-    <main class="page-content">
-        <nav class="breadcrumbs" aria-label="Điều hướng">
-            <a th:href="@{/admin/accounts}">Quản lý tài khoản</a>
-            <a th:href="@{/admin/deliveries}">Giám sát giao hàng</a>
-            <a th:href="@{/admin/products}">Hậu kiểm sản phẩm</a>
-        </nav>
-        <section class="page-heading">
-            <div>
-                <h1>Yêu cầu hoàn tiền</h1>
-            </div>
-        </section>
-        <section class="accounts-panel">
-            <form method="get" th:action="@{/admin/refund-requests}" class="filter-bar">
-                <input type="hidden" name="size" th:value="${refundsPage.size}">
-                <label for="from">Từ ngày/giờ</label>
-                <input type="datetime-local" id="from" name="from" step="1" th:value="${period.start}"
-                       th:max="${period.latestSelectableTime.toString()}" min="0001-01-02T00:00:00" required>
-                <label for="to">Đến ngày/giờ</label>
-                <input type="datetime-local" id="to" name="to" step="1" th:value="${period.end}"
-                       th:max="${period.latestSelectableTime.toString()}" min="0001-01-02T00:00:00" required>
-                <button type="submit">Xem danh sách</button>
-            </form>
-            <div th:if="${period.start != null}" class="panel-heading">
-                <div>
-                    <p th:unless="${period.completed}" role="status">Chưa đến mốc kết thúc đã chọn, danh sách có thể tiếp tục thay đổi. Có thể xuất Excel khi mốc kết thúc đã qua.</p>
-                    <p>Số yêu cầu: <strong th:text="${#lists.size(period.requests)}"></strong></p>
-                    <p>Tổng số tiền:
-                        <strong th:text="${#numbers.formatInteger(period.totalAmount,1,'POINT')} + 'đ'"></strong>
-                    </p>
-                </div>
-                <a th:if="${period.completed}" th:href="@{/admin/refund-requests/export(from=${period.start.toString()},to=${period.end.toString()})}">Xuất Excel</a>
-            </div>
-            <p th:if="${period.start == null}" class="empty-state">Vui lòng chọn khoảng thời gian để xem danh sách yêu cầu hoàn tiền.</p>
-            <p th:if="${period.start != null and #lists.isEmpty(period.requests)}" class="empty-state">Không có yêu cầu hoàn tiền trong khoảng thời gian đã chọn.</p>
-            <div th:unless="${#lists.isEmpty(period.requests)}" class="table-wrap">
-                <table>
-                    <thead>
-                    <tr>
-                        <th scope="col">Mã yêu cầu</th>
-                        <th scope="col">Mã đơn hàng</th>
-                        <th scope="col">Ngân hàng</th>
-                        <th scope="col">Số tài khoản</th>
-                        <th scope="col">Số tiền hoàn</th>
-                        <th scope="col">Thời gian gửi yêu cầu</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="request : ${refundsPage.content}">
-                        <td th:text="${request.refundRequestId}"></td>
-                        <td th:text="${request.orderCode}"></td>
-                        <td th:text="${request.bankName}"></td>
-                        <td th:text="${request.maskedAccountNumber}"></td>
-                        <td th:text="${#numbers.formatInteger(request.refundAmount,1,'POINT')} + 'đ'"></td>
-                        <td th:text="${#temporals.format(request.submittedAt,'dd/MM/yyyy HH:mm:ss')}"></td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
+    <section class="card vfa-filter-card" aria-labelledby="refund-filter-heading">
+        <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-filter"/></svg></span><h2 id="refund-filter-heading">Khoảng thời gian gửi yêu cầu</h2></div>
+        <form method="get" th:action="@{/admin/refund-requests}" class="vfa-refund-filter">
+            <input type="hidden" name="size" th:value="${refundsPage.size}">
+            <div class="vfa-filter-field"><label for="from">Từ ngày/giờ</label><input class="form-control" type="datetime-local" id="from" name="from" step="1" th:value="${period.start}" th:max="${period.latestSelectableTime.toString()}" min="0001-01-02T00:00:00" required></div>
+            <div class="vfa-filter-field"><label for="to">Đến ngày/giờ</label><input class="form-control" type="datetime-local" id="to" name="to" step="1" th:value="${period.end}" th:max="${period.latestSelectableTime.toString()}" min="0001-01-02T00:00:00" required></div>
+            <button class="btn vfo-btn-primary" type="submit"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-search"/></svg>Xem danh sách</button>
+        </form>
+    </section>
+    <th:block th:if="${period.start != null}">
+        <p class="vfm-notice vfm-notice-warning" th:unless="${period.completed}" role="status">Chưa đến mốc kết thúc đã chọn, danh sách có thể tiếp tục thay đổi. Có thể xuất Excel khi mốc kết thúc đã qua.</p>
+        <div class="vfa-refund-summary">
+            <article class="card vfa-summary-card"><span class="vfa-summary-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-order"/></svg></span><div><span>Số yêu cầu</span><strong th:text="${#lists.size(period.requests)}"></strong></div></article>
+            <article class="card vfa-summary-card"><span class="vfa-summary-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-bank"/></svg></span><div><span>Tổng số tiền</span><strong th:text="${#numbers.formatInteger(period.totalAmount,1,'POINT')} + 'đ'"></strong></div></article>
+        </div>
+    </th:block>
+    <section class="card vfo-list-card" aria-labelledby="refund-list-heading">
+        <div class="vfo-list-heading">
+            <div><span class="vfo-section-marker" aria-hidden="true"></span><h2 id="refund-list-heading">Danh sách yêu cầu hoàn tiền</h2></div>
+            <a class="btn vfo-btn-secondary vfa-export-button" th:if="${period.start != null and period.completed}" th:href="@{/admin/refund-requests/export(from=${period.start.toString()},to=${period.end.toString()})}"><span aria-hidden="true">↓</span> Xuất Excel</a>
+        </div>
+        <div class="vfo-empty-state" th:if="${period.start == null}"><span class="vfo-empty-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-history"/></svg></span><h3>Chọn khoảng thời gian</h3><p>Vui lòng chọn khoảng thời gian để xem danh sách yêu cầu hoàn tiền.</p></div>
+        <div class="vfo-empty-state" th:if="${period.start != null and #lists.isEmpty(period.requests)}"><span class="vfo-empty-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-order"/></svg></span><h3>Chưa có yêu cầu phù hợp</h3><p>Không có yêu cầu hoàn tiền trong khoảng thời gian đã chọn.</p></div>
+        <div class="table-responsive" th:unless="${#lists.isEmpty(period.requests)}">
+            <table class="table table-hover align-middle mb-0 vfa-refund-table">
+                <caption class="visually-hidden">Danh sách yêu cầu hoàn tiền</caption>
+                <thead><tr><th scope="col">Mã yêu cầu</th><th scope="col">Mã đơn hàng</th><th scope="col">Ngân hàng</th><th scope="col">Số tài khoản</th><th scope="col" class="text-end">Số tiền hoàn</th><th scope="col">Thời gian gửi yêu cầu</th></tr></thead>
+                <tbody><tr th:each="request : ${refundsPage.content}">
+                    <td class="vfa-request-code" th:text="${request.refundRequestId}"></td>
+                    <td class="vfo-order-code" th:text="${request.orderCode}"></td>
+                    <td th:text="${request.bankName}"></td>
+                    <td class="vfa-bank-account" th:text="${request.maskedAccountNumber}"></td>
+                    <td class="vfo-money text-end" th:text="${#numbers.formatInteger(request.refundAmount,1,'POINT')} + 'đ'"></td>
+                    <td class="vfo-date-cell" th:text="${#temporals.format(request.submittedAt,'dd/MM/yyyy HH:mm:ss')}"></td>
+                </tr></tbody>
+            </table>
+        </div>
         <th:block th:if="${period.start != null}">
             <div th:replace="~{fragments/pagination :: panel(${refundsPage},
                 @{/admin/refund-requests(page=${refundsPage.number},size=${refundsPage.size},from=${period.start.toString()},to=${period.end.toString()})},
@@ -82,7 +52,9 @@
                 @{/admin/refund-requests}, ${ {'from': period.start.toString(), 'to': period.end.toString()} },
                 'Phân trang yêu cầu hoàn tiền', 'yêu cầu', 'Yêu cầu mỗi trang')}"></div>
         </th:block>
-    </main>
+    </section>
+</main>
+<footer th:replace="~{fragments/admin-workspace :: footer}"></footer>
 </div>
 </body>
 </html>

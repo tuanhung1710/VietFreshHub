@@ -1,21 +1,27 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:fragment="head(title)"><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
 <title th:text="${title} + ' | VietFresh Hub'"></title><link rel="stylesheet" th:href="@{/css/customer-shop.css}">
 <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}"><meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
-<th:block th:replace="~{fragments/account-menu :: assets}"></th:block>
-<script type="module" th:src="@{/js/storefront/storefront.js}"></script></head>
+
+<script type="module" th:src="@{/js/storefront/storefront.js}"></script>    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+</head>
 <body>
-<header th:fragment="header">
+<header th:fragment="header" class="vfc-header">
   <div class="container">
-    <div class="utility">
-      <span>VietFresh Hub · Sàn trái cây đa nhà bán hàng</span>
-      <th:block th:fragment="accountLinks">
-      <th:block th:replace="~{fragments/account-menu :: menu}"></th:block>
-      </th:block>
-    </div>
-    <div class="headmain">
+    <div class="vfc-header-main">
       <button class="brand" data-home>VietFresh Hub</button>
+      <div class="vfo-topbar-actions vfc-header-actions">
+        <th:block th:fragment="accountLinks">
+        <th:block th:replace="~{fragments/account-menu :: menu}"></th:block>
+        </th:block>
+      </div>
+    </div>
+    <div class="headmain vfc-header-tools">
       <div class="search"><input id="search" placeholder="Tìm trái cây trên toàn sàn..." aria-label="Tìm sản phẩm"><button id="searchGo">TÌM</button></div>
       <a id="cart" th:href="@{/cart}" style="border:1px solid #888;padding:7px 12px;text-decoration:none;white-space:nowrap">Giỏ hàng (<span id="cartCount" aria-live="polite">0</span>)</a>
     </div>
@@ -23,14 +29,9 @@
   </div>
 </header>
 <div th:fragment="messages" aria-live="polite"><p th:if="${successMessage}" class="notice" th:text="${successMessage}"></p><p th:if="${errorMessage}" class="notice" th:text="${errorMessage}"></p></div>
-<section th:fragment="shopHeader(shop,active)"><div class="bread"><a th:href="@{/home}">Trang chủ</a> / <a th:href="@{/shops}">Gian hàng</a> / <span th:text="${shop.shopName}"></span></div><h1 th:text="${shop.shopName}"></h1></section>
-<footer th:fragment="footer" class="site-footer">
-  <div class="container footer-inner">
-    <div class="footer-column"><h3>VietFresh Hub</h3><p>Sàn mua sắm trái cây từ nhiều nhà bán hàng. Khám phá trái cây nội địa, nhập khẩu và các loại trái cây theo mùa.</p><p><strong>Chăm sóc khách hàng:</strong><br>support@vietfreshhub.example</p></div>
-    <div class="footer-column" id="footerCategories"><h3>Danh mục trái cây</h3><button data-cat="Trái cây nhập khẩu">Trái cây nhập khẩu</button><button data-cat="Trái cây nội địa">Trái cây nội địa</button><button data-cat="Trái cây nhiệt đới">Trái cây nhiệt đới</button><button data-cat="Trái cây theo mùa">Trái cây theo mùa</button><button data-all>Xem tất cả</button></div>
-    <div class="footer-column"><h3>Hỗ trợ khách hàng</h3><button data-footer-info="Hướng dẫn mua hàng">Hướng dẫn mua hàng</button><button data-footer-info="Theo dõi đơn hàng">Theo dõi đơn hàng</button><button data-footer-info="Đổi trả và hoàn tiền">Đổi trả và hoàn tiền</button><button data-footer-info="Câu hỏi thường gặp">Câu hỏi thường gặp</button></div>
-    <div class="footer-column"><h3>Thông tin & chính sách</h3><button data-footer-info="Giới thiệu VietFresh Hub">Giới thiệu VietFresh Hub</button><button data-shops>Danh sách gian hàng</button><button data-footer-info="Chính sách bảo mật">Chính sách bảo mật</button><button data-footer-info="Điều khoản sử dụng">Điều khoản sử dụng</button></div>
-  </div>
-  <div class="container footer-bottom"><span>© 2026 VietFresh Hub. All rights reserved.</span><span>Giao diện minh họa · Dữ liệu demo, không phải thông tin kinh doanh thực tế.</span></div>
-<div id="notice" class="notice hide"></div><div id="modal"></div></footer>
+<section th:fragment="shopHeader(shop,active)"><h1 th:text="${shop.shopName}"></h1></section>
+<th:block th:fragment="footer">
+  <th:block th:replace="~{fragments/footer :: footer}"></th:block>
+  <div id="notice" class="notice hide"></div><div id="modal"></div>
+</th:block>
 </body></html>

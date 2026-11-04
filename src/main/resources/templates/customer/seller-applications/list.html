@@ -1,16 +1,12 @@
 <!doctype html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/head :: head('Hồ sơ bán hàng | VietFresh Hub')}"></head>
-<body class="min-h-screen bg-slate-100 text-slate-900">
-<div th:replace="~{fragments/header :: header}"></div><div class="pt-24"></div><main class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+<head th:replace="~{fragments/interface-layout :: head('Hồ sơ bán hàng | VietFresh Hub')}"></head>
+<body class="min-h-screen bg-slate-100 text-slate-900 vfo-app vfr-app vfr-utility vfc-app vfr-customer" data-vfr-section="account">
+<th:block th:replace="~{fragments/interface-layout :: navigation('customer','account')}"></th:block>
+
+<div class="pt-24"></div><main class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 vfr-page" id="customer-content" tabindex="-1">
     <header class="mb-6">
-        <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-            VietFresh Hub
-        </p>
         <h1 class="mt-2 text-3xl font-bold">Hồ sơ đăng ký bán hàng của tôi</h1>
-        <p class="mt-2 text-slate-600">
-            Theo dõi trạng thái xử lý và xem phản hồi từ admin.
-        </p>
     </header>
     <div th:if="${errorMessage}"
          class="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
@@ -28,7 +24,7 @@
     <div th:unless="${#lists.isEmpty(applications)}"
          class="overflow-hidden rounded-2xl border bg-white shadow-sm">
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
+            <table class="w-full text-left text-sm table align-middle">
                 <thead class="bg-slate-50 text-slate-600">
                 <tr>
                     <th class="px-5 py-4 font-semibold">Cơ sở kinh doanh</th>
@@ -79,5 +75,6 @@
         </div>
     </div>
 </main>
-<div th:replace="~{fragments/footer :: footer}"></div></body>
+<footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</body>
 </html>

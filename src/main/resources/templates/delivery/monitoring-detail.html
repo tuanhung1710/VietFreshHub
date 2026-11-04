@@ -1,93 +1,14 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Chi tiết giám sát giao hàng | VietFresh Hub</title>
-</head>
-<body>
-<span th:replace="~{fragments/notifications :: bell}"></span>
-<main th:with="delivery=${deliveryDetail.summary}">
-    <a th:href="@{${basePath}}">Giám sát giao hàng</a>
-    <h1>Chi tiết giám sát giao hàng</h1>
-    <p th:if="${basePath == '/admin/deliveries'}">Mã đơn: <span th:text="${delivery.orderCode}"></span></p>
-    <p th:if="${successMessage != null}" th:text="${successMessage}" role="status"></p>
-    <p th:if="${deliveryDetail.legacyRedelivery}">Hồ sơ giao lại cũ chỉ được xem và cần đối soát thủ công. Chức năng giao lại đã ngừng.</p>
-
-    <th:block th:if="${basePath == '/admin/deliveries'}">
-        <section aria-labelledby="shop-heading">
-            <h2 id="shop-heading">THÔNG TIN CỬA HÀNG</h2>
-            <p>Tên cửa hàng: <span th:text="${delivery.shopName ?: '—'}"></span></p>
-            <p>Số điện thoại liên hệ: <span th:text="${adminDetail.shopPhone ?: '—'}"></span></p>
-            <p>Địa chỉ: <span th:text="${adminDetail.shopAddress ?: '—'}"></span></p>
-        </section>
-        <section aria-labelledby="recipient-heading">
-            <h2 id="recipient-heading">THÔNG TIN NHẬN HÀNG</h2>
-            <p>Người nhận: <span th:text="${adminDetail.recipientName ?: '—'}"></span></p>
-            <p>Số điện thoại liên hệ: <span th:text="${adminDetail.recipientPhone ?: '—'}"></span></p>
-            <p>Địa chỉ: <span th:text="${adminDetail.recipientAddress ?: '—'}"></span></p>
-        </section>
-    </th:block>
-
-    <section th:unless="${basePath == '/admin/deliveries'}" aria-labelledby="delivery-heading">
-        <h2 id="delivery-heading">Thông tin đơn hàng</h2>
-        <dl>
-            <dt>Mã đơn hàng</dt>
-            <dd th:text="${delivery.orderCode}"></dd>
-            <dt>Cửa hàng</dt>
-            <dd>
-                <span th:text="${delivery.shopName == null ? 'Cửa hàng' : delivery.shopName}"></span>
-            </dd>
-        </dl>
-        <form method="post" th:if="${basePath == '/seller/deliveries' and delivery.returnPending}"
-              th:action="@{/seller/deliveries/{deliveryId}/confirm-return(deliveryId=${delivery.deliveryId})}">
-            <p>Xác nhận hoàn hàng:</p>
-            <button type="submit">XÁC NHẬN ĐÃ NHẬN LẠI HÀNG</button>
-        </form>
-    </section>
-
-    <section th:if="${basePath == '/admin/deliveries'}" aria-labelledby="order-history-heading">
-        <h2 id="order-history-heading">Lịch sử xử lý đơn hàng</h2>
-        <table>
-            <thead>
-            <tr>
-                <th scope="col">Trạng thái</th>
-                <th scope="col">Thời gian</th>
-                <th scope="col">Ghi chú</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="event : ${adminDetail.orderHistory}">
-                <td th:text="${event.statusLabel}"></td>
-                <td th:text="${event.createdAt == null ? '—' : #temporals.format(event.createdAt, 'dd-MM-yyyy HH:mm')}"></td>
-                <td th:text="${event.note}"></td>
-            </tr>
-            </tbody>
-        </table>
-    </section>
-
-    <section aria-labelledby="history-heading">
-        <h2 id="history-heading">Lịch sử trạng thái giao hàng</h2>
-        <p th:if="${#lists.isEmpty(deliveryDetail.history)}">Chưa có lịch sử trạng thái giao hàng được ghi nhận.</p>
-        <table th:unless="${#lists.isEmpty(deliveryDetail.history)}">
-            <thead>
-            <tr>
-                <th scope="col">Trạng thái</th>
-                <th scope="col">Thời gian</th>
-                <th scope="col">Người thực hiện</th>
-                <th scope="col">Ghi chú</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="event : ${deliveryDetail.history}">
-                <td th:text="${event.statusLabel}"></td>
-                <td th:text="${event.createdAt == null ? '—' : #temporals.format(event.createdAt, 'dd-MM-yyyy HH:mm')}"></td>
-                <td th:text="${event.performerName}"></td>
-                <td th:text="${event.note}"></td>
-            </tr>
-            </tbody>
-        </table>
-    </section>
-</main>
+<head th:replace="~{fragments/admin-workspace :: head('Chi tiết giám sát giao hàng')}"></head>
+<body class="vfo-app" th:classappend="${basePath == '/admin/deliveries' ? 'vfa-app' : ''}">
+<th:block th:if="${basePath == '/seller/deliveries'}">
+    <th:block th:replace="~{fragments/seller-orders :: navigation('deliveries')}"></th:block>
+    <div th:replace="~{store_manager/delivery-pages :: detail}"></div>
+</th:block>
+<th:block th:unless="${basePath == '/seller/deliveries'}">
+    <th:block th:replace="~{fragments/admin-workspace :: navigation('deliveries')}"></th:block>
+    <div th:replace="~{admin/delivery-pages :: detail}"></div>
+</th:block>
 </body>
 </html>

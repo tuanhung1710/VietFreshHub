@@ -30,6 +30,7 @@ public class LoginRedirectService implements AuthenticationSuccessHandler {
 
         var saved = requestCache.getRequest(request, response);
         requestCache.removeRequest(request, response);
+        if (hasRole(authentication, "ROLE_ADMIN")) return home(authentication);
         if (target == null && saved != null && "GET".equals(saved.getMethod())) {
             URI savedUri = URI.create(saved.getRedirectUrl());
             String path = savedUri.getRawPath();
@@ -42,7 +43,7 @@ public class LoginRedirectService implements AuthenticationSuccessHandler {
     }
 
     public String home(Authentication authentication) {
-        if (hasRole(authentication, "ROLE_ADMIN")) return "/admin";
+        if (hasRole(authentication, "ROLE_ADMIN")) return "/admin/dashboard";
         if (hasRole(authentication, "ROLE_STORE_MANAGER")) return "/seller";
         if (hasRole(authentication, "ROLE_DELIVERY_STAFF")) return "/delivery";
         if (hasRole(authentication, "ROLE_CUSTOMER")) return "/home";

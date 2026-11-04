@@ -1,15 +1,14 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{store_manager/profile-layout :: head('Chỉnh sửa hồ sơ | VietFresh Hub')}"></head>
-<body>
-<header th:replace="~{store_manager/profile-layout :: header}"></header>
-<main class="container">
-    <nav class="breadcrumb" aria-label="Đường dẫn">
-        <a th:href="@{/seller}">Cửa hàng của tôi</a> &nbsp;/&nbsp;
-        <a th:href="@{/seller/profile}">Hồ sơ cửa hàng</a> &nbsp;/&nbsp; <b>Chỉnh sửa</b>
-    </nav>
+<body class="vfo-app vfr-app vfr-seller" data-vfr-section="profile">
+<th:block th:replace="~{fragments/interface-layout :: navigation('seller','profile')}"></th:block>
+
+
+<div class="vfo-workspace vfr-workspace" id="order-content" tabindex="-1">
+<main class="container vfr-page">
     <div class="page-heading">
-        <div><h1>Chỉnh sửa hồ sơ cửa hàng</h1><p>Cập nhật thông tin liên hệ và hình ảnh cho gian hàng của bạn.</p></div>
+        <div><h1>Chỉnh sửa hồ sơ cửa hàng</h1></div>
         <a class="button" th:href="@{/seller/profile}">Quay lại hồ sơ</a>
     </div>
     <div class="layout">
@@ -24,29 +23,29 @@
                         <p>Nếu đã chọn ảnh mới, vui lòng chọn lại ảnh trước khi lưu.</p>
                     </div>
                     <div class="formgrid">
-                        <div class="field"><label for="shopCode">Mã cửa hàng</label><input id="shopCode" th:value="${shop.shopCode}" readonly></div>
-                        <div class="field"><label for="shopName">Tên cửa hàng *</label><input th:field="*{shopName}" required maxlength="200" th:errorclass="invalid" autocomplete="organization"></div>
+                        <div class="field"><label for="shopCode">Mã cửa hàng</label><input id="shopCode" th:value="${shop.shopCode}" readonly class="form-control"></div>
+                        <div class="field"><label for="shopName">Tên cửa hàng *</label><input th:field="*{shopName}" required maxlength="200" th:errorclass="invalid" autocomplete="organization" class="form-control"></div>
                     </div>
-                    <div class="field"><label for="description">Mô tả cửa hàng</label><textarea th:field="*{description}" maxlength="5000" th:errorclass="invalid" aria-describedby="description-help"></textarea><small id="description-help">Giới thiệu ngắn gọn về sản phẩm, đặc điểm và hoạt động của shop. Tối đa 5000 ký tự.</small></div>
+                    <div class="field"><label for="description">Mô tả cửa hàng</label><textarea th:field="*{description}" maxlength="5000" th:errorclass="invalid" aria-describedby="description-help" class="form-control"></textarea><small id="description-help">Giới thiệu ngắn gọn về sản phẩm, đặc điểm và hoạt động của shop. Tối đa 5000 ký tự.</small></div>
                     <div class="formgrid">
-                        <div class="field"><label for="phone">Số điện thoại</label><input type="tel" inputmode="tel" th:field="*{phone}" maxlength="30" pattern="[\+0-9 \(\)\-]{8,30}" th:errorclass="invalid" autocomplete="tel"></div>
-                        <div class="field"><label for="email">Email</label><input type="email" th:field="*{email}" maxlength="255" th:errorclass="invalid" autocomplete="email"></div>
+                        <div class="field"><label for="phone">Số điện thoại</label><input type="tel" inputmode="tel" th:field="*{phone}" maxlength="30" pattern="[\+0-9 \(\)\-]{8,30}" th:errorclass="invalid" autocomplete="tel" class="form-control"></div>
+                        <div class="field"><label for="email">Email</label><input type="email" th:field="*{email}" maxlength="255" th:errorclass="invalid" autocomplete="email" class="form-control"></div>
                     </div>
                     <div class="field">
                         <label for="logoFile">Logo cửa hàng</label>
-                        <div class="file-row"><input id="logoFile" name="logoFile" type="file" accept="image/png,image/jpeg" data-preview-target="logo-preview" aria-describedby="logo-help"></div>
+                        <div class="file-row"><input id="logoFile" name="logoFile" type="file" accept="image/png,image/jpeg" data-preview-target="logo-preview" aria-describedby="logo-help" class="form-control"></div>
                         <small id="logo-help">Chọn ảnh JPG hoặc PNG, tối đa 1 MB. Ảnh mới sẽ thay thế logo khi lưu hồ sơ.</small>
                         <div class="image-preview avatar"><img id="logo-preview" th:src="${#strings.isEmpty(profileForm.logoUrl) ? null : profileForm.logoUrl}" th:hidden="${#strings.isEmpty(profileForm.logoUrl)}" alt="Xem trước logo" data-image-fallback><span th:hidden="${!#strings.isEmpty(profileForm.logoUrl)}">VF</span></div>
                         <label class="url-label" for="logoUrl">Hoặc đường dẫn logo</label>
-                        <input type="text" inputmode="url" th:field="*{logoUrl}" maxlength="1000" placeholder="https://... hoặc /images/shops/son-logo.svg" th:errorclass="invalid" data-url-preview="logo-preview">
+                        <input type="text" inputmode="url" th:field="*{logoUrl}" maxlength="1000" placeholder="https://... hoặc /images/shops/son-logo.svg" th:errorclass="invalid" data-url-preview="logo-preview" class="form-control">
                     </div>
                     <div class="field">
                         <label for="bannerFile">Ảnh bìa</label>
-                        <div class="file-row"><input id="bannerFile" name="bannerFile" type="file" accept="image/png,image/jpeg" data-preview-target="banner-preview" aria-describedby="banner-help"></div>
+                        <div class="file-row"><input id="bannerFile" name="bannerFile" type="file" accept="image/png,image/jpeg" data-preview-target="banner-preview" aria-describedby="banner-help" class="form-control"></div>
                         <small id="banner-help">Chọn ảnh JPG hoặc PNG, tối đa 1 MB. Nên dùng ảnh ngang để hiển thị đầy đủ gian hàng.</small>
                         <div class="image-preview cover"><img id="banner-preview" th:src="${#strings.isEmpty(profileForm.bannerUrl) ? null : profileForm.bannerUrl}" th:hidden="${#strings.isEmpty(profileForm.bannerUrl)}" alt="Xem trước ảnh bìa" data-image-fallback><span class="muted" th:hidden="${!#strings.isEmpty(profileForm.bannerUrl)}">Chưa cập nhật ảnh bìa</span></div>
                         <label class="url-label" for="bannerUrl">Hoặc đường dẫn ảnh bìa</label>
-                        <input type="text" inputmode="url" th:field="*{bannerUrl}" maxlength="1000" placeholder="https://... hoặc /images/shops/son-banner.svg" th:errorclass="invalid" data-url-preview="banner-preview">
+                        <input type="text" inputmode="url" th:field="*{bannerUrl}" maxlength="1000" placeholder="https://... hoặc /images/shops/son-banner.svg" th:errorclass="invalid" data-url-preview="banner-preview" class="form-control">
                     </div>
                     <p class="help">Để trống đường dẫn và không chọn ảnh mới nếu muốn gỡ ảnh hiện tại.</p>
                     <p class="inline-message" data-image-message role="alert" hidden></p>
@@ -61,6 +60,8 @@
         </aside>
     </div>
 </main>
-<footer th:replace="~{store_manager/profile-layout :: footer}"></footer>
+<footer th:replace="~{fragments/seller-orders :: footer}"></footer>
+</div>
+
 </body>
 </html>

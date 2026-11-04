@@ -3,25 +3,30 @@
 
     <!-- Tài nguyên trang -->
     <head th:fragment="head(title, feature)">
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+        
+        
         <title th:text="${title + ' · VietFresh Hub'}">
             VietFresh Hub
         </title>
         <meta name="csrf-token" th:content="${_csrf.token}">
         <meta name="csrf-header" th:content="${_csrf.headerName}">
         <meta name="image-upload-url" th:content="@{/seller/products/images}">
-        <link rel="stylesheet" th:href="@{/css/vendor/bootstrap/bootstrap.min.css}">
+        
         <link rel="stylesheet" th:href="@{/css/product/module.css}">
         <link rel="stylesheet" th:href="@{'/css/'+${feature}+'/'+${feature}+'.css'}">
         <link th:if="${feature == 'product'}" rel="stylesheet" th:href="@{/css/product/catalog.css}">
-        <script defer th:src="@{/js/vendor/bootstrap/bootstrap.bundle.min.js}"></script>
+        
         <script defer th:src="@{/js/product/module.js}"></script>
-    </head>
+        <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+</head>
 
     <body>
         <div th:fragment="nav(active)">
-            <svg class="d-none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<svg class="d-none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <symbol id="vf-leaf" viewBox="0 0 24 24">
                     <path d="M20 3c-9-1-17 4-15 11 2 6 13 5 15-11Z M4 21l9-10"/>
                 </symbol>
@@ -96,138 +101,8 @@
                     <path d="M4 6h16 M4 12h16 M4 18h16"/>
                 </symbol>
             </svg>
-
-            <!-- Menu điều hướng -->
-            <aside
-                class="offcanvas-lg offcanvas-start vf-sidebar"
-                tabindex="-1"
-                id="vfSidebar"
-                aria-labelledby="vfSidebarTitle"
-            >
-                <div class="offcanvas-header vf-sidebar-brand">
-                    <a class="brand" th:href="@{/seller}" id="vfSidebarTitle">
-                        <svg class="vf-icon vf-logo">
-                            <use href="#vf-leaf"/>
-                        </svg>
-                        VietFresh Hub
-                    </a>
-                    <button
-                        type="button"
-                        class="btn-close d-lg-none"
-                        data-bs-dismiss="offcanvas"
-                        data-bs-target="#vfSidebar"
-                        aria-label="Đóng menu"
-                    >
-                    </button>
-                </div>
-                <div class="offcanvas-body p-0">
-                    <div class="vf-portal-label">
-                        Kênh người bán
-                    </div>
-
-                    <nav class="nav flex-column vf-side-nav" aria-label="Quản lý cửa hàng">
-                        <a class="nav-link" th:href="@{/seller}">
-                            <svg class="vf-icon">
-                                <use href="#vf-shop"/>
-                            </svg>
-                            Cửa hàng của tôi
-                        </a>
-                        <a
-                            class="nav-link"
-                            th:href="@{/seller/products}"
-                            th:classappend="${active=='product'?'active':''}"
-                            th:attr="aria-current=${active=='product'?'page':null}"
-                        >
-                            <svg class="vf-icon">
-                                <use href="#vf-product"/>
-                            </svg>
-                            Sản phẩm
-                        </a>
-                        <a
-                            class="nav-link"
-                            th:href="@{/seller/inventory}"
-                            th:classappend="${active=='inventory'?'active':''}"
-                            th:attr="aria-current=${active=='inventory'?'page':null}"
-                        >
-                            <svg class="vf-icon">
-                                <use href="#vf-box"/>
-                            </svg>
-                            Kho hàng
-                        </a>
-                        <a class="nav-link" th:href="@{/seller/orders}">
-                            <svg class="vf-icon">
-                                <use href="#vf-order"/>
-                            </svg>
-                            Đơn hàng
-                        </a>
-                    </nav>
-
-                    <div class="vf-sidebar-account">
-                        <div class="d-flex gap-2 align-items-center mb-3">
-                            <span class="vf-avatar">
-                                <svg class="vf-icon">
-                                    <use href="#vf-user"/>
-                                </svg>
-                            </span>
-                            <div class="min-w-0">
-                                <strong class="small d-block">
-                                    Tài khoản người bán
-                                </strong>
-                                <span
-                                    class="vf-account-name"
-                                    th:text="${#authentication != null ? #authentication.name : 'Kênh người bán'}"
-                                >
-                                    Kênh người bán
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- Biểu mẫu -->
-                        <form th:action="@{/logout}" method="post">
-                            <button class="btn btn-sm btn-outline-secondary w-100" type="submit">
-                                Đăng xuất
-                            </button>
-                        </form>
-
-                    </div>
-                </div>
-            </aside>
-
-            <header class="vf-topbar d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center gap-3">
-                    <button
-                        class="btn btn-sm btn-light d-lg-none"
-                        type="button"
-                        data-bs-toggle="offcanvas"
-                        data-bs-target="#vfSidebar"
-                        aria-controls="vfSidebar"
-                        aria-label="Mở menu"
-                    >
-                        <svg class="vf-icon">
-                            <use href="#vf-menu"/>
-                        </svg>
-                    </button>
-                    <span class="text-secondary d-none d-sm-inline">
-                        Kênh người bán
-                        <span class="mx-2 text-body-tertiary">
-                            /
-                        </span>
-                    </span>
-                    <strong th:text="${active=='product'?'Sản phẩm':'Kho hàng'}">
-                        Sản phẩm
-                    </strong>
-                </div>
-                <a class="btn btn-sm btn-outline-secondary" th:href="@{/seller}">
-                    <svg class="vf-icon me-1">
-                        <use href="#vf-shop"/>
-                    </svg>
-                    <span class="d-none d-sm-inline">
-                        Cửa hàng của tôi
-                    </span>
-                </a>
-            </header>
-
-        </div>
+<th:block th:replace="~{fragments/interface-navigation :: seller(${active})}"></th:block>
+</div>
         <!-- Trình bày thời gian trong nhật ký hoạt động. -->
         <time th:fragment="historyTime(timestamp)" class="vf-history-time-content"
               th:datetime="${timestamp.plusHours(7)} + '+07:00'">

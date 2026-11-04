@@ -1,18 +1,35 @@
 package VietFreshHub.checkout.service;
 
+import VietFreshHub.checkout.dto.ShippingFeeSettingsResponse;
+import VietFreshHub.checkout.repository.ShippingFeeSettingsRepository;
 import VietFreshHub.exception.CheckoutException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class ShippingFeeService {
-    private static final BigDecimal BASE_FEE = new BigDecimal("15000");
-    private static final BigDecimal INCLUDED_DISTANCE_METERS = new BigDecimal("2000");
-    private static final BigDecimal ADDITIONAL_FEE_PER_METER = new BigDecimal("5");
+
+    private static final BigDecimal METERS_PER_KM = new BigDecimal("1000");
     private static final BigDecimal ROUNDING_UNIT = new BigDecimal("1000");
 
+    private final ShippingFeeSettingsRepository shippingFeeSettingsRepository;
+
+    @Transactional(readOnly = true)
+    public ShippingFeeSettingsResponse getSettings() {
+        return shippingFeeSettingsRepository.findById(1L)
+                .map(ShippingFeeSettingsResponse::from)
+                .orElseThrow(() -> new CheckoutException("Chưa cấu hình phí vận chuyển. Vui lòng liên hệ quản trị viên."));
+    }
+
     public BigDecimal calculateShippingFee(BigDecimal distanceMeters) {
+        return calculateShippingFee(distanceMeters, getSettings());
+    }
+
+    public BigDecimal calculateShippingFee(BigDecimal distanceMeters, ShippingFeeSettingsResponse settings) {
         if (distanceMeters == null) {
             throw new CheckoutException("Khoảng cách giao hàng không được để trống.");
         }
@@ -20,8 +37,9 @@ public class ShippingFeeService {
             throw new CheckoutException("Khoảng cách giao hàng không được âm.");
         }
 
-        BigDecimal additionalMeters = distanceMeters.subtract(INCLUDED_DISTANCE_METERS).max(BigDecimal.ZERO);
-        BigDecimal rawFee = BASE_FEE.add(additionalMeters.multiply(ADDITIONAL_FEE_PER_METER));
+        BigDecimal additionalKm = distanceMeters.divide(METERS_PER_KM)
+                .subtract(settings.includedDistanceKm()).max(BigDecimal.ZERO);
+        BigDecimal rawFee = settings.baseFee().add(additionalKm.multiply(settings.additionalFeePerKm()));
         BigDecimal finalFee = rawFee.divide(ROUNDING_UNIT, 0, RoundingMode.HALF_UP)
                 .multiply(ROUNDING_UNIT)
                 .setScale(2, RoundingMode.UNNECESSARY);

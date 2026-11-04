@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+    
+    
     <title>Chi tiết hậu kiểm · VietFresh Hub</title>
     <style>
         * { box-sizing: border-box; }
@@ -21,10 +25,14 @@
         button { border: 0; border-radius: 8px; padding: 10px 14px; background: #087443; color: white; cursor: pointer; font: inherit; }
         .danger { background: #a33225; }
     </style>
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body>
-<header><a th:href="@{/admin/products(tab=${tab})}">← Quay lại danh sách hậu kiểm</a></header>
-<main>
+<body class="vfo-app vfr-app vfr-admin" data-vfr-section="products">
+<th:block th:replace="~{fragments/interface-layout :: navigation('admin','products')}"></th:block>
+
+
+<div class="vfo-workspace vfr-workspace" id="workspace-content" tabindex="-1">
+<main class="vfr-page">
     <h1 th:text="${detail.product.name}">Tên sản phẩm</h1>
     <p><strong>Cửa hàng:</strong> <span th:text="${detail.shopName}">Tên cửa hàng</span></p>
     <p><strong>Trạng thái hậu kiểm:</strong>
@@ -50,7 +58,7 @@
     <section class="card">
         <h2>Phân loại và giá</h2>
         <div style="overflow-x:auto">
-            <table>
+            <table class="table align-middle">
                 <thead><tr><th>Tên phân loại</th><th>Ảnh biến thể</th><th>Đơn vị</th><th>Giá</th><th>Trạng thái biến thể</th></tr></thead>
                 <tbody>
                 <tr th:each="variant : ${detail.variants}">
@@ -76,23 +84,25 @@
               method="post" th:action="@{/admin/products/{id}/review(id=${detail.product.productId})}">
             <input type="hidden" name="action" value="APPROVE">
             <input type="hidden" name="tab" th:value="${tab}">
-            <button type="submit">Đã kiểm tra, tiếp tục bán</button>
+            <button type="submit" class="btn btn-success">Đã kiểm tra, tiếp tục bán</button>
         </form>
         <form th:if="${!detail.product.moderationBlocked}" method="post"
               th:action="@{/admin/products/{id}/review(id=${detail.product.productId})}">
             <input type="hidden" name="action" value="BLOCK">
             <input type="hidden" name="tab" th:value="${tab}">
             <label for="reason">Lý do tạm khóa (bắt buộc)</label>
-            <textarea id="reason" name="reason" maxlength="1000" required></textarea>
+            <textarea id="reason" name="reason" maxlength="1000" required class="form-control"></textarea>
             <button class="danger" type="submit">Tạm khóa</button>
         </form>
         <form th:if="${detail.product.moderationBlocked}" method="post"
               th:action="@{/admin/products/{id}/review(id=${detail.product.productId})}">
             <input type="hidden" name="action" value="UNBLOCK">
             <input type="hidden" name="tab" th:value="${tab}">
-            <button type="submit">Mở khóa và duyệt</button>
+            <button type="submit" class="btn btn-success">Mở khóa và duyệt</button>
         </form>
     </section>
 </main>
+<footer th:replace="~{fragments/admin-workspace :: footer}"></footer>
+</div>
 </body>
 </html>

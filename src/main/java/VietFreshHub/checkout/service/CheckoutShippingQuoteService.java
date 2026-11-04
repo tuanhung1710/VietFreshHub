@@ -5,6 +5,7 @@ import VietFreshHub.cart.dto.CartItemDto;
 import VietFreshHub.checkout.dto.CheckoutDraft;
 import VietFreshHub.checkout.dto.CheckoutPreview;
 import VietFreshHub.checkout.dto.ShopShippingQuote;
+import VietFreshHub.checkout.dto.ShippingFeeSettingsResponse;
 import VietFreshHub.checkout.exception.DeliveryRangeException;
 import VietFreshHub.customer.service.CustomerAddressService;
 import VietFreshHub.exception.CheckoutException;
@@ -28,8 +29,6 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 @RequiredArgsConstructor
 public class CheckoutShippingQuoteService {
-    private static final BigDecimal MAX_DELIVERY_DISTANCE_METERS = new BigDecimal("15000");
-
     private final CustomerAddressService customerAddresses;
     private final ShopService shops;
     private final VietMapService vietMap;
@@ -57,11 +56,12 @@ public class CheckoutShippingQuoteService {
                 shopNames.put(item.getShopId(), item.getShopName());
             }
             Map<Long, ShopLocation> locations = requirePickupLocations(shopNames);
+            ShippingFeeSettingsResponse settings = shippingFees.getSettings();
             Map<Long, ShopShippingQuote> quotes = new TreeMap<>();
             BigDecimal total = BigDecimal.ZERO;
             for (Long shopId : locations.keySet()) {
                 ShopLocation location = locations.get(shopId);
-                ShopShippingQuote quote = quoteShop(shopId, shopNames.get(shopId), location, address);
+                ShopShippingQuote quote = quoteShop(shopId, shopNames.get(shopId), location, address, settings);
                 quotes.put(shopId, quote);
                 total = total.add(quote.shippingFee());
             }
@@ -94,7 +94,8 @@ public class CheckoutShippingQuoteService {
         return locations;
     }
 
-    private ShopShippingQuote quoteShop(Long shopId, String shopName, ShopLocation location, Address address) {
+    private ShopShippingQuote quoteShop(Long shopId, String shopName, ShopLocation location, Address address,
+                                       ShippingFeeSettingsResponse settings) {
         BigDecimal distanceMeters;
         try {
             distanceMeters = vietMap.motorcycleRoadDistanceMeters(
@@ -103,8 +104,8 @@ public class CheckoutShippingQuoteService {
             throw new CheckoutException("Chưa thể tính phí vận chuyển cho cửa hàng " + shopName
                     + ". Vui lòng thử lại sau.");
         }
-        validateDeliveryDistance(distanceMeters, shopName);
-        BigDecimal shippingFee = shippingFees.calculateShippingFee(distanceMeters);
+        validateDeliveryDistance(distanceMeters, shopName, settings);
+        BigDecimal shippingFee = shippingFees.calculateShippingFee(distanceMeters, settings);
         return new ShopShippingQuote(shopId, location.getLatitude(), location.getLongitude(),
                 address.getLatitude(), address.getLongitude(), distanceMeters, shippingFee);
     }
@@ -115,6 +116,7 @@ public class CheckoutShippingQuoteService {
                 || shopIds.isEmpty() || !draft.shopQuotes().keySet().equals(shopIds)) {
             throw staleQuote();
         }
+        ShippingFeeSettingsResponse settings = shippingFees.getSettings();
         BigDecimal total = BigDecimal.ZERO;
         for (Long shopId : new TreeSet<>(shopIds)) {
             ShopShippingQuote quote = draft.shopQuotes().get(shopId);
@@ -129,9 +131,9 @@ public class CheckoutShippingQuoteService {
                     || !sameCoordinate(quote.pickupLongitude(), location.getLongitude())) {
                 throw staleQuote();
             }
-            validateDeliveryDistance(quote.distanceMeters(), null);
+            validateDeliveryDistance(quote.distanceMeters(), null, settings);
             if (quote.shippingFee() == null
-                    || shippingFees.calculateShippingFee(quote.distanceMeters()).compareTo(quote.shippingFee()) != 0) {
+                    || shippingFees.calculateShippingFee(quote.distanceMeters(), settings).compareTo(quote.shippingFee()) != 0) {
                 throw staleQuote();
             }
             total = total.add(money(quote.shippingFee()));
@@ -142,14 +144,15 @@ public class CheckoutShippingQuoteService {
         return money(total);
     }
 
-    private void validateDeliveryDistance(BigDecimal distanceMeters, String shopName) {
+    private void validateDeliveryDistance(BigDecimal distanceMeters, String shopName, ShippingFeeSettingsResponse settings) {
         if (distanceMeters == null || distanceMeters.signum() < 0) {
             throw new CheckoutException("Khoảng cách giao hàng không hợp lệ. Vui lòng tính lại phí giao hàng.");
         }
-        if (distanceMeters.compareTo(MAX_DELIVERY_DISTANCE_METERS) > 0) {
+        if (distanceMeters.compareTo(settings.maxDeliveryDistanceKm().multiply(new BigDecimal("1000"))) > 0) {
             String shopLabel = shopName == null ? "" : "Cửa hàng " + shopName + ": ";
             throw new DeliveryRangeException(shopLabel
-                    + "Địa chỉ nhận hàng nằm ngoài phạm vi giao hàng tối đa 15 km của cửa hàng. "
+                    + "Địa chỉ nhận hàng nằm ngoài phạm vi giao hàng tối đa "
+                    + settings.maxDeliveryDistanceKm().stripTrailingZeros().toPlainString() + " km của cửa hàng. "
                     + "Vui lòng thay đổi địa chỉ nhận hàng hoặc chọn sản phẩm từ cửa hàng gần hơn.");
         }
     }

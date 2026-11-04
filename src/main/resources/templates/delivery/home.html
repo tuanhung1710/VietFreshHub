@@ -1,76 +1,63 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đơn giao hàng của tôi | VIETFRESH HUB</title>
-    <style>
-        body {
-            max-width: 1000px;
-            margin: 24px auto;
-            padding: 0 16px;
-            font-family: Arial, sans-serif;
-            line-height: 1.5;
-        }
-
-        .table-container {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            border: 1px solid black;
-            padding: 8px;
-        }
-    </style>
-</head>
-<body>
-<header>
-    <span th:replace="~{fragments/notifications :: bell}"></span>
-    <p>VIETFRESH HUB</p>
-    <form th:action="@{/logout}" method="post">
-        <button type="submit">Đăng xuất</button>
-    </form>
-</header>
-<main id="delivery-dashboard">
-    <h1>ĐƠN GIAO HÀNG CỦA TÔI</h1>
-    <p><a th:href="@{/delivery/available}">Nhận đơn mới</a></p>
-    <p><a th:href="@{/delivery/history}">Lịch sử giao hàng</a></p>
-    <p><a th:href="@{/delivery/cod-summary}">COD giao thành công hôm nay</a></p>
-    <p th:text="|Sức chứa đang giữ: ${activeAssignmentCount} / ${maxActiveAssignments} đơn.|"></p>
-    <p id="delivery-refresh-status" role="status" hidden></p>
-    <p th:if="${#lists.isEmpty(assignedDeliveries)}">Hiện không có đơn giao hàng nào được phân công cho bạn.</p>
-    <div class="table-container" th:unless="${#lists.isEmpty(assignedDeliveries)}">
-        <table>
-            <thead>
-            <tr>
-                <th scope="col">Mã đơn hàng</th>
-                <th scope="col">Trạng thái phân công</th>
-                <th scope="col">Trạng thái giao hàng</th>
-                <th scope="col">Thời gian phân công</th>
-                <th scope="col">Thời gian chấp nhận</th>
-                <th scope="col">Chi tiết</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="delivery : ${assignedDeliveries}">
-                <td th:text="${delivery.orderCode}"></td>
-                <td><strong th:text="${delivery.assignmentStatusLabel}"></strong></td>
-                <td><strong th:text="${delivery.deliveryStatusLabel}"></strong></td>
-                <td th:text="${delivery.assignedAt == null ? 'Chưa ghi nhận' : #temporals.format(delivery.assignedAt, 'dd-MM-yyyy HH:mm:ss')}"></td>
-                <td th:text="${delivery.acceptedAt == null ? 'Chưa chấp nhận' : #temporals.format(delivery.acceptedAt, 'dd-MM-yyyy HH:mm:ss')}"></td>
-                <td>
-                    <a th:href="@{/delivery/assignments/{assignmentId}(assignmentId=${delivery.assignmentId})}">Xem chi tiết</a>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
-</main>
+<head th:replace="~{fragments/delivery-layout :: head('Đơn giao hàng của tôi')}"></head>
+<body class="vfo-app vfd-app">
+<th:block th:replace="~{fragments/delivery-layout :: navigation('home')}"></th:block>
+<div id="delivery-content" class="vfo-workspace" tabindex="-1">
+    <main id="delivery-dashboard" class="vfo-main">
+        <header class="vfo-page-heading">
+            <div>
+                <h1>Đơn giao hàng của tôi</h1>
+            </div>
+        </header>
+        <div class="vfd-capacity-banner">
+            <span class="vfo-banner-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg></span>
+            <div class="vfd-capacity-info">
+                <span class="vfo-meta-label">Sức chứa đang giữ</span>
+                <strong><span th:text="${activeAssignmentCount}"></span><span class="vfd-capacity-limit" th:text="| / ${maxActiveAssignments} đơn|"></span></strong>
+            </div>
+        </div>
+        <p id="delivery-refresh-status" class="vfd-alert vfd-alert-warning" role="status" hidden></p>
+        <section class="card vfo-list-card" aria-labelledby="assigned-heading">
+            <div class="vfo-list-heading">
+                <div><span class="vfo-section-marker" aria-hidden="true"></span><h2 id="assigned-heading">Đơn đang phụ trách</h2><span class="vfo-count" th:text="${#lists.size(assignedDeliveries)}"></span></div>
+                <span class="vfo-list-caption">Thông tin phân công và tiến độ giao hàng</span>
+            </div>
+            <div class="vfo-empty-state" th:if="${#lists.isEmpty(assignedDeliveries)}">
+                <span class="vfo-empty-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg></span>
+                <h3>Chưa có đơn đang phụ trách</h3>
+                <p>Hiện không có đơn giao hàng nào được phân công cho bạn.</p>
+                <a class="btn vfo-btn-primary" th:href="@{/delivery/available}">Nhận đơn mới <span aria-hidden="true">→</span></a>
+            </div>
+            <div class="table-responsive" th:unless="${#lists.isEmpty(assignedDeliveries)}">
+                <table class="table table-hover align-middle mb-0 vfd-assigned-table">
+                    <caption class="visually-hidden">Đơn giao hàng của tôi</caption>
+                    <thead>
+                    <tr>
+                        <th scope="col">Mã đơn hàng</th>
+                        <th scope="col">Trạng thái phân công</th>
+                        <th scope="col">Trạng thái giao hàng</th>
+                        <th scope="col">Thời gian phân công</th>
+                        <th scope="col">Thời gian chấp nhận</th>
+                        <th scope="col" class="text-end">Chi tiết</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="delivery : ${assignedDeliveries}">
+                        <td class="vfo-order-code" th:text="${delivery.orderCode}"></td>
+                        <td><strong class="vfd-assignment" th:attr="data-assignment=${delivery.assignmentStatus}" th:text="${delivery.assignmentStatusLabel}"></strong></td>
+                        <td><strong class="vfo-status" th:attr="data-status=${delivery.deliveryStatus}" th:text="${delivery.deliveryStatusLabel}"></strong></td>
+                        <td class="vfo-date-cell" th:text="${delivery.assignedAt == null ? 'Chưa ghi nhận' : #temporals.format(delivery.assignedAt, 'dd-MM-yyyy HH:mm:ss')}"></td>
+                        <td class="vfo-date-cell" th:text="${delivery.acceptedAt == null ? 'Chưa chấp nhận' : #temporals.format(delivery.acceptedAt, 'dd-MM-yyyy HH:mm:ss')}"></td>
+                        <td class="text-end"><a class="btn vfo-detail-link" th:href="@{/delivery/assignments/{assignmentId}(assignmentId=${delivery.assignmentId})}">Xem chi tiết<svg class="vfo-icon vfo-icon-sm" aria-hidden="true"><use href="#vfo-arrow"/></svg></a></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+    <footer th:replace="~{fragments/delivery-layout :: footer}"></footer>
+</div>
 <script>
     async function refreshAssignments() {
         if (!document.hidden) {

@@ -1607,9 +1607,6 @@ IF OBJECT_ID('dbo.orders','U') IS NULL OR OBJECT_ID('dbo.shop_orders','U') IS NU
 
 IF COL_LENGTH(N'dbo.products', N'origin') IS NULL
     EXEC(N'ALTER TABLE dbo.products ADD origin NVARCHAR(200) NULL;');
-
-IF COL_LENGTH(N'dbo.categories', N'image_url') IS NULL
-    EXEC(N'ALTER TABLE dbo.categories ADD image_url NVARCHAR(1000) NULL;');
 IF OBJECT_ID(N'dbo.CK_products_origin_not_blank', N'C') IS NULL
     EXEC(N'ALTER TABLE dbo.products WITH CHECK ADD CONSTRAINT CK_products_origin_not_blank
            CHECK (origin IS NULL OR LEN(LTRIM(RTRIM(origin))) > 0);');
@@ -2209,6 +2206,30 @@ END;
 
 -- Shared additions are installed for both paths, including all former standalone migrations.
 
+-- One shared shipping policy for both new and existing databases.
+EXEC sys.sp_executesql N'IF OBJECT_ID(N''dbo.shipping_fee_settings'', N''U'') IS NULL
+BEGIN
+    CREATE TABLE dbo.shipping_fee_settings (
+        settings_id BIGINT NOT NULL CONSTRAINT PK_shipping_fee_settings PRIMARY KEY,
+        base_fee DECIMAL(18,2) NOT NULL CONSTRAINT DF_shipping_fee_settings_base DEFAULT (15000),
+        included_distance_km DECIMAL(11,3) NOT NULL CONSTRAINT DF_shipping_fee_settings_included DEFAULT (2),
+        additional_fee_per_km DECIMAL(18,2) NOT NULL CONSTRAINT DF_shipping_fee_settings_additional DEFAULT (5000),
+        max_delivery_distance_km DECIMAL(11,3) NOT NULL CONSTRAINT DF_shipping_fee_settings_range DEFAULT (15),
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_shipping_fee_settings_created DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_shipping_fee_settings_updated DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT CK_shipping_fee_settings_singleton CHECK (settings_id = 1),
+        CONSTRAINT CK_shipping_fee_settings_base CHECK (base_fee >= 0 AND base_fee = FLOOR(base_fee)),
+        CONSTRAINT CK_shipping_fee_settings_additional CHECK (additional_fee_per_km >= 0 AND additional_fee_per_km = FLOOR(additional_fee_per_km)),
+        CONSTRAINT CK_shipping_fee_settings_distance CHECK (
+            included_distance_km >= 0 AND max_delivery_distance_km > 0
+            AND included_distance_km <= max_delivery_distance_km),
+        CONSTRAINT CK_shipping_fee_settings_max_fee CHECK (
+            ROUND(base_fee + (max_delivery_distance_km - included_distance_km) * additional_fee_per_km, -3)
+            <= 9999999999999999.99),
+        CONSTRAINT CK_shipping_fee_settings_dates CHECK (updated_at >= created_at)
+    );
+END;';
+
 -- Complete legacy shop addresses from the same shop's stored components.
 -- Preserve any formatted address already entered by the seller.
 EXEC sys.sp_executesql N'UPDATE dbo.shop_locations
@@ -2249,6 +2270,29 @@ IF NOT EXISTS(SELECT 1 FROM dbo.subscription_plans WHERE name=N''Free'')
  VALUES(N''Free'',N''Gói miễn phí mặc định cho cửa hàng.'',0,''MONTHLY'',N''Được public tối đa 5 sản phẩm.'',5,''ACTIVE'');';
 
 -- BEGIN SHARED VIEWS, FUNCTIONS, PROCEDURES AND TRIGGERS
+
+EXEC sys.sp_executesql N'IF NOT EXISTS (SELECT 1 FROM dbo.shipping_fee_settings WHERE settings_id = 1)
+    INSERT dbo.shipping_fee_settings (settings_id) VALUES (1);';
+
+EXEC sys.sp_executesql N'CREATE OR ALTER TRIGGER dbo.tr_shipping_fee_settings_guard
+ON dbo.shipping_fee_settings
+AFTER UPDATE, DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    IF NOT EXISTS (SELECT 1 FROM deleted) RETURN;
+    IF NOT EXISTS (SELECT 1 FROM inserted)
+        THROW 51600, N''Không được xóa cấu hình phí vận chuyển.'', 1;
+    IF EXISTS (
+        SELECT 1 FROM inserted i JOIN deleted d ON d.settings_id = i.settings_id
+        WHERE i.created_at <> d.created_at
+    )
+        THROW 51601, N''Không được thay đổi thời điểm tạo cấu hình phí vận chuyển.'', 1;
+    IF TRIGGER_NESTLEVEL(OBJECT_ID(N''dbo.tr_shipping_fee_settings_guard'')) > 1 RETURN;
+
+    UPDATE s SET updated_at = SYSUTCDATETIME()
+    FROM dbo.shipping_fee_settings s JOIN inserted i ON i.settings_id = s.settings_id;
+END;';
 
 EXEC sys.sp_executesql N'CREATE OR ALTER FUNCTION dbo.fn_catalog_category_active(@category_id BIGINT)
 RETURNS BIT
@@ -2817,10 +2861,10 @@ UPDATE dbo.seller_payout_batch_items SET status=status;';
 
 COMMIT TRANSACTION;
 SELECT CASE WHEN @freshInstall=1 THEN N'SCHEMA_CREATED' ELSE N'SCHEMA_UPDATED' END AS result,
- DB_NAME() AS database_name,(SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped=0) AS table_count;
+       DB_NAME() AS database_name,(SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped=0) AS table_count;
 END TRY
 BEGIN CATCH
- IF XACT_STATE()<>0 ROLLBACK TRANSACTION;
+IF XACT_STATE()<>0 ROLLBACK TRANSACTION;
  THROW;
 END CATCH;
 GO

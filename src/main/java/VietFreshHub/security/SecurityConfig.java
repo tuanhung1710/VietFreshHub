@@ -4,8 +4,10 @@ import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.auth.repository.UserRoleRepository;
 import VietFreshHub.auth.service.Oidc_UserService;
 import VietFreshHub.auth.service.LoginRedirectService;
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -61,8 +63,13 @@ public class SecurityConfig {
         http.requestCache(cache -> cache.requestCache(requestCache));
 
         http.authorizeHttpRequests(authorize -> {
+            authorize.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll();
+            authorize.requestMatchers(org.springframework.http.HttpMethod.GET, "/home", "/customer/home")
+                    .access((authentication, context) -> new AuthorizationDecision(
+                            authentication.get().getAuthorities().stream()
+                                    .noneMatch(authority -> "ROLE_DELIVERY_STAFF".equals(authority.getAuthority()))));
             authorize.requestMatchers(org.springframework.http.HttpMethod.GET,
-                    "/home", "/customer/home", "/product-detail", "/product-detail/**", "/shops", "/shops/**",
+                    "/product-detail", "/product-detail/**", "/shops", "/shops/**",
                     "/storefront/api/options", "/storefront/api/home", "/storefront/api/products", "/storefront/api/products/**", "/storefront/api/cart").permitAll();
             authorize.requestMatchers(org.springframework.http.HttpMethod.POST, "/storefront/api/cart").hasRole("CUSTOMER");
             authorize.requestMatchers(

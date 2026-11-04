@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/customer-shop :: head('Cửa hàng đã lưu')}"></head>
-<body>
+<body class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
 <header th:replace="~{fragments/customer-shop :: header}"></header>
-<main class="container">
-    <div class="bread"><a th:href="@{/home}">Trang chủ</a> / <a th:href="@{/shops}">Gian hàng</a> / Đã lưu</div>
+<main class="container vfr-page">
     <h1>Cửa hàng đã lưu</h1>
     <div th:replace="~{fragments/customer-shop :: messages}"></div>
     <p th:if="${shopsPage.empty}">Bạn chưa lưu cửa hàng nào.</p>
@@ -14,7 +13,7 @@
             <p th:text="${shop.description}"></p>
             <p><a th:href="@{/shops/{id}(id=${shop.shopId})}">Xem gian hàng</a></p>
             <form method="post" th:action="@{/shops/{id}/favorite(id=${shop.shopId})}">
-                <input type="hidden" name="favorite" value="false"><button>Bỏ lưu</button>
+                <input type="hidden" name="favorite" value="false"><button class="btn btn-success">Bỏ lưu</button>
             </form>
         </article>
     </div>

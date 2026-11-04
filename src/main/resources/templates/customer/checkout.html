@@ -1,10 +1,16 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head><th:block th:replace="~{fragments/head :: assets}"></th:block><title>Đặt hàng | VietFresh Hub</title><link rel="stylesheet" th:href="@{/css/storefront.css}"><link rel="stylesheet" th:href="@{/css/customer-shell.css}"><link rel="stylesheet" th:href="@{/css/checkout-page.css(v=1)}"><script defer th:src="@{/js/cart.js}"></script></head><body>
-<header th:replace="~{fragments/storefront :: header}"></header>
-<main class="container page checkout-page">
-    <nav class="checkout-steps" aria-label="Tiến trình mua hàng"><a th:href="@{/cart}">Giỏ hàng</a><span aria-hidden="true">›</span><strong aria-current="step">Đặt hàng</strong><span aria-hidden="true">›</span><span>Hoàn tất</span></nav>
-    <div class="page-heading"><h1 class="checkout-title">Kiểm tra và đặt hàng</h1><p class="muted">Xem lại địa chỉ nhận hàng, phương thức thanh toán và sản phẩm trước khi xác nhận đơn hàng.</p></div>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    <title>Đặt hàng | VietFresh Hub</title><link rel="stylesheet" th:href="@{/css/storefront.css}"><link rel="stylesheet" th:href="@{/css/customer-shell.css}"><link rel="stylesheet" th:href="@{/css/checkout-page.css(v=1)}"><script defer th:src="@{/js/cart.js}"></script>    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+</head><body class="vfo-app vfr-app vfr-utility vfc-app vfr-customer" data-vfr-section="cart">
+<th:block th:replace="~{fragments/interface-layout :: navigation('customer','cart')}"></th:block>
+
+
+<main class="container page checkout-page vfr-page" id="customer-content" tabindex="-1">
+    <div class="page-heading"><h1 class="checkout-title">Kiểm tra và đặt hàng</h1></div>
     <div th:replace="~{fragments/storefront :: messages}"></div>
     <p th:if="${cart.status == 'BUY_NOW'}" class="notice info">Mua ngay: chỉ đặt số lượng vừa chọn. Sản phẩm đang có trong giỏ hàng được giữ nguyên.</p>
     <form th:action="@{/customer/checkout}" th:object="${form}" method="post" id="checkout-form">
@@ -18,7 +24,7 @@
                     <div class="address-options">
                         <div th:each="address : ${checkout.addresses}" class="address-option-card">
                             <label class="address-option">
-                                <input type="radio" th:field="*{addressId}" th:value="${address.addressId}" required>
+                                <input type="radio" th:field="*{addressId}" th:value="${address.addressId}" required class="form-check-input">
                                 <span><strong th:text="${address.recipientName}"></strong><span class="default-address" th:if="${address.defaultAddress}">Mặc định</span>
                                     <span class="address-phone" th:text="${address.phone}"></span><span class="address-text"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg><span th:text="${address.addressText}"></span></span>
                                     <span th:unless="${address.locationComplete}" class="item-error">Chưa đủ thông tin vị trí. Cập nhật địa chỉ bằng gợi ý VietMap trước khi đặt hàng.</span></span>
@@ -32,10 +38,10 @@
                     </div>
                 </section>
                 <section class="panel checkout-payment-panel"><h2><span class="checkout-section-number" aria-hidden="true">2</span>Phương thức thanh toán</h2>
-                    <label class="payment-option"><input type="radio" th:field="*{paymentMethodCode}" value="COD" th:disabled="${!checkout.codAvailable}">
+                    <label class="payment-option"><input type="radio" th:field="*{paymentMethodCode}" value="COD" th:disabled="${!checkout.codAvailable}" class="form-check-input">
                         <span><strong>Thanh toán khi nhận hàng (COD)</strong><span class="muted">Thanh toán cho nhân viên giao hàng khi nhận sản phẩm.</span></span></label>
                     <p th:unless="${checkout.codAvailable}" class="item-error">Thanh toán khi nhận hàng hiện chưa khả dụng.</p><p class="item-error" th:errors="*{paymentMethodCode}"></p>
-                    <label class="payment-option"><input type="radio" th:field="*{paymentMethodCode}" value="BANK_TRANSFER" th:disabled="${!checkout.vnpayAvailable}">
+                    <label class="payment-option"><input type="radio" th:field="*{paymentMethodCode}" value="BANK_TRANSFER" th:disabled="${!checkout.vnpayAvailable}" class="form-check-input">
                         <span><strong>Chuyển khoản ngân hàng</strong><span class="muted">Bạn sẽ được chuyển đến cổng thanh toán VNPAY Sandbox. Đơn hàng được xử lý theo kết quả thanh toán.</span></span></label>
                     <p th:unless="${checkout.vnpayAvailable}" class="item-error">Chuyển khoản qua VNPAY hiện chưa được cấu hình hoặc chưa khả dụng.</p>
                 </section>
@@ -92,7 +98,7 @@
                            th:value="${form.rewardAmountToUse}"
                            min="0"
                            step="1"
-                           th:max="${loyaltyBalance.rewardBalance}">
+                           th:max="${loyaltyBalance.rewardBalance}" class="form-control">
                     <button type="submit"
                             class="button secondary"
                             th:formaction="@{/customer/checkout/reward/preview}"
@@ -131,6 +137,7 @@
             </aside>
         </div>
     </form>
-</main><footer th:replace="~{fragments/storefront :: footer}"></footer>
+</main>
 <script defer th:src="@{/js/checkout.js}"></script>
+<footer th:replace="~{fragments/customer-service :: footer}"></footer>
 </body></html>
