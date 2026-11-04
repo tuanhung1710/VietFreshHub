@@ -12,8 +12,7 @@
             return {
                 id: String(item.id), name: String(item.name || "").slice(0, 250),
                 code: String(item.code || "").slice(0, 40),
-                canHide: item.canHide === true, canOpen: item.canOpen === true,
-                canDelete: item.canDelete === true
+                canHide: item.canHide === true, canOpen: item.canOpen === true
             };
         }
         return {
@@ -25,10 +24,9 @@
             // Thêm hoặc bỏ một sản phẩm theo ID sau khi chuẩn hóa dữ liệu.
             select(item, checked = true) {
                 const entry = normalize(item);
-                if (!entry) return false;
-                if (!checked) { items.delete(entry.id); return true; }
-                items.set(entry.id, entry);
-                return true;
+                if (!entry) return;
+                if (checked) items.set(entry.id, entry);
+                else items.delete(entry.id);
             },
             // Áp dụng chọn hoặc bỏ chọn cho trang hiện tại, giữ lựa chọn ở trang khác.
             selectPage(entries, checked) {
@@ -37,7 +35,6 @@
                     if (checked) items.set(item.id, item);
                     else items.delete(item.id);
                 });
-                return true;
             },
             // Cập nhật quyền thao tác từ dữ liệu máy chủ cho những sản phẩm đã được chọn.
             refresh(entries) {
@@ -65,8 +62,7 @@
     /** Đọc thông tin và khả năng thao tác của sản phẩm từ ô chọn do máy chủ tạo. */
     function readItem(check) {
         return {id: check.value, name: check.dataset.productName, code: check.dataset.productCode,
-            canHide: check.dataset.canHide === "true", canOpen: check.dataset.canOpen === "true",
-            canDelete: check.dataset.canDelete === "true"};
+            canHide: check.dataset.canHide === "true", canOpen: check.dataset.canOpen === "true"};
     }
     try { selection.restore(JSON.parse(window.sessionStorage.getItem(storageKey) || "[]")); }
     catch (_) { /* Nếu không đọc được bộ nhớ phiên, vẫn dùng được lựa chọn trên trang hiện tại. */ }

@@ -1,10 +1,12 @@
 package VietFreshHub.product.entity;
 
 import VietFreshHub.common.BusinessCodes;
+import VietFreshHub.common.VietnamDatabaseTime;
 import VietFreshHub.product.enums.ApprovalStatus;
 import VietFreshHub.product.enums.ProductStatus;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -18,8 +20,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import org.hibernate.annotations.Nationalized;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.Nationalized;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -76,6 +80,8 @@ public class Product {
     private Long approvedBy;
 
     @Column(name = "approved_at")
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime approvedAt;
 
     @Column(name = "requires_preparation_check")
@@ -95,10 +101,15 @@ public class Product {
     }
 
     @Column(name = "created_at")
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime updatedAt;
+
     /** Tạo mã PRD từ ID để hiển thị; mã này không phải cột được lưu riêng. */
     @Transient
     public String getProductCode() {

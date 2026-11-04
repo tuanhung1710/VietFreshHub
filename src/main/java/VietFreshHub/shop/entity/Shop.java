@@ -1,5 +1,9 @@
 package VietFreshHub.shop.entity;
 
+import VietFreshHub.common.VietnamDatabaseTime;
+import jakarta.persistence.Convert;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import VietFreshHub.catalog.entity.CatalogProduct;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -58,9 +62,13 @@ public class Shop {
     private String availabilityStatus = "OPEN";
 
     @Column(name = "created_at", nullable = false, updatable = false)
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime updatedAt;
 
     // Checkout refreshes this row under lock; catalog children are refreshed separately.

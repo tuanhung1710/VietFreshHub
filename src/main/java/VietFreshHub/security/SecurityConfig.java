@@ -38,8 +38,7 @@ public class SecurityConfig {
     public RequestCache requestCache() {
         var cache = new HttpSessionRequestCache();
         cache.setMatchingRequestParameterName(null);
-        cache.setRequestMatcher(request -> "GET".equals(request.getMethod())
-                && !request.getServletPath().startsWith("/storefront/api/"));
+        cache.setRequestMatcher(request -> "GET".equals(request.getMethod()));
         return cache;
     }
     @Bean
@@ -69,9 +68,7 @@ public class SecurityConfig {
                             authentication.get().getAuthorities().stream()
                                     .noneMatch(authority -> "ROLE_DELIVERY_STAFF".equals(authority.getAuthority()))));
             authorize.requestMatchers(org.springframework.http.HttpMethod.GET,
-                    "/product-detail", "/product-detail/**", "/shops", "/shops/**",
-                    "/storefront/api/options", "/storefront/api/home", "/storefront/api/products", "/storefront/api/products/**", "/storefront/api/cart").permitAll();
-            authorize.requestMatchers(org.springframework.http.HttpMethod.POST, "/storefront/api/cart").hasRole("CUSTOMER");
+                    "/products", "/product-detail", "/product-detail/**", "/shops", "/shops/**").permitAll();
             authorize.requestMatchers(
                     "/", "/login", "/register", "/verify-email", "/verify-email/resend", "/error",
                     "/reviews/product/**", "/reviews/shop/**", "/payment/vnpay/return",
@@ -96,8 +93,7 @@ public class SecurityConfig {
                     .authenticated()
 
                     .requestMatchers(
-                            "/home", "/customer", "/customer/**", "/cart", "/cart/**", "/product-detail", "/product-detail/**",
-                            "/api/catalog/products/*/availability"
+                            "/home", "/customer", "/customer/**", "/cart", "/cart/**", "/product-detail", "/product-detail/**"
                     ).hasRole("CUSTOMER")
 
                     .anyRequest().authenticated();
@@ -117,15 +113,7 @@ public class SecurityConfig {
 
         // Chuyển người chưa đăng nhập về trang login
         http.exceptionHandling(exception -> {
-            exception.authenticationEntryPoint(
-                    (request, response, authenticationException) -> {
-                        if (request.getRequestURI().startsWith(request.getContextPath() + "/storefront/api/")) {
-                            response.sendError(401);
-                        } else {
-                            new LoginUrlAuthenticationEntryPoint("/login").commence(request, response, authenticationException);
-                        }
-                    }
-            );
+            exception.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"));
         });
 
         http.logout(logout -> logout

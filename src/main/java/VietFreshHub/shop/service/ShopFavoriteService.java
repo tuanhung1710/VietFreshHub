@@ -28,10 +28,6 @@ public class ShopFavoriteService {
     private final ShopRepository shopRepository;
     private final ShopFavoriteRepository favorites;
 
-    public boolean isFavorite(Authentication authentication, Long shopId) {
-        return favorites.exists(customers.requireCustomerId(authentication), shopId);
-    }
-
     @Transactional
     public void setFavorite(Authentication authentication, Long shopId, boolean favorite) {
         Long userId = customers.requireCustomerId(authentication);

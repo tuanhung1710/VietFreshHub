@@ -1,7 +1,7 @@
 package VietFreshHub.product.dto;
 
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -25,7 +25,10 @@ public class VariantRequest {
     private String variantName = "";
 
     @Size(max = 100, message = "SKU không được vượt quá 100 ký tự.")
-    @Pattern(regexp = "[A-Za-z0-9_-]*", message = "SKU chỉ được chứa chữ cái không dấu, chữ số, dấu gạch nối (-) và dấu gạch dưới (_).")
+    @Pattern(
+            regexp = "[A-Za-z0-9_-]*",
+            message =
+                    "SKU chỉ được chứa chữ cái không dấu, chữ số, dấu gạch nối (-) và dấu gạch dưới (_).")
     private String sku;
 
     @NotBlank(message = "Chọn ảnh phân loại hoặc dán liên kết ảnh.")
@@ -34,17 +37,26 @@ public class VariantRequest {
 
     @NotNull(message = "Nhập giá bán.")
     @DecimalMin(value = "10000", message = "Giá bán phải từ 10.000 đ.")
-    @Digits(integer = 16, fraction = 0, message = "Giá bán phải là số nguyên đồng, tối đa 16 chữ số.")
+    @Digits(
+            integer = 16,
+            fraction = 0,
+            message = "Giá bán phải là số nguyên đồng, tối đa 16 chữ số.")
     @DecimalMax(value = "9999999999999999", message = "Giá trị vượt giới hạn cho phép.")
     private BigDecimal price;
 
-    @DecimalMin(value = "0", message = "Giá trước giảm không được âm.")
-    @Digits(integer = 16, fraction = 0, message = "Giá trước giảm phải là số nguyên đồng, tối đa 16 chữ số.")
+    @DecimalMin(value = "0", message = "Giá tham chiếu không được âm.")
+    @Digits(
+            integer = 16,
+            fraction = 0,
+            message = "Giá tham chiếu phải là số nguyên đồng, tối đa 16 chữ số.")
     @DecimalMax(value = "9999999999999999", message = "Giá trị vượt giới hạn cho phép.")
     private BigDecimal compareAtPrice;
 
     @DecimalMin(value = "0.001", message = "Giá trị phải từ 0,001 kg.")
-    @Digits(integer = 15, fraction = 3, message = "Giá trị tính bằng kg, tối đa 15 chữ số phần nguyên và 3 chữ số thập phân.")
+    @Digits(
+            integer = 15,
+            fraction = 3,
+            message = "Giá trị tính bằng kg, tối đa 15 chữ số phần nguyên và 3 chữ số thập phân.")
     @DecimalMax(value = "999999999999999.999", message = "Giá trị vượt giới hạn cho phép.")
     private BigDecimal weight;
 
@@ -68,7 +80,10 @@ public class VariantRequest {
     private LocalDate expiryDate;
 
     @DecimalMin(value = "0", message = "Giá vốn không được âm.")
-    @Digits(integer = 16, fraction = 2, message = "Giá vốn không được vượt quá 16 chữ số phần nguyên và 2 chữ số thập phân.")
+    @Digits(
+            integer = 16,
+            fraction = 2,
+            message = "Giá vốn không được vượt quá 16 chữ số phần nguyên và 2 chữ số thập phân.")
     @DecimalMax(value = "9999999999999999.99", message = "Giá trị vượt giới hạn cho phép.")
     private BigDecimal costPrice;
 
@@ -97,6 +112,7 @@ public class VariantRequest {
         // Chỉ chuyển dạng số mũ sang số nguyên khi trong giới hạn 16 chữ số;
         // giá trị lớn hoặc có phần lẻ vẫn đi đến bước kiểm tra mà không bị làm tròn.
         return amount.scale() < 0 && (long) amount.precision() - amount.scale() <= 16
-                ? amount.setScale(0) : amount;
+                ? amount.setScale(0)
+                : amount;
     }
 }

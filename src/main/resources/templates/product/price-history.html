@@ -55,7 +55,7 @@
                                 <td
                                     data-label="Giá bán (₫)"
                                     class="fw-semibold text-success"
-                                    th:text="${#numbers.formatDecimal(e.price,0,'POINT',0,'COMMA')+' ₫'}"
+                                    th:text="${@vndAmounts.format(e.price)+' ₫'}"
                                 >
                                 </td>
                                 <td

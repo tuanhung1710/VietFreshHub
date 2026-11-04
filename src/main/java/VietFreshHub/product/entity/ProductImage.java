@@ -1,6 +1,9 @@
 package VietFreshHub.product.entity;
 
+import VietFreshHub.common.VietnamDatabaseTime;
+
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -11,7 +14,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Nationalized;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -43,5 +48,7 @@ public class ProductImage {
     private Integer sortOrder;
 
     @Column(name = "created_at")
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime createdAt;
 }

@@ -8,8 +8,7 @@
             <a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{${inventoryReturnUrl}}">
                 ← Quay lại
             </a>
-            <h1>Nhật ký hoạt động</h1>
-            <a class="btn btn-light mb-3" th:href="@{/seller/inventory/journal}">Xem biến động kho</a>
+            <h1 class="mb-3">Nhật ký hoạt động</h1>
             <form class="card p-3 mb-4 vf-inventory-filter-form" th:action="@{/seller/inventory/audit}" method="get">
                 <input type="hidden" name="returnTo" th:value="${inventoryReturnUrl}">
                 <input type="hidden" name="size" th:value="${events.size}">

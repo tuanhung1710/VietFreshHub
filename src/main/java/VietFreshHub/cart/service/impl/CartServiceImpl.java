@@ -7,6 +7,7 @@ import VietFreshHub.cart.entity.*;
 import VietFreshHub.cart.repository.*;
 import VietFreshHub.cart.service.CartService;
 import VietFreshHub.catalog.service.CatalogPricingService;
+import VietFreshHub.catalog.dto.CatalogOffer;
 import VietFreshHub.catalog.dto.StockCheckResponse;
 import VietFreshHub.catalog.entity.CatalogVariant;
 import VietFreshHub.catalog.repository.CatalogVariantRepository;
@@ -87,7 +88,7 @@ public class CartServiceImpl implements CartService {
                 .hasUnavailableItems(items.stream().anyMatch(i -> !i.isPurchasable())).build();
     }
 
-    private CartItemDto toItem(CartItem item, CatalogPricingService.Offer offer) {
+    private CartItemDto toItem(CartItem item, CatalogOffer offer) {
         CatalogVariant variant = item.getVariant();
         int stock = offer == null ? 0 : offer.availableStock();
         BigDecimal price = offer == null ? variant.getPrice() : offer.price();
@@ -173,7 +174,7 @@ public class CartServiceImpl implements CartService {
     private int availableStock(Long variantId) {
         return offer(variantId).availableStock();
     }
-    private CatalogPricingService.Offer offer(Long variantId) {
+    private CatalogOffer offer(Long variantId) {
         var offer = pricing.offers(List.of(variantId)).get(variantId);
         if (offer == null) throw new ResourceNotFoundException("Sản phẩm không còn được bán.");
         return offer;

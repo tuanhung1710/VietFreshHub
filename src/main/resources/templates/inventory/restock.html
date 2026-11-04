@@ -25,6 +25,9 @@
                 th:text="${variant.productName+' · '+variant.variant.sku+' · '+variant.variant.unit}"
             >
             </p>
+            <div th:replace="~{fragments/product-inventory :: messages}"></div>
+            <a class="d-inline-block mb-3 text-success"
+               th:href="@{/seller/inventory/restock(returnTo=${inventoryReturnUrl})}">Chọn lại sản phẩm / SKU</a>
 
             <!-- Biểu mẫu -->
             <form
@@ -41,7 +44,8 @@
                 </h2>
                 <div class="row g-3 batch-dates">
                     <label class="col-md-6 form-label" for="quantity">
-                        Số lượng nhập
+                        Số lượng nhập kho
+                        <span class="text-body-secondary" th:text="${' · '+variant.variant.unit}"></span>
                         <span class="text-danger">
                             *
                         </span>
@@ -60,9 +64,8 @@
                         <input
                             class="form-control mt-1"
                             id="costPrice"
-                            type="number"
-                            min="0"
-                            step="0.01"
+                            type="text"
+                            inputmode="decimal"
                             data-vf-money
                             th:field="*{costPrice}"
                         >
@@ -111,8 +114,9 @@
                 </div>
                 <div class="d-flex flex-wrap gap-2 mt-4 vf-inventory-form-actions">
                     <button type="submit" class="btn btn-success">
-                        Nhập kho
+                        Xác nhận nhập
                     </button>
+                    <button type="submit" class="btn btn-outline-success" name="continueEntry" value="true">Lưu và nhập tiếp</button>
                     <a class="btn btn-outline-secondary" th:href="@{${inventoryReturnUrl}}">
                         Hủy
                     </a>
@@ -123,7 +127,6 @@
 
         </div>
 
-        <script defer th:src="@{/js/inventory/inventory.js}"></script>
     <div class="vfr-product-footer"><footer th:replace="~{fragments/seller-orders :: footer}"></footer></div>
 </body>
 </html>

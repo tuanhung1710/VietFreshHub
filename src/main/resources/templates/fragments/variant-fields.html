@@ -69,20 +69,20 @@
             </span>
             <input
                 class="form-control mt-1"
-                type="number"
-                min="10000"
-                step="1"
+                type="text"
+                inputmode="numeric"
+                data-vf-money
                 th:field="*{__${prefix}__price}"
                 required
             >
         </label>
         <label class="col-md-6 form-label">
-            Giá trước giảm (đ)
+            Giá tham chiếu (đ)
             <input
                 class="form-control mt-1"
-                type="number"
-                min="0"
-                step="1"
+                type="text"
+                inputmode="numeric"
+                data-vf-money
                 th:field="*{__${prefix}__compareAtPrice}"
             >
         </label>
@@ -162,9 +162,9 @@
             Giá vốn mỗi đơn vị (₫)
             <input
                 class="form-control mt-1"
-                type="number"
-                min="0"
-                step="0.01"
+                type="text"
+                inputmode="decimal"
+                data-vf-money
                 th:field="*{__${prefix}__costPrice}"
             >
         </label>

@@ -7,8 +7,7 @@
     <div th:replace="~{fragments/product-inventory :: nav('product')}"></div>
     <div class="vf-workspace" id="order-content" tabindex="-1">
     <main
-      class="container vf-main vf-list-page vf-product-catalog vfr-page"
-      data-vf-live-list
+      class="container vf-main vf-product-catalog vfr-page"
       th:attr="data-vf-selection-scope=${selectionScope},data-vf-completed-selection=${completedBulkProductIds != null ? #strings.listJoin(completedBulkProductIds, ',') : ''}"
     >
       <header class="page-heading">
@@ -20,13 +19,10 @@
           Thêm sản phẩm
         </a>
       </header>
-      <div data-vf-live-summary="messages">
-        <div th:replace="~{fragments/product-inventory :: messages}"></div>
-      </div>
+      <div th:replace="~{fragments/product-inventory :: messages}"></div>
       <div
         class="nav nav-pills vf-filter-tabs vf-catalog-status-tabs"
         aria-label="Trạng thái sản phẩm"
-        data-vf-live-summary="tabs"
       >
         <a
           class="nav-link"
@@ -51,28 +47,28 @@
         ></a>
         <a
           class="nav-link"
-          th:classappend="${tab == 'violation' ? 'active' : ''}"
-          th:attr="aria-current=${tab == 'violation' ? 'page' : null}"
-          th:href="@{/seller/products(q=${q},category=${category},tab='violation',stock=${filters.stock},sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size})}"
-          th:text="${'Vi phạm (' + tabSummary.violation + ')'}"
-        ></a>
-        <a
-          class="nav-link"
           th:classappend="${tab == 'hidden' ? 'active' : ''}"
           th:attr="aria-current=${tab == 'hidden' ? 'page' : null}"
           th:href="@{/seller/products(q=${q},category=${category},tab='hidden',stock=${filters.stock},sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size})}"
           th:text="${'Tạm ẩn (' + tabSummary.hidden + ')'}"
         ></a>
+        <a
+          class="nav-link"
+          th:classappend="${tab == 'violation' ? 'active' : ''}"
+          th:attr="aria-current=${tab == 'violation' ? 'page' : null}"
+          th:href="@{/seller/products(q=${q},category=${category},tab='violation',stock=${filters.stock},sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size})}"
+          th:text="${'Vi phạm (' + tabSummary.violation + ')'}"
+        ></a>
       </div>
       <div class="vf-list-controls">
         <form
-          class="vf-filter-card vf-catalog-filters vf-filter-layout"
+          class="vf-filter-card vf-catalog-filters"
           method="get"
           th:action="@{/seller/products}"
           data-vf-live-filter
           id="productFilterForm"
         >
-          <div id="productListFilters" class="vf-filter-panel">
+          <div class="vf-filter-panel">
             <input type="hidden" name="tab" th:value="${tab}" />
             <input type="hidden" name="size" th:value="${rows.size}" />
             <div class="vf-filter-search-row">
@@ -85,6 +81,7 @@
                   ><input
                     id="productQuery"
                     class="form-control"
+                    type="search"
                     name="q"
                     th:value="${q}"
                     aria-label="Tìm kiếm sản phẩm"
@@ -93,119 +90,26 @@
                   />
                 </div>
               </div>
-                <button
-                  class="btn btn-outline-secondary vf-advanced-filter-toggle collapsed"
-                  type="button"
-                  data-bs-toggle="collapse"
-                  data-bs-target="#productAdvancedFilters"
-                  th:classappend="${filters.advanced ? 'vf-filter-used' : ''}"
-                  aria-controls="productAdvancedFilters"
-                  aria-expanded="false"
-                >
-                  <svg class="vf-icon" aria-hidden="true"><use href="#vf-filter" /></svg>
-                  Bộ lọc
-                  <svg class="vf-icon vf-advanced-filter-chevron" aria-hidden="true"><use href="#vf-chevron" /></svg>
-                </button>
-                <button class="btn btn-success" type="submit" data-vf-filter-submit data-vf-keep-submit="true">Áp dụng</button>
-            </div>
-            <div class="collapse" id="productAdvancedFilters">
-            <section class="vf-advanced-filter-card" aria-label="Bộ lọc nâng cao">
-              <div class="vf-advanced-filter-body">
-              <div class="vf-catalog-advanced-grid">
-                <div>
-                  <label class="form-label" for="productCategory">Danh mục</label>
-                  <select class="form-select" id="productCategory" name="category">
-                    <option value="">Tất cả danh mục</option>
-                    <option th:each="c : ${categories}" th:value="${c.categoryId}"
-                      th:selected="${category == c.categoryId}" th:text="${c.name}"></option>
-                  </select>
-                </div>
-                <div>
-                  <label class="form-label" for="productStock">Trạng thái tồn kho</label>
-                  <select class="form-select" id="productStock" name="stock" aria-describedby="productStockHelp">
-                    <option value="">Tất cả</option>
-                    <option value="available" th:selected="${filters.stock == 'available'}">Còn hàng</option>
-                    <option value="low" th:selected="${filters.stock == 'low'}">Sắp hết hàng</option>
-                    <option value="empty" th:selected="${filters.stock == 'empty'}">Hết hàng</option>
-                  </select>
-                </div>
-                <p class="small text-secondary mb-0 vf-catalog-advanced-options" id="productStockHelp">Tính theo lượng khả dụng của từng phân loại. Trạng thái bán hàng được chọn ở các tab phía trên.</p>
-                <div>
-                  <label class="form-label" for="productFrom">Ngày tạo từ</label
-                  ><input
-                    class="form-control"
-                    type="date"
-                    id="productFrom"
-                    name="createdFrom"
-                    th:value="${createdFrom}"
-                    th:max="${createdTo}"
-                  />
-                </div>
-                <div>
-                  <label class="form-label" for="productTo">Ngày tạo đến</label
-                  ><input
-                    class="form-control"
-                    type="date"
-                    id="productTo"
-                    name="createdTo"
-                    th:value="${createdTo}"
-                    th:min="${createdFrom}"
-                  />
-                </div>
-                <div>
-                  <label class="form-label" for="productMinPrice"
-                    >Giá bán từ (đ)</label
-                  ><input
-                    class="form-control"
-                    type="number"
-                    id="productMinPrice"
-                    name="minPrice"
-                    min="0"
-                    max="9999999999999999"
-                    step="1"
-                    th:value="${filters.minPrice}"
-                  />
-                </div>
-                <div>
-                  <label class="form-label" for="productMaxPrice"
-                    >Giá bán đến (đ)</label
-                  ><input
-                    class="form-control"
-                    type="number"
-                    id="productMaxPrice"
-                    name="maxPrice"
-                    min="0"
-                    max="9999999999999999"
-                    step="1"
-                    th:value="${filters.maxPrice}"
-                  />
-                </div>
+              <div class="min-w-0">
+                <label class="visually-hidden" for="productCategory">Danh mục</label>
+                <select class="form-select" id="productCategory" name="category">
+                  <option value="">Tất cả danh mục</option>
+                  <option th:each="c : ${categories}" th:value="${c.categoryId}"
+                    th:selected="${category == c.categoryId}" th:text="${c.name}"></option>
+                </select>
               </div>
-              <p class="small text-secondary mb-0">
-                Giá lọc phải thuộc cùng một phân loại. Mức tồn kho được kiểm tra
-                riêng theo từng phân loại.
-              </p>
-              <div class="vf-advanced-filter-actions">
-                <a class="vf-filter-reset" data-vf-clear-filters
-                  th:href="@{/seller/products(tab=${tab},size=${rows.size})}">
-                  <svg class="vf-icon" aria-hidden="true"><use href="#vf-reset" /></svg>
-                  Xóa bộ lọc
-                </a>
-              </div>
-              </div>
-            </section>
+              <button class="btn btn-success" type="submit">Áp dụng</button>
             </div>
             <div class="vf-catalog-filter-footer">
               <span
                 class="small text-secondary"
-                data-vf-live-summary="count"
                 th:text="${rows.totalElements + ' sản phẩm phù hợp'}"
               ></span>
             </div>
           </div>
         </form>
       </div>
-      <div data-vf-list-results aria-busy="false">
+      <div data-vf-list-results>
         <span
           hidden
           data-vf-current-page
@@ -312,8 +216,8 @@
               </caption>
               <colgroup>
                 <col class="vf-col-select" />
+                <col class="vf-col-index" />
                 <col class="vf-col-product" />
-                <col class="vf-col-category" />
                 <col class="vf-col-price" />
                 <col class="vf-col-status" />
                 <col class="vf-col-variants" />
@@ -330,17 +234,17 @@
                       aria-label="Chọn tất cả sản phẩm trên trang"
                     />
                   </th>
+                  <th scope="col" class="text-center">STT</th>
                   <th scope="col">Sản phẩm</th>
-                  <th scope="col">Danh mục</th>
                   <th scope="col">Giá bán</th>
-                  <th scope="col">Trạng thái bán hàng</th>
+                  <th scope="col">Trạng thái kinh doanh</th>
                   <th scope="col">Phân loại</th>
                   <th scope="col">Cập nhật</th>
                   <th scope="col">Thao tác</th>
                 </tr>
               </thead>
               <tbody
-                th:each="r : ${rows}"
+                th:each="r, productStat : ${rows}"
                 th:with="p=${r.product},vs=${r.visibleVariants}"
               >
                 <tr
@@ -353,9 +257,11 @@
                       type="checkbox"
                       data-vf-select-product
                       th:value="${p.productId}"
-                      th:attr="aria-label=${'Chọn ' + p.name},data-can-hide=${r.managementState.canHide},data-can-open=${r.managementState.canOpen},data-can-delete=${r.canDelete},data-product-name=${p.name},data-product-code=${p.productCode}"
+                      th:attr="aria-label=${'Chọn ' + p.name},data-can-hide=${r.managementState.canHide},data-can-open=${r.managementState.canOpen},data-product-name=${p.name},data-product-code=${p.productCode}"
                     />
                   </td>
+                  <td class="text-center text-body-secondary" data-label="STT"
+                      th:text="${rows.number * rows.size + productStat.count}"></td>
                   <td>
                     <div class="vf-catalog-product">
                       <a
@@ -383,15 +289,13 @@
                           class="vf-catalog-code"
                           th:text="${p.productCode}"
                         ></small>
+                        <span
+                          class="vf-catalog-category"
+                          th:text="${r.categoryName}"
+                          th:title="${r.categoryName}"
+                        ></span>
                       </div>
                     </div>
-                  </td>
-                  <td>
-                    <span
-                      class="vf-catalog-category"
-                      th:text="${r.categoryName}"
-                      th:title="${#strings.listJoin(r.categoryNames, ', ')}"
-                    ></span>
                   </td>
                   <td>
                     <div class="vf-catalog-price" th:if="${r.minPrice != null}">
@@ -478,43 +382,21 @@
                           <use href="#vf-trash" />
                         </svg>
                       </button>
-                      <div class="dropdown">
-                        <button
-                          class="btn btn-sm btn-outline-secondary vf-catalog-more"
-                          type="button"
-                          data-bs-toggle="dropdown"
-                          data-bs-config='{"popperConfig":{"strategy":"fixed","modifiers":[{"name":"preventOverflow","options":{"boundary":"viewport","padding":12}}]}}'
-                          aria-expanded="false"
-                          th:attr="aria-label=${'Thao tác khác cho ' + p.name}"
-                        >
-                          <svg class="vf-icon" aria-hidden="true">
-                            <use href="#vf-more" />
-                          </svg>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                          <li th:if="${r.published}">
-                            <a
-                              class="dropdown-item"
-                              th:href="@{/seller}"
-                              target="_blank"
-                              rel="noopener"
-                              >Xem cửa hàng</a
-                            >
-                          </li>
-                          <li>
-                            <button
-                              class="dropdown-item"
-                              type="button"
-                              data-bs-toggle="modal"
-                              data-bs-target="#productActionModal"
-                              th:disabled="${!r.managementState.canHide and !r.managementState.canOpen}"
-                              th:title="${r.managementState.openBlockedReason}"
-                              th:attr="data-action-url=@{/seller/products/{id}/status(id=${p.productId})},data-status=${r.managementState.canHide ? 'INACTIVE' : 'ACTIVE'},data-name=${p.name},data-label=${r.managementState.canHide ? 'Tạm ẩn' : 'Mở bán'}"
-                              th:text="${r.managementState.canHide ? 'Tạm ẩn' : 'Mở bán'}"
-                            ></button>
-                          </li>
-                        </ul>
-                      </div>
+                      <button
+                        class="btn btn-sm vf-catalog-icon-action"
+                        type="button"
+                        data-bs-toggle="modal"
+                        data-bs-target="#productActionModal"
+                        th:with="canHide=${r.managementState.canHide},canOpen=${r.managementState.canOpen},actionLabel=${canHide ? 'Tạm ẩn' : 'Mở bán'}"
+                        th:classappend="${canOpen and !canHide ? 'btn-outline-success' : 'btn-outline-secondary'}"
+                        th:disabled="${!canHide and !canOpen}"
+                        th:title="${canHide or canOpen ? actionLabel + ' sản phẩm' : r.managementState.openBlockedReason}"
+                        th:attr="data-action-url=@{/seller/products/{id}/status(id=${p.productId})},data-status=${canHide ? 'INACTIVE' : 'ACTIVE'},data-name=${p.name},data-label=${actionLabel},aria-label=${actionLabel + ' sản phẩm ' + p.name}"
+                      >
+                        <svg class="vf-icon" aria-hidden="true">
+                          <use th:attr="href=${canHide ? '#vf-eye-off' : '#vf-eye'}" />
+                        </svg>
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -561,11 +443,10 @@
                           <thead>
                             <tr>
                               <th scope="col">Phân loại</th>
-                              <th scope="col">SKU</th>
                               <th scope="col" class="text-end">Giá bán</th>
-                              <th scope="col" class="text-end">Giá trước giảm</th>
+                              <th scope="col" class="text-end">Giá tham chiếu</th>
                               <th scope="col" class="text-end">Khả dụng</th>
-                              <th scope="col">Cấu hình phân loại</th>
+                              <th scope="col">Trạng thái SKU</th>
                               <th scope="col">Thao tác</th>
                             </tr>
                           </thead>
@@ -580,26 +461,29 @@
                                     loading="lazy"
                                     width="36"
                                     height="36"
-                                  /><span
-                                    th:text="${sku.variantName}"
-                                    th:title="${sku.variantName}"
-                                  ></span>
+                                  />
+                                  <div class="min-w-0">
+                                    <span
+                                      th:text="${sku.variantName}"
+                                      th:title="${sku.variantName}"
+                                    ></span>
+                                    <div class="vf-sku-code">
+                                      <code
+                                        class="vf-catalog-sku"
+                                        th:text="${sku.sku}"
+                                        th:title="${sku.sku}"
+                                      ></code>
+                                      <button
+                                        type="button"
+                                        class="vf-catalog-copy"
+                                        th:attr="data-vf-copy-sku=${sku.sku},aria-label=${'Sao chép SKU ' + sku.sku}"
+                                      >
+                                        Sao chép
+                                      </button>
+                                    </div>
+                                  </div>
                                 </div>
                               </th>
-                              <td>
-                                <code
-                                  class="vf-catalog-sku"
-                                  th:text="${sku.sku}"
-                                  th:title="${sku.sku}"
-                                ></code
-                                ><button
-                                  type="button"
-                                  class="vf-catalog-copy"
-                                  th:attr="data-vf-copy-sku=${sku.sku},aria-label=${'Sao chép SKU ' + sku.sku}"
-                                >
-                                  Sao chép
-                                </button>
-                              </td>
                               <td class="text-end fw-semibold">
                                 <span
                                   th:if="${sku.price != null}"
@@ -634,7 +518,7 @@
                                   class="badge"
                                   th:classappend="${v.enabled ? 'vf-badge-green' : 'vf-badge-gray'}"
                                   th:text="${v.configurationLabel}"
-                                  title="Cấu hình phân loại; lượng hàng khả dụng được hiển thị ở cột bên cạnh."
+                                  title="Trạng thái mở bán của SKU. Số lượng khả dụng được hiển thị ở cột bên cạnh."
                                 ></span>
                               </td>
                               <td>
@@ -671,40 +555,54 @@
                                       <use href="#vf-trash" />
                                     </svg>
                                   </button>
+                                  <button
+                                    class="btn btn-sm vf-catalog-icon-action"
+                                    type="button"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#variantActionModal"
+                                    th:with="actionLabel=${v.enabled ? 'Tạm ẩn' : 'Mở bán'}"
+                                    th:classappend="${v.enabled ? 'btn-outline-secondary' : 'btn-outline-success'}"
+                                    th:title="${actionLabel + ' phân loại'}"
+                                    th:attr="data-action-url=@{/seller/products/{id}/variants/{variant}/status(id=${p.productId},variant=${sku.variantId})},data-status=${v.enabled ? 'INACTIVE' : 'ACTIVE'},data-name=${sku.variantName + ' · ' + sku.sku},data-label=${actionLabel},aria-label=${actionLabel + ' phân loại ' + sku.variantName}"
+                                  >
+                                    <svg class="vf-icon" aria-hidden="true">
+                                      <use th:attr="href=${v.enabled ? '#vf-eye-off' : '#vf-eye'}" />
+                                    </svg>
+                                  </button>
                                   <div class="dropdown">
                                     <button
-                                      class="btn btn-sm btn-outline-secondary vf-catalog-more"
+                                      class="btn btn-sm btn-outline-secondary vf-catalog-icon-action"
                                       type="button"
+                                      th:id="${'catalog-variant-actions-' + sku.variantId}"
                                       data-bs-toggle="dropdown"
-                                      data-bs-config='{"popperConfig":{"strategy":"fixed","modifiers":[{"name":"preventOverflow","options":{"boundary":"viewport","padding":12}}]}}'
+                                      data-bs-config='{"popperConfig":{"strategy":"fixed","modifiers":[{"name":"preventOverflow","options":{"boundary":"viewport","padding":12}},{"name":"offset","options":{"offset":[0,4]}}]}}'
                                       aria-expanded="false"
-                                      th:attr="aria-label=${'Thao tác khác cho phân loại ' + sku.variantName}"
+                                      th:attr="aria-label=${'Thao tác khác cho SKU ' + sku.sku}"
+                                      title="Thao tác khác"
                                     >
-                                      <svg class="vf-icon" aria-hidden="true">
-                                        <use href="#vf-more" />
-                                      </svg>
+                                      <svg class="vf-icon" aria-hidden="true"><use href="#vf-more" /></svg>
                                     </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
+                                    <ul
+                                      class="dropdown-menu dropdown-menu-end vf-product-action-menu"
+                                      th:attr="aria-labelledby=${'catalog-variant-actions-' + sku.variantId}"
+                                    >
                                       <li>
                                         <a
                                           class="dropdown-item"
                                           th:href="@{/seller/inventory(variantId=${sku.variantId})}"
-                                          >Xem tồn kho</a
                                         >
+                                          <svg class="vf-icon" aria-hidden="true"><use href="#vf-box" /></svg>
+                                          Xem tồn kho
+                                        </a>
                                       </li>
                                       <li>
                                         <a
                                           class="dropdown-item"
                                           th:href="@{/seller/products/{id}/variants/{variant}/prices(id=${p.productId},variant=${sku.variantId})}"
-                                          >Lịch sử giá bán</a
                                         >
-                                      </li>
-                                      <li>
-                                        <button class="dropdown-item" type="button"
-                                          data-bs-toggle="modal" data-bs-target="#variantActionModal"
-                                          th:attr="data-action-url=@{/seller/products/{id}/variants/{variant}/status(id=${p.productId},variant=${sku.variantId})},data-status=${v.enabled ? 'INACTIVE' : 'ACTIVE'},data-name=${sku.variantName + ' · ' + sku.sku},data-label=${v.enabled ? 'Tạm ẩn' : 'Mở bán'},aria-label=${(v.enabled ? 'Tạm ẩn phân loại ' : 'Mở bán phân loại ') + sku.variantName}"
-                                          th:text="${v.enabled ? 'Tạm ẩn' : 'Mở bán'}">
-                                        </button>
+                                          <svg class="vf-icon" aria-hidden="true"><use href="#vf-history" /></svg>
+                                          Lịch sử giá bán
+                                        </a>
                                       </li>
                                     </ul>
                                   </div>
@@ -715,7 +613,7 @@
                         </table>
                         <p class="vf-catalog-stock-note">
                           Khả dụng đã trừ lượng giữ cho đơn và loại các lô hết
-                          hạn hoặc bị khóa. Cấu hình phân loại được giữ nguyên
+                          hạn hoặc bị khóa. Trạng thái SKU được giữ nguyên
                           khi sản phẩm tạm ẩn; quản lý lô và số lượng tại Kho
                           hàng.
                         </p>

@@ -44,10 +44,10 @@
             </div>
         </div>
         <div class="vfc-container vfc-header-tools">
-            <form class="vfc-header-search" th:action="@{/home}" method="get" role="search">
+            <form class="vfc-header-search" th:action="@{/products}" method="get" role="search">
                 <input th:if="${category != null and not #strings.isEmpty(category)}" type="hidden" name="category" th:value="${category}">
                 <svg class="vfo-icon" aria-hidden="true"><use href="#vfo-search"/></svg>
-                <input class="form-control" aria-label="Tìm kiếm trái cây" name="keyword" maxlength="100" th:value="${keyword}" placeholder="Tìm kiếm trái cây tươi, bưởi da xanh, xoài cát..." type="search">
+                <input class="form-control" aria-label="Tìm kiếm trái cây" name="q" maxlength="100" th:value="${q}" placeholder="Tìm kiếm trái cây tươi, bưởi da xanh, xoài cát..." type="search">
                 <button class="btn vfo-btn-primary" type="submit">Tìm kiếm</button>
             </form>
             <a class="vfc-cart-link" th:attr="aria-current=${active == 'cart' ? 'page' : null}" th:href="@{/cart}" title="Giỏ hàng"><svg class="vfo-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h3l3 13h11l3-9H6"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/></svg><span class="vfc-cart-label">Giỏ hàng</span><span class="vfc-cart-count" th:text="${cartBadgeTotal != null ? cartBadgeTotal : (cart != null ? cart.totalItems : 0)}">0</span></a>

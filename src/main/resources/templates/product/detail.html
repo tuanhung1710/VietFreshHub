@@ -210,7 +210,7 @@
                 class="badge ms-2"
                 th:classappend="${v.enabled?'bg-success-subtle text-success-emphasis':'bg-secondary-subtle text-secondary-emphasis'}"
                 th:text="${v.configurationLabel}"
-                title="Cấu hình phân loại; lượng hàng khả dụng được hiển thị riêng bên dưới."
+                title="Trạng thái mở bán của SKU. Số lượng khả dụng được hiển thị bên dưới."
               >
               </span>
             </div>
@@ -300,12 +300,12 @@
         <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
           <p
             class="h5 text-success mb-0"
-            th:text="${#numbers.formatDecimal(v.variant.price,0,'POINT',0,'COMMA')+' ₫ / '+v.variant.unit}"
+            th:text="${@vndAmounts.format(v.variant.price)+' ₫ / '+v.variant.unit}"
           ></p>
           <small
             class="text-body-secondary"
             th:if="${v.variant.compareAtPrice!=null}"
-            th:text="${'Giá trước giảm: '+#numbers.formatDecimal(v.variant.compareAtPrice,0,'POINT',0,'COMMA')+' ₫'}"
+            th:text="${'Giá tham chiếu: '+@vndAmounts.format(v.variant.compareAtPrice)+' ₫'}"
           >
           </small>
           <span
@@ -318,7 +318,7 @@
         <p
           th:if="${v.offerPrice!=null}"
           class="alert alert-success small"
-          th:text="${'Giá bán cận hạn: '+#numbers.formatDecimal(v.offerPrice,0,'POINT',0,'COMMA')+' ₫ · Áp dụng cho '+v.offerQuantity+' '+v.variant.unit}"
+          th:text="${'Giá bán cận hạn: '+@vndAmounts.format(v.offerPrice)+' ₫ · Áp dụng cho '+v.offerQuantity+' '+v.variant.unit}"
         ></p>
         <div class="row g-3 mb-3 vf-variant-metrics">
           <div class="col-6 col-xl-3">
@@ -373,7 +373,7 @@
               class="form-label"
               th:for="${'sku-status-'+v.variant.variantId}"
             >
-              Cấu hình phân loại
+              Trạng thái SKU
             </label>
             <select
               class="form-select"
@@ -417,14 +417,6 @@
             </button>
           </div>
         </form>
-
-        <p class="small text-body-secondary mt-3 mb-0">
-          Phân loại được cấu hình mở bán, có giá hợp lệ và còn hàng có thể bán khi sản phẩm
-          được mở bán, không bị Admin khóa và shop đang nhận đơn.
-          Khi tạm ẩn phân loại mở bán cuối cùng, cần tạm ẩn sản phẩm trước.
-          Chọn Xóa phân loại trong trạng thái hoặc icon thùng rác phía trên để xóa. Lịch sử và tồn kho
-          được giữ lại; không thể xóa khi còn hàng chờ xuất kho.
-        </p>
       </section>
     </main>
 

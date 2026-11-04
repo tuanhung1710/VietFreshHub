@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+    <body>
+        <!-- Ảnh và mức giảm giá của sản phẩm. -->
+        <th:block th:fragment="productImage(product)">
+            <img data-product-image
+             th:src="${#strings.isEmpty(#strings.trim(product.imageUrl)) ? '/images/product/product-placeholder.svg' : product.imageUrl}"
+             th:alt="${product.name}" loading="lazy">
+            <span class="discount-badge discount-badge--image"
+              th:if="${product.selectedVariant.discountPercent != null}"
+              th:text="${product.selectedVariant.discountPercent == 0 ? 'Giảm dưới 1%' : '-' + product.selectedVariant.discountPercent + '%'}">
+            </span>
+        </th:block>
+        <!-- Thẻ sản phẩm trên trang chủ và danh sách toàn sàn. -->
+        <a th:fragment="productCard(product)" class="p-card"
+       th:href="@{/product-detail/{id}(id=${product.selectedVariant.variantId})}">
+            <div class="p-image">
+                <th:block th:replace="~{fragments/storefront-catalog :: productImage(${product})}">
+                </th:block>
+            </div>
+            <div class="p-body">
+                <div class="p-name" th:text="${product.name}">
+                </div>
+                <div class="p-shop"
+                 th:text="${product.shopName + ' · ' + (#strings.isEmpty(product.shopPlace) ? 'Chưa cập nhật' : product.shopPlace)}">
+                </div>
+                <div class="p-price" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'COMMA')} + ' VND'">
+                </div>
+                <div class="p-sub">
+                    <span th:text="${'★ ' + (product.rating == null ? '0.0' : #numbers.formatDecimal(product.rating,1,1)) + '/5'}">
+                    </span>
+                    <span th:text="${'Đã bán ' + product.sales}">
+                    </span>
+                </div>
+            </div>
+        </a>
+        <!-- Thẻ sản phẩm trong một gian hàng. -->
+        <a th:fragment="shopProductCard(product,rank)" class="product"
+       th:classappend="${rank != null ? 'top' : ''}"
+       th:attr="data-rank=${rank != null ? 'TOP ' + rank : null}"
+       th:href="@{/product-detail/{id}(id=${product.selectedVariant.variantId})}">
+            <div class="picture">
+                <th:block th:replace="~{fragments/storefront-catalog :: productImage(${product})}">
+                </th:block>
+            </div>
+            <div class="productbody">
+                <div class="productname" th:text="${product.name}">
+                </div>
+                <div class="muted" th:text="${product.categoryName}">
+                </div>
+                <div class="price" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'COMMA')} + ' VND'">
+                </div>
+                <div class="meta">
+                    <span th:text="${'★ ' + (product.rating == null ? '0.0' : #numbers.formatDecimal(product.rating,1,1)) + '/5'}">
+                    </span>
+                    <span th:text="${'Đã bán ' + product.sales}">
+                    </span>
+                </div>
+            </div>
+        </a>
+        <a th:fragment="shopCard(shop)" class="shop" th:href="@{/shops/{id}(id=${shop.id})}">
+            <h3 th:text="${shop.name}">
+            </h3>
+            <p th:text="${shop.description}">
+            </p>
+            <p th:text="${'Gửi từ: ' + (#strings.isEmpty(shop.place) ? 'Chưa cập nhật' : shop.place)}">
+            </p>
+            <p>
+                <u>
+                    Xem gian hàng
+                </u>
+            </p>
+        </a>
+        <!-- Giữ bộ lọc khi đổi số sản phẩm mỗi trang. -->
+        <th:block th:fragment="filters">
+            <input type="hidden" name="q" th:value="${filters.q}">
+            <input type="hidden" name="category" th:value="${filters.category}">
+            <input type="hidden" name="shopIds" th:each="id : ${filters.shopIds}" th:value="${id}">
+            <input type="hidden" name="places" th:each="place : ${filters.places}" th:value="${place}">
+            <input type="hidden" name="minPrice" th:value="${filters.minPrice}">
+            <input type="hidden" name="maxPrice" th:value="${filters.maxPrice}">
+            <input type="hidden" name="minRating" th:value="${filters.minRating}">
+            <input type="hidden" name="sort" th:value="${filters.sort}">
+        </th:block>
+        <!-- Controller trả Page; mỗi trang truyền trực tiếp link trước và sau như product/inventory. -->
+        <div th:fragment="pagination(pageData,previousUrl,nextUrl)" class="customer-pager">
+            <a class="customer-page-button customer-page-previous" aria-label="Trang trước"
+           th:classappend="${!pageData.hasPrevious() ? 'disabled' : ''}"
+           th:attr="href=${pageData.hasPrevious() ? previousUrl : null},aria-disabled=${!pageData.hasPrevious()},tabindex=${pageData.hasPrevious() ? null : -1}">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <div class="customer-page-summary" aria-live="polite">
+                <span th:text="${'Trang ' + (pageData.number + 1) + ' / ' + T(java.lang.Math).max(1,pageData.totalPages)}">
+                </span>
+                <small th:text="${pageData.totalElements + ' sản phẩm'}">
+                </small>
+            </div>
+            <a class="customer-page-button customer-page-next" aria-label="Trang tiếp"
+           th:classappend="${!pageData.hasNext() ? 'disabled' : ''}"
+           th:attr="href=${pageData.hasNext() ? nextUrl : null},aria-disabled=${!pageData.hasNext()},tabindex=${pageData.hasNext() ? null : -1}">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+        </div>
+        <th:block th:fragment="pageSize(pageData,selectId)">
+            <label th:for="${selectId}">
+                Sản phẩm mỗi trang
+            </label>
+            <select name="size" th:id="${selectId}">
+                <option th:each="pageSize : ${T(VietFreshHub.common.PageSizes).OPTIONS}"
+                    th:value="${pageSize}" th:selected="${pageData.size == pageSize}" th:text="${pageSize}">
+                </option>
+            </select>
+            <button type="submit">
+                Áp dụng
+            </button>
+        </th:block>
+    </body>
+</html>

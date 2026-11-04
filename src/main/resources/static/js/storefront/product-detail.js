@@ -1,5 +1,4 @@
-import { $, money, notice, discountLabel } from './render.js';
-import { refreshCartCount } from './product.js';
+import { $, money, discountLabel } from './ui.js';
 import { quantityWithinStock } from './purchase.js';
 
 const form = $('productPurchase');
@@ -71,4 +70,3 @@ document.addEventListener('click', event => {
 const initialQuantity = new URLSearchParams(location.search).get('quantity');
 if (initialQuantity != null) quantity.value = initialQuantity;
 update();
-refreshCartCount().catch(error => notice(error.message));
