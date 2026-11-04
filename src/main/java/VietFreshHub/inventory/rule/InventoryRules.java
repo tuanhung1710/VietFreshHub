@@ -12,15 +12,18 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 
-/** Quy tắc kho dùng chung: ngày nghiệp vụ theo giờ Việt Nam, thời điểm lưu trữ theo UTC. */
+/**
+ * Quy tắc số lượng, giá và hạn dùng của kho. Ngày nghiệp vụ theo giờ Việt Nam; timestamp trong Java
+ * dùng UTC và được converter chuyển sang giờ Việt Nam khi lưu các cột đã nâng cấp trong cơ sở dữ liệu.
+ */
 public final class InventoryRules {
 
     public static final ZoneId SHOP_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
-    public static final String EXPIRED_DISPOSAL_REASON = "Hủy toàn bộ hàng hết hạn chưa giữ cho đơn hàng.";
+    public static final String EXPIRED_DISPOSAL_REASON =
+            "Hủy toàn bộ hàng hết hạn chưa giữ cho đơn hàng.";
     private static final BigDecimal MINIMUM_PRICE = new BigDecimal("10000");
 
-    private InventoryRules() {
-    }
+    private InventoryRules() {}
 
     /** Lấy ngày hiện tại theo múi giờ Việt Nam để kiểm tra nghiệp vụ của cửa hàng. */
     public static LocalDate today() {
@@ -37,8 +40,8 @@ public final class InventoryRules {
      */
     public static LocalDateTime startOfDayUtc(LocalDate date) {
         require(databaseDate(date), "Ngày vượt giới hạn lưu trữ cho phép.");
-        LocalDateTime timestamp = date.atStartOfDay(SHOP_ZONE)
-                .withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
+        LocalDateTime timestamp =
+                date.atStartOfDay(SHOP_ZONE).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
         require(timestamp.getYear() >= 1, "Ngày vượt giới hạn lưu trữ cho phép.");
         return timestamp;
     }
@@ -132,7 +135,8 @@ public final class InventoryRules {
 
     /** Kiểm tra ngày nhập không sau hôm nay và hạn sử dụng không trước hôm nay hoặc ngày nhập. */
     public static void dates(LocalDate receivedDate, LocalDate expiryDate, LocalDate date) {
-        require((receivedDate == null || databaseDate(receivedDate))
+        require(
+                (receivedDate == null || databaseDate(receivedDate))
                         && (expiryDate == null || databaseDate(expiryDate)),
                 "Ngày nhập kho và hạn sử dụng phải nằm trong khoảng năm 1 đến 9999.");
         require(
@@ -169,9 +173,11 @@ public final class InventoryRules {
     }
 
     /** So tồn lúc mở biểu mẫu với tồn hiện tại trước khi áp dụng số kiểm đếm. */
-    public static int countedQuantity(InventoryBatch batch, Integer counted, Integer expected, LocalDate date) {
+    public static int countedQuantity(
+            InventoryBatch batch, Integer counted, Integer expected, LocalDate date) {
         require(counted != null && counted >= 0, "Vui lòng nhập số tồn sau kiểm đếm hợp lệ.");
-        require(expected != null && expected.equals(batch.getQuantityOnHand()),
+        require(
+                expected != null && expected.equals(batch.getQuantityOnHand()),
                 "Tồn kho đã thay đổi. Vui lòng đối chiếu số hiện tại và kiểm đếm lại.");
         return adjustedQuantity(batch, counted - expected, date);
     }
@@ -180,7 +186,9 @@ public final class InventoryRules {
      * Tính phần hàng hết hạn chưa giữ cho đơn có thể hủy; trả về 0 nếu chưa hết hạn hoặc thiếu số liệu.
      */
     public static int disposableQuantity(InventoryBatch batch, LocalDate date) {
-        if (!expired(batch, date) || batch.getQuantityOnHand() == null || batch.getReservedQuantity() == null) {
+        if (!expired(batch, date)
+                || batch.getQuantityOnHand() == null
+                || batch.getReservedQuantity() == null) {
             return 0;
         }
         return Math.max(0, batch.getQuantityOnHand() - batch.getReservedQuantity());
@@ -209,7 +217,8 @@ public final class InventoryRules {
             BigDecimal offerPrice,
             LocalDate endDate,
             LocalDate date) {
-        // Đây là điều kiện thiết lập trước giá giảm trong 7 ngày; điều kiện áp dụng thực tế là 3 ngày.
+        // Đây là điều kiện thiết lập trước giá giảm trong 7 ngày; điều kiện áp dụng thực tế là 3
+        // ngày.
         require(
                 isWholeVndPrice(offerPrice) && offerPrice.compareTo(BigDecimal.ONE) >= 0,
                 "Giá giảm phải là số nguyên đồng và từ 1 đ.");
@@ -217,7 +226,9 @@ public final class InventoryRules {
         require(
                 batch.getExpiryDate() != null && !batch.getExpiryDate().isAfter(date.plusDays(7)),
                 "Chỉ có thể thiết lập giá giảm trong 7 ngày trước hạn sử dụng.");
-        require(offerPrice.compareTo(basePrice) < 0, "Giá giảm phải thấp hơn giá bán của phân loại.");
+        require(
+                offerPrice.compareTo(basePrice) < 0,
+                "Giá giảm phải thấp hơn giá bán của phân loại.");
         require(
                 endDate != null
                         && !endDate.isBefore(date)

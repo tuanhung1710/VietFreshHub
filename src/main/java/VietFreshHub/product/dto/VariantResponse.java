@@ -24,8 +24,9 @@ public class VariantResponse {
 
     /** OUT_OF_STOCK vẫn là cấu hình mở bán; tồn kho được hiển thị riêng. */
     public boolean isEnabled() {
-        return variant != null && (variant.getStatus() == VariantStatus.ACTIVE
-                || variant.getStatus() == VariantStatus.OUT_OF_STOCK);
+        return variant != null
+                && (variant.getStatus() == VariantStatus.ACTIVE
+                        || variant.getStatus() == VariantStatus.OUT_OF_STOCK);
     }
 
     public String getConfigurationLabel() {
@@ -39,7 +40,12 @@ public class VariantResponse {
     public BigDecimal getReferencePrice() {
         BigDecimal reference = variant.getCompareAtPrice();
         BigDecimal price = variant.getPrice();
-        return reference != null && price != null && reference.stripTrailingZeros().scale() <= 0
-                && reference.signum() >= 0 && reference.compareTo(price) >= 0 ? reference : null;
+        return reference != null
+                        && price != null
+                        && reference.stripTrailingZeros().scale() <= 0
+                        && reference.signum() >= 0
+                        && reference.compareTo(price) >= 0
+                ? reference
+                : null;
     }
 }

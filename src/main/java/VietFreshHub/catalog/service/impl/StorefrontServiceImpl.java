@@ -3,24 +3,25 @@ package VietFreshHub.catalog.service.impl;
 import VietFreshHub.catalog.dto.CatalogBrowseFilter;
 import VietFreshHub.catalog.dto.CatalogProductResponse;
 import VietFreshHub.catalog.dto.StorefrontCatalogFilter;
-import VietFreshHub.catalog.dto.StorefrontCategoryResponse;
-import VietFreshHub.catalog.dto.StorefrontHomeResponse;
-import VietFreshHub.catalog.dto.StorefrontOptionsResponse;
-import VietFreshHub.catalog.dto.StorefrontProduct;
+import VietFreshHub.catalog.dto.StorefrontProductDetail;
 import VietFreshHub.catalog.dto.StorefrontShopHomeResponse;
+import VietFreshHub.catalog.dto.StorefrontShopOption;
 import VietFreshHub.catalog.entity.CatalogCategory;
 import VietFreshHub.catalog.repository.CatalogDetailRepository;
 import VietFreshHub.catalog.repository.StorefrontShopRepository;
-import VietFreshHub.catalog.repository.StorefrontShopRepository.ShopOption;
 import VietFreshHub.catalog.service.CatalogService;
 import VietFreshHub.catalog.service.StorefrontService;
-import VietFreshHub.common.PageResponse;
 import VietFreshHub.common.PageSizes;
 import VietFreshHub.common.Pagination;
+import VietFreshHub.shop.entity.Shop;
+import VietFreshHub.shop.service.ShopBrowseService;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -33,9 +34,11 @@ public class StorefrontServiceImpl implements StorefrontService {
     private final CatalogService catalogService;
     private final StorefrontShopRepository storefrontShopRepository;
     private final CatalogDetailRepository catalogDetailRepository;
+    private final ShopBrowseService shopBrowseService;
 
     @Override
-    public Page<CatalogProductResponse> searchProducts(StorefrontCatalogFilter filters, int page, int size) {
+    public Page<CatalogProductResponse> searchProducts(
+            StorefrontCatalogFilter filters, int page, int size) {
         return findProducts(prepareFilters(filters, page, size));
     }
 
@@ -60,7 +63,8 @@ public class StorefrontServiceImpl implements StorefrontService {
     }
 
     /** Chuẩn hóa điều kiện của form trước khi chuyển xuống phần truy vấn catalog. */
-    private CatalogBrowseFilter prepareFilters(StorefrontCatalogFilter filters, int page, int size) {
+    private CatalogBrowseFilter prepareFilters(
+            StorefrontCatalogFilter filters, int page, int size) {
         filters.setQ(filters.getQ() == null ? "" : filters.getQ().strip());
         filters.setSort(normalizeSort(filters.getSort()));
         CatalogBrowseFilter query = new CatalogBrowseFilter();
@@ -101,73 +105,72 @@ public class StorefrontServiceImpl implements StorefrontService {
 
     @Override
     public StorefrontShopHomeResponse shopHome(Long shopId) {
-        Page<CatalogProductResponse> products = searchShopProducts(
-                shopId, new StorefrontCatalogFilter(), 1, PageSizes.DEFAULT);
-        return new StorefrontShopHomeResponse(products.getTotalElements(),
-                products.stream().limit(5).toList(), topProducts(shopId));
+        Page<CatalogProductResponse> products =
+                searchShopProducts(shopId, new StorefrontCatalogFilter(), 1, PageSizes.DEFAULT);
+        return new StorefrontShopHomeResponse(
+                products.getTotalElements(),
+                products.stream().limit(5).toList(),
+                topProducts(shopId));
     }
 
     @Override
     public List<CatalogCategory> categories() {
         return catalogService.categories().stream()
-                .sorted(Comparator.comparing(CatalogCategory::getCategoryId)).toList();
+                .sorted(Comparator.comparing(CatalogCategory::getCategoryId))
+                .toList();
     }
 
     @Override
     public long productCount(Long shopId) {
-        return searchShopProducts(shopId, new StorefrontCatalogFilter(), 1, PageSizes.DEFAULT).getTotalElements();
+        return searchShopProducts(shopId, new StorefrontCatalogFilter(), 1, PageSizes.DEFAULT)
+                .getTotalElements();
     }
 
     @Override
-    public List<ShopOption> shops() {
+    public List<StorefrontShopOption> shops() {
         return storefrontShopRepository.list();
     }
 
     @Override
     public List<String> shippingPlaces() {
-        return shops().stream().map(ShopOption::place)
-                .filter(place -> place != null && !place.isBlank()).distinct().toList();
+        return shops().stream()
+                .map(StorefrontShopOption::place)
+                .filter(place -> place != null && !place.isBlank())
+                .distinct()
+                .toList();
     }
 
     @Override
     public String categoryName(Long categoryId) {
-        return categories().stream().filter(category -> category.getCategoryId().equals(categoryId))
-                .map(CatalogCategory::getName).findFirst().orElse("Tất cả sản phẩm");
+        return categories().stream()
+                .filter(category -> category.getCategoryId().equals(categoryId))
+                .map(CatalogCategory::getName)
+                .findFirst()
+                .orElse("Tất cả sản phẩm");
     }
 
     @Override
-    public CatalogDetailRepository.Details productDetails(Long productId) {
-        return catalogDetailRepository.find(productId);
+    public StorefrontProductDetail productDetail(Long variantId, Long productId, String slug) {
+        CatalogProductResponse product = catalogService.getProduct(variantId, productId, slug);
+        Shop shop = shopBrowseService.profile(product.getShopId());
+        CatalogBrowseFilter filters = new CatalogBrowseFilter();
+        filters.setShopId(product.getShopId());
+        Page<CatalogProductResponse> related = catalogService.listProducts(filters);
+        return new StorefrontProductDetail(
+                product,
+                shop,
+                catalogDetailRepository.find(product.getProductId()),
+                shopAddress(shop.getShopId()).orElse("Chưa cập nhật địa chỉ"),
+                shop.getCreatedAt() == null ? null : shop.getCreatedAt().plusHours(7).toLocalDate(),
+                related.getTotalElements(),
+                related.stream()
+                        .filter(item -> !item.getProductId().equals(product.getProductId()))
+                        .limit(5)
+                        .toList());
     }
 
     @Override
     public Optional<String> shopAddress(Long shopId) {
         return storefrontShopRepository.formattedAddress(shopId);
-    }
-
-    /** Giữ cấu trúc JSON của API cũ; các controller MVC không dùng các phản hồi này. */
-    @Override
-    public StorefrontOptionsResponse options() {
-        List<StorefrontCategoryResponse> categories = categories().stream()
-                .map(category -> new StorefrontCategoryResponse(category.getCategoryId(), category.getName())).toList();
-        return new StorefrontOptionsResponse(categories, shops(), PageSizes.OPTIONS, PageSizes.DEFAULT);
-    }
-
-    @Override
-    public StorefrontHomeResponse home(CatalogBrowseFilter paging) {
-        CatalogBrowseFilter suggestions = new CatalogBrowseFilter();
-        suggestions.setPage(paging.getPage());
-        suggestions.setPageSize(paging.getPageSize());
-        return new StorefrontHomeResponse(products(suggestions), topProducts(null).stream().map(StorefrontProduct::from).toList());
-    }
-
-    @Override
-    public PageResponse<StorefrontProduct> products(CatalogBrowseFilter filter) {
-        return PageResponse.from(catalogService.listProducts(filter).map(StorefrontProduct::from));
-    }
-
-    @Override
-    public StorefrontProduct product(Long productId, Long variantId) {
-        return StorefrontProduct.from(catalogService.getProduct(variantId, productId, null));
     }
 }

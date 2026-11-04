@@ -1,15 +1,18 @@
 package VietFreshHub.catalog.entity;
 
 import VietFreshHub.common.VietnamDatabaseTime;
-import jakarta.persistence.Convert;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+
 import jakarta.persistence.*;
+import jakarta.persistence.Convert;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Nationalized;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -38,10 +41,12 @@ public class CatalogVariant {
     @Column(name = "variant_name", nullable = false, length = 200)
     private String variantName;
 
-    @Nationalized @Column(name = "thumbnail_url", nullable = false, length = 1000)
+    @Nationalized
+    @Column(name = "thumbnail_url", nullable = false, length = 1000)
     private String thumbnailUrl;
 
-    @Nationalized @Column(nullable = false, length = 30)
+    @Nationalized
+    @Column(nullable = false, length = 30)
     private String unit;
 
     @Column(name = "compare_at_price", precision = 18, scale = 2)
@@ -51,7 +56,9 @@ public class CatalogVariant {
     private BigDecimal weight;
 
     public String getDisplayImageUrl() {
-        return thumbnailUrl != null && !thumbnailUrl.isBlank() ? thumbnailUrl : product.getImageUrl();
+        return thumbnailUrl != null && !thumbnailUrl.isBlank()
+                ? thumbnailUrl
+                : product.getImageUrl();
     }
 
     @Column(nullable = false, precision = 18, scale = 2)

@@ -12,5 +12,4 @@ public class BatchRequest extends BatchMetadataRequest {
     @NotNull(message = "Vui lòng nhập số lượng.")
     @Min(value = 1, message = "Số lượng nhập phải lớn hơn 0.")
     private Integer quantity;
-
 }

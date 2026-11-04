@@ -12,8 +12,8 @@ import VietFreshHub.product.enums.ProductStatus;
 import VietFreshHub.product.enums.VariantStatus;
 import VietFreshHub.product.exception.CatalogException;
 import VietFreshHub.product.exception.DuplicateProductNameException;
-import VietFreshHub.product.service.ProductService;
 import VietFreshHub.product.service.ProductDraftService;
+import VietFreshHub.product.service.ProductService;
 import VietFreshHub.shop.service.ShopService;
 
 import jakarta.validation.Valid;
@@ -24,6 +24,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -51,22 +52,20 @@ public class ProductController {
      * Nếu chuyển đổi dữ liệu lỗi, giữ nguyên các dòng để thông báo lỗi vẫn trỏ đúng trường.
      */
     @PostMapping("/draft")
-    public String draft(Authentication authentication, @ModelAttribute("form") ProductRequest form,
-            BindingResult errors, @RequestParam(required = false) String addVariant,
+    public String draft(
+            Authentication authentication,
+            @ModelAttribute("form") ProductRequest form,
+            BindingResult errors,
+            @RequestParam(required = false) String addVariant,
             @RequestParam(required = false) Integer removeVariant,
-            @RequestParam(required = false) Integer useProductImage, Model model) {
+            @RequestParam(required = false) Integer useProductImage,
+            Model model) {
         shopService.getManagedShopId(authentication);
         // Bản nháp có thể chưa đủ dữ liệu; giữ nguyên chỉ số dòng nếu có lỗi chuyển đổi giá trị.
         if (!errors.hasErrors()) {
             try {
-                // Mỗi lần gửi chỉ được có một thao tác để index phân loại được xử lý rõ ràng.
-                InventoryRules.require((addVariant != null ? 1 : 0) + (removeVariant != null ? 1 : 0)
-                        + (useProductImage != null ? 1 : 0) == 1, "Chọn một thao tác với phân loại.");
-                if (addVariant != null) {
-                    productDraftService.addVariant(form);
-                }
-                else if (removeVariant != null) productDraftService.removeVariant(form, removeVariant);
-                else productDraftService.useProductImage(form, useProductImage);
+                productDraftService.update(
+                        form, addVariant != null, removeVariant, useProductImage);
             } catch (CatalogException exception) {
                 errors.reject("business", exception.getMessage());
             }
@@ -80,11 +79,17 @@ public class ProductController {
     @GetMapping
     public String list(
             Authentication authentication,
-            @ModelAttribute("filters") ProductCatalogFilter filters,
+            @Valid @ModelAttribute("filters") ProductCatalogFilter filters,
+            BindingResult errors,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
-            Model model) {
-        model.addAttribute("rows", productService.searchManagement(authentication, filters, page, size));
+            Model model)
+            throws BindException {
+        if (errors.hasErrors()) {
+            throw new BindException(errors);
+        }
+        model.addAttribute(
+                "rows", productService.searchManagement(authentication, filters, page, size));
         model.addAttribute("categories", productService.categories());
         model.addAttribute("tabSummary", productService.productTabSummary(authentication));
         model.addAttribute("q", filters.getQ());
@@ -92,7 +97,9 @@ public class ProductController {
         model.addAttribute("tab", filters.getTab());
         model.addAttribute("createdFrom", filters.getCreatedFrom());
         model.addAttribute("createdTo", filters.getCreatedTo());
-        model.addAttribute("selectionScope", shopService.getManagedShopId(authentication) + ":" + authentication.getName());
+        model.addAttribute(
+                "selectionScope",
+                shopService.getManagedShopId(authentication) + ":" + authentication.getName());
         return "product/list";
     }
 
@@ -120,13 +127,15 @@ public class ProductController {
         try {
             Long productId = productService.create(authentication, form);
             flash.addFlashAttribute(
-                    "success", "Đã tạo sản phẩm và các phân loại. Sản phẩm được mở bán khi đủ điều kiện.");
+                    "success",
+                    "Đã tạo sản phẩm và các phân loại. Sản phẩm được mở bán khi đủ điều kiện.");
             return productRedirect(productId);
         } catch (DuplicateProductNameException exception) {
             errors.rejectValue("name", "duplicate", exception.getMessage());
             return showProductForm(model, null);
         } catch (DataIntegrityViolationException exception) {
-            // Hai yêu cầu có thể cùng vượt qua kiểm tra tên; ràng buộc duy nhất ở DB vẫn chặn trùng.
+            // Hai yêu cầu có thể cùng vượt qua kiểm tra tên; ràng buộc duy nhất ở DB vẫn chặn
+            // trùng.
             rejectDuplicateProductName(exception, errors);
             return showProductForm(model, null);
         } catch (CatalogException exception) {
@@ -188,16 +197,19 @@ public class ProductController {
             @RequestParam(defaultValue = "false") boolean returnToList,
             @ModelAttribute("filters") ProductCatalogFilter filters,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "10") int size,
             RedirectAttributes flash) {
         if (errors.hasErrors()) {
-            flash.addFlashAttribute("error", "Chọn trạng thái và nhập lý do thay đổi, tối đa 900 ký tự.");
+            flash.addFlashAttribute(
+                    "error", "Chọn trạng thái và nhập lý do thay đổi, tối đa 900 ký tự.");
             return returnToList ? listRedirect(filters, page, size, flash) : productRedirect(id);
         }
         try {
             productService.changeStatus(authentication, id, form);
             if (form.getStatus() == ProductStatus.DELETED) {
-                flash.addFlashAttribute("success", "Đã xóa sản phẩm. Tồn kho và lịch sử vẫn được lưu trong Kho hàng.");
+                flash.addFlashAttribute(
+                        "success",
+                        "Đã xóa sản phẩm. Tồn kho và lịch sử vẫn được lưu trong Kho hàng.");
                 return listRedirect(filters, page, size, flash);
             }
             flash.addFlashAttribute("success", "Đã cập nhật trạng thái sản phẩm.");
@@ -212,20 +224,31 @@ public class ProductController {
      * Khi thành công, gửi các ID đã xử lý để giao diện xóa đúng những lựa chọn đó.
      */
     @PostMapping("/bulk-status")
-    public String bulkStatus(Authentication authentication,
-            @Valid @ModelAttribute BulkProductActionRequest form, BindingResult errors,
+    public String bulkStatus(
+            Authentication authentication,
+            @Valid @ModelAttribute BulkProductActionRequest form,
+            BindingResult errors,
             @ModelAttribute("filters") ProductCatalogFilter filters,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "5") int size, RedirectAttributes flash) {
+            @RequestParam(defaultValue = "10") int size,
+            RedirectAttributes flash) {
         if (errors.hasErrors()) {
-            flash.addFlashAttribute("error", "Chọn từ 1 đến 50 sản phẩm, trạng thái hợp lệ và nhập lý do tối đa 900 ký tự.");
+            flash.addFlashAttribute(
+                    "error",
+                    "Chọn từ 1 đến 50 sản phẩm, trạng thái hợp lệ và nhập lý do tối đa 900 ký tự.");
             return listRedirect(filters, page, size, flash);
         }
         try {
             productService.changeStatuses(authentication, form);
-            flash.addFlashAttribute("success", form.getStatus() == ProductStatus.DELETED
-                    ? "Đã xóa " + form.getProductIds().size() + " sản phẩm. Tồn kho và lịch sử vẫn được lưu trong Kho hàng."
-                    : "Đã cập nhật trạng thái " + form.getProductIds().size() + " sản phẩm.");
+            flash.addFlashAttribute(
+                    "success",
+                    form.getStatus() == ProductStatus.DELETED
+                            ? "Đã xóa "
+                                    + form.getProductIds().size()
+                                    + " sản phẩm. Tồn kho và lịch sử vẫn được lưu trong Kho hàng."
+                            : "Đã cập nhật trạng thái "
+                                    + form.getProductIds().size()
+                                    + " sản phẩm.");
             // Trang trả về chỉ xóa các ID này khỏi lựa chọn đã lưu khi máy chủ xử lý thành công.
             flash.addFlashAttribute("completedBulkProductIds", form.getProductIds());
         } catch (CatalogException exception) {
@@ -236,7 +259,8 @@ public class ProductController {
     }
 
     /** Chuyển về danh sách sản phẩm, giữ nguyên bộ lọc, số trang và kích thước trang. */
-    private String listRedirect(ProductCatalogFilter filters, int page, int size, RedirectAttributes flash) {
+    private String listRedirect(
+            ProductCatalogFilter filters, int page, int size, RedirectAttributes flash) {
         // Các attribute này trở thành tham số URL để quay về đúng bộ lọc và trang trước thao tác.
         flash.addAttribute("q", filters.getQ());
         flash.addAttribute("category", filters.getCategory());
@@ -309,8 +333,7 @@ public class ProductController {
         try {
             productService.updateVariant(authentication, id, variant, form);
             flash.addFlashAttribute(
-                    "success",
-                    "Đã lưu phân loại. Trạng thái bán hàng được giữ nguyên.");
+                    "success", "Đã lưu phân loại. Trạng thái bán hàng được giữ nguyên.");
             return productRedirect(id);
         } catch (CatalogException exception) {
             errors.reject("business", exception.getMessage());
@@ -329,7 +352,7 @@ public class ProductController {
             @RequestParam(defaultValue = "false") boolean returnToList,
             @ModelAttribute("filters") ProductCatalogFilter filters,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "10") int size,
             RedirectAttributes flash) {
         if (errors.hasErrors()) {
             flash.addFlashAttribute("error", "Nhập lý do xóa phân loại, tối đa 900 ký tự.");
@@ -355,16 +378,20 @@ public class ProductController {
             @RequestParam(defaultValue = "false") boolean returnToList,
             @ModelAttribute("filters") ProductCatalogFilter filters,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "10") int size,
             RedirectAttributes flash) {
         if (errors.hasErrors()) {
-            flash.addFlashAttribute("error", "Chọn trạng thái và nhập lý do thay đổi, tối đa 900 ký tự.");
+            flash.addFlashAttribute(
+                    "error", "Chọn trạng thái và nhập lý do thay đổi, tối đa 900 ký tự.");
             return returnToList ? listRedirect(filters, page, size, flash) : productRedirect(id);
         }
         try {
             productService.changeVariantStatus(authentication, id, variant, form);
-            flash.addFlashAttribute("success", form.getStatus() == VariantStatus.DELETED
-                    ? VARIANT_DELETED_MESSAGE : "Đã cập nhật trạng thái phân loại.");
+            flash.addFlashAttribute(
+                    "success",
+                    form.getStatus() == VariantStatus.DELETED
+                            ? VARIANT_DELETED_MESSAGE
+                            : "Đã cập nhật trạng thái phân loại.");
         } catch (CatalogException exception) {
             flash.addFlashAttribute("error", exception.getMessage());
         }
@@ -387,15 +414,19 @@ public class ProductController {
     }
 
     /** Xung đột tên do hai request đồng thời cũng được trả về đúng trường trên biểu mẫu. */
-    private void rejectDuplicateProductName(DataIntegrityViolationException exception, BindingResult errors) {
-        // Lỗi SQL thường được bọc qua nhiều lớp exception; tìm đúng tên ràng buộc trong chuỗi nguyên nhân.
+    private void rejectDuplicateProductName(
+            DataIntegrityViolationException exception, BindingResult errors) {
+        // Lỗi SQL thường được bọc qua nhiều lớp exception; tìm đúng tên ràng buộc trong chuỗi
+        // nguyên nhân.
         for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
-            if (cause.getMessage() != null && cause.getMessage().contains("UX_products_shop_name")) {
+            if (cause.getMessage() != null
+                    && cause.getMessage().contains("UX_products_shop_name")) {
                 errors.rejectValue("name", "duplicate", DuplicateProductNameException.MESSAGE);
                 return;
             }
         }
-        // Vi phạm ràng buộc khác phải được xử lý theo lỗi dữ liệu chung, không báo nhầm là trùng tên.
+        // Vi phạm ràng buộc khác phải được xử lý theo lỗi dữ liệu chung, không báo nhầm là trùng
+        // tên.
         throw exception;
     }
 

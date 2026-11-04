@@ -28,8 +28,11 @@ public class ProductResponse {
 
     /** Đếm phân loại chưa ngừng kinh doanh đang có lượng khả dụng để hiển thị. */
     public long getAvailableVariantCount() {
-        // Đếm số SKU có hàng khả dụng để hiện "x phân loại còn hàng", không cộng số lượng tồn của SKU.
-        return visibleVariants == null ? 0 : visibleVariants.stream().filter(v -> v.getAvailable() > 0).count();
+        // Đếm số SKU có hàng khả dụng để hiện "x phân loại còn hàng", không cộng số lượng tồn của
+        // SKU.
+        return visibleVariants == null
+                ? 0
+                : visibleVariants.stream().filter(v -> v.getAvailable() > 0).count();
     }
 
     /**

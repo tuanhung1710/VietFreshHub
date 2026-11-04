@@ -16,31 +16,46 @@ import java.util.Optional;
 public interface InventoryBatchRepository extends JpaRepository<InventoryBatch, Long> {
     interface InventoryByShopUnit {
         String getShopName();
+
         String getProductName();
+
         String getVariantName();
+
         String getUnit();
+
         Long getQuantityOnHand();
+
         Long getAvailableQuantity();
     }
 
     interface InventoryByProductVariant {
         String getProductName();
+
         String getVariantName();
+
         String getUnit();
+
         Long getQuantityOnHand();
+
         Long getAvailableQuantity();
     }
 
     interface ExpiringInventory {
         String getShopName();
+
         String getProductName();
+
         String getVariantName();
+
         String getUnit();
+
         java.time.LocalDate getExpiryDate();
+
         Long getAvailableQuantity();
     }
 
-    @Query("""
+    @Query(
+            """
             select sh.shopName as shopName, p.name as productName, v.variantName as variantName, v.unit as unit,
                    sum(b.quantityOnHand) as quantityOnHand,
                    sum(case when b.quantityOnHand > b.reservedQuantity
@@ -55,9 +70,11 @@ public interface InventoryBatchRepository extends JpaRepository<InventoryBatch, 
             group by sh.shopName, p.productId, p.name, v.variantId, v.variantName, v.unit
             order by sh.shopName, p.name, v.variantName
             """)
-    List<InventoryByShopUnit> summarizeByShopAndUnit(@org.springframework.data.repository.query.Param("today") java.time.LocalDate today);
+    List<InventoryByShopUnit> summarizeByShopAndUnit(
+            @org.springframework.data.repository.query.Param("today") java.time.LocalDate today);
 
-    @Query("""
+    @Query(
+            """
             select p.name as productName, v.variantName as variantName, v.unit as unit,
                    sum(b.quantityOnHand) as quantityOnHand,
                    sum(case when b.quantityOnHand > b.reservedQuantity
@@ -72,9 +89,12 @@ public interface InventoryBatchRepository extends JpaRepository<InventoryBatch, 
             group by p.productId, p.name, v.variantId, v.variantName, v.unit
             order by p.name, v.variantName
             """)
-    List<InventoryByProductVariant> summarizeByProductVariant(@org.springframework.data.repository.query.Param("today") java.time.LocalDate today);
+    List<InventoryByProductVariant> summarizeByProductVariant(
+            @org.springframework.data.repository.query.Param("today") java.time.LocalDate today);
 
-    @Query(value = """
+    @Query(
+            value =
+                    """
             select sh.shopName as shopName, p.name as productName, v.variantName as variantName,
                    v.unit as unit, b.expiryDate as expiryDate,
                    (b.quantityOnHand - b.reservedQuantity) as availableQuantity
@@ -87,7 +107,9 @@ public interface InventoryBatchRepository extends JpaRepository<InventoryBatch, 
               and v.status <> VietFreshHub.product.enums.VariantStatus.DELETED
               and p.status <> VietFreshHub.product.enums.ProductStatus.DELETED
             order by b.expiryDate, sh.shopName, p.name, v.variantName
-            """, countQuery = """
+            """,
+            countQuery =
+                    """
             select count(b.batchId)
             from InventoryBatch b, VietFreshHub.product.entity.ProductVariant v,
                  VietFreshHub.product.entity.Product p, VietFreshHub.shop.entity.Shop sh

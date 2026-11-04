@@ -1,8 +1,8 @@
 package VietFreshHub.inventory.controller;
 
 import VietFreshHub.inventory.dto.ActivityHistoryFilter;
-import VietFreshHub.inventory.dto.BatchRequest;
 import VietFreshHub.inventory.dto.BatchMetadataRequest;
+import VietFreshHub.inventory.dto.BatchRequest;
 import VietFreshHub.inventory.dto.BatchResponse;
 import VietFreshHub.inventory.dto.InventoryCatalogFilter;
 import VietFreshHub.inventory.dto.MarkdownRequest;
@@ -12,9 +12,12 @@ import VietFreshHub.inventory.service.InventoryCatalogService;
 import VietFreshHub.inventory.service.InventoryService;
 import VietFreshHub.product.exception.CatalogException;
 import VietFreshHub.product.service.ProductService;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -28,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.servlet.view.RedirectView;
 import org.springframework.web.util.UriComponentsBuilder;
+
 import java.net.URI;
 import java.util.List;
 
@@ -97,15 +101,15 @@ public class InventoryController {
 
     /** Tìm SKU hoặc lô đã nhập để chọn phân loại cho lần nhập tiếp theo. */
     @GetMapping("/restock")
-    public String restockPicker(Authentication authentication, @RequestParam(defaultValue = "") String q,
-                                Model model) {
+    public String restockPicker(
+            Authentication authentication, @RequestParam(defaultValue = "") String q, Model model) {
         restockOptions(authentication, q, model);
         return "inventory/restock-picker";
     }
 
     @GetMapping("/restock/options")
-    public String restockOptions(Authentication authentication, @RequestParam(defaultValue = "") String q,
-                                 Model model) {
+    public String restockOptions(
+            Authentication authentication, @RequestParam(defaultValue = "") String q, Model model) {
         model.addAttribute("q", q.trim());
         model.addAttribute("choices", inventoryCatalog.restockChoices(authentication, q));
         return "inventory/restock-picker :: options";
@@ -145,10 +149,13 @@ public class InventoryController {
             inventoryService.restock(authentication, variant, form);
             flash.addFlashAttribute("success", "Đã nhập kho.");
             if (continueEntry) {
-                return "redirect:" + UriComponentsBuilder.fromPath(INVENTORY_PATH)
-                        .path("/products/{product}/variants/{variant}/restock")
-                        .queryParam("returnTo", "{returnTo}").encode()
-                        .buildAndExpand(product, variant, returnUrl).toUriString();
+                return "redirect:"
+                        + UriComponentsBuilder.fromPath(INVENTORY_PATH)
+                                .path("/products/{product}/variants/{variant}/restock")
+                                .queryParam("returnTo", "{returnTo}")
+                                .encode()
+                                .buildAndExpand(product, variant, returnUrl)
+                                .toUriString();
             }
             return "redirect:" + returnUrl;
         } catch (CatalogException exception) {
@@ -215,7 +222,8 @@ public class InventoryController {
         }
         try {
             inventoryService.updateBatch(authentication, id, form);
-            flash.addFlashAttribute("success", "Đã cập nhật thông tin lô. Số lượng tồn kho được giữ nguyên.");
+            flash.addFlashAttribute(
+                    "success", "Đã cập nhật thông tin lô. Số lượng tồn kho được giữ nguyên.");
             return "redirect:" + returnUrl;
         } catch (CatalogException exception) {
             errors.reject("business", exception.getMessage());
@@ -240,8 +248,12 @@ public class InventoryController {
         if (preview) {
             BatchResponse row = inventoryService.batch(authentication, id);
             try {
-                int next = InventoryRules.countedQuantity(row.getBatch(), form.getCountedQuantity(),
-                        form.getExpectedQuantity(), InventoryRules.today());
+                int next =
+                        InventoryRules.countedQuantity(
+                                row.getBatch(),
+                                form.getCountedQuantity(),
+                                form.getExpectedQuantity(),
+                                InventoryRules.today());
                 model.addAttribute("previewQuantity", next);
                 model.addAttribute("previewDelta", next - row.getBatch().getQuantityOnHand());
                 model.addAttribute("previewAvailable", next - row.getBatch().getReservedQuantity());
@@ -269,7 +281,8 @@ public class InventoryController {
             @ModelAttribute("inventoryReturnUrl") String returnUrl,
             RedirectAttributes flash) {
         try {
-            flash.addFlashAttribute("success", inventoryService.dispose(authentication, id).getMessage());
+            flash.addFlashAttribute(
+                    "success", inventoryService.dispose(authentication, id).getMessage());
         } catch (CatalogException exception) {
             flash.addFlashAttribute("error", exception.getMessage());
         }
@@ -278,10 +291,15 @@ public class InventoryController {
 
     /** Hủy phần hàng hết hạn có thể hủy của toàn bộ sản phẩm và thông báo kết quả. */
     @PostMapping("/products/{id}/dispose-expired")
-    public String disposeProduct(Authentication authentication, @PathVariable Long id,
-            @ModelAttribute("inventoryReturnUrl") String returnUrl, RedirectAttributes flash) {
+    public String disposeProduct(
+            Authentication authentication,
+            @PathVariable Long id,
+            @ModelAttribute("inventoryReturnUrl") String returnUrl,
+            RedirectAttributes flash) {
         try {
-            flash.addFlashAttribute("success", inventoryService.disposeExpiredProduct(authentication, id).getMessage());
+            flash.addFlashAttribute(
+                    "success",
+                    inventoryService.disposeExpiredProduct(authentication, id).getMessage());
         } catch (CatalogException exception) {
             flash.addFlashAttribute("error", exception.getMessage());
         }
@@ -349,7 +367,8 @@ public class InventoryController {
     /** Nạp lại thông tin lô để hiển thị biểu mẫu thao tác sau khi kiểm tra dữ liệu thất bại. */
     private String showBatchForm(
             Authentication authentication, Long batchId, String action, Model model) {
-        // Chỉ nạp lại thông tin phụ; form và BindingResult hiện có được giữ để hiển thị dữ liệu lỗi.
+        // Chỉ nạp lại thông tin phụ; form và BindingResult hiện có được giữ để hiển thị dữ liệu
+        // lỗi.
         addBatchAttributes(inventoryService.batch(authentication, batchId), batchId, action, model);
         return "inventory/batch-form";
     }
@@ -371,7 +390,8 @@ public class InventoryController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "5") int size,
             Model model) {
-        model.addAttribute("events", inventoryService.activityHistory(authentication, filters, page, size));
+        model.addAttribute(
+                "events", inventoryService.activityHistory(authentication, filters, page, size));
         model.addAttribute("activityActions", ActivityHistoryFilter.ACTIONS);
         model.addAttribute("activityEntities", ActivityHistoryFilter.ENTITIES);
         return "inventory/audit";

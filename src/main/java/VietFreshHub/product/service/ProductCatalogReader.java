@@ -2,6 +2,7 @@ package VietFreshHub.product.service;
 
 import static VietFreshHub.inventory.rule.InventoryRules.available;
 import static VietFreshHub.inventory.rule.InventoryRules.today;
+
 import VietFreshHub.inventory.entity.BatchMarkdown;
 import VietFreshHub.inventory.entity.InventoryBatch;
 import VietFreshHub.inventory.repository.InventoryBatchRepository;
@@ -20,9 +21,12 @@ import VietFreshHub.product.repository.CategoryRepository;
 import VietFreshHub.product.repository.ProductCategoryRepository;
 import VietFreshHub.product.repository.ProductImageRepository;
 import VietFreshHub.product.repository.ProductVariantRepository;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -43,9 +47,12 @@ public class ProductCatalogReader {
 
     /** Dựng trang chi tiết sau khi sản phẩm đã được kiểm tra quyền sở hữu. */
     public ProductResponse forProduct(Product product) {
-        List<ProductVariant> variants = productVariantRepository.findByProductIdOrderByVariantId(product.getProductId());
-        ProductManagementState state = productAvailabilityService.states(
-                product.getShopId(), List.of(product.getProductId())).get(product.getProductId());
+        List<ProductVariant> variants =
+                productVariantRepository.findByProductIdOrderByVariantId(product.getProductId());
+        ProductManagementState state =
+                productAvailabilityService
+                        .states(product.getShopId(), List.of(product.getProductId()))
+                        .get(product.getProductId());
         return buildProductResponse(product, variants, findBatches(variants), state);
     }
 
@@ -64,14 +71,22 @@ public class ProductCatalogReader {
         }
         List<ProductVariant> pageVariants = variants;
         List<InventoryBatch> batches = findBatches(variants);
-        Map<Long, ProductManagementState> states = products.isEmpty() ? Map.of()
-                : productAvailabilityService.states(products.getContent().getFirst().getShopId(), productIds);
-        return products.map(product -> buildProductResponse(
-                product, variantsForProduct(product.getProductId(), pageVariants), batches,
-                states.get(product.getProductId())));
+        Map<Long, ProductManagementState> states =
+                products.isEmpty()
+                        ? Map.of()
+                        : productAvailabilityService.states(
+                                products.getContent().getFirst().getShopId(), productIds);
+        return products.map(
+                product ->
+                        buildProductResponse(
+                                product,
+                                variantsForProduct(product.getProductId(), pageVariants),
+                                batches,
+                                states.get(product.getProductId())));
     }
 
-    private List<ProductVariant> variantsForProduct(Long productId, List<ProductVariant> pageVariants) {
+    private List<ProductVariant> variantsForProduct(
+            Long productId, List<ProductVariant> pageVariants) {
         List<ProductVariant> result = new ArrayList<>();
         for (ProductVariant variant : pageVariants) {
             if (variant.getProductId().equals(productId)) {
@@ -102,11 +117,17 @@ public class ProductCatalogReader {
         // Chỉ hiển thị giá giảm khi cả sản phẩm và phân loại đang đủ điều kiện bán.
         LocalDate date = today();
         boolean sellable = state != null && "active".equals(state.code());
-        List<BatchMarkdown> markdowns = sellable ? batchMarkdownLookup.findActive(batches) : List.of();
+        List<BatchMarkdown> markdowns =
+                sellable ? batchMarkdownLookup.findActive(batches) : List.of();
         List<VariantResponse> variantRows = new ArrayList<>();
         for (ProductVariant variant : variants) {
-            variantRows.add(buildVariantResponse(product, variant, batches,
-                    variant.getStatus() == VariantStatus.ACTIVE ? markdowns : List.of(), date));
+            variantRows.add(
+                    buildVariantResponse(
+                            product,
+                            variant,
+                            batches,
+                            variant.getStatus() == VariantStatus.ACTIVE ? markdowns : List.of(),
+                            date));
         }
 
         ProductResponse response = new ProductResponse();
@@ -115,7 +136,9 @@ public class ProductCatalogReader {
         response.setCategoryName(String.join(", ", categoryNames(product.getProductId())));
         response.setVariants(variantRows);
         if (state == null) {
-            state = new ProductManagementState("archived", "Sản phẩm đã xóa; tồn kho và lịch sử được giữ lại.");
+            state =
+                    new ProductManagementState(
+                            "archived", "Sản phẩm đã xóa; tồn kho và lịch sử được giữ lại.");
         }
         response.setManagementState(state);
         populateCatalogSummary(response);
@@ -144,13 +167,15 @@ public class ProductCatalogReader {
                 continue;
             }
             int batchAvailable = available(batch, date);
-            // Tồn thực tế gồm cả hàng bị khóa hoặc hết hạn; khả dụng đã loại các phần không thể bán.
+            // Tồn thực tế gồm cả hàng bị khóa hoặc hết hạn; khả dụng đã loại các phần không thể
+            // bán.
             physicalQuantity += batch.getQuantityOnHand();
             reservedQuantity += batch.getReservedQuantity();
             availableQuantity += batchAvailable;
             // Lấy đợt giảm hợp lệ mới nhất của lô và chỉ cộng lượng tại giá thấp nhất.
             for (BatchMarkdown markdown : markdowns) {
-                if (!InventoryRules.isApplicableMarkdown(batch, markdown, variant.getPrice(), date)) {
+                if (!InventoryRules.isApplicableMarkdown(
+                        batch, markdown, variant.getPrice(), date)) {
                     continue;
                 }
                 BigDecimal price = markdown.getPrice();
@@ -200,7 +225,6 @@ public class ProductCatalogReader {
         }
 
         response.setVisibleVariants(visibleVariants);
-
     }
 
     /** Chọn giá nhỏ hơn trong hai giá, bỏ qua giá trị null. */
@@ -241,16 +265,25 @@ public class ProductCatalogReader {
     }
 
     private String productImageUrl(Long productId) {
-        return primaryProductImageUrl(productImageRepository.findByProductIdOrderBySortOrderAscImageIdAsc(productId));
+        return primaryProductImageUrl(
+                productImageRepository.findByProductIdOrderBySortOrderAscImageIdAsc(productId));
     }
 
     /** Chọn ảnh cấp sản phẩm đầu tiên, giữ nguyên thứ tự được repository trả về. */
     public static String primaryProductImageUrl(List<ProductImage> images) {
+        String fallback = null;
         for (ProductImage image : images) {
-            if (image.getVariantId() == null) {
-                return image.getImageUrl();
+            if (image.getVariantId() == null
+                    && image.getImageUrl() != null
+                    && !image.getImageUrl().isBlank()) {
+                if (Boolean.TRUE.equals(image.getPrimary())) {
+                    return image.getImageUrl();
+                }
+                if (fallback == null) {
+                    fallback = image.getImageUrl();
+                }
             }
         }
-        return null;
+        return fallback;
     }
 }

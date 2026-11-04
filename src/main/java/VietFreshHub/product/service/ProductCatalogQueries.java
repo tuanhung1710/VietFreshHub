@@ -2,16 +2,20 @@ package VietFreshHub.product.service;
 
 import static VietFreshHub.inventory.rule.InventoryRules.require;
 import static VietFreshHub.inventory.rule.InventoryRules.today;
+
+import VietFreshHub.common.Pagination;
 import VietFreshHub.inventory.rule.InventoryRules;
 import VietFreshHub.product.dto.ProductCatalogFilter;
 import VietFreshHub.product.dto.ProductResponse;
 import VietFreshHub.product.entity.Product;
 import VietFreshHub.product.repository.ProductRepository;
-import VietFreshHub.product.util.CatalogPagination;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,19 +27,37 @@ public class ProductCatalogQueries {
     private final ProductRepository productRepository;
     private final ProductCatalogReader catalogReader;
 
-    public Page<ProductResponse> searchManagement(Long shopId, ProductCatalogFilter filters,
-            List<Long> activeCategories, int page, int size) {
+    public Page<ProductResponse> searchManagement(
+            Long shopId,
+            ProductCatalogFilter filters,
+            List<Long> activeCategories,
+            int page,
+            int size) {
         LocalDate createdFrom = filters.getCreatedFrom();
         LocalDate createdTo = filters.getCreatedTo();
-        PageRequest pageable = CatalogPagination.request(page, size);
+        PageRequest pageable = Pagination.request(page, size);
 
-        Page<Product> result = productRepository.searchManagement(shopId, filters,
-                startOfDayOrNull(createdFrom), startOfNextDayOrNull(createdTo), activeCategories, today(), pageable);
+        Page<Product> result =
+                productRepository.searchManagement(
+                        shopId,
+                        filters,
+                        startOfDayOrNull(createdFrom),
+                        startOfNextDayOrNull(createdTo),
+                        activeCategories,
+                        today(),
+                        pageable);
 
         if (result.getNumber() >= Math.max(1, result.getTotalPages())) {
             // Đưa về trang đầu khi trang cũ không còn tồn tại, chẳng hạn sau khi đổi bộ lọc.
-            result = productRepository.searchManagement(shopId, filters,
-                    startOfDayOrNull(createdFrom), startOfNextDayOrNull(createdTo), activeCategories, today(), pageable.withPage(0));
+            result =
+                    productRepository.searchManagement(
+                            shopId,
+                            filters,
+                            startOfDayOrNull(createdFrom),
+                            startOfNextDayOrNull(createdTo),
+                            activeCategories,
+                            today(),
+                            pageable.withPage(0));
         }
         return catalogReader.toPage(result);
     }
@@ -53,8 +75,7 @@ public class ProductCatalogQueries {
         if (date == null) {
             return null;
         }
-        require(date.getYear() >= 1 && date.getYear() <= 9999,
-                "Ngày lọc vượt giới hạn cho phép.");
+        require(date.getYear() >= 1 && date.getYear() <= 9999, "Ngày lọc vượt giới hạn cho phép.");
         return InventoryRules.startOfDayUtc(date.plusDays(1));
     }
 }

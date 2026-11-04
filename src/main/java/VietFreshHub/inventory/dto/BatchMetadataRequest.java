@@ -6,11 +6,14 @@ import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.math.BigDecimal;
-import java.time.LocalDate;
+
 import lombok.Getter;
 import lombok.Setter;
+
 import org.springframework.format.annotation.DateTimeFormat;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -24,7 +27,10 @@ public class BatchMetadataRequest {
     private LocalDate expiryDate;
 
     @DecimalMin(value = "0", message = "Giá vốn không được âm.")
-    @Digits(integer = 16, fraction = 2, message = "Giá vốn không được vượt quá 16 chữ số phần nguyên và 2 chữ số thập phân.")
+    @Digits(
+            integer = 16,
+            fraction = 2,
+            message = "Giá vốn không được vượt quá 16 chữ số phần nguyên và 2 chữ số thập phân.")
     @DecimalMax(value = "9999999999999999.99", message = "Giá trị vượt giới hạn cho phép.")
     private BigDecimal costPrice;
 

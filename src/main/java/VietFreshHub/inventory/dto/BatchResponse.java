@@ -4,9 +4,11 @@ import VietFreshHub.inventory.entity.BatchMarkdown;
 import VietFreshHub.inventory.entity.InventoryBatch;
 import VietFreshHub.inventory.enums.BatchStatus;
 import VietFreshHub.inventory.rule.InventoryRules;
+
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+
 import java.util.List;
 
 @Getter
@@ -23,18 +25,23 @@ public class BatchResponse {
     private boolean markdownEligible;
     private Long daysUntilExpiry;
     private boolean markdownAllowed;
-    @Setter
-    private String variantName;
-    @Setter
-    private List<AllocationResponse> allocationDetails = List.of();
+    @Setter private String variantName;
+    @Setter private List<AllocationResponse> allocationDetails = List.of();
 
     /** Tạo dữ liệu hiển thị lô với tồn, hạn sử dụng và điều kiện cho phép giảm giá. */
     @Builder
     public BatchResponse(
-            InventoryBatch batch, int available, boolean expired, boolean nearExpiry,
-            BatchMarkdown markdown, String productName,
-            String sku, String unit, boolean markdownEligible,
-            Long daysUntilExpiry, boolean markdownAllowed) {
+            InventoryBatch batch,
+            int available,
+            boolean expired,
+            boolean nearExpiry,
+            BatchMarkdown markdown,
+            String productName,
+            String sku,
+            String unit,
+            boolean markdownEligible,
+            Long daysUntilExpiry,
+            boolean markdownAllowed) {
         this.batch = batch;
         this.available = available;
         this.expired = expired;
@@ -111,8 +118,7 @@ public class BatchResponse {
 
     /** Tính lượng hàng hết hạn có thể hủy theo ngày hiện tại, giữ lại phần đã giữ cho đơn. */
     public int getDisposableQuantity() {
-        return InventoryRules.disposableQuantity(
-                batch, InventoryRules.today());
+        return InventoryRules.disposableQuantity(batch, InventoryRules.today());
     }
 
     /** Cho hiện thao tác hủy khi lô có hàng hết hạn chưa giữ cho đơn. */
@@ -134,7 +140,11 @@ public class BatchResponse {
      * Cho hiện thao tác giảm giá khi lô và điều kiện kinh doanh đều hợp lệ, còn hàng chưa phân bổ.
      */
     public boolean isCanMarkdown() {
-        return markdownEligible && markdownAllowed && !isEmptyStock() && !isFullyAllocated()
-                && batch.getQuantityOnHand() != null && batch.getQuantityOnHand() > 0;
+        return markdownEligible
+                && markdownAllowed
+                && !isEmptyStock()
+                && !isFullyAllocated()
+                && batch.getQuantityOnHand() != null
+                && batch.getQuantityOnHand() > 0;
     }
 }

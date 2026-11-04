@@ -2,7 +2,9 @@ package VietFreshHub.product.controller;
 
 import VietFreshHub.common.VndAmountFormatter;
 import VietFreshHub.inventory.controller.InventoryController;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.InitBinder;
@@ -14,7 +16,13 @@ public class SellerMoneyBinding {
 
     @InitBinder
     void bindAmounts(WebDataBinder binder) {
-        binder.addCustomFormatter(amounts, "price", "compareAtPrice", "costPrice",
-                "variants.price", "variants.compareAtPrice", "variants.costPrice");
+        binder.addCustomFormatter(
+                amounts,
+                "price",
+                "compareAtPrice",
+                "costPrice",
+                "variants.price",
+                "variants.compareAtPrice",
+                "variants.costPrice");
     }
 }

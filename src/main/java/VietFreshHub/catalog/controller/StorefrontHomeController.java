@@ -2,7 +2,9 @@ package VietFreshHub.catalog.controller;
 
 import VietFreshHub.catalog.dto.StorefrontCatalogFilter;
 import VietFreshHub.catalog.service.StorefrontService;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,7 +22,9 @@ public class StorefrontHomeController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
             Model model) {
-        model.addAttribute("rows", storefrontService.searchProducts(new StorefrontCatalogFilter(), page, size));
+        model.addAttribute(
+                "rows",
+                storefrontService.searchProducts(new StorefrontCatalogFilter(), page, size));
         model.addAttribute("topProducts", storefrontService.topProducts(null));
         model.addAttribute("shops", storefrontService.shops());
         return "customer/home";

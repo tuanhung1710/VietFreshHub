@@ -1,35 +1,23 @@
 package VietFreshHub.product.repository;
 
+import static VietFreshHub.inventory.repository.InventoryStockSql.VARIANT_STOCK;
+
 import VietFreshHub.product.dto.ProductCatalogFilter;
+
 import java.time.LocalDateTime;
 
 /** Các mảnh SQL dùng chung giữa truy vấn đếm, lấy trang và chọn SKU khớp bộ lọc. */
 final class ProductCatalogSql {
     private ProductCatalogSql() {}
 
-    // Bước 1: cộng tồn của từng SKU trước khi ghép với sản phẩm để tránh nhân đôi số lượng theo lô.
-    // Hàng khả dụng chỉ lấy từ lô đang hoạt động, còn hạn và còn phần chưa giữ cho đơn.
-    static final String VARIANT_STOCK = """
-        WITH variant_stock AS (
-          SELECT v.product_id, v.variant_id, v.status, v.price,v.low_stock_threshold,v.sku,v.variant_name,v.unit,
-            COALESCE(SUM(CAST(b.quantity_on_hand AS BIGINT)),0) AS physical,
-            COALESCE(SUM(CAST(b.reserved_quantity AS BIGINT)),0) AS reserved,
-            SUM(CASE WHEN b.quantity_on_hand>0 THEN CAST(1 AS BIGINT) ELSE 0 END) AS batches_in_stock,
-            SUM(CASE WHEN b.expiry_date<:today THEN CAST(b.quantity_on_hand AS BIGINT) ELSE 0 END) AS expired_quantity,
-            COALESCE(SUM(CASE WHEN b.status='ACTIVE' AND (b.expiry_date IS NULL OR b.expiry_date>=:today)
-              AND b.quantity_on_hand>b.reserved_quantity
-              THEN CAST(b.quantity_on_hand AS BIGINT)-b.reserved_quantity ELSE 0 END),0) AS available
-          FROM dbo.product_variants v JOIN dbo.products p ON p.product_id=v.product_id
-          LEFT JOIN dbo.inventory_batches b ON b.variant_id=v.variant_id
-          WHERE p.shop_id=:shop __scope__
-          GROUP BY v.product_id,v.variant_id,v.status,v.price,v.low_stock_threshold,v.sku,v.variant_name,v.unit
-        )
-        """;
-
     // Bước 2: gom tín hiệu của các SKU lên sản phẩm, bổ sung điều kiện shop và danh mục.
-    // Bước 3: phân trạng thái theo ưu tiên: vi phạm -> chủ shop ẩn -> không đủ điều kiện -> còn/hết hàng.
-    // Cùng kết quả này được dùng cho danh sách, tab thống kê và kiểm tra thao tác để không lệch nhau.
-    static final String CLASSIFICATION = VARIANT_STOCK.replace("__scope__", "AND p.status<>'DELETED'") + """
+    // Bước 3: phân trạng thái theo ưu tiên: vi phạm -> chủ shop ẩn -> không đủ điều kiện -> còn/hết
+    // hàng.
+    // Cùng kết quả này được dùng cho danh sách, tab thống kê và kiểm tra thao tác để không lệch
+    // nhau.
+    static final String CLASSIFICATION =
+            VARIANT_STOCK.replace("__scope__", "AND p.status<>'DELETED'")
+                    + """
         , variant_signals AS (
           SELECT product_id,
             MAX(CASE WHEN status IN ('ACTIVE','OUT_OF_STOCK') AND price>=10000 AND price=FLOOR(price) THEN 1 ELSE 0 END) AS has_variant,
@@ -72,22 +60,26 @@ final class ProductCatalogSql {
         )
         """;
 
-    static String managementWhere(ProductCatalogFilter filters, LocalDateTime from, LocalDateTime to) {
+    static String managementWhere(
+            ProductCatalogFilter filters, LocalDateTime from, LocalDateTime to) {
         return managementBaseWhere(filters, from, to)
                 + managementStockCriteria(filters)
                 + managementPriceCriteria(filters)
                 + managementSearchCriteria(filters.getQ());
     }
 
-    private static String managementBaseWhere(ProductCatalogFilter filters, LocalDateTime from, LocalDateTime to) {
+    private static String managementBaseWhere(
+            ProductCatalogFilter filters, LocalDateTime from, LocalDateTime to) {
         Long category = filters.getCategory();
         String tab = filters.getTab();
-        String where = " FROM dbo.products p JOIN classified c ON c.product_id=p.product_id JOIN product_signals ps ON ps.product_id=p.product_id WHERE 1=1";
+        String where =
+                " FROM dbo.products p JOIN classified c ON c.product_id=p.product_id JOIN product_signals ps ON ps.product_id=p.product_id WHERE 1=1";
         if (!tab.isEmpty()) {
             where += " AND c.management_state=:tab";
         }
         if (category != null) {
-            where += " AND EXISTS (SELECT 1 FROM dbo.product_categories pc WHERE pc.product_id=p.product_id AND pc.category_id=:category)";
+            where +=
+                    " AND EXISTS (SELECT 1 FROM dbo.product_categories pc WHERE pc.product_id=p.product_id AND pc.category_id=:category)";
         }
         if (from != null) {
             where += " AND p.created_at>=:from";
@@ -104,21 +96,23 @@ final class ProductCatalogSql {
             case "available" -> " AND ps.has_available=1";
             case "empty" -> " AND ps.has_available=0";
             case "low" -> " AND ps.has_low=1";
-            case "expiry" -> " " + """
+            case "expiry" ->
+                    " "
+                            + """
                 AND EXISTS (SELECT 1 FROM dbo.product_variants ev JOIN dbo.inventory_batches eb ON eb.variant_id=ev.variant_id
                   WHERE ev.product_id=p.product_id AND ev.status<>'DELETED' AND eb.quantity_on_hand>0
                     AND eb.expiry_date<=DATEADD(day,COALESCE(p.expiry_warning_days,3),CAST(:today AS DATE)))
                 """;
             default -> "";
         };
-
     }
 
     /** Hai mốc giá phải khớp cùng một SKU. */
     private static String managementPriceCriteria(ProductCatalogFilter filters) {
         String where = "";
         if (filters.getMinPrice() != null || filters.getMaxPrice() != null) {
-            where += " AND EXISTS (SELECT 1 FROM dbo.product_variants pv WHERE pv.product_id=p.product_id AND pv.status<>'DELETED'";
+            where +=
+                    " AND EXISTS (SELECT 1 FROM dbo.product_variants pv WHERE pv.product_id=p.product_id AND pv.status<>'DELETED'";
             if (filters.getMinPrice() != null) {
                 where += " AND pv.price>=:minPrice";
             }
@@ -135,7 +129,8 @@ final class ProductCatalogSql {
         if (text.isEmpty()) {
             return "";
         }
-        return " " + """
+        return " "
+                + """
             AND ((:productCode<0 AND :batchCode<0 AND (LOWER(p.name) LIKE :text OR LOWER(p.slug) LIKE :text
               OR EXISTS (SELECT 1 FROM dbo.product_variants v WHERE v.product_id=p.product_id
                 AND (LOWER(v.sku) LIKE :text OR LOWER(v.variant_name) LIKE :text))))
@@ -143,6 +138,5 @@ final class ProductCatalogSql {
               OR EXISTS (SELECT 1 FROM dbo.inventory_batches b JOIN dbo.product_variants bv ON bv.variant_id=b.variant_id
                 WHERE bv.product_id=p.product_id AND b.batch_id=:batchCode))
             """;
-
     }
 }

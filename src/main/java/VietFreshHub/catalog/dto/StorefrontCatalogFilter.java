@@ -8,8 +8,10 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+
 import lombok.Getter;
 import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -19,18 +21,27 @@ import java.util.List;
 public class StorefrontCatalogFilter {
     @Size(max = 100, message = "Từ khóa tối đa 100 ký tự.")
     private String q = "";
-    @Positive
-    private Long category;
+
+    @Positive private Long category;
+
     @Size(max = 100)
     private List<@Positive Long> shopIds = List.of();
+
     @Size(max = 100)
     private List<@NotBlank @Size(max = 100) String> places = List.of();
-    @Min(0) @Max(5)
+
+    @Min(0)
+    @Max(5)
     private int minRating;
+
     private String sort = "popular";
-    @DecimalMin("0") @Digits(integer = 16, fraction = 0)
+
+    @DecimalMin("0")
+    @Digits(integer = 16, fraction = 0)
     private BigDecimal minPrice;
-    @DecimalMin("0") @Digits(integer = 16, fraction = 0)
+
+    @DecimalMin("0")
+    @Digits(integer = 16, fraction = 0)
     private BigDecimal maxPrice;
 
     /** Kiểm tra khoảng giá trước khi truy vấn sản phẩm. */

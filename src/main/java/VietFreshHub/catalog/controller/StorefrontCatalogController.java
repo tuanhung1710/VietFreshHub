@@ -2,8 +2,11 @@ package VietFreshHub.catalog.controller;
 
 import VietFreshHub.catalog.dto.StorefrontCatalogFilter;
 import VietFreshHub.catalog.service.StorefrontService;
+
 import jakarta.validation.Valid;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindException;
@@ -27,7 +30,8 @@ public class StorefrontCatalogController {
             BindingResult errors,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
-            Model model) throws BindException {
+            Model model)
+            throws BindException {
         if (errors.hasErrors()) {
             throw new BindException(errors);
         }

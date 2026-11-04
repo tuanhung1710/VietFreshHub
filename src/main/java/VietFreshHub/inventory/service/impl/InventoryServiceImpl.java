@@ -7,11 +7,12 @@ import static VietFreshHub.inventory.rule.InventoryRules.now;
 import static VietFreshHub.inventory.rule.InventoryRules.reason;
 import static VietFreshHub.inventory.rule.InventoryRules.require;
 import static VietFreshHub.inventory.rule.InventoryRules.today;
+
 import VietFreshHub.auth.service.AuthService;
 import VietFreshHub.inventory.dto.ActivityHistoryFilter;
 import VietFreshHub.inventory.dto.AuditResponse;
-import VietFreshHub.inventory.dto.BatchRequest;
 import VietFreshHub.inventory.dto.BatchMetadataRequest;
+import VietFreshHub.inventory.dto.BatchRequest;
 import VietFreshHub.inventory.dto.BatchResponse;
 import VietFreshHub.inventory.dto.DisposalResult;
 import VietFreshHub.inventory.dto.MarkdownRequest;
@@ -38,17 +39,24 @@ import VietFreshHub.product.repository.ProductRepository;
 import VietFreshHub.product.repository.ProductVariantRepository;
 import VietFreshHub.product.service.ProductAvailabilityService;
 import VietFreshHub.shop.service.ShopService;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.domain.Page;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Xử lý nhập lô, sửa thông tin, điều chỉnh và hủy tồn trong phạm vi cửa hàng. Mỗi thao tác ghi thực hiện
+ * cùng lịch sử kho trong một giao dịch; các quy tắc tính số lượng tập trung tại InventoryRules.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -84,7 +92,9 @@ public class InventoryServiceImpl implements InventoryService {
                 "Không thể nhập kho cho sản phẩm hoặc phân loại đã ngừng kinh doanh.");
 
         InventoryRules.dates(form.getReceivedDate(), form.getExpiryDate(), today());
-        require(form.getQuantity() != null && form.getQuantity() > 0, "Số lượng nhập phải lớn hơn 0.");
+        require(
+                form.getQuantity() != null && form.getQuantity() > 0,
+                "Số lượng nhập phải lớn hơn 0.");
         String changeReason = reason(form.getReason());
         validateCost(form);
 
@@ -148,7 +158,8 @@ public class InventoryServiceImpl implements InventoryService {
      */
     @Override
     @Transactional
-    public void updateBatch(Authentication authentication, Long batchId, BatchMetadataRequest form) {
+    public void updateBatch(
+            Authentication authentication, Long batchId, BatchMetadataRequest form) {
 
         InventoryBatch batch = getOwnedBatchForUpdate(authentication, batchId);
         validateCost(form);
@@ -193,8 +204,12 @@ public class InventoryServiceImpl implements InventoryService {
 
     /** Tạo mô tả hạn sử dụng và giá vốn để ghi lịch sử trước, sau khi chỉnh sửa lô. */
     private String describeBatchDatesAndCost(InventoryBatch batch) {
-        return "Ngày nhập: " + InventoryRules.shopDate(batch.getReceivedAt())
-                + " / Hạn sử dụng: " + batch.getExpiryDate() + " / Giá vốn: " + batch.getCostPrice();
+        return "Ngày nhập: "
+                + InventoryRules.shopDate(batch.getReceivedAt())
+                + " / Hạn sử dụng: "
+                + batch.getExpiryDate()
+                + " / Giá vốn: "
+                + batch.getCostPrice();
     }
 
     /** Cho phép bỏ trống giá vốn nhưng từ chối giá trị âm. */
@@ -215,10 +230,14 @@ public class InventoryServiceImpl implements InventoryService {
         String changeReason = reason(form.getReason());
         int previousQuantity = batch.getQuantityOnHand();
         LocalDate date = today();
-        require(form.getCountedQuantity() != null || form.getQuantity() != null, "Vui lòng nhập số lượng điều chỉnh.");
-        int nextQuantity = form.getCountedQuantity() != null
-                ? InventoryRules.countedQuantity(batch, form.getCountedQuantity(), form.getExpectedQuantity(), date)
-                : InventoryRules.adjustedQuantity(batch, form.getQuantity(), date);
+        require(
+                form.getCountedQuantity() != null || form.getQuantity() != null,
+                "Vui lòng nhập số lượng điều chỉnh.");
+        int nextQuantity =
+                form.getCountedQuantity() != null
+                        ? InventoryRules.countedQuantity(
+                                batch, form.getCountedQuantity(), form.getExpectedQuantity(), date)
+                        : InventoryRules.adjustedQuantity(batch, form.getQuantity(), date);
         updateQuantity(batch, nextQuantity);
 
         Long actorId = authService.getCurrentUserId(authentication);
@@ -262,27 +281,39 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional
     public DisposalResult disposeExpiredProduct(Authentication authentication, Long productId) {
         Long shopId = shopService.getManagedShopId(authentication);
-        Product product = productRepository.lockOwned(productId, shopId)
-                .orElseThrow(() -> new AccessDeniedException("Sản phẩm không thuộc cửa hàng của bạn."));
+        Product product =
+                productRepository
+                        .lockOwned(productId, shopId)
+                        .orElseThrow(
+                                () ->
+                                        new AccessDeniedException(
+                                                "Sản phẩm không thuộc cửa hàng của bạn."));
         inventoryLockHelper.refresh(product);
-        List<ProductVariant> variants = productVariantRepository.findByProductIdOrderByVariantId(productId);
+        List<ProductVariant> variants =
+                productVariantRepository.findByProductIdOrderByVariantId(productId);
 
         for (ProductVariant snapshot : variants) {
-            inventoryLockHelper.refresh(productVariantRepository.lockById(snapshot.getVariantId()).orElseThrow());
+            inventoryLockHelper.refresh(
+                    productVariantRepository.lockById(snapshot.getVariantId()).orElseThrow());
         }
         if (variants.isEmpty()) {
             return new DisposalResult(0, 0);
         }
-        List<InventoryBatch> snapshots = inventoryBatchRepository.findByVariantIdInOrderByExpiryDateAscBatchIdAsc(
-                variants.stream().map(ProductVariant::getVariantId).toList());
+        List<InventoryBatch> snapshots =
+                inventoryBatchRepository.findByVariantIdInOrderByExpiryDateAscBatchIdAsc(
+                        variants.stream().map(ProductVariant::getVariantId).toList());
         LocalDate date = today();
         Long actorId = authService.getCurrentUserId(authentication);
         int disposedBatches = 0;
         int reservedBatches = 0;
 
-        for (InventoryBatch snapshot : snapshots.stream().sorted(Comparator.comparing(InventoryBatch::getBatchId)).toList()) {
-            InventoryBatch batch = inventoryLockHelper.refresh(
-                    inventoryBatchRepository.lockById(snapshot.getBatchId()).orElseThrow());
+        for (InventoryBatch snapshot :
+                snapshots.stream()
+                        .sorted(Comparator.comparing(InventoryBatch::getBatchId))
+                        .toList()) {
+            InventoryBatch batch =
+                    inventoryLockHelper.refresh(
+                            inventoryBatchRepository.lockById(snapshot.getBatchId()).orElseThrow());
             if (!expired(batch, date)) {
                 continue;
             }
@@ -301,8 +332,11 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     private void validateDisposalBalance(InventoryBatch batch) {
-        require(batch.getQuantityOnHand() != null && batch.getReservedQuantity() != null
-                        && batch.getReservedQuantity() >= 0 && batch.getQuantityOnHand() >= batch.getReservedQuantity(),
+        require(
+                batch.getQuantityOnHand() != null
+                        && batch.getReservedQuantity() != null
+                        && batch.getReservedQuantity() >= 0
+                        && batch.getQuantityOnHand() >= batch.getReservedQuantity(),
                 "Dữ liệu tồn kho của lô không hợp lệ. Vui lòng kiểm tra trước khi hủy hàng.");
     }
 
@@ -364,7 +398,9 @@ public class InventoryServiceImpl implements InventoryService {
                 action,
                 "BATCH",
                 batchId,
-                changeReason + "; giữ nguyên số lượng đã giữ cho đơn: " + batch.getReservedQuantity());
+                changeReason
+                        + "; giữ nguyên số lượng đã giữ cho đơn: "
+                        + batch.getReservedQuantity());
     }
 
     /**
@@ -379,7 +415,9 @@ public class InventoryServiceImpl implements InventoryService {
         ProductVariant variant =
                 productVariantRepository.findById(batch.getVariantId()).orElseThrow();
         Product product = productRepository.findById(variant.getProductId()).orElseThrow();
-        require(markdownAllowed(product, variant), "Chỉ áp dụng giảm giá cho phân loại đang bán, có giá hợp lệ, không bị Admin khóa và shop đang nhận đơn.");
+        require(
+                markdownAllowed(product, variant),
+                "Chỉ áp dụng giảm giá cho phân loại đang bán, có giá hợp lệ, không bị Admin khóa và shop đang nhận đơn.");
 
         LocalDate date = today();
         InventoryRules.markdown(
@@ -439,8 +477,8 @@ public class InventoryServiceImpl implements InventoryService {
 
     /** Đọc lịch sử hoạt động theo bộ lọc, gồm nhãn đối tượng và người thao tác. */
     @Override
-    public Page<AuditResponse> activityHistory(Authentication authentication,
-            ActivityHistoryFilter filters, int page, int size) {
+    public Page<AuditResponse> activityHistory(
+            Authentication authentication, ActivityHistoryFilter filters, int page, int size) {
         return activityHistoryService.search(authentication, filters, page, size);
     }
 
@@ -453,23 +491,28 @@ public class InventoryServiceImpl implements InventoryService {
         ProductVariant variant =
                 productVariantRepository.findById(batch.getVariantId()).orElseThrow();
         Product product = productRepository.findById(variant.getProductId()).orElseThrow();
-        BatchResponse response = BatchResponse.builder()
-                .batch(batch)
-                .available(available(batch, date))
-                .expired(expired(batch, date))
-                .nearExpiry(nearExpiry(batch, date, product.getExpiryWarningDays()))
-                .markdown(markdown)
-                .productName(product.getName())
-                .sku(variant.getSku())
-                .unit(variant.getUnit())
-                .markdownEligible(InventoryRules.markdownEligible(batch, date))
-                .daysUntilExpiry(InventoryRules.daysUntilExpiry(batch, date))
-                .markdownAllowed(markdownAllowed(product, variant))
-                .build();
+        BatchResponse response =
+                BatchResponse.builder()
+                        .batch(batch)
+                        .available(available(batch, date))
+                        .expired(expired(batch, date))
+                        .nearExpiry(nearExpiry(batch, date, product.getExpiryWarningDays()))
+                        .markdown(markdown)
+                        .productName(product.getName())
+                        .sku(variant.getSku())
+                        .unit(variant.getUnit())
+                        .markdownEligible(InventoryRules.markdownEligible(batch, date))
+                        .daysUntilExpiry(InventoryRules.daysUntilExpiry(batch, date))
+                        .markdownAllowed(markdownAllowed(product, variant))
+                        .build();
         response.setVariantName(variant.getVariantName());
-        response.setAllocationDetails(batchAllocationHistoryService.load(
-                batchId, variant.getVariantId(), product.getShopId(), variant.getUnit(),
-                stockAllocationRepository.findByBatchIdOrderByAllocationIdDesc(batchId)));
+        response.setAllocationDetails(
+                batchAllocationHistoryService.load(
+                        batchId,
+                        variant.getVariantId(),
+                        product.getShopId(),
+                        variant.getUnit(),
+                        stockAllocationRepository.findByBatchIdOrderByAllocationIdDesc(batchId)));
         return response;
     }
 
@@ -492,15 +535,24 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     private ProductVariant findVariantSnapshot(Long variantId) {
-        return productVariantRepository.findById(variantId)
-                .orElseThrow(() -> new AccessDeniedException("Bạn không có quyền truy cập phân loại này."));
+        return productVariantRepository
+                .findById(variantId)
+                .orElseThrow(
+                        () ->
+                                new AccessDeniedException(
+                                        "Bạn không có quyền truy cập phân loại này."));
     }
 
     private ProductVariant getOwnedVariantForRead(Authentication authentication, Long variantId) {
         Long shopId = shopService.getManagedShopId(authentication);
         ProductVariant variant = findVariantSnapshot(variantId);
-        Product product = productRepository.findById(variant.getProductId())
-                .orElseThrow(() -> new AccessDeniedException("Phân loại không thuộc cửa hàng của bạn."));
+        Product product =
+                productRepository
+                        .findById(variant.getProductId())
+                        .orElseThrow(
+                                () ->
+                                        new AccessDeniedException(
+                                                "Phân loại không thuộc cửa hàng của bạn."));
         if (!product.getShopId().equals(shopId)) {
             throw new AccessDeniedException("Phân loại không thuộc cửa hàng của bạn.");
         }
@@ -510,16 +562,25 @@ public class InventoryServiceImpl implements InventoryService {
     private ProductVariant getOwnedVariantForUpdate(Authentication authentication, Long variantId) {
         Long shopId = shopService.getManagedShopId(authentication);
         ProductVariant snapshot = findVariantSnapshot(variantId);
-        Product product = productRepository.lockOwned(snapshot.getProductId(), shopId)
-                .orElseThrow(() -> new AccessDeniedException("Phân loại không thuộc cửa hàng của bạn."));
+        Product product =
+                productRepository
+                        .lockOwned(snapshot.getProductId(), shopId)
+                        .orElseThrow(
+                                () ->
+                                        new AccessDeniedException(
+                                                "Phân loại không thuộc cửa hàng của bạn."));
         inventoryLockHelper.refresh(product);
         ProductVariant variant = productVariantRepository.lockById(variantId).orElseThrow();
         return inventoryLockHelper.refresh(variant);
     }
 
     private InventoryBatch findBatchSnapshot(Long batchId) {
-        return inventoryBatchRepository.findById(batchId)
-                .orElseThrow(() -> new AccessDeniedException("Bạn không có quyền truy cập lô hàng này."));
+        return inventoryBatchRepository
+                .findById(batchId)
+                .orElseThrow(
+                        () ->
+                                new AccessDeniedException(
+                                        "Bạn không có quyền truy cập lô hàng này."));
     }
 
     private InventoryBatch getOwnedBatchForRead(Authentication authentication, Long batchId) {
@@ -534,5 +595,4 @@ public class InventoryServiceImpl implements InventoryService {
         InventoryBatch batch = inventoryBatchRepository.lockById(batchId).orElseThrow();
         return inventoryLockHelper.refresh(batch);
     }
-
 }

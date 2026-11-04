@@ -1,9 +1,9 @@
 package VietFreshHub.inventory.service;
 
-import VietFreshHub.inventory.dto.BatchRequest;
-import VietFreshHub.inventory.dto.BatchMetadataRequest;
 import VietFreshHub.inventory.dto.ActivityHistoryFilter;
 import VietFreshHub.inventory.dto.AuditResponse;
+import VietFreshHub.inventory.dto.BatchMetadataRequest;
+import VietFreshHub.inventory.dto.BatchRequest;
 import VietFreshHub.inventory.dto.BatchResponse;
 import VietFreshHub.inventory.dto.DisposalResult;
 import VietFreshHub.inventory.dto.MarkdownRequest;
@@ -41,7 +41,8 @@ public interface InventoryService {
     void cancelMarkdown(Authentication authentication, Long batchId, String reason);
 
     /** Lọc lịch sử hoạt động và bổ sung tên đối tượng, người thao tác để hiển thị. */
-    Page<AuditResponse> activityHistory(Authentication authentication, ActivityHistoryFilter filters, int page, int size);
+    Page<AuditResponse> activityHistory(
+            Authentication authentication, ActivityHistoryFilter filters, int page, int size);
 
     /** Lấy chi tiết lô thuộc cửa hàng, kèm tồn kho, hạn sử dụng và phân bổ cho đơn. */
     BatchResponse batch(Authentication authentication, Long batchId);

@@ -2,9 +2,10 @@ package VietFreshHub.catalog.repository;
 
 /** Giá thấp nhất và số lượng có thể mua tại đúng mức giá đó; ngày do InventoryRules cung cấp. */
 public final class CatalogOfferSql {
-    private CatalogOfferSql() { }
+    private CatalogOfferSql() {}
 
-    public static final String CTE = """
+    public static final String CTE =
+            """
         WITH priced_batches AS (
             SELECT b.batch_id, b.variant_id,
                    CAST(b.quantity_on_hand AS BIGINT) - b.reserved_quantity AS quantity,
