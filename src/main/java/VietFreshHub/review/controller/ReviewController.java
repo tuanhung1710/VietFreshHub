@@ -108,6 +108,7 @@ public class ReviewController {
         boolean customer = authentication != null && authentication.isAuthenticated()
                 && authentication.getAuthorities().stream().anyMatch(a -> "ROLE_CUSTOMER".equals(a.getAuthority()));
         model.addAttribute("reviewForm", new ReviewForm(null, null));
+        model.addAttribute("reportForm", new ReviewReportForm(null, null));
         model.addAttribute("eligiblePurchases", customer
                 ? productId != null ? reviewService.eligibleOrderItems(authentication, productId)
                 : reviewService.eligibleShopOrders(authentication, shopId)

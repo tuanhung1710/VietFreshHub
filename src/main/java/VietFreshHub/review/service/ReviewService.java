@@ -14,6 +14,7 @@ import VietFreshHub.review.dto.ReviewCard;
 import VietFreshHub.review.dto.ReviewForm;
 import VietFreshHub.review.dto.ReviewReportCard;
 import VietFreshHub.review.dto.ReviewReportForm;
+import VietFreshHub.review.dto.ReviewPurchaseOption;
 import VietFreshHub.review.entity.Review;
 import VietFreshHub.review.entity.ReviewReport;
 import VietFreshHub.review.entity.ReviewReportStatus;
@@ -89,15 +90,19 @@ public class ReviewService {
     }
 
     @Transactional(readOnly = true)
-    public java.util.List<Long> eligibleOrderItems(Authentication authentication, Long productId) {
+    public java.util.List<ReviewPurchaseOption> eligibleOrderItems(Authentication authentication, Long productId) {
         Long userId = customers.requireCustomerId(authentication);
         requireProduct(productId);
-        var eligibleIds = orderItems.findByShopOrder_Order_Customer_UserIdAndShopOrder_StatusAndVariant_Product_ProductId(
-                userId, "COMPLETED", productId).stream().map(OrderItem::getOrderItemId).toList();
-        if (eligibleIds.isEmpty()) return java.util.List.of();
+        var eligibleItems = orderItems.findByShopOrder_Order_Customer_UserIdAndShopOrder_StatusAndVariant_Product_ProductId(
+                userId, "COMPLETED", productId);
+        if (eligibleItems.isEmpty()) return java.util.List.of();
+        var eligibleIds = eligibleItems.stream().map(OrderItem::getOrderItemId).toList();
         var reviewedIds = reviews.findByUser_UserIdAndOrderItem_OrderItemIdIn(userId, eligibleIds).stream()
                 .map(review -> review.getOrderItem().getOrderItemId()).collect(java.util.stream.Collectors.toSet());
-        return eligibleIds.stream().filter(id -> !reviewedIds.contains(id)).toList();
+        return eligibleItems.stream().filter(item -> !reviewedIds.contains(item.getOrderItemId()))
+                .map(item -> new ReviewPurchaseOption(item.getOrderItemId(), item.getProductNameSnapshot(),
+                        item.getVariantNameSnapshot(), item.getShopOrder().getOrder().getOrderCode()))
+                .toList();
     }
 
     @Transactional(readOnly = true)
