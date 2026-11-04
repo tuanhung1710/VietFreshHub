@@ -48,10 +48,11 @@
             <a class="nav-link" th:classappend="${active == 'review-reports' ? 'active' : ''}" th:attr="aria-current=${active == 'review-reports' ? 'page' : null}" th:href="@{/admin/review-reports}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-chat"/></svg>Báo cáo đánh giá</a>
         </div>
     </details>
-    <details class="vfo-nav-group" th:open="${active == 'deliveries' or active == 'refunds' or active == 'payouts'}">
+    <details class="vfo-nav-group" th:open="${active == 'deliveries' or active == 'shipping-fees' or active == 'refunds' or active == 'payouts'}">
         <summary>Giao dịch &amp; vận chuyển</summary>
         <div class="vfo-group-links">
             <a class="nav-link" th:classappend="${active == 'deliveries' ? 'active' : ''}" th:attr="aria-current=${active == 'deliveries' ? 'page' : null}" th:href="@{/admin/deliveries}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg>Giám sát giao hàng</a>
+            <a class="nav-link" th:classappend="${active == 'shipping-fees' ? 'active' : ''}" th:attr="aria-current=${active == 'shipping-fees' ? 'page' : null}" th:href="@{/admin/shipping-fees}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg>Cấu hình phí vận chuyển</a>
             <a class="nav-link" th:classappend="${active == 'refunds' ? 'active' : ''}" th:attr="aria-current=${active == 'refunds' ? 'page' : null}" th:href="@{/admin/refund-requests}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-history"/></svg>Yêu cầu hoàn tiền</a>
             <a class="nav-link" th:classappend="${active == 'payouts' ? 'active' : ''}" th:attr="aria-current=${active == 'payouts' ? 'page' : null}" th:href="@{/admin/payouts}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-bank"/></svg>Đối soát chi trả</a>
         </div>
