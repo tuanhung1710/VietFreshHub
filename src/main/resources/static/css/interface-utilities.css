@@ -167,20 +167,20 @@
 .vfr-utility .focus\:ring-primary\/20:focus{--vfr-ring:rgba(48,99,78,0.2)}
 .vfr-utility .focus\:ring-rose-600:focus{--vfr-ring:#a85d50}
 .vfr-utility .focus\:shadow-\[0_0_0_2px_\#006b2c\]:focus{box-shadow:0 0 0 2px #006b2c}
-.vfr-utility .font-body-lg{font-family:"Segoe UI",Arial,sans-serif}
-.vfr-utility .font-body-md{font-family:"Segoe UI",Arial,sans-serif}
+.vfr-utility .font-body-lg{font-family:var(--vf-font-family)}
+.vfr-utility .font-body-md{font-family:var(--vf-font-family)}
 .vfr-utility .font-bold{font-weight:700}
-.vfr-utility .font-display{font-family:Georgia,serif}
-.vfr-utility .font-headline-lg{font-family:"Segoe UI",Arial,sans-serif}
-.vfr-utility .font-headline-sm{font-family:"Segoe UI",Arial,sans-serif}
-.vfr-utility .font-label-md{font-family:"Segoe UI",Arial,sans-serif}
-.vfr-utility .font-label-sm{font-family:"Segoe UI",Arial,sans-serif}
+.vfr-utility .font-display{font-family:var(--vf-font-display)}
+.vfr-utility .font-headline-lg{font-family:var(--vf-font-display)}
+.vfr-utility .font-headline-sm{font-family:var(--vf-font-display)}
+.vfr-utility .font-label-md{font-family:var(--vf-font-family)}
+.vfr-utility .font-label-sm{font-family:var(--vf-font-family)}
 .vfr-utility .font-light{font-weight:300}
 .vfr-utility .font-medium{font-weight:500}
 .vfr-utility .font-mono{font-family:ui-monospace,Consolas,monospace}
 .vfr-utility .font-normal{font-weight:400}
 .vfr-utility .font-semibold{font-weight:600}
-.vfr-utility .font-title-md{font-family:"Segoe UI",Arial,sans-serif}
+.vfr-utility .font-title-md{font-family:var(--vf-font-family)}
 .vfr-utility .from-on-surface\/80{--vfr-from:rgba(41,58,48,0.8)}
 .vfr-utility .from-surface-container-low{--vfr-from:#f3f6ec}
 .vfr-utility .gap-0\.5{gap:0.125rem}

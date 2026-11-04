@@ -9,6 +9,7 @@
 <body>
 <th:block th:fragment="assets">
     <link rel="stylesheet" th:href="@{/css/vendor/bootstrap/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/typography.css(v=4)}">
     <link th:replace="~{fragments/pagination :: styles}">
     <th:block th:replace="~{fragments/account-menu :: assets}"></th:block>
     <link rel="stylesheet" th:href="@{/css/store-manager-orders.css}">
