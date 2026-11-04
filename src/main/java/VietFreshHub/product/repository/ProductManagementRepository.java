@@ -1,7 +1,6 @@
 package VietFreshHub.product.repository;
 
 import VietFreshHub.inventory.dto.InventoryAttentionSummary;
-import VietFreshHub.inventory.dto.InventoryCatalogFilter;
 import VietFreshHub.product.dto.ProductManagementState;
 import VietFreshHub.product.dto.ProductCatalogFilter;
 import VietFreshHub.product.dto.ProductTabSummary;
@@ -14,12 +13,6 @@ import java.util.List;
 import java.util.Map;
 
 public interface ProductManagementRepository {
-    /** Lấy trang sản phẩm có phân loại hoặc lô khớp bộ lọc kho của cửa hàng. */
-    Page<Product> searchInventory(Long shop, InventoryCatalogFilter filters,
-            LocalDate today, Pageable page);
-    /** Lấy ID phân loại khớp bộ lọc kho trong phạm vi các sản phẩm đã chọn. */
-    List<Long> matchingInventoryVariants(Long shop, InventoryCatalogFilter filters,
-            LocalDate today, List<Long> products);
     /** Lấy trang sản phẩm theo bộ lọc quản lý đầy đủ và danh mục hợp lệ. */
     Page<Product> searchManagement(Long shop, ProductCatalogFilter filters,
             LocalDateTime from, LocalDateTime to, List<Long> categories, LocalDate today, Pageable page);

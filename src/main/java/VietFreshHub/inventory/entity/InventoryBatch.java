@@ -1,5 +1,9 @@
 package VietFreshHub.inventory.entity;
 
+import VietFreshHub.common.VietnamDatabaseTime;
+import jakarta.persistence.Convert;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import VietFreshHub.common.BusinessCodes;
 import VietFreshHub.inventory.enums.BatchStatus;
 
@@ -45,6 +49,8 @@ public class InventoryBatch {
     private BigDecimal costPrice;
 
     @Column(name = "received_at")
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime receivedAt;
 
     @Column(name = "expiry_date")
@@ -55,9 +61,13 @@ public class InventoryBatch {
     private BatchStatus status;
 
     @Column(name = "created_at")
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime updatedAt;
     /** Tạo mã LOT từ ID lô để hiển thị, không lưu thành một cột dữ liệu riêng. */
     @Transient

@@ -1,28 +1,26 @@
 package VietFreshHub.inventory.service;
 
 import VietFreshHub.inventory.dto.BatchRequest;
+import VietFreshHub.inventory.dto.BatchMetadataRequest;
 import VietFreshHub.inventory.dto.ActivityHistoryFilter;
 import VietFreshHub.inventory.dto.AuditResponse;
 import VietFreshHub.inventory.dto.BatchResponse;
 import VietFreshHub.inventory.dto.DisposalResult;
-import VietFreshHub.inventory.dto.JournalResponse;
 import VietFreshHub.inventory.dto.MarkdownRequest;
 import VietFreshHub.inventory.dto.StockChangeRequest;
 
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 
-import java.time.LocalDate;
-
 public interface InventoryService {
     /** Nhập lô hàng mới cho phân loại thuộc cửa hàng và ghi lịch sử kho. */
     void restock(Authentication authentication, Long variantId, BatchRequest form);
 
     /** Chuẩn bị biểu mẫu sửa thông tin lô hiện có. */
-    BatchRequest batchForm(Authentication authentication, Long batchId);
+    BatchMetadataRequest batchForm(Authentication authentication, Long batchId);
 
     /** Sửa ngày nhập, hạn sử dụng và giá vốn của lô, giữ nguyên số lượng. */
-    void updateBatch(Authentication authentication, Long batchId, BatchRequest form);
+    void updateBatch(Authentication authentication, Long batchId, BatchMetadataRequest form);
 
     /** Điều chỉnh tồn thực tế của lô mà vẫn bảo toàn phần hàng đã giữ cho đơn. */
     void adjust(Authentication authentication, Long batchId, StockChangeRequest form);
@@ -44,9 +42,6 @@ public interface InventoryService {
 
     /** Lọc lịch sử hoạt động và bổ sung tên đối tượng, người thao tác để hiển thị. */
     Page<AuditResponse> activityHistory(Authentication authentication, ActivityHistoryFilter filters, int page, int size);
-
-    Page<JournalResponse> journal(Authentication authentication, Long variantId, Long batchId, String type,
-                                   String query, LocalDate from, LocalDate to, int page, int size);
 
     /** Lấy chi tiết lô thuộc cửa hàng, kèm tồn kho, hạn sử dụng và phân bổ cho đơn. */
     BatchResponse batch(Authentication authentication, Long batchId);

@@ -8,7 +8,6 @@ import VietFreshHub.auth.service.AuthService;
 import VietFreshHub.common.BusinessCodes;
 import VietFreshHub.common.PageSizes;
 import VietFreshHub.inventory.dto.InventoryAttentionSummary;
-import VietFreshHub.inventory.dto.InventoryCatalogFilter;
 import VietFreshHub.inventory.entity.InventoryBatch;
 import VietFreshHub.inventory.enums.BatchStatus;
 import VietFreshHub.inventory.enums.StockTransactionType;
@@ -19,7 +18,6 @@ import VietFreshHub.inventory.service.InventoryJournalService;
 import VietFreshHub.inventory.util.InventoryLockHelper;
 import VietFreshHub.product.dto.ActionRequest;
 import VietFreshHub.product.dto.BulkProductActionRequest;
-import VietFreshHub.product.dto.CatalogSummary;
 import VietFreshHub.product.dto.ProductCatalogFilter;
 import VietFreshHub.product.dto.ProductRequest;
 import VietFreshHub.product.dto.ProductResponse;
@@ -100,49 +98,6 @@ public class ProductServiceImpl implements ProductService {
     private final CategoryValidator categoryValidator;
     private final ProductAvailabilityService productAvailabilityService;
 
-    /** Tìm danh sách kho sau khi xác thực shop và chuẩn hóa phạm vi SKU. */
-    @Override
-    public Page<ProductResponse> searchInventory(Authentication authentication,
-            InventoryCatalogFilter filters, int page, int size) {
-        Long shopId = shopService.getManagedShopId(authentication);
-        prepareInventoryFilters(authentication, filters);
-        return catalogQueries.searchInventory(shopId, filters, page, size);
-    }
-
-    /** Chuẩn hóa bộ lọc và kiểm tra quyền xem SKU, gồm cả dữ liệu đã ngừng kinh doanh. */
-    private void prepareInventoryFilters(Authentication authentication, InventoryCatalogFilter filters) {
-        filters.setQ(normalizeFilter(filters.getQ()));
-        filters.setStock(normalizeFilter(filters.getStock()));
-        filters.setExpiry(normalizeFilter(filters.getExpiry()));
-
-        // Tách bộ lọc hạn từ tham số tồn kho cũ để liên kết dashboard hoặc đã lưu vẫn hoạt động.
-        if (List.of("near", "expired", "expiry").contains(filters.getStock())) {
-            filters.setExpiry(filters.getStock().equals("expiry") ? "attention" : filters.getStock());
-            filters.setStock("");
-        } else if (filters.getStock().equals("archived")) {
-            filters.setArchived(true);
-            filters.setStock("");
-        }
-
-        require(List.of("", "available", "low", "empty").contains(filters.getStock()),
-                "Mức tồn kho không hợp lệ.");
-        require(List.of("", "valid", "near", "expired", "attention").contains(filters.getExpiry()),
-                "Hạn sử dụng không hợp lệ.");
-
-        if (filters.getVariantId() == null) {
-            return;
-        }
-
-        // Kiểm tra quyền qua sản phẩm cha trước khi mở rộng phạm vi xem dữ liệu đã ngừng.
-        ProductVariant requestedVariant = productVariantRepository.findById(filters.getVariantId())
-                .orElseThrow(() -> new AccessDeniedException("Phân loại không thuộc cửa hàng của bạn."));
-        Product parentProduct = getOwnedProductForRead(authentication, requestedVariant.getProductId());
-        if (parentProduct.getStatus() == ProductStatus.DELETED
-                || requestedVariant.getStatus() == VariantStatus.DELETED) {
-            filters.setArchived(true);
-        }
-    }
-
     /** Chuẩn hóa bộ lọc và truy vấn sản phẩm trong cửa hàng đang quản lý. */
     @Override
     public Page<ProductResponse> searchManagement(Authentication authentication,
@@ -206,16 +161,6 @@ public class ProductServiceImpl implements ProductService {
             return "";
         }
         return value.trim();
-    }
-
-    /** Đếm sản phẩm và phân loại chưa ngừng kinh doanh trong cửa hàng đang quản lý. */
-    @Override
-    public CatalogSummary catalogSummary(Authentication authentication) {
-        Long shopId = shopService.getManagedShopId(authentication);
-        long productCount =
-                productRepository.countByShopIdAndStatusNot(shopId, ProductStatus.DELETED);
-        long variantCount = productVariantRepository.countVisibleInShop(shopId);
-        return new CatalogSummary(productCount, variantCount);
     }
 
     /** Lấy chi tiết sản phẩm thuộc cửa hàng đang quản lý. */
@@ -397,7 +342,7 @@ public class ProductServiceImpl implements ProductService {
         require(
                 form.getCompareAtPrice() == null
                         || form.getCompareAtPrice().compareTo(form.getPrice()) >= 0,
-                "Giá trước giảm phải lớn hơn hoặc bằng giá bán.");
+                "Giá tham chiếu phải lớn hơn hoặc bằng giá bán.");
         require(
                 form.getWeight() == null
                         || (form.getWeight().compareTo(new BigDecimal("0.001")) >= 0

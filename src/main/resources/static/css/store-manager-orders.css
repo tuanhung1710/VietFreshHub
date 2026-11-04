@@ -418,7 +418,6 @@
     body.vfo-shell .vfo-topbar { position: relative; inset: auto; }
     body.vfo-shell .vfo-workspace { min-height: calc(100vh - var(--vfo-topbar-height)); padding-top: 0; }
     body.vfo-shell .vf-workspace { padding-top: 0; }
-    body.vfo-shell .vf-list-page { --vf-list-top: 0px; }
     body.vfo-shell .vfo-main { scroll-margin-top: 20px; }
     body.vfo-shell .vfr-chat-workspace .chat-app { margin-top: 20px; }
     body.vfo-shell .vfo-sidebar-toggle {

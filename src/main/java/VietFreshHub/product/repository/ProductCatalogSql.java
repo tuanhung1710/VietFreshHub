@@ -1,6 +1,5 @@
 package VietFreshHub.product.repository;
 
-import VietFreshHub.inventory.dto.InventoryCatalogFilter;
 import VietFreshHub.product.dto.ProductCatalogFilter;
 import java.time.LocalDateTime;
 
@@ -12,15 +11,18 @@ final class ProductCatalogSql {
     // Hàng khả dụng chỉ lấy từ lô đang hoạt động, còn hạn và còn phần chưa giữ cho đơn.
     static final String VARIANT_STOCK = """
         WITH variant_stock AS (
-          SELECT v.product_id, v.variant_id, v.status, v.price,v.low_stock_threshold,v.sku,v.variant_name,
+          SELECT v.product_id, v.variant_id, v.status, v.price,v.low_stock_threshold,v.sku,v.variant_name,v.unit,
             COALESCE(SUM(CAST(b.quantity_on_hand AS BIGINT)),0) AS physical,
+            COALESCE(SUM(CAST(b.reserved_quantity AS BIGINT)),0) AS reserved,
+            SUM(CASE WHEN b.quantity_on_hand>0 THEN CAST(1 AS BIGINT) ELSE 0 END) AS batches_in_stock,
+            SUM(CASE WHEN b.expiry_date<:today THEN CAST(b.quantity_on_hand AS BIGINT) ELSE 0 END) AS expired_quantity,
             COALESCE(SUM(CASE WHEN b.status='ACTIVE' AND (b.expiry_date IS NULL OR b.expiry_date>=:today)
               AND b.quantity_on_hand>b.reserved_quantity
               THEN CAST(b.quantity_on_hand AS BIGINT)-b.reserved_quantity ELSE 0 END),0) AS available
           FROM dbo.product_variants v JOIN dbo.products p ON p.product_id=v.product_id
           LEFT JOIN dbo.inventory_batches b ON b.variant_id=v.variant_id
           WHERE p.shop_id=:shop __scope__
-          GROUP BY v.product_id,v.variant_id,v.status,v.price,v.low_stock_threshold,v.sku,v.variant_name
+          GROUP BY v.product_id,v.variant_id,v.status,v.price,v.low_stock_threshold,v.sku,v.variant_name,v.unit
         )
         """;
 
@@ -142,45 +144,5 @@ final class ProductCatalogSql {
                 WHERE bv.product_id=p.product_id AND b.batch_id=:batchCode))
             """;
 
-    }
-
-    /**
-     * Tạo điều kiện lọc phân loại và lô cho màn hình kho.
-     * Tùy chọn lưu trữ mở rộng phạm vi để gồm cả dữ liệu đã ngừng kinh doanh.
-     */
-    static String inventoryCriteria(InventoryCatalogFilter filters) {
-        // Điều kiện nằm ở cấp SKU để các bộ lọc tồn và hạn áp dụng đúng phân loại trong sản phẩm.
-        String where = "v.product_id=p.product_id";
-        // Bật tùy chọn sẽ gồm cả dữ liệu ngừng kinh doanh, không chỉ lấy riêng dữ liệu đó.
-        if (!filters.isArchived() && filters.getVariantId() == null) {
-            where += " AND p.status<>'DELETED' AND v.status<>'DELETED'";
-        }
-        if (filters.getCategory() != null) {
-            where += " AND EXISTS (SELECT 1 FROM dbo.product_categories pc WHERE pc.product_id=p.product_id AND pc.category_id=:category)";
-        }
-        if (filters.getVariantId() != null) {
-            where += " AND v.variant_id=:variant";
-        }
-        where += switch(filters.getStock()) {
-            case "available" -> " AND v.available>0";
-            case "low" -> " AND v.available>0 AND v.available<=COALESCE(v.low_stock_threshold,0)";
-            case "empty" -> " AND v.available=0";
-            default -> "";
-        };
-        // Lọc theo hạn phải có ít nhất một lô còn tồn khớp hạn; lô đã hết hàng không tạo cảnh báo.
-        if (!filters.getExpiry().isEmpty()) where += " AND EXISTS (SELECT 1 FROM dbo.inventory_batches eb WHERE eb.variant_id=v.variant_id AND eb.quantity_on_hand>0 AND " + switch(filters.getExpiry()) {
-            case "near" -> "eb.expiry_date>=:today AND eb.expiry_date<=DATEADD(day,COALESCE(p.expiry_warning_days,3),CAST(:today AS DATE))";
-            case "expired" -> "eb.expiry_date<:today";
-            case "valid" -> "(eb.expiry_date IS NULL OR eb.expiry_date>DATEADD(day,COALESCE(p.expiry_warning_days,3),CAST(:today AS DATE)))";
-            case "attention" -> "eb.expiry_date<=DATEADD(day,COALESCE(p.expiry_warning_days,3),CAST(:today AS DATE))";
-            default -> throw new IllegalArgumentException("Invalid expiry filter");
-        } + ")";
-        if (!filters.getQ().isEmpty()) where += """
-             AND ((:productCode<0 AND :batchCode<0 AND (LOWER(p.name) LIKE :text OR LOWER(p.slug) LIKE :text
-                 OR LOWER(v.sku) LIKE :text OR LOWER(v.variant_name) LIKE :text))
-                 OR p.product_id=:productCode OR EXISTS (SELECT 1 FROM dbo.inventory_batches qb
-                   WHERE qb.variant_id=v.variant_id AND qb.batch_id=:batchCode))
-            """;
-        return where;
     }
 }

@@ -1,5 +1,9 @@
 package VietFreshHub.inventory.entity;
 
+import VietFreshHub.common.VietnamDatabaseTime;
+import jakarta.persistence.Convert;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import VietFreshHub.inventory.enums.MarkdownStatus;
 
 import jakarta.persistence.Column;
@@ -56,5 +60,7 @@ public class BatchMarkdown {
     private Long createdBy;
 
     @Column(name = "created_at")
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime createdAt;
 }

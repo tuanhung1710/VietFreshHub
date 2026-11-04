@@ -3,12 +3,11 @@
 <body>
 <nav th:fragment="seller(active)" class="nav flex-column vfo-side-nav vfo-grouped-nav" aria-label="Điều hướng kênh người bán">
     <a class="nav-link" th:classappend="${active == 'dashboard' ? 'active' : ''}" th:attr="aria-current=${active == 'dashboard' ? 'page' : null}" th:href="@{/seller}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-grid"/></svg>Tổng quan</a>
-    <details class="vfo-nav-group" th:open="${active == 'product' or active == 'inventory' or active == 'journal'}">
+    <details class="vfo-nav-group" th:open="${active == 'product' or active == 'inventory'}">
         <summary>Sản phẩm &amp; kho</summary>
         <div class="vfo-group-links">
             <a class="nav-link" th:classappend="${active == 'product' ? 'active' : ''}" th:attr="aria-current=${active == 'product' ? 'page' : null}" th:href="@{/seller/products}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-product"/></svg>Sản phẩm &amp; phân loại</a>
             <a class="nav-link" th:classappend="${active == 'inventory' ? 'active' : ''}" th:attr="aria-current=${active == 'inventory' ? 'page' : null}" th:href="@{/seller/inventory}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-box"/></svg>Kho &amp; lô hàng</a>
-            <a class="nav-link" th:classappend="${active == 'journal' ? 'active' : ''}" th:attr="aria-current=${active == 'journal' ? 'page' : null}" th:href="@{/seller/inventory/journal}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-history"/></svg>Biến động kho</a>
         </div>
     </details>
     <details class="vfo-nav-group" th:open="${active == 'orders' or active == 'deliveries' or active == 'chat'}">

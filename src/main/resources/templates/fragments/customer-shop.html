@@ -45,7 +45,7 @@
                     <a th:href="@{/products}">
                         Tất cả sản phẩm
                     </a>
-                    <a th:each="category : ${categories}" th:href="@{/products(category=${category.categoryId})}" th:text="${category.name}">
+                    <a th:each="category : ${headerCategories}" th:href="@{/products(category=${category.categoryId})}" th:text="${category.name}">
                     </a>
                 </nav>
             </div>

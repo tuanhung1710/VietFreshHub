@@ -1,5 +1,9 @@
 package VietFreshHub.catalog.entity;
 
+import VietFreshHub.common.VietnamDatabaseTime;
+import jakarta.persistence.Convert;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,11 +26,17 @@ public class CatalogCategory {
     private String slug;
     @Nationalized @Column(length = 1000)
     private String description;
+    @Nationalized @Column(name = "image_url", length = 1000)
+    private String imageUrl;
     @Column(nullable = false, length = 20)
     private String status = "ACTIVE";
      @Column(name = "created_at", nullable = false, updatable = false)
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime createdAt;
      @Column(name = "updated_at", nullable = false)
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime updatedAt;
 
     @PrePersist

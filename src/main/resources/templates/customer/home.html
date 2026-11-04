@@ -59,7 +59,10 @@
                     </div>
                     <div class="categories" id="homecategories">
                         <a class="cat" th:each="category : ${categories}"
-                           th:href="@{/products(category=${category.categoryId})}" th:text="${category.name}">
+                           th:href="@{/products(category=${category.categoryId})}">
+                            <img class="cat-image" data-category-image alt="" loading="lazy"
+                                 th:if="${!#strings.isEmpty(category.imageUrl)}" th:src="@{${category.imageUrl}}">
+                            <span class="cat-name" th:text="${category.name}"></span>
                         </a>
                     </div>
                     <p class="empty-products" th:if="${#lists.isEmpty(categories)}">

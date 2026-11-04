@@ -10,7 +10,7 @@ public class ShopCustomerOrderFilterRequest {
     public void setSize(int size) { this.size = VietFreshHub.common.PageSizes.normalize(size); }
     @Min(value=1,message="Trang phải từ 1 trở lên.") @Max(value=10000,message="Trang vượt giới hạn cho phép.") private int page=1;
     @Size(max=100,message="Mã đơn tìm kiếm tối đa 100 ký tự.") private String keyword="";
-    @Pattern(regexp="|PENDING|CONFIRMED|PREPARING|READY_FOR_DELIVERY|ACCEPTED|PICKED_UP|OUT_FOR_DELIVERY|COMPLETED|FAILED|CANCELLED",message="Trạng thái lọc không hợp lệ.") private String status="";
+    @Pattern(regexp="|PENDING|CONFIRMED|PREPARING|READY_FOR_DELIVERY|OUT_FOR_DELIVERY|COMPLETED|FAILED|CANCELLED",message="Trạng thái lọc không hợp lệ.") private String status="";
     @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) private LocalDate fromDate;
     @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) private LocalDate toDate;
     @AssertTrue(message="Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.")

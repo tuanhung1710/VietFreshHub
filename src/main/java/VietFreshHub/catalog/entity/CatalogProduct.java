@@ -1,5 +1,9 @@
 package VietFreshHub.catalog.entity;
 
+import VietFreshHub.common.VietnamDatabaseTime;
+import jakarta.persistence.Convert;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import VietFreshHub.shop.entity.Shop;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -98,12 +102,18 @@ public class CatalogProduct {
     private Long approvedBy;
 
     @Column(name = "approved_at")
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime approvedAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime updatedAt;
 
     // Each variant is refreshed under its own lock during checkout.

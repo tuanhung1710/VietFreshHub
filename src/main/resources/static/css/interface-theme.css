@@ -100,7 +100,6 @@ body.vfr-app.vfr-customer:not(.vfr-retail) { display:flex; flex-direction:column
 .vfr-product .vf-workspace { padding-top:var(--vfo-topbar-height); }
 .vfr-product .vf-workspace > .vf-main { max-width:1440px; width:100%; margin:0 auto; }
 .vfr-product .vf-workspace > .vf-main.narrow { max-width:1120px; }
-.vfr-product .vf-list-page { --vf-list-top:var(--vfo-topbar-height); }
 .vfr-product .vf-filter-tabs { border-color:#e1e8d6; border-radius:12px; background:#fff; }
 .vfr-product .vf-filter-tabs .nav-link { color:#7b8c6d; }
 .vfr-product .vf-filter-tabs .nav-link.active { border-color:#78966b; background:#edf4e8; color:#30634e; }

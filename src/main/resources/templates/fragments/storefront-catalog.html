@@ -24,7 +24,7 @@
                 <div class="p-shop"
                  th:text="${product.shopName + ' · ' + (#strings.isEmpty(product.shopPlace) ? 'Chưa cập nhật' : product.shopPlace)}">
                 </div>
-                <div class="p-price" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'POINT')} + ' VND'">
+                <div class="p-price" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'COMMA')} + ' VND'">
                 </div>
                 <div class="p-sub">
                     <span th:text="${'★ ' + (product.rating == null ? '0.0' : #numbers.formatDecimal(product.rating,1,1)) + '/5'}">
@@ -48,7 +48,7 @@
                 </div>
                 <div class="muted" th:text="${product.categoryName}">
                 </div>
-                <div class="price" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'POINT')} + ' VND'">
+                <div class="price" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'COMMA')} + ' VND'">
                 </div>
                 <div class="meta">
                     <span th:text="${'★ ' + (product.rating == null ? '0.0' : #numbers.formatDecimal(product.rating,1,1)) + '/5'}">

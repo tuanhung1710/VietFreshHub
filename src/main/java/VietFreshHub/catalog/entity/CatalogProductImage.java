@@ -1,5 +1,9 @@
 package VietFreshHub.catalog.entity;
 
+import VietFreshHub.common.VietnamDatabaseTime;
+import jakarta.persistence.Convert;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,6 +21,8 @@ public class CatalogProductImage {
     @Nationalized @Column(name="image_url", nullable=false, length=1000) private String imageUrl;
     @Column(name="is_primary", nullable=false) private boolean primary;
     @Column(name="sort_order", nullable=false) private Integer sortOrder=0;
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     @Column(name="created_at", nullable=false, updatable=false) private LocalDateTime createdAt;
     @PrePersist void timestamp() { if(createdAt==null) createdAt=LocalDateTime.now(ZoneOffset.UTC).withNano(0); }
 }

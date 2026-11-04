@@ -86,7 +86,6 @@ public class ProductController {
             Model model) {
         model.addAttribute("rows", productService.searchManagement(authentication, filters, page, size));
         model.addAttribute("categories", productService.categories());
-        model.addAttribute("catalogSummary", productService.catalogSummary(authentication));
         model.addAttribute("tabSummary", productService.productTabSummary(authentication));
         model.addAttribute("q", filters.getQ());
         model.addAttribute("category", filters.getCategory());

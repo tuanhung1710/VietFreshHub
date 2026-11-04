@@ -29,9 +29,11 @@ public class StorefrontViewAdvice {
     private final CartService carts;
     private final CurrentCustomerService customers;
 
-    @ModelAttribute("categories")
-    public List<CatalogCategory> categories() {
-        return storefront.categories();
+    @ModelAttribute
+    public void addCategories(Model model) {
+        List<CatalogCategory> categories = storefront.categories();
+        model.addAttribute("categories", categories);
+        model.addAttribute("headerCategories", categories.stream().limit(5).toList());
     }
 
     @ModelAttribute("storefrontCartCount")
@@ -52,7 +54,7 @@ public class StorefrontViewAdvice {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public String unavailable(ResourceNotFoundException exception, Authentication authentication, Model model) {
         // Model của màn lỗi được tạo lại nên cần nạp lại dữ liệu header/footer.
-        model.addAttribute("categories", categories());
+        addCategories(model);
         model.addAttribute("storefrontCartCount", cartCount(authentication));
         model.addAttribute("message", exception.getMessage());
         return "customer/catalog-error";
@@ -61,7 +63,7 @@ public class StorefrontViewAdvice {
     @ExceptionHandler({BindException.class, IllegalArgumentException.class, MethodArgumentTypeMismatchException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public String invalidFilters(Exception exception, Authentication authentication, Model model) {
-        model.addAttribute("categories", categories());
+        addCategories(model);
         model.addAttribute("storefrontCartCount", cartCount(authentication));
         model.addAttribute("errorTitle", "Bộ lọc không hợp lệ");
         model.addAttribute("message", exception instanceof BindException errors

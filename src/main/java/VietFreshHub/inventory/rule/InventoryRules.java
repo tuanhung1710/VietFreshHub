@@ -168,6 +168,14 @@ public final class InventoryRules {
         return (int) nextQuantity;
     }
 
+    /** So tồn lúc mở biểu mẫu với tồn hiện tại trước khi áp dụng số kiểm đếm. */
+    public static int countedQuantity(InventoryBatch batch, Integer counted, Integer expected, LocalDate date) {
+        require(counted != null && counted >= 0, "Vui lòng nhập số tồn sau kiểm đếm hợp lệ.");
+        require(expected != null && expected.equals(batch.getQuantityOnHand()),
+                "Tồn kho đã thay đổi. Vui lòng đối chiếu số hiện tại và kiểm đếm lại.");
+        return adjustedQuantity(batch, counted - expected, date);
+    }
+
     /**
      * Tính phần hàng hết hạn chưa giữ cho đơn có thể hủy; trả về 0 nếu chưa hết hạn hoặc thiếu số liệu.
      */

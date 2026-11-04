@@ -2266,6 +2266,45 @@ IF NOT EXISTS(SELECT 1 FROM dbo.subscription_plans WHERE name=N''Free'')
  INSERT dbo.subscription_plans(name,description,price,billing_period,benefits,max_products,status)
  VALUES(N''Free'',N''Gói miễn phí mặc định cho cửa hàng.'',0,''MONTHLY'',N''Được public tối đa 5 sản phẩm.'',5,''ACTIVE'');';
 
+-- Move the catalog, inventory and shop timestamp columns from UTC to UTC+07:00 once.
+IF NOT EXISTS (SELECT 1 FROM sys.extended_properties
+               WHERE class=0 AND name=N'VietFreshHub.VietnamTime.v1')
+BEGIN
+    DECLARE @vietnamTimeColumns TABLE(table_name SYSNAME, column_name SYSNAME, PRIMARY KEY(table_name,column_name));
+    INSERT @vietnamTimeColumns VALUES
+        (N'categories',N'created_at'),(N'categories',N'updated_at'),
+        (N'products',N'created_at'),(N'products',N'updated_at'),(N'products',N'approved_at'),
+        (N'product_variants',N'created_at'),(N'product_variants',N'updated_at'),
+        (N'product_images',N'created_at'),(N'price_history',N'effective_from'),(N'price_history',N'effective_to'),
+        (N'inventory_batches',N'received_at'),(N'inventory_batches',N'created_at'),(N'inventory_batches',N'updated_at'),
+        (N'inventory_transactions',N'created_at'),(N'batch_markdowns',N'created_at'),(N'audit_events',N'created_at'),
+        (N'shops',N'created_at'),(N'shops',N'updated_at'),
+        (N'shop_locations',N'created_at'),(N'shop_locations',N'updated_at'),(N'favorite_shops',N'created_at');
+
+    IF @freshInstall=0
+    BEGIN
+        DECLARE @shiftVietnamTime NVARCHAR(MAX);
+        SELECT @shiftVietnamTime=STRING_AGG(CAST(N'UPDATE dbo.'+QUOTENAME(table_name)+N' SET '+assignments+N';' AS NVARCHAR(MAX)),NCHAR(10))
+        FROM (
+            SELECT table_name,STRING_AGG(CAST(QUOTENAME(column_name)+N'=DATEADD(HOUR,7,'+QUOTENAME(column_name)+N')' AS NVARCHAR(MAX)),N', ') AS assignments
+            FROM @vietnamTimeColumns GROUP BY table_name
+        ) AS tables_to_shift;
+        EXEC sys.sp_executesql @shiftVietnamTime;
+    END;
+
+    DECLARE @vietnamTimeDefaults NVARCHAR(MAX);
+    SELECT @vietnamTimeDefaults=STRING_AGG(CAST(
+        N'ALTER TABLE dbo.'+QUOTENAME(v.table_name)+N' DROP CONSTRAINT '+QUOTENAME(d.name)+N'; '+
+        N'ALTER TABLE dbo.'+QUOTENAME(v.table_name)+N' ADD CONSTRAINT '+QUOTENAME(d.name)+
+        N' DEFAULT (DATEADD(HOUR,7,SYSUTCDATETIME())) FOR '+QUOTENAME(v.column_name)+N';' AS NVARCHAR(MAX)),NCHAR(10))
+    FROM @vietnamTimeColumns v
+    JOIN sys.columns c ON c.object_id=OBJECT_ID(N'dbo.'+QUOTENAME(v.table_name)) AND c.name=v.column_name
+    JOIN sys.default_constraints d ON d.object_id=c.default_object_id;
+    IF @vietnamTimeDefaults IS NOT NULL EXEC sys.sp_executesql @vietnamTimeDefaults;
+
+    EXEC sys.sp_addextendedproperty @name=N'VietFreshHub.VietnamTime.v1',@value=N'UTC+07:00';
+END;
+
 -- BEGIN SHARED VIEWS, FUNCTIONS, PROCEDURES AND TRIGGERS
 
 EXEC sys.sp_executesql N'IF NOT EXISTS (SELECT 1 FROM dbo.shipping_fee_settings WHERE settings_id = 1)
@@ -2440,7 +2479,7 @@ BEGIN
         END
         ELSE
             UPDATE dbo.categories SET parent_category_id = @parent_id, name = @name,
-                slug = @slug, description = @description, status = @status, updated_at = SYSUTCDATETIME()
+                slug = @slug, description = @description, status = @status, updated_at = DATEADD(HOUR,7,SYSUTCDATETIME())
             WHERE category_id = @category_id;
         COMMIT TRANSACTION;
     END TRY
@@ -2504,8 +2543,9 @@ BEGIN
     BEGIN TRANSACTION;
     IF NOT EXISTS (SELECT 1 FROM dbo.products WITH (UPDLOCK, HOLDLOCK) WHERE product_id = @product_id AND status <> ''DELETED'')
       THROW 51110, N''San pham khong ton tai hoac da ngung kinh doanh.'', 1;
-    UPDATE dbo.products SET approval_status = @decision, approved_by = @admin_user_id, approved_at = SYSUTCDATETIME(),
-      updated_at = SYSUTCDATETIME()
+    DECLARE @reviewed_at DATETIME2(0)=DATEADD(HOUR,7,SYSUTCDATETIME());
+    UPDATE dbo.products SET approval_status = @decision, approved_by = @admin_user_id, approved_at = @reviewed_at,
+      updated_at = @reviewed_at
     WHERE product_id = @product_id;
     INSERT INTO dbo.product_review_history(product_id, decision, reviewed_by, note) VALUES(@product_id, @decision, @admin_user_id, @note);
     COMMIT TRANSACTION;
@@ -2686,12 +2726,13 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM dbo.products WITH (UPDLOCK,HOLDLOCK)
       WHERE product_id=@product_id AND status<>''DELETED'')
       THROW 51122, N''San pham khong ton tai hoac da ngung kinh doanh.'', 1;
+    DECLARE @moderated_at DATETIME2(0)=DATEADD(HOUR,7,SYSUTCDATETIME());
     UPDATE dbo.products SET moderation_blocked=@blocked,
       moderation_reason=CASE WHEN @blocked=1 THEN LTRIM(RTRIM(@note)) ELSE NULL END,
-      updated_at=SYSUTCDATETIME() WHERE product_id=@product_id;
+      updated_at=@moderated_at WHERE product_id=@product_id;
     INSERT dbo.audit_events(actor_id,action,entity_type,entity_id,reason,created_at)
       VALUES(@admin_user_id,CASE WHEN @blocked=1 THEN ''MODERATION_BLOCK'' ELSE ''MODERATION_UNBLOCK'' END,
-        ''PRODUCT'',@product_id,@note,SYSUTCDATETIME());
+        ''PRODUCT'',@product_id,@note,@moderated_at);
     COMMIT TRANSACTION;
   END TRY BEGIN CATCH
     IF @@TRANCOUNT>0 ROLLBACK TRANSACTION;

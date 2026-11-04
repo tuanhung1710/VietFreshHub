@@ -1,5 +1,9 @@
 package VietFreshHub.product.entity;
 
+import VietFreshHub.common.VietnamDatabaseTime;
+import jakarta.persistence.Convert;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import VietFreshHub.common.BusinessCodes;
 import VietFreshHub.product.enums.ApprovalStatus;
 import VietFreshHub.product.enums.ProductStatus;
@@ -76,6 +80,8 @@ public class Product {
     private Long approvedBy;
 
     @Column(name = "approved_at")
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime approvedAt;
 
     @Column(name = "requires_preparation_check")
@@ -95,9 +101,13 @@ public class Product {
     }
 
     @Column(name = "created_at")
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime updatedAt;
     /** Tạo mã PRD từ ID để hiển thị; mã này không phải cột được lưu riêng. */
     @Transient

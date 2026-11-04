@@ -2,12 +2,13 @@ package VietFreshHub.inventory.controller;
 
 import VietFreshHub.inventory.dto.ActivityHistoryFilter;
 import VietFreshHub.inventory.dto.BatchRequest;
+import VietFreshHub.inventory.dto.BatchMetadataRequest;
 import VietFreshHub.inventory.dto.BatchResponse;
 import VietFreshHub.inventory.dto.InventoryCatalogFilter;
-import VietFreshHub.common.BusinessCodes;
 import VietFreshHub.inventory.dto.MarkdownRequest;
 import VietFreshHub.inventory.dto.StockChangeRequest;
 import VietFreshHub.inventory.rule.InventoryRules;
+import VietFreshHub.inventory.service.InventoryCatalogService;
 import VietFreshHub.inventory.service.InventoryService;
 import VietFreshHub.product.exception.CatalogException;
 import VietFreshHub.product.service.ProductService;
@@ -15,7 +16,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -26,8 +26,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.view.RedirectView;
+import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
-import java.time.LocalDate;
 import java.util.List;
 
 @Controller
@@ -39,6 +40,7 @@ public class InventoryController {
 
     private final InventoryService inventoryService;
     private final ProductService productService;
+    private final InventoryCatalogService inventoryCatalog;
 
     /** Giữ màn nguồn qua các bước xem chi tiết, nhập kho và xử lý lô. */
     @ModelAttribute("inventoryCurrentUrl")
@@ -78,7 +80,7 @@ public class InventoryController {
                 || path.matches("/seller/products/[0-9]+");
     }
 
-    /** Hiển thị danh sách tồn kho theo bộ lọc, kèm danh mục và ngày hiện tại của cửa hàng. */
+    /** Hiển thị danh sách lô hoặc tổng tồn SKU theo bộ lọc của cửa hàng. */
     @GetMapping
     public String list(
             Authentication authentication,
@@ -86,17 +88,27 @@ public class InventoryController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "5") int size,
             Model model) {
-        model.addAttribute(
-                "rows",
-                productService.searchInventory(authentication, filters, page, size));
-        model.addAttribute("categories", productService.categories());
-        model.addAttribute("catalogSummary", productService.catalogSummary(authentication));
-        model.addAttribute("q", filters.getQ());
-        model.addAttribute("category", filters.getCategory());
-        model.addAttribute("stock", filters.getStock());
-        model.addAttribute("expiry", filters.getExpiry());
-        model.addAttribute("today", InventoryRules.today());
+        var catalog = inventoryCatalog.list(authentication, filters, page, size);
+        model.addAttribute("rows", catalog.rows());
+        model.addAttribute("summary", catalog.summary());
+        model.addAttribute("today", catalog.date());
         return "inventory/list";
+    }
+
+    /** Tìm SKU hoặc lô đã nhập để chọn phân loại cho lần nhập tiếp theo. */
+    @GetMapping("/restock")
+    public String restockPicker(Authentication authentication, @RequestParam(defaultValue = "") String q,
+                                Model model) {
+        restockOptions(authentication, q, model);
+        return "inventory/restock-picker";
+    }
+
+    @GetMapping("/restock/options")
+    public String restockOptions(Authentication authentication, @RequestParam(defaultValue = "") String q,
+                                 Model model) {
+        model.addAttribute("q", q.trim());
+        model.addAttribute("choices", inventoryCatalog.restockChoices(authentication, q));
+        return "inventory/restock-picker :: options";
     }
 
     /** Mở biểu mẫu nhập kho cho phân loại, mặc định ngày nhập là hôm nay tại Việt Nam. */
@@ -120,6 +132,7 @@ public class InventoryController {
             @PathVariable Long variant,
             @Valid @ModelAttribute("form") BatchRequest form,
             BindingResult errors,
+            @RequestParam(defaultValue = "false") boolean continueEntry,
             @ModelAttribute("inventoryReturnUrl") String returnUrl,
             Model model,
             RedirectAttributes flash) {
@@ -130,7 +143,13 @@ public class InventoryController {
         }
         try {
             inventoryService.restock(authentication, variant, form);
-            flash.addFlashAttribute("success", "Đã nhập kho và ghi nhận biến động kho.");
+            flash.addFlashAttribute("success", "Đã nhập kho.");
+            if (continueEntry) {
+                return "redirect:" + UriComponentsBuilder.fromPath(INVENTORY_PATH)
+                        .path("/products/{product}/variants/{variant}/restock")
+                        .queryParam("returnTo", "{returnTo}").encode()
+                        .buildAndExpand(product, variant, returnUrl).toUriString();
+            }
             return "redirect:" + returnUrl;
         } catch (CatalogException exception) {
             errors.reject("business", exception.getMessage());
@@ -186,7 +205,7 @@ public class InventoryController {
     public String edit(
             Authentication authentication,
             @PathVariable Long id,
-            @Valid @ModelAttribute("form") BatchRequest form,
+            @Valid @ModelAttribute("form") BatchMetadataRequest form,
             BindingResult errors,
             @ModelAttribute("inventoryReturnUrl") String returnUrl,
             Model model,
@@ -211,11 +230,26 @@ public class InventoryController {
             @PathVariable Long id,
             @Valid @ModelAttribute("form") StockChangeRequest form,
             BindingResult errors,
+            @RequestParam(defaultValue = "false") boolean preview,
             @ModelAttribute("inventoryReturnUrl") String returnUrl,
             Model model,
             RedirectAttributes flash) {
         if (errors.hasErrors()) {
             return showBatchForm(authentication, id, "adjust", model);
+        }
+        if (preview) {
+            BatchResponse row = inventoryService.batch(authentication, id);
+            try {
+                int next = InventoryRules.countedQuantity(row.getBatch(), form.getCountedQuantity(),
+                        form.getExpectedQuantity(), InventoryRules.today());
+                model.addAttribute("previewQuantity", next);
+                model.addAttribute("previewDelta", next - row.getBatch().getQuantityOnHand());
+                model.addAttribute("previewAvailable", next - row.getBatch().getReservedQuantity());
+            } catch (CatalogException exception) {
+                errors.reject("business", exception.getMessage());
+            }
+            addBatchAttributes(row, id, "adjust", model);
+            return "inventory/batch-form";
         }
         try {
             inventoryService.adjust(authentication, id, form);
@@ -343,26 +377,12 @@ public class InventoryController {
         return "inventory/audit";
     }
 
+    /** Đưa các liên kết biến động kho cũ về nhật ký hoạt động. */
     @GetMapping("/journal")
-    public String journal(Authentication authentication,
-            @RequestParam(required = false) Long variant,
-            @RequestParam(required = false) Long batch,
-            @RequestParam(defaultValue = "") String type,
-            @RequestParam(defaultValue = "") String q,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "15") int size,
-            Model model) {
-        model.addAttribute("events", inventoryService.journal(authentication, variant, batch, type, q, from, to, page, size));
-        model.addAttribute("variant", variant);
-        model.addAttribute("batch", batch);
-        model.addAttribute("batchCode", BusinessCodes.format("LOT", batch));
-        model.addAttribute("type", type);
-        model.addAttribute("q", q);
-        model.addAttribute("from", from);
-        model.addAttribute("to", to);
-        return "inventory/journal";
+    public RedirectView journal() {
+        var view = new RedirectView(INVENTORY_PATH + "/audit", true);
+        view.setExposeModelAttributes(false);
+        return view;
     }
 
     /** Hiển thị chi tiết lô sau khi kiểm tra lô thuộc cửa hàng đang quản lý. */

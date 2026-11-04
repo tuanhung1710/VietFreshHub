@@ -116,10 +116,8 @@ public class BatchAllocationHistoryService {
         List<ProcessingEvent> events = history.stream().map(event -> new ProcessingEvent(
                 event.getCreatedAt(), description(event, unit), order.getOrder() == null ? note(event)
                         : order.getOrder().formatOrderCodeIn(note(event)))).toList();
-        String orderCode = order.getOrder() == null ? "Đơn hàng" : order.getOrder().getOrderCode();
-        return new AllocationResponse(allocation.getAllocationId(), line.getOrderItemId(), orderCode,
+        return new AllocationResponse(allocation.getAllocationId(), order.getShopOrderCode(),
                 line.getQuantity(), unit, allocation.getStatus(), updatedAt, events);
-
     }
 
     private String description(InventoryTransaction event, String unit) {

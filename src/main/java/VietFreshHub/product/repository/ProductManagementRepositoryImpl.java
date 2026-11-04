@@ -1,10 +1,11 @@
 package VietFreshHub.product.repository;
 
+import VietFreshHub.common.VietnamDatabaseTime;
+
 import static VietFreshHub.product.repository.ProductCatalogSql.CLASSIFICATION;
 import static VietFreshHub.product.repository.ProductCatalogSql.VARIANT_STOCK;
 import VietFreshHub.common.BusinessCodes;
 import VietFreshHub.inventory.dto.InventoryAttentionSummary;
-import VietFreshHub.inventory.dto.InventoryCatalogFilter;
 import VietFreshHub.product.dto.ProductCatalogFilter;
 import VietFreshHub.product.dto.ProductManagementState;
 import VietFreshHub.product.dto.ProductTabSummary;
@@ -107,10 +108,10 @@ public class ProductManagementRepositoryImpl implements ProductManagementReposit
             query.setParameter("category", category);
         }
         if (from != null) {
-            query.setParameter("from", from);
+            query.setParameter("from", VietnamDatabaseTime.toDatabase(from));
         }
         if (to != null) {
-            query.setParameter("to", to);
+            query.setParameter("to", VietnamDatabaseTime.toDatabase(to));
         }
         if (!text.isEmpty()) {
             // Từ khóa thường dùng LIKE; mã PRD/LOT được tách ID để tìm chính xác đúng đối tượng.
@@ -183,49 +184,6 @@ public class ProductManagementRepositoryImpl implements ProductManagementReposit
             """, " AND p.product_id=(SELECT product_id FROM dbo.product_variants WHERE variant_id=:variant)", shop, categories, today);
         query.setParameter("variant", variant);
         return number(query.getSingleResult()) > 0;
-    }
-
-    /** Tạo truy vấn kho từ bảng tổng hợp tồn theo phân loại, gán tham số và chọn kiểu kết quả. */
-    private Query inventoryQuery(String sql, Long shop, InventoryCatalogFilter filters,
-            LocalDate today, boolean entities) {
-        // Kho có thể hiển thị dữ liệu đã ngừng kinh doanh; phạm vi được quyết định bởi bộ lọc phía trên.
-        String stock = VARIANT_STOCK.replace("__scope__", "");
-        Query query = entities ? entityManager.createNativeQuery(stock + sql, Product.class)
-                : entityManager.createNativeQuery(stock + sql);
-        query.setParameter("shop", shop);
-        query.setParameter("today", today);
-        bindFilters(query, filters.getQ(), filters.getCategory(), "", null, null);
-        if (filters.getVariantId() != null) {
-            query.setParameter("variant", filters.getVariantId());
-        }
-        return query;
-    }
-
-    /**
-     * Lấy trang sản phẩm có ít nhất một phân loại khớp bộ lọc kho, tránh lặp sản phẩm khi có nhiều lô.
-     */
-    @Override @SuppressWarnings("unchecked")
-    public Page<Product> searchInventory(Long shop, InventoryCatalogFilter filters,
-            LocalDate today, Pageable page) {
-        // EXISTS chỉ kiểm tra có SKU khớp, nên một sản phẩm nhiều SKU vẫn chỉ chiếm một dòng.
-        String where = " FROM dbo.products p WHERE p.shop_id=:shop AND EXISTS (SELECT 1 FROM variant_stock v WHERE " + ProductCatalogSql.inventoryCriteria(filters) + ")";
-        long count = number(inventoryQuery("SELECT COUNT(*)" + where, shop, filters, today, false).getSingleResult());
-        Query rows = inventoryQuery("SELECT p.*" + where + " ORDER BY p.product_id DESC", shop, filters, today, true);
-        rows.setFirstResult(Math.toIntExact(page.getOffset()));
-        rows.setMaxResults(page.getPageSize());
-        return new PageImpl<>((List<Product>)rows.getResultList(), page, count);
-    }
-
-    /** Lấy ID các phân loại khớp bộ lọc kho trong phạm vi sản phẩm của trang hiện tại. */
-    @Override
-    public List<Long> matchingInventoryVariants(Long shop, InventoryCatalogFilter filters,
-            LocalDate today, List<Long> products) {
-        if (products.isEmpty()) {
-            return List.of();
-        }
-        Query query = inventoryQuery("SELECT v.variant_id FROM variant_stock v JOIN dbo.products p ON p.product_id=v.product_id WHERE p.product_id IN (:products) AND " + ProductCatalogSql.inventoryCriteria(filters), shop, filters, today, false);
-        query.setParameter("products", products);
-        return query.getResultList().stream().map(value -> number(value)).toList();
     }
 
     /**

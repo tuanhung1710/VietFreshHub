@@ -11,13 +11,7 @@ import org.springframework.data.domain.Page;
 public interface CatalogService {
     boolean isVisible(CatalogProduct product);
     boolean isPurchasable(CatalogVariant variant);
-    default java.util.Map<Long, Boolean> purchasableVariants(List<CatalogVariant> variants) {
-        var result = new java.util.HashMap<Long, Boolean>();
-        for (var variant : variants) result.put(variant.getVariantId(), isPurchasable(variant));
-        return result;
-    }
     Page<CatalogProductResponse> listProducts(int page);
-    Page<CatalogProductResponse> listProducts(int page, String keyword);
     Page<CatalogProductResponse> listProducts(CatalogBrowseFilter filter);
     List<CatalogCategory> categories();
     CatalogProductResponse getProduct(Long variantId, Long productId, String slug);

@@ -21,12 +21,4 @@ public class ProductCatalogFilter {
     private LocalDate createdFrom;
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate createdTo;
-
-    /**
-     * Kiểm tra có đang lọc danh mục, tồn kho, ngày tạo hoặc khoảng giá để đánh dấu trên giao diện.
-     */
-    public boolean isAdvanced() {
-        return category != null || (stock != null && !stock.isBlank())
-                || createdFrom != null || createdTo != null || minPrice != null || maxPrice != null;
-    }
 }

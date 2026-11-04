@@ -1,5 +1,9 @@
 package VietFreshHub.checkout.entity;
 
+import VietFreshHub.common.VietnamDatabaseTime;
+import jakarta.persistence.Convert;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import VietFreshHub.auth.entity.User;
 import VietFreshHub.catalog.entity.CatalogVariant;
 import jakarta.persistence.Column;
@@ -60,6 +64,8 @@ public class CheckoutStockMovement {
     private User createdBy;
 
     @Column(name = "created_at", nullable = false, updatable = false)
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime createdAt;
 
     @PrePersist

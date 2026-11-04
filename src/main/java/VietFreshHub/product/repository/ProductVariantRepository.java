@@ -27,13 +27,6 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
     /** Kiểm tra SKU đã tồn tại trên hệ thống, không phân biệt hoa thường. */
     boolean existsBySkuIgnoreCase(String sku);
 
-    /** Đếm phân loại mà cả phân loại và sản phẩm đều chưa ngừng kinh doanh trong cửa hàng. */
-    @Query(
-            "select count(v) from ProductVariant v, Product p where v.productId=p.productId and"
-                + " p.shopId=:shop and p.status<>VietFreshHub.product.enums.ProductStatus.DELETED"
-                + " and v.status<>VietFreshHub.product.enums.VariantStatus.DELETED")
-    long countVisibleInShop(Long shop);
-
     /** Khóa ghi phân loại theo ID trước khi thay đổi trạng thái hoặc xử lý kho. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select v from ProductVariant v where v.variantId=:id")

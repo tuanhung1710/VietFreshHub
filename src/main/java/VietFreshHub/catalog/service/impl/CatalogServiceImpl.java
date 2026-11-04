@@ -63,14 +63,8 @@ public class CatalogServiceImpl implements CatalogService {
 
     @Override
     public Page<CatalogProductResponse> listProducts(int page) {
-        return listProducts(page, "");
-    }
-
-    @Override
-    public Page<CatalogProductResponse> listProducts(int page, String keyword) {
         var filter = new CatalogBrowseFilter();
         filter.setPage(page);
-        filter.setKeyword(keyword);
         return listProducts(filter);
     }
 

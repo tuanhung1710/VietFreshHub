@@ -10,10 +10,10 @@
     <div class="shopgrid"><article class="section" th:each="offer : ${offersPage.content}">
         <p th:text="${offer.code != null ? 'MÃ GIẢM GIÁ' : 'KHUYẾN MÃI'}"></p><h2 th:text="${offer.name}"></h2>
         <p class="muted" th:text="${offer.description}"></p>
-        <p th:text="'Giảm ' + ${#numbers.formatDecimal(offer.discountValue,1,0)} + ${offer.discountType == 'PERCENT' ? '%' : ' ₫'}"></p>
+        <p th:text="${'Giảm ' + (offer.discountType == 'PERCENT' ? #numbers.formatDecimal(offer.discountValue,1,0) + '%' : @vndAmounts.format(offer.discountValue) + ' ₫')}"></p>
         <p th:if="${offer.code != null}"><span th:text="${offer.code}"></span></p>
-        <p class="muted" th:if="${offer.maxDiscount != null}" th:text="'Giảm tối đa ' + ${#numbers.formatDecimal(offer.maxDiscount,1,0)} + ' ₫'"></p>
-        <p class="muted" th:text="'Đơn tối thiểu ' + ${#numbers.formatDecimal(offer.minimumOrderValue,1,0)} + ' ₫'"></p>
+        <p class="muted" th:if="${offer.maxDiscount != null}" th:text="'Giảm tối đa ' + ${@vndAmounts.format(offer.maxDiscount)} + ' ₫'"></p>
+        <p class="muted" th:text="'Đơn tối thiểu ' + ${@vndAmounts.format(offer.minimumOrderValue)} + ' ₫'"></p>
         <p class="muted" th:if="${offer.perUserLimit != null}" th:text="'Mỗi khách tối đa ' + ${offer.perUserLimit} + ' lượt'"></p>
         <p class="muted">Đến <time th:text="${#temporals.format(offer.endAt,'dd/MM/yyyy HH:mm')}"></time></p>
     </article></div>

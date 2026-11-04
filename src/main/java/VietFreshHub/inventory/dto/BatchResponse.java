@@ -2,14 +2,12 @@ package VietFreshHub.inventory.dto;
 
 import VietFreshHub.inventory.entity.BatchMarkdown;
 import VietFreshHub.inventory.entity.InventoryBatch;
-import VietFreshHub.inventory.entity.StockAllocation;
 import VietFreshHub.inventory.enums.BatchStatus;
 import VietFreshHub.inventory.rule.InventoryRules;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.List;
-import java.util.Map;
 
 @Getter
 public class BatchResponse {
@@ -19,53 +17,35 @@ public class BatchResponse {
     private boolean expired;
     private boolean nearExpiry;
     private BatchMarkdown markdown;
-    private List<StockAllocation> allocations;
     private String productName;
     private String sku;
     private String unit;
     private boolean markdownEligible;
-    private int expiryWarningDays;
     private Long daysUntilExpiry;
     private boolean markdownAllowed;
     @Setter
     private String variantName;
     @Setter
-    private Map<Long, String> allocationOrderCodes = Map.of();
-    @Setter
     private List<AllocationResponse> allocationDetails = List.of();
 
-    /** Tạo dữ liệu hiển thị lô với tồn, hạn sử dụng, phân bổ và điều kiện cho phép giảm giá. */
+    /** Tạo dữ liệu hiển thị lô với tồn, hạn sử dụng và điều kiện cho phép giảm giá. */
     @Builder
     public BatchResponse(
             InventoryBatch batch, int available, boolean expired, boolean nearExpiry,
-            BatchMarkdown markdown, List<StockAllocation> allocations, String productName,
-            String sku, String unit, boolean markdownEligible, int expiryWarningDays,
+            BatchMarkdown markdown, String productName,
+            String sku, String unit, boolean markdownEligible,
             Long daysUntilExpiry, boolean markdownAllowed) {
         this.batch = batch;
         this.available = available;
         this.expired = expired;
         this.nearExpiry = nearExpiry;
         this.markdown = markdown;
-        this.allocations = allocations;
         this.productName = productName;
         this.sku = sku;
         this.unit = unit;
         this.markdownEligible = markdownEligible;
-        this.expiryWarningDays = expiryWarningDays;
         this.daysUntilExpiry = daysUntilExpiry;
         this.markdownAllowed = markdownAllowed;
-    }
-
-    /**
-     * Tạo dữ liệu lô khi chưa có kết quả kiểm tra điều kiện kinh doanh; mặc định chưa cho giảm giá.
-     */
-    public BatchResponse(
-            InventoryBatch batch, int available, boolean expired, boolean nearExpiry,
-            BatchMarkdown markdown, List<StockAllocation> allocations, String productName,
-            String sku, String unit, boolean markdownEligible, int expiryWarningDays,
-            Long daysUntilExpiry) {
-        this(batch, available, expired, nearExpiry, markdown, allocations, productName,
-                sku, unit, markdownEligible, expiryWarningDays, daysUntilExpiry, false);
     }
 
     /** Xác định lô đã hết hàng khi cả tồn thực tế, lượng giữ và lượng khả dụng đều bằng 0. */
@@ -129,17 +109,6 @@ public class BatchResponse {
         return !expired && batch.getStatus() == BatchStatus.ACTIVE;
     }
 
-    /** Luôn cho mở trang sửa thông tin lô; service sẽ kiểm tra riêng điều kiện của dữ liệu mới. */
-    public boolean isCanEdit() {
-        return true;
-    }
-
-    /** Cho sửa nhanh từ danh sách khi lô hoạt động, còn hạn, còn tồn và chưa phân bổ hết. */
-    public boolean isCanEditFromList() {
-        return isCanAdjust() && batch.getQuantityOnHand() != null
-                && batch.getQuantityOnHand() > 0 && !isFullyAllocated();
-    }
-
     /** Tính lượng hàng hết hạn có thể hủy theo ngày hiện tại, giữ lại phần đã giữ cho đơn. */
     public int getDisposableQuantity() {
         return InventoryRules.disposableQuantity(
@@ -151,9 +120,9 @@ public class BatchResponse {
         return getDisposableQuantity() > 0;
     }
 
-    /** Cho hiện thao tác khóa lô khi đủ điều kiện thao tác nhanh từ danh sách. */
+    /** Cho hiện thao tác khóa lô khi còn hàng khả dụng. */
     public boolean isCanBlock() {
-        return isCanEditFromList();
+        return isCanAdjust() && available > 0;
     }
 
     /** Cho hiện thao tác mở khóa khi lô đang khóa và chưa hết hạn. */

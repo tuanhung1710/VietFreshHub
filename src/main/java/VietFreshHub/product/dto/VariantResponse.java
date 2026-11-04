@@ -1,6 +1,5 @@
 package VietFreshHub.product.dto;
 
-import VietFreshHub.inventory.dto.BatchResponse;
 import VietFreshHub.product.entity.ProductVariant;
 import VietFreshHub.product.enums.VariantStatus;
 
@@ -8,7 +7,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Getter
 @Setter
@@ -20,14 +18,9 @@ public class VariantResponse {
     private long reserved;
     private long available;
     private long unavailable;
-    private List<BatchResponse> batches;
-    private List<BatchResponse> matchedBatches;
     private BigDecimal offerPrice;
     private long offerQuantity;
     private boolean lowStock;
-    private int batchCount;
-    private boolean expired;
-    private boolean nearExpiry;
 
     /** OUT_OF_STOCK vẫn là cấu hình mở bán; tồn kho được hiển thị riêng. */
     public boolean isEnabled() {
@@ -40,11 +33,6 @@ public class VariantResponse {
             return "Đã xóa";
         }
         return isEnabled() ? "Mở bán" : "Tạm ẩn";
-    }
-
-    /** Ưu tiên các lô khớp bộ lọc; nếu chưa lọc thì trả toàn bộ lô của phân loại. */
-    public List<BatchResponse> getInventoryBatches() {
-        return matchedBatches == null ? batches : matchedBatches;
     }
 
     /** Chỉ trả giá trước giảm khi là số nguyên đồng không âm và không thấp hơn giá bán hiện tại. */

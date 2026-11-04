@@ -104,12 +104,12 @@
                     <p><a th:href="@{/reviews/product/{id}(id=${product.productId})}">Xem đánh giá và xếp hạng</a> · <a th:href="@{/reviews/shop/{id}(id=${shop.shopId})}">Xem đánh giá cửa hàng</a></p>
                     <div class="pricebox" aria-live="polite">
                         <div class="price-line">
-                            <div class="price" id="currentPrice" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'POINT')} + ' VND'">
+                            <div class="price" id="currentPrice" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'COMMA')} + ' VND'">
                             </div>
                             <span class="discount-pricing">
                                 <del class="compare-price" id="compareAtPrice" aria-label="Giá trước giảm"
                  th:hidden="${product.selectedVariant.discountPercent == null}"
-                 th:text="${product.selectedVariant.discountPercent != null ? #numbers.formatInteger(product.selectedVariant.compareAtPrice,0,'POINT') + ' VND' : ''}">
+                 th:text="${product.selectedVariant.discountPercent != null ? #numbers.formatInteger(product.selectedVariant.compareAtPrice,0,'COMMA') + ' VND' : ''}">
                                 </del>
                                 <span class="discount-badge" id="discountPercent" th:hidden="${product.selectedVariant.discountPercent == null}"
                   th:text="${product.selectedVariant.discountPercent == null ? '' : (product.selectedVariant.discountPercent == 0 ? 'Giảm dưới 1%' : '-' + product.selectedVariant.discountPercent + '%')}">
@@ -347,7 +347,7 @@
                         <div class="productbody">
                             <div class="name" th:text="${item.name}">
                             </div>
-                            <div class="price2" th:text="${#numbers.formatInteger(item.selectedVariant.price,0,'POINT')} + ' VND'">
+                            <div class="price2" th:text="${#numbers.formatInteger(item.selectedVariant.price,0,'COMMA')} + ' VND'">
                             </div>
                             <div class="minor" th:text="'★ ' + ${item.rating == null ? '0.0' : #numbers.formatDecimal(item.rating,1,1)} + '/5 · Đã bán ' + ${item.sales}">
                             </div>

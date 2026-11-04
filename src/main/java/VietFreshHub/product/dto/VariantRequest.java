@@ -38,8 +38,8 @@ public class VariantRequest {
     @DecimalMax(value = "9999999999999999", message = "Giá trị vượt giới hạn cho phép.")
     private BigDecimal price;
 
-    @DecimalMin(value = "0", message = "Giá trước giảm không được âm.")
-    @Digits(integer = 16, fraction = 0, message = "Giá trước giảm phải là số nguyên đồng, tối đa 16 chữ số.")
+    @DecimalMin(value = "0", message = "Giá tham chiếu không được âm.")
+    @Digits(integer = 16, fraction = 0, message = "Giá tham chiếu phải là số nguyên đồng, tối đa 16 chữ số.")
     @DecimalMax(value = "9999999999999999", message = "Giá trị vượt giới hạn cho phép.")
     private BigDecimal compareAtPrice;
 

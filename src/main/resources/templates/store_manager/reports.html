@@ -68,7 +68,6 @@
         <li th:if="${inventoryAttention.expiredBatches > 0}" th:text="${inventoryAttention.expiredBatches + ' lô đã hết hạn'}">Đã hết hạn</li>
     </ul>
 </th:block>
-<p><a th:href="@{/seller/inventory/journal(from=${report.from},to=${report.to})}">Xem biến động tồn kho trong khoảng ngày đã chọn</a></p>
 </section>
 </div>
 </main>
