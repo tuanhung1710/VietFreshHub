@@ -56,4 +56,23 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
             """)
     Optional<Notification> findInboxNotificationForUpdate(@Param("notificationId") Long notificationId,
                                                         @Param("userId") Long userId);
+    Page<Notification>
+    findByUser_UserIdOrderByCreatedAtDescNotificationIdDesc(
+            Long userId,
+            Pageable pageable
+    );
+
+    long countByUser_UserIdAndReadAtIsNull(Long userId);
+
+    boolean existsByUser_UserIdAndTypeAndEntityTypeAndEntityId(
+            Long userId,
+            String type,
+            String entityType,
+            Long entityId
+    );
+
+    Optional<Notification> findByNotificationIdAndUser_UserId(
+            Long notificationId,
+            Long userId
+    );
 }

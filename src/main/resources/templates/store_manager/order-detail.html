@@ -3,202 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Chi tiết đơn hàng</title>
-    <style>
-        body {
-            max-width: 1000px;
-            margin: 24px auto;
-            padding: 0 16px;
-            font-family: Arial, sans-serif;
-            line-height: 1.5;
-        }
-
-        section {
-            margin-top: 24px;
-        }
-
-        .order-information {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            align-items: stretch;
-            gap: 24px;
-        }
-
-        .information-card, .order-actions {
-            border: 1px solid black;
-            padding: 16px;
-        }
-
-        .information-card h2, .order-actions h2 {
-            margin-top: 0;
-        }
-
-        .order-actions form {
-            text-align: right;
-        }
-
-        .order-actions button {
-            padding: 8px 16px;
-        }
-
-        dt {
-            font-weight: bold;
-        }
-
-        dd {
-            margin: 0 0 12px;
-        }
-
-        .table-container {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            border: 1px solid black;
-            padding: 8px;
-        }
-
-        .money {
-            text-align: right;
-            white-space: nowrap;
-        }
-
-        .total {
-            text-align: right;
-            font-weight: bold;
-        }
-
-        .action-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        .action-row form, .action-row > a {
-            margin-left: auto;
-        }
-
-    </style>
+    <title>Chi tiết đơn hàng | VietFresh Hub</title>
+    <th:block th:replace="~{fragments/seller-orders :: assets}"></th:block>
     <link rel="stylesheet" th:href="@{/css/store-manager-invoice.css}">
 </head>
-<body>
-<span th:replace="~{fragments/notifications :: bell}"></span>
-<main>
-    <nav aria-label="Điều hướng đơn hàng">
-        <div><a th:href="@{/seller}">Trang chủ</a></div>
-        <div><a th:href="@{/seller/orders}">Tất cả đơn</a></div>
-    </nav>
-    <header>
-        <h1>CHI TIẾT ĐƠN HÀNG</h1>
+<body class="vfo-app">
+<th:block th:replace="~{fragments/seller-orders :: navigation('orders')}"></th:block>
+<div class="vfo-workspace">
+<main id="order-content" class="vfo-main">
+    <header class="vfo-page-heading">
+        <div><h1>Chi tiết đơn hàng</h1></div>
+        <a class="btn vfo-btn-secondary" th:href="@{/seller/orders}"><span aria-hidden="true">←</span> Tất cả đơn hàng</a>
     </header>
+    <div class="vfo-status-banner"><span class="vfo-banner-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-order"/></svg></span><div><span class="vfo-meta-label">Trạng thái đơn hàng</span><strong class="vfo-status" th:attr="data-status=${orderDetail.orderStatus}" th:text="${orderDetail.orderStatusLabel}"></strong></div><svg class="vfo-icon vfo-banner-leaf" aria-hidden="true"><use href="#vfo-leaf"/></svg></div>
 
-    <p>Trạng thái đơn hàng: <strong th:text="${orderDetail.orderStatusLabel}"></strong></p>
-
-    <div class="order-information">
-        <section class="information-card" aria-labelledby="customer-heading">
-            <h2 id="customer-heading">THÔNG TIN KHÁCH HÀNG</h2>
-            <dl>
-                <dt>Khách hàng</dt>
-                <dd th:text="${orderDetail.customerName}"></dd>
-            </dl>
-            <h3>ĐỊA CHỈ GIAO HÀNG</h3>
-            <p th:if="${orderDetail.deliveryAddress == null}">Không có thông tin địa chỉ giao hàng.</p>
-            <dl>
-                <dt>Người nhận</dt>
-                <dd th:text="${orderDetail.recipientName ?: '—'}"></dd>
-                <dt>SĐT</dt>
-                <dd th:text="${orderDetail.phone ?: '—'}"></dd>
-                <dt>Địa chỉ</dt>
-                <dd th:text="${orderDetail.deliveryAddress ?: '—'}"></dd>
-            </dl>
+    <div class="vfo-detail-grid">
+        <section class="card vfo-information-card" aria-labelledby="customer-heading">
+            <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-user"/></svg></span><h2 id="customer-heading">Thông tin khách hàng</h2></div>
+            <div class="vfo-card-body">
+                <dl class="vfo-facts"><div><dt>Khách hàng</dt><dd class="vfo-customer-name" th:text="${orderDetail.customerName}"></dd></div></dl>
+                <div class="vfo-subheading"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-pin"/></svg><h3>Địa chỉ giao hàng</h3></div>
+                <p class="vfo-muted" th:if="${orderDetail.deliveryAddress == null}">Không có thông tin địa chỉ giao hàng.</p>
+                <dl class="vfo-facts"><div><dt>Người nhận</dt><dd th:text="${orderDetail.recipientName ?: '—'}"></dd></div><div><dt>Số điện thoại</dt><dd th:text="${orderDetail.phone ?: '—'}"></dd></div><div><dt>Địa chỉ</dt><dd th:text="${orderDetail.deliveryAddress ?: '—'}"></dd></div></dl>
+            </div>
         </section>
-        <section class="information-card" aria-labelledby="order-information-heading">
-            <h2 id="order-information-heading">THÔNG TIN ĐƠN HÀNG</h2>
-            <dl>
-                <dt>Mã đơn hàng</dt>
-                <dd><span th:text="${orderDetail.orderCode}"></span>
-                    <button type="button" th:attr="data-vf-copy-code=${orderDetail.orderCode},aria-label=${'Sao chép mã đơn '+orderDetail.orderCode}">Sao chép</button></dd>
-                <dt>Trạng thái thanh toán</dt>
-                <dd th:text="${orderDetail.paymentStatusLabel}"></dd>
-            </dl>
-        </section>
+        <div class="vfo-detail-side">
+            <section class="card vfo-information-card" aria-labelledby="order-information-heading">
+                <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-order"/></svg></span><h2 id="order-information-heading">Thông tin đơn hàng</h2></div>
+                <div class="vfo-card-body"><dl class="vfo-facts"><div><dt>Mã đơn hàng</dt><dd><div class="vfo-code-group"><span class="vfo-order-code" th:text="${orderDetail.orderCode}"></span><button class="vfo-copy-button" type="button" title="Sao chép mã đơn" th:attr="data-vf-copy-code=${orderDetail.orderCode},aria-label=${'Sao chép mã đơn '+orderDetail.orderCode}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-copy"/></svg><span class="visually-hidden">Sao chép</span></button></div></dd></div><div><dt>Thanh toán</dt><dd><span class="vfo-payment" th:attr="data-payment=${orderDetail.paymentStatus}" th:text="${orderDetail.paymentStatusLabel}"></span></dd></div></dl></div>
+            </section>
+            <section class="card vfo-order-actions" aria-labelledby="order-actions-heading"
+                     th:if="${orderDetail.orderStatus == 'PENDING' or orderDetail.orderStatus == 'CONFIRMED'
+                         or orderDetail.orderStatus == 'PREPARING' or orderDetail.deliveryTrackingAvailable}">
+                <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-check"/></svg></span><h2 id="order-actions-heading">Xử lý đơn hàng</h2></div>
+                <div class="vfo-card-body">
+                    <form method="post" th:if="${orderDetail.orderStatus == 'PENDING' and (orderDetail.paymentStatus != 'PENDING' and orderDetail.paymentStatus != 'FAILED')}"
+                          th:action="@{/seller/orders/{shopOrderId}/confirm(shopOrderId=${shopOrderId})}"><button class="btn vfo-btn-primary w-100" type="submit"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-check"/></svg>Xác nhận đơn hàng</button></form>
+                    <form method="post" th:if="${orderDetail.orderStatus == 'CONFIRMED'}"
+                          th:action="@{/seller/orders/{shopOrderId}/prepare(shopOrderId=${shopOrderId})}"><button class="btn vfo-btn-primary w-100" type="submit"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-box"/></svg>Bắt đầu chuẩn bị</button></form>
+                    <div class="vfo-action-stack" th:if="${orderDetail.orderStatus == 'PREPARING'}">
+                        <button type="button" class="btn vfo-btn-secondary invoice-action" onclick="openInvoiceModal()"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-print"/></svg>In hóa đơn</button>
+                        <form method="post" th:action="@{/seller/orders/{shopOrderId}/ready(shopOrderId=${shopOrderId})}"><button class="btn vfo-btn-primary w-100" type="submit"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-check"/></svg>Hàng đã chuẩn bị xong, sẵn sàng giao hàng</button></form>
+                    </div>
+                    <div class="vfo-action-stack" th:if="${orderDetail.deliveryTrackingAvailable}">
+                        <button th:if="${orderDetail.orderStatus == 'READY_FOR_DELIVERY'}" type="button" class="btn vfo-btn-secondary invoice-action" onclick="openInvoiceModal()"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-print"/></svg>In lại hóa đơn</button>
+                        <a class="btn vfo-btn-primary" th:href="@{/seller/orders/{shopOrderId}/delivery-tracking(shopOrderId=${shopOrderId})}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg>Theo dõi giao hàng<svg class="vfo-icon vfo-icon-sm" aria-hidden="true"><use href="#vfo-arrow"/></svg></a>
+                    </div>
+                </div>
+            </section>
+        </div>
     </div>
-
-    <section aria-labelledby="order-items-heading">
-        <h2 id="order-items-heading">SẢN PHẨM TRONG ĐƠN</h2>
-        <div class="table-container">
-            <table>
-                <thead>
-                <tr>
-                    <th scope="col">Sản phẩm</th>
-                    <th scope="col">Phân loại</th>
-                    <th scope="col">Đơn giá</th>
-                    <th scope="col">Số lượng</th>
-                    <th scope="col">Thành tiền</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:if="${#lists.isEmpty(orderDetail.items)}">
-                    <td colspan="5">Không có sản phẩm trong đơn.</td>
-                </tr>
-                <tr th:each="item : ${orderDetail.items}">
-                    <td th:text="${item.productName}"></td>
-                    <td th:text="${item.variantName}"></td>
-                    <td class="money" th:text="${#numbers.formatDecimal(item.unitPrice, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></td>
-                    <td th:text="${item.quantity}"></td>
-                    <td class="money" th:text="${#numbers.formatDecimal(item.totalAmount, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-        <p class="money">Phí vận chuyển:
-            <span th:text="${#numbers.formatDecimal(orderDetail.shippingFee, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></span>
-        </p>
-        <p class="total">TỔNG CỘNG:
-            <span th:text="${#numbers.formatDecimal(orderDetail.totalAmount, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></span>
-        </p>
-    </section>
-
-    <section class="order-actions" aria-labelledby="order-actions-heading"
-             th:if="${orderDetail.orderStatus == 'PENDING' or orderDetail.orderStatus == 'CONFIRMED'
-                 or orderDetail.orderStatus == 'PREPARING' or orderDetail.deliveryTrackingAvailable}">
-        <h2 id="order-actions-heading">THAO TÁC</h2>
-        <form method="post" th:if="${orderDetail.orderStatus == 'PENDING' and (orderDetail.paymentStatus != 'PENDING' and orderDetail.paymentStatus != 'FAILED')}"
-              th:action="@{/seller/orders/{shopOrderId}/confirm(shopOrderId=${shopOrderId})}">
-            <button type="submit">XÁC NHẬN ĐƠN HÀNG</button>
-        </form>
-        <form method="post" th:if="${orderDetail.orderStatus == 'CONFIRMED'}"
-              th:action="@{/seller/orders/{shopOrderId}/prepare(shopOrderId=${shopOrderId})}">
-            <button type="submit">BẮT ĐẦU CHUẨN BỊ</button>
-        </form>
-        <div class="action-row" th:if="${orderDetail.orderStatus == 'PREPARING'}">
-            <button type="button" class="invoice-action" onclick="openInvoiceModal()">🖨 IN HÓA ĐƠN</button>
-            <form method="post" th:action="@{/seller/orders/{shopOrderId}/ready(shopOrderId=${shopOrderId})}">
-                <button type="submit">HÀNG ĐÃ CHUẨN BỊ XONG, SẴN SÀNG GIAO HÀNG</button>
-            </form>
-        </div>
-        <div class="action-row" th:if="${orderDetail.deliveryTrackingAvailable}">
-            <button th:if="${orderDetail.orderStatus == 'READY_FOR_DELIVERY'}" type="button" class="invoice-action" onclick="openInvoiceModal()">🖨 IN LẠI HÓA ĐƠN</button>
-            <a th:href="@{/seller/orders/{shopOrderId}/delivery-tracking(shopOrderId=${shopOrderId})}">THEO DÕI GIAO HÀNG</a>
+    <section class="card vfo-list-card vfo-items-card" aria-labelledby="order-items-heading">
+        <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-box"/></svg></span><h2 id="order-items-heading">Sản phẩm trong đơn</h2></div>
+        <div class="table-responsive"><table class="table align-middle mb-0 vfo-items-table">
+            <thead><tr><th scope="col">Sản phẩm</th><th scope="col">Phân loại</th><th scope="col" class="text-end">Đơn giá</th><th scope="col" class="text-center">Số lượng</th><th scope="col" class="text-end">Thành tiền</th></tr></thead>
+            <tbody><tr th:if="${#lists.isEmpty(orderDetail.items)}"><td colspan="5" class="vfo-table-empty">Không có sản phẩm trong đơn.</td></tr>
+            <tr th:each="item : ${orderDetail.items}"><td class="vfo-customer-name" th:text="${item.productName}"></td><td th:text="${item.variantName}"></td><td class="vfo-money text-end" th:text="${#numbers.formatDecimal(item.unitPrice, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></td><td class="text-center" th:text="${item.quantity}"></td><td class="vfo-money text-end" th:text="${#numbers.formatDecimal(item.totalAmount, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></td></tr></tbody>
+        </table></div>
+        <div class="vfo-settlement">
+            <div class="vfo-totals">
+                <div><span>Tổng tiền hàng</span><strong><span th:replace="~{store_manager/purchase-invoice :: money(${orderDetail.subtotal})}"></span></strong></div>
+                <div th:if="${orderDetail.discountTotal.signum() != 0}"><span>Giảm giá</span><strong><span th:replace="~{store_manager/purchase-invoice :: money(${orderDetail.discountTotal.negate()})}"></span></strong></div>
+                <div><span>Phí vận chuyển</span><strong><span th:replace="~{store_manager/purchase-invoice :: money(${orderDetail.shippingFee})}"></span></strong></div>
+                <div class="vfo-grand-total"><span>Tổng cộng</span><strong><span th:replace="~{store_manager/purchase-invoice :: money(${orderDetail.totalAmount})}"></span></strong></div>
+            </div>
         </div>
     </section>
 </main>
+<footer th:replace="~{fragments/seller-orders :: footer}"></footer>
+</div>
 <div id="invoice-modal" class="invoice-modal" role="dialog" aria-modal="true" aria-labelledby="invoice-heading" hidden
      th:if="${orderDetail.orderStatus == 'PREPARING' or orderDetail.orderStatus == 'READY_FOR_DELIVERY'}">
     <div class="invoice-preview">
-        <button id="invoice-close" type="button" class="invoice-close" onclick="closeInvoiceModal()"
-                aria-label="Đóng hóa đơn">×</button>
+        <button id="invoice-close" type="button" class="invoice-close" onclick="closeInvoiceModal()" aria-label="Đóng hóa đơn">×</button>
         <article th:replace="~{store_manager/purchase-invoice :: invoice(${orderDetail}, 'invoice-heading')}"></article>
-        <div class="invoice-controls">
-            <button type="button" onclick="window.print()">🖨 IN HÓA ĐƠN</button>
-        </div>
+        <div class="invoice-controls"><button class="btn vfo-btn-primary" type="button" onclick="window.print()"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-print"/></svg>In hóa đơn</button></div>
     </div>
 </div>
 <script>

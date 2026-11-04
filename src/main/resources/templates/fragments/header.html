@@ -17,14 +17,15 @@
         </span>
       </a>
     </div>
-    <form th:action="@{/home}" method="get" role="search" class="hidden lg:flex flex-1 min-w-0 max-w-xl mx-space-md">
+    <form th:action="@{/products}" method="get" role="search" class="hidden lg:flex flex-1 min-w-0 max-w-xl mx-space-md">
       <div class="relative w-full flex items-center bg-surface-container-lowest rounded-lg shadow-[0_1px_3px_0_rgba(15,23,42,0.04)] p-1">
         <span class="material-symbols-outlined text-outline ml-space-sm">search</span>
-        <input th:if="${category != null and not #strings.isEmpty(category)}" type="hidden" name="category" th:value="${category}"><input aria-label="Tìm kiếm trái cây" name="keyword" maxlength="100" th:value="${keyword}" class="w-full min-w-0 bg-transparent px-space-sm py-1.5 text-body-md font-body-md text-on-surface focus:outline-none placeholder:text-outline" placeholder="Tìm kiếm trái cây tươi, bưởi da xanh, xoài cát..." type="search">
+        <input th:if="${category != null and not #strings.isEmpty(category)}" type="hidden" name="category" th:value="${category}"><input aria-label="Tìm kiếm trái cây" name="q" maxlength="100" th:value="${q}" class="w-full min-w-0 bg-transparent px-space-sm py-1.5 text-body-md font-body-md text-on-surface focus:outline-none placeholder:text-outline" placeholder="Tìm kiếm trái cây tươi, bưởi da xanh, xoài cát..." type="search">
         <button class="bg-primary text-on-primary font-label-md text-label-md px-space-md py-2 rounded-lg hover:bg-primary-container hover:text-on-primary-container transition-colors">Tìm kiếm</button></div></form><nav class="hidden xl:flex items-center gap-space-md shrink-0" data-active-classes="text-primary font-title-md">
     <a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors py-2" data-path="he-thong-cua-hang" th:href="@{/shops}">Hệ Thống Cửa Hàng</a></nav>
     <div class="flex items-center gap-space-md shrink-0">
       <span th:replace="~{fragments/notifications :: bell}"></span>
+      <a th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}" th:href="@{/customer/loyalty}" class="font-label-md text-label-md text-on-surface-variant">Tiền thưởng</a>
       <a class="relative flex items-center justify-center p-2 rounded-full hover:bg-surface-container hover:text-on-surface text-on-surface-variant transition-colors" data-path="gio-hang" th:href="@{/cart}" title="Giỏ hàng">
         <span class="material-symbols-outlined text-2xl">shopping_cart</span>
         <span class="absolute 0 top-0.5 right-0.5 min-w-[20px] h-[20px] px-1 bg-tertiary text-on-tertiary text-label-sm font-label-md rounded-full flex items-center justify-center" th:text="${cartBadgeTotal != null ? cartBadgeTotal : (cart != null ? cart.totalItems : 0)}">0</span></a>
@@ -51,7 +52,11 @@
             <a th:href="@{/customer/payments}"><span class="material-symbols-outlined" aria-hidden="true">payments</span>Lịch sử thanh toán</a>
             <a th:href="@{/customer/chat}"><span class="material-symbols-outlined" aria-hidden="true">chat_bubble</span>Tin nhắn với cửa hàng</a>
             <a th:href="@{/cart}"><span class="material-symbols-outlined" aria-hidden="true">shopping_cart</span>Giỏ hàng</a>
+            <a th:href="@{/customer/seller-applications}"><span class="material-symbols-outlined" aria-hidden="true">assignment</span>Đăng ký bán hàng / Hồ sơ của tôi</a>
           </div>
+          <a th:if="${#authorization.expression('hasRole(&quot;STORE_MANAGER&quot;)')}" th:href="@{/seller}">
+            <span class="material-symbols-outlined" aria-hidden="true">storefront</span>Quản lý cửa hàng
+          </a>
           <a th:href="@{/notifications}"><span class="material-symbols-outlined" aria-hidden="true">notifications</span>Thông báo</a>
           <form th:action="@{/logout}" method="post">
             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">

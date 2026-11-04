@@ -1,6 +1,7 @@
 package VietFreshHub.payout.controller;
 
 import VietFreshHub.auth.service.AuthService;
+import VietFreshHub.payout.service.BankOptionCatalog;
 import VietFreshHub.payout.service.SellerPayoutService;
 import VietFreshHub.shop.service.ShopService;
 import lombok.RequiredArgsConstructor;
@@ -21,13 +22,17 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class StoreManagerPayoutController {
 
     private final SellerPayoutService sellerPayoutService;
+    private final BankOptionCatalog bankOptionCatalog;
     private final ShopService shopService;
     private final AuthService authService;
 
     @GetMapping
     public String account(Authentication authentication, Model model) {
         Long shopId = shopService.getManagedShopId(authentication);
-        model.addAttribute("payoutAccount", sellerPayoutService.getShopPayoutAccount(shopId));
+        var payoutAccount = sellerPayoutService.getShopPayoutAccount(shopId);
+        model.addAttribute("payoutAccount", payoutAccount);
+        model.addAttribute("bankOptions", bankOptionCatalog.withSavedBank(
+                payoutAccount.bankCode(), payoutAccount.bankName()));
         return "store_manager/payout-account";
     }
 
@@ -40,7 +45,10 @@ public class StoreManagerPayoutController {
                        RedirectAttributes redirectAttributes) {
         try {
             Long shopId = shopService.getManagedShopId(authentication);
-            sellerPayoutService.saveShopAccount(shopId, bankCode, bankName, accountNumber,
+            String selectedBankName = bankOptionCatalog.findByCode(bankCode)
+                    .map(BankOptionCatalog.BankOption::name)
+                    .orElse(bankName);
+            sellerPayoutService.saveShopAccount(shopId, bankCode, selectedBankName, accountNumber,
                     accountHolder, authService.getCurrentUserId(authentication));
             redirectAttributes.addFlashAttribute("successMessage",
                     "Đã lưu tài khoản payout. Nếu bạn thay đổi thông tin, admin sẽ cần xác minh lại.");

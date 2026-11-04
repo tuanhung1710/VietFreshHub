@@ -83,22 +83,22 @@
             <input type="hidden" name="sort" th:value="${filters.sort}">
         </th:block>
         <!-- Controller trả Page; mỗi trang truyền trực tiếp link trước và sau như product/inventory. -->
-        <div th:fragment="pagination(pageData,previousUrl,nextUrl)" class="pager-left">
-            <a class="button" aria-label="Trang trước"
+        <div th:fragment="pagination(pageData,previousUrl,nextUrl)" class="customer-pager">
+            <a class="customer-page-button customer-page-previous" aria-label="Trang trước"
            th:classappend="${!pageData.hasPrevious() ? 'disabled' : ''}"
            th:attr="href=${pageData.hasPrevious() ? previousUrl : null},aria-disabled=${!pageData.hasPrevious()},tabindex=${pageData.hasPrevious() ? null : -1}">
-                ‹
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </a>
-            <div class="pager-info" aria-live="polite">
-                <strong th:text="${'Trang ' + (pageData.number + 1) + ' / ' + T(java.lang.Math).max(1,pageData.totalPages)}">
-                </strong>
+            <div class="customer-page-summary" aria-live="polite">
+                <span th:text="${'Trang ' + (pageData.number + 1) + ' / ' + T(java.lang.Math).max(1,pageData.totalPages)}">
+                </span>
                 <small th:text="${pageData.totalElements + ' sản phẩm'}">
                 </small>
             </div>
-            <a class="button" aria-label="Trang tiếp"
+            <a class="customer-page-button customer-page-next" aria-label="Trang tiếp"
            th:classappend="${!pageData.hasNext() ? 'disabled' : ''}"
            th:attr="href=${pageData.hasNext() ? nextUrl : null},aria-disabled=${!pageData.hasNext()},tabindex=${pageData.hasNext() ? null : -1}">
-                ›
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </a>
         </div>
         <th:block th:fragment="pageSize(pageData,selectId)">

@@ -3,16 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+    
+    
     <title>Tài khoản nhận payout · VietFresh Hub</title>
     <link rel="stylesheet" th:href="@{/css/store-manager-payout.css}">
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body>
-<main class="payout-page">
-    <a class="back-link" th:href="@{/seller}">← Về trang quản lý shop</a>
+<body class="vfo-app vfr-app vfr-seller" data-vfr-section="payout">
+<th:block th:replace="~{fragments/interface-layout :: navigation('seller','payout')}"></th:block>
+
+<div class="vfo-workspace vfr-workspace" id="order-content" tabindex="-1">
+<main class="payout-page vfr-page">
     <header class="page-heading">
-        <p class="eyebrow">THANH TOÁN CỬA HÀNG</p>
         <h1>Tài khoản nhận payout</h1>
-        <p>Shop <strong th:text="${payoutAccount.shopName}">Tên shop</strong> tự nhập tài khoản dùng để nhận tiền payout.</p>
     </header>
 
     <div th:if="${successMessage}" class="notice success" role="status" th:text="${successMessage}"></div>
@@ -23,35 +28,50 @@
             <div>
                 <h2 id="account-title" th:text="${payoutAccount.hasAccount ? 'Thông tin tài khoản' : 'Thêm tài khoản nhận tiền'}">Tài khoản nhận tiền</h2>
                 <p th:if="${!payoutAccount.hasAccount}" class="muted">Bạn chưa khai báo tài khoản nhận payout.</p>
-                <p th:if="${payoutAccount.hasAccount and payoutAccount.verified}" class="status verified">Đã được admin xác minh</p>
-                <p th:if="${payoutAccount.hasAccount and !payoutAccount.verified}" class="status pending">Đang chờ admin xác minh</p>
+                <p th:if="${payoutAccount.hasAccount}" class="status verified">Đã khai báo tài khoản nhận tiền</p>
             </div>
         </div>
 
-        <div class="notice info">
-            Chỉ tài khoản đã được admin xác minh mới được dùng trong các đợt payout. Nếu bạn thay đổi thông tin, tài khoản sẽ cần xác minh lại.
-        </div>
-
         <form method="post" th:action="@{/seller/payout-account}" class="account-form">
-            <label for="bankCode">Mã ngân hàng</label>
-            <input id="bankCode" name="bankCode" maxlength="30" required autocomplete="off"
-                   placeholder="Ví dụ: VCB" th:value="${payoutAccount.bankCode}">
-
-            <label for="bankName">Tên ngân hàng</label>
-            <input id="bankName" name="bankName" maxlength="100" required autocomplete="organization"
-                   placeholder="Tên ngân hàng" th:value="${payoutAccount.bankName}">
+            <label for="bankSelection">Ngân hàng</label>
+            <select id="bankSelection" required class="form-control">
+                <option value="" disabled th:selected="${#strings.isEmpty(payoutAccount.bankCode)}">Chọn ngân hàng</option>
+                <option th:each="bank : ${bankOptions}"
+                        th:value="${bank.code}"
+                        th:attr="data-bank-name=${bank.name}"
+                        th:selected="${bank.code == payoutAccount.bankCode}"
+                        th:text="${bank.name + ' (' + bank.code + ')'}">Vietcombank (VCB)</option>
+            </select>
+            <input id="bankCode" name="bankCode" type="hidden" th:value="${payoutAccount.bankCode}">
+            <input id="bankName" name="bankName" type="hidden" th:value="${payoutAccount.bankName}">
 
             <label for="accountNumber">Số tài khoản</label>
             <input id="accountNumber" name="accountNumber" maxlength="50" required autocomplete="off"
-                   inputmode="numeric" placeholder="Số tài khoản nhận tiền" th:value="${payoutAccount.accountNumber}">
+                   inputmode="numeric" placeholder="Số tài khoản nhận tiền" th:value="${payoutAccount.accountNumber}" class="form-control">
 
             <label for="accountHolder">Tên chủ tài khoản</label>
             <input id="accountHolder" name="accountHolder" maxlength="150" required autocomplete="name"
-                   placeholder="Tên đúng như đăng ký với ngân hàng" th:value="${payoutAccount.accountHolder}">
+                   placeholder="Tên đúng như đăng ký với ngân hàng" th:value="${payoutAccount.accountHolder}" class="form-control">
 
             <button type="submit" class="save-button">Lưu tài khoản</button>
         </form>
     </section>
 </main>
+<footer th:replace="~{fragments/seller-orders :: footer}"></footer>
+</div>
+<script>
+    const bankSelection = document.getElementById('bankSelection');
+    const bankCode = document.getElementById('bankCode');
+    const bankName = document.getElementById('bankName');
+
+    function syncSelectedBank() {
+        const selectedOption = bankSelection.selectedOptions[0];
+        bankCode.value = bankSelection.value;
+        bankName.value = selectedOption?.dataset.bankName ?? '';
+    }
+
+    bankSelection.addEventListener('change', syncSelectedBank);
+    syncSelectedBank();
+</script>
 </body>
 </html>

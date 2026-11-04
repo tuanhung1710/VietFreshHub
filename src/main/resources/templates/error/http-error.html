@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title th:text="${errorTitle + ' | VietFresh Hub'}">Có lỗi xảy ra | VietFresh Hub</title>
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/error-pages.css}">
+</head>
+<body class="vfo-app vfr-app vfr-error">
+<a class="vfo-skip-link" href="#error-content">Đến nội dung chính</a>
+<svg th:replace="~{fragments/seller-orders :: icons}"></svg>
+
+<header class="vfr-error-header">
+    <a class="vfo-brand" th:href="@{/}" aria-label="VietFresh Hub — Trang chủ">
+        <span class="vfo-brand-mark"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-leaf"/></svg></span>
+        <span>
+            <span class="vfo-brand-name"><strong>VietFresh</strong> Hub</span>
+            <span class="vfo-brand-tagline">Fresh from the heart</span>
+        </span>
+    </a>
+</header>
+
+<main class="vfr-page vfr-error-main" id="error-content" tabindex="-1">
+    <section class="vfr-error-card" aria-labelledby="error-title" aria-describedby="error-description">
+        <div class="vfr-error-visual" aria-hidden="true">
+            <svg class="vfo-icon"><use href="#vfo-leaf"/></svg>
+            <span class="vfr-error-code" th:text="${status}">404</span>
+        </div>
+        <div class="vfr-error-content">
+            <p class="vfr-error-label" th:text="${'Lỗi ' + status}">Lỗi 404</p>
+            <h1 id="error-title" th:text="${errorTitle}">Không tìm thấy trang</h1>
+            <p class="vfr-error-description" id="error-description" th:text="${errorDescription}">
+                Trang bạn đang tìm có thể đã được di chuyển hoặc không còn tồn tại.
+            </p>
+            <div class="vfr-error-actions">
+                <a class="btn vfo-btn-primary" th:href="@{/}">
+                    Về trang chủ <svg class="vfo-icon vfo-icon-sm" aria-hidden="true"><use href="#vfo-arrow"/></svg>
+                </a>
+                <a class="btn vfo-btn-secondary" th:if="${showLogin}" th:href="@{/login}">Đăng nhập</a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

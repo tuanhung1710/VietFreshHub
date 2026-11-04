@@ -3,6 +3,7 @@ package VietFreshHub.delivery.controller;
 import VietFreshHub.delivery.dto.DeliveryFailureRequest;
 import VietFreshHub.delivery.dto.DeliveryHistoryFilter;
 import VietFreshHub.delivery.dto.DailyCodSummary;
+import VietFreshHub.common.PageSizes;
 import VietFreshHub.delivery.service.DeliveryAssignmentService;
 import VietFreshHub.delivery.service.DeliveryStaffActionService;
 import VietFreshHub.delivery.service.DeliveryStaffQueryService;
@@ -43,8 +44,12 @@ public class DeliveryController {
 
     @GetMapping("/delivery/available")
     public String showAvailableDeliveries(@RequestParam(defaultValue = "false") boolean fragment,
+                                         @RequestParam(defaultValue = "1") int page,
+                                         @RequestParam(defaultValue = "10") int size,
                                          Authentication authentication, Model model) {
-        model.addAttribute("availableDeliveries", deliveryStaffQueryService.getAvailableDeliveries(authentication));
+        var deliveries = deliveryStaffQueryService.getAvailableDeliveries(authentication, page, size);
+        model.addAttribute("availablePage", deliveries);
+        model.addAttribute("availableDeliveries", deliveries.getContent());
         return fragment ? "delivery/available :: deliveries" : "delivery/available";
     }
 
@@ -63,7 +68,7 @@ public class DeliveryController {
             if (!model.containsAttribute("errorMessage")) {
                 model.addAttribute("errorMessage", exception.getReason());
             }
-            return showAvailableDeliveries(false, authentication, model);
+            return showAvailableDeliveries(false, 1, PageSizes.DEFAULT, authentication, model);
         }
     }
 

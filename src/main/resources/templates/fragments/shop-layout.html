@@ -3,33 +3,32 @@
     <head th:fragment="head(title)">
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
         <title th:text="${title + ' | VietFresh Hub'}">
         </title>
         <link rel="stylesheet" th:href="@{/css/shop-view.css}">
         <link rel="stylesheet" th:href="@{/css/discount-pricing.css}">
-        <th:block th:replace="~{fragments/account-menu :: assets}">
-        </th:block>
         <script defer th:src="@{/js/storefront/storefront.js}">
         </script>
+        <link rel="stylesheet" th:href="@{/css/customer-pagination.css}">
+        <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
     </head>
     <body>
-        <header th:fragment="header" class="header">
+        <header th:fragment="header" class="header vfc-header">
             <div class="wrap">
-                <div class="utility">
-                    <span>
-                        VietFresh Hub · Gian hàng trái cây
-                    </span>
-                    <th:block th:replace="~{fragments/customer-shop :: accountLinks}">
-                    </th:block>
-                </div>
-                <div class="headrow">
+                <div class="vfc-header-main">
                     <a class="logo" th:href="@{/home}">
                         VietFresh Hub
                     </a>
+                    <div class="vfo-topbar-actions vfc-header-actions">
+                        <th:block th:replace="~{fragments/customer-shop :: accountLinks}"></th:block>
+                    </div>
+                </div>
+                <div class="headrow vfc-header-tools">
                     <form class="search" th:action="@{/shops/{id}/products(id=${shop.shopId})}" method="get" role="search">
-                        <input name="q" th:value="${q}" type="search" maxlength="100"
+                        <input class="form-control" name="q" th:value="${q}" type="search" maxlength="100"
                                placeholder="Tìm sản phẩm trong gian hàng..." aria-label="Tìm sản phẩm trong shop">
-                        <button type="submit">
+                        <button class="btn btn-success" type="submit">
                             TÌM
                         </button>
                     </form>
@@ -113,65 +112,5 @@
                 </a>
             </nav>
         </th:block>
-        <footer th:fragment="footer" class="foot">
-            <div class="wrap">
-                <div class="footgrid">
-                    <div>
-                        <h3>
-                            VietFresh Hub
-                        </h3>
-                        <p>
-                            Sàn mua sắm trái cây từ nhiều nhà bán hàng, gồm trái cây nội địa, nhập khẩu và các sản phẩm theo mùa.
-                        </p>
-                    </div>
-                    <div>
-                        <h3>
-                            Khám phá
-                        </h3>
-                        <p>
-                            <a th:href="@{/shops}">
-                                Danh sách gian hàng
-                            </a>
-                        </p>
-                        <div id="footerCategories">
-                            <p th:each="c,iter : ${categories}" th:if="${iter.index < 3}">
-                                <a th:href="@{/shops/{id}/products(id=${shop.shopId},category=${c.categoryId})}" th:text="${c.name}">
-                                </a>
-                            </p>
-                        </div>
-                    </div>
-                    <div>
-                        <h3>
-                            Hỗ trợ &amp; chính sách
-                        </h3>
-                        <p>
-                            <button class="textlink" data-footer-info="Hướng dẫn mua hàng">
-                                Hướng dẫn mua hàng
-                            </button>
-                        </p>
-                        <p>
-                            <a th:href="@{/customer/orders}">
-                                Theo dõi đơn hàng
-                            </a>
-                        </p>
-                        <p>
-                            <button class="textlink" data-footer-info="Chính sách bảo mật">
-                                Chính sách bảo mật
-                            </button>
-                        </p>
-                        <p>
-                            <button class="textlink" data-footer-info="Điều khoản sử dụng">
-                                Điều khoản sử dụng
-                            </button>
-                        </p>
-                    </div>
-                </div>
-                <div class="copyright">
-                    © 2026 VietFresh Hub. All rights reserved.
-                </div>
-            </div>
-            <dialog th:replace="~{fragments/customer-shop :: informationDialog}">
-            </dialog>
-        </footer>
     </body>
 </html>

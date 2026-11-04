@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    <title>Báo cáo đánh giá</title>    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+</head>
+<body class="vfo-app vfr-app vfr-admin" data-vfr-section="review-reports">
+<th:block th:replace="~{fragments/interface-layout :: navigation('admin','review-reports')}"></th:block>
+<div class="vfo-workspace vfr-workspace" id="workspace-content" tabindex="-1">
+<main class="vfr-page">
+    <h1>Báo cáo đánh giá đang chờ</h1>
+    <p th:if="${reports.empty}">Không có báo cáo đang chờ xử lý.</p>
+    <article th:each="report : ${reports.content}">
+        <h2 th:text="${report.targetName + ' · ' + report.rating + '/5'}">Đánh giá</h2>
+        <p th:text="${report.content}"></p><p th:text="${'Người báo cáo: ' + report.reporterName + ' · Lý do: ' + report.reason}"></p>
+        <p th:text="${report.description}"></p>
+        <form method="post" th:action="@{/admin/review-reports/{id}/moderate(id=${report.reportId})}">
+            <button name="action" value="APPROVE" class="btn btn-success">Duyệt</button><button name="action" value="REJECT" class="btn btn-success">Từ chối</button>
+            <button name="action" value="REMOVE" class="btn btn-success">Gỡ đánh giá</button><button name="action" value="DISMISS" class="btn btn-success">Bỏ qua báo cáo</button>
+        </form>
+    </article>
+    <nav th:if="${reports.totalPages > 1}" aria-label="Trang báo cáo">
+        <a th:if="${reports.hasPrevious()}" th:href="@{/admin/review-reports(page=${reports.number - 1})}">Trước</a>
+        <span th:text="${reports.number + 1 + ' / ' + reports.totalPages}"></span>
+        <a th:if="${reports.hasNext()}" th:href="@{/admin/review-reports(page=${reports.number + 1})}">Sau</a>
+    </nav>
+</main>
+<footer th:replace="~{fragments/admin-workspace :: footer}"></footer>
+</div></body></html>

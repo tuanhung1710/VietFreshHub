@@ -1,0 +1,258 @@
+/* Bootstrap and CSS presentation for customer order services and seller pickup. */
+.vfc-app [hidden], .vfp-app [hidden] { display: none !important; }
+.vfc-app { display: flex; flex-direction: column; min-height: 100vh; }
+.vfc-container { width: calc(100% - 64px); max-width: 1320px; margin-right: auto; margin-left: auto; }
+.vfc-main { flex: 1; min-width: 0; padding-top: 28px; padding-bottom: 64px; scroll-margin-top: 155px; }
+.vfc-main:focus, .vfp-main:focus { outline: none; }
+.vfc-main .vfo-page-heading { margin-bottom: 28px; }
+.vfc-main .vfo-page-heading h1 { font-size: clamp(31px, 3.05vw, 44px); }
+.vfc-main .vfo-page-description { max-width: 700px; }
+
+/* Shopping navigation retains search, cart, notifications and the account menu. */
+.vfc-header { position: relative; top: auto; z-index: 1030; border-bottom: 1px solid var(--vfo-border); background: #fff; box-shadow: 0 2px 12px #28493603; }
+.vfc-refund-app .vfc-header { position: static; }
+.vfc-header-main { display: flex; align-items: center; justify-content: space-between; gap: 28px; min-height: 94px; padding-top: 16px; padding-bottom: 16px; }
+.vfc-header-search { display: flex; align-items: center; flex: 1; gap: 10px; min-width: 0; max-width: 510px; padding: 5px 6px 5px 13px; border: 1px solid #e1e7d8; border-radius: 10px; background: #f9fbf5; }
+.vfc-header-search > .vfo-icon { width: 18px; height: 18px; color: #97a68a; }
+.vfc-header-search .form-control { min-width: 0; min-height: 34px; padding: 5px 0; border: 0; background: transparent; font-size: 11px; }
+.vfc-header-search .form-control:focus { box-shadow: none; }
+.vfc-header-search:focus-within { border-color: #95ac85; box-shadow: 0 0 0 3px #30634e0b; }
+.vfc-app .vfc-header-search .btn { min-height: 34px; flex-shrink: 0; padding: 7px 12px; border-radius: 7px; font-size: 10px; }
+.vfc-header-actions { flex-shrink: 0; gap: 17px; }
+.vfc-cart-link { position: relative; display: grid; place-items: center; width: 36px; height: 38px; flex-shrink: 0; border-radius: 10px; color: #6c865e; }
+.vfc-cart-link:hover { background: #f1f5e9; }
+.vfc-cart-link > span { position: absolute; top: -2px; right: -3px; display: grid; place-items: center; min-width: 16px; height: 16px; padding: 0 4px; border: 2px solid #fff; border-radius: 30px; background: #9b9b64; color: #fff; font-size: 8px; line-height: 1; }
+.vfc-header-nav { border-top: 1px solid #f0f2e9; }
+.vfc-header-nav > div { display: flex; align-items: center; gap: 30px; min-height: 43px; overflow-x: auto; scrollbar-width: none; }
+.vfc-header-nav > div::-webkit-scrollbar { display: none; }
+.vfc-header-nav a { display: flex; align-items: center; min-height: 43px; flex-shrink: 0; padding: 10px 0; border-bottom: 2px solid transparent; color: #87947a; font-size: 11px; white-space: nowrap; }
+.vfc-header-nav a:hover { color: var(--vfo-green); }
+.vfc-header-nav a.active { border-bottom-color: #7b976a; color: var(--vfo-green); font-weight: 600; }
+.vfc-app .header-account-label { max-width: 150px; }
+
+/* Actual tracking events remain in their existing order. No milestones are inferred. */
+.vfc-order-reference { position: relative; display: flex; align-items: center; gap: 16px; margin-bottom: 26px; padding: 22px 27px; border: 1px solid #dce5d0; border-radius: 13px; background: #edf2e4; overflow: hidden; }
+.vfc-reference-icon { display: grid; place-items: center; width: 46px; height: 48px; flex-shrink: 0; border: 1px solid #d7e2c9; border-radius: 14px; background: #f8faf3; color: #7c976a; }
+.vfc-order-reference > div { position: relative; z-index: 1; min-width: 0; }
+.vfc-order-reference > div > span { display: block; margin-bottom: 4px; color: #899979; font-size: 10px; }
+.vfc-order-reference strong { color: #456b3e; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+.vfc-app .vfc-reference-leaf { position: absolute; right: 30px; bottom: -17px; width: 100px; height: 100px; color: #dae4cc; stroke-width: .8; transform: rotate(-20deg); }
+.vfc-tracking-shops { display: grid; gap: 24px; }
+.vfc-app .vfc-tracking-shop { display: grid; grid-template-columns: 255px minmax(0, 1fr); min-width: 0; overflow: hidden; }
+.vfc-shop-summary { min-width: 0; padding: 28px 26px; border-right: 1px solid var(--vfo-border); background: #fbfcf7; }
+.vfc-shop-icon { display: grid; place-items: center; width: 46px; height: 48px; margin-bottom: 22px; border: 1px solid #e1e9d7; border-radius: 15px; background: #f0f5e8; color: #8ca477; }
+.vfc-shop-summary .vfo-eyebrow { margin-bottom: 7px; font-size: 8px; letter-spacing: 1.4px; }
+.vfc-shop-summary h2 { margin: 0 0 25px; color: #496841; font: 23px/1.4 Georgia, serif; letter-spacing: -.4px; overflow-wrap: anywhere; }
+.vfc-shop-delivery > span { display: block; margin-bottom: 9px; color: #99a28d; font-size: 10px; }
+.vfc-app .vfc-delivery-state { max-width: 100%; font-size: 10px; white-space: normal; }
+.vfc-app .vfc-delivery-state[data-status="DELIVERED"] { background: #e6efdf; color: #4f784b; }
+.vfc-app .vfc-delivery-state[data-status="FAILED"] { background: #faebe6; color: #ab6454; }
+.vfc-app .vfc-delivery-state[data-status="ACCEPTED"] { background: #e8f0f2; color: #537e88; }
+.vfc-app .vfc-delivery-state[data-status="PICKED_UP"] { background: #f1eedf; color: #948249; }
+.vfc-shop-order-status { margin: 20px 0 0; padding-top: 17px; border-top: 1px dashed #e2e8d8; color: #9aa58c; font-size: 10px; line-height: 1.9; }
+.vfc-shop-order-status strong { display: block; color: #6b835b; font-size: 12px; font-weight: 500; }
+.vfc-tracking-history { min-width: 0; padding: 26px 32px 12px; }
+.vfc-history-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #edf0e6; color: #8ba17a; }
+.vfc-history-heading .vfo-icon { width: 19px; height: 19px; }
+.vfc-history-heading h3 { margin: 0; color: #617b51; font-size: 13px; font-weight: 600; }
+.vfc-timeline { margin: 0; padding: 0; list-style: none; }
+.vfc-timeline > li { position: relative; display: grid; grid-template-columns: 145px 14px minmax(0, 1fr); align-items: start; gap: 16px; min-height: 73px; padding-bottom: 28px; }
+.vfc-timeline > li:not(:last-child)::before { content: ""; position: absolute; top: 17px; bottom: -3px; left: 167px; width: 1px; background: #e0e8d7; }
+.vfc-event-time { padding-top: 1px; color: #7b896f; font-size: 11px; line-height: 1.9; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.vfc-timeline-dot { position: relative; z-index: 1; width: 12px; height: 12px; margin-top: 4px; border: 2px solid #d9e1d0; border-radius: 50%; background: #fff; }
+.vfc-timeline > li[data-recorded="true"] .vfc-timeline-dot { border-color: #8ba576; background: #8ba576; box-shadow: 0 0 0 4px #f3f7ec; }
+.vfc-event-content { min-width: 0; }
+.vfc-event-content strong { display: block; color: #617b52; font-size: 12px; font-weight: 600; line-height: 1.75; overflow-wrap: anywhere; }
+.vfc-event-content p { margin: 6px 0 0; color: #7c8b6e; font-size: 12px; line-height: 1.9; white-space: pre-wrap; overflow-wrap: anywhere; }
+.vfc-timeline > li[data-recorded="false"] .vfc-event-content strong { color: #98a28c; font-weight: 400; }
+.vfc-tracking-empty { display: flex; flex-direction: column; align-items: center; padding: 25px 10px 35px; text-align: center; }
+.vfc-tracking-empty .vfo-empty-icon { width: 53px; height: 55px; margin-bottom: 14px; border-radius: 17px; }
+.vfc-tracking-empty p { margin: 0; color: #9aa58d; font-size: 12px; }
+
+/* Refund details and the immutable submission notice accompany the form. */
+.vfc-refund-layout { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); grid-template-areas: "form summary"; align-items: start; gap: 26px; }
+.vfc-refund-form-card { grid-area: form; min-width: 0; overflow: hidden; }
+.vfc-refund-form-card .vfo-card-heading { background: #fdfefb; }
+.vfc-refund-form { padding: 28px; }
+.vfc-form-field { display: flex; flex-direction: column; gap: 9px; margin-bottom: 23px; }
+.vfc-form-field label { display: flex; gap: 4px; color: #6c815c; font-size: 12px; font-weight: 500; }
+.vfc-form-field label > span { color: #a49b73; font-size: 11px; }
+.vfc-form-field .form-control { min-height: 47px; font-size: 13px; }
+.vfc-form-field .form-control[aria-invalid="true"] { border-color: #bd8673; }
+.vfc-field-error { margin: 0; color: #aa6856; font-size: 11px; line-height: 1.8; }
+.vfc-form-actions { display: flex; justify-content: flex-end; padding-top: 20px; border-top: 1px solid #edf0e6; }
+.vfc-app .vfc-form-actions .btn { min-height: 46px; padding-right: 20px; padding-left: 20px; }
+.vfc-refund-summary { display: grid; grid-area: summary; gap: 20px; min-width: 0; }
+.vfc-refund-amount-card { position: relative; padding: 28px; border: 1px solid #30634e; border-radius: 14px; background: linear-gradient(125deg, #30634e, #254e3c); color: #fff; overflow: hidden; }
+.vfc-refund-summary-icon { display: grid; place-items: center; width: 44px; height: 46px; margin-bottom: 23px; border: 1px solid #ffffff25; border-radius: 14px; background: #ffffff0b; color: #d1dec5; }
+.vfc-refund-amount-card h2 { position: relative; z-index: 1; margin: 0 0 24px; color: #e1ead7; font: 25px/1.4 Georgia, serif; letter-spacing: -.5px; }
+.vfc-refund-amount-card dl { position: relative; z-index: 1; margin: 0; }
+.vfc-refund-amount-card dt { margin-bottom: 5px; color: #afc5a4; font-size: 11px; font-weight: 400; }
+.vfc-refund-code { margin: 0 0 25px; padding-bottom: 22px; border-bottom: 1px solid #ffffff20; color: #dae8d0; font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
+.vfc-refund-amount { margin: 0; color: #fff; font-size: clamp(29px, 3.1vw, 40px); font-weight: 600; line-height: 1.4; letter-spacing: -1px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.vfc-app .vfc-refund-leaf { position: absolute; right: -12px; bottom: -26px; width: 146px; height: 146px; color: #ffffff0d; stroke-width: .8; transform: rotate(-20deg); }
+.vfc-refund-note { padding: 21px 23px; border: 1px solid #e9dfbf; border-radius: 11px; background: #fbf7ea; }
+.vfc-refund-note h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; color: #a48a4c; font-size: 12px; font-weight: 600; }
+.vfc-refund-note h2 > span { display: grid; place-items: center; width: 16px; height: 16px; flex-shrink: 0; border: 1px solid #cdbd8b; border-radius: 50%; font-size: 10px; }
+.vfc-refund-note p { margin: 0; color: #8a7647; font-size: 12px; line-height: 1.9; }
+.vfc-refund-note strong { display: block; margin-top: 10px; color: #7f692f; font-weight: 600; }
+.vfc-notice { margin: 0 0 22px; padding: 15px 18px; border: 1px solid #e4e9db; border-radius: 9px; background: #f4f7ed; color: #81946f; font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
+.vfc-notice p { margin: 5px 0 0; }
+.vfc-notice-danger { border-color: #ecd8d0; background: #fcf1eb; color: #a76755; }
+
+/* Seller pickup keeps the original editor, identifiers and live suggestion list. */
+.vfp-layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); align-items: start; gap: 24px; }
+.vfp-location-card { min-width: 0; overflow: hidden; }
+.vfp-location-card .vfo-card-heading { background: #fdfefb; }
+.vfp-app #pickup-location-display, .vfp-app #pickup-location-editor { padding: 27px; }
+.vfp-location-display-content { display: flex; align-items: start; gap: 17px; padding: 21px; border: 1px solid #e1e8d6; border-radius: 11px; background: #f8faf3; }
+.vfp-location-pin { display: grid; place-items: center; width: 42px; height: 44px; flex-shrink: 0; border: 1px solid #dce7cf; border-radius: 13px; background: #edf4e4; color: #7f9d68; }
+.vfp-location-display-content > div { min-width: 0; }
+.vfp-location-label { display: block; margin-bottom: 8px; color: #98a58a; font-size: 10px; }
+.vfp-app #current-pickup-address { margin: 0; color: #5a794a; font-size: 14px; line-height: 1.9; overflow-wrap: anywhere; }
+.vfp-no-location { margin: 0; color: #8d9d7d; font-size: 12px; line-height: 1.9; }
+.vfp-location-actions { display: flex; justify-content: flex-end; margin-top: 24px; padding-top: 20px; border-top: 1px solid #edf0e6; }
+.vfp-location-actions .btn { min-width: 110px; }
+.vfp-search-label { display: block; margin-bottom: 10px; color: #6b855b; font-size: 12px; font-weight: 500; }
+.vfp-search-field { position: relative; }
+.vfp-search-field > .vfo-icon { position: absolute; top: 15px; left: 13px; width: 18px; height: 18px; color: #9aab8b; pointer-events: none; }
+.vfp-app .vfp-search-field .form-control { min-height: 48px; padding-left: 42px; font-size: 13px; }
+.vfp-app #autocomplete-status { margin: 11px 0 0; color: #758a60; font-size: 12px; line-height: 1.85; }
+.vfp-app #autocomplete-status:empty { display: none; }
+.vfp-app #address-suggestions { margin: 16px 0 0; padding: 0; border: 1px solid #dce6d1; border-radius: 10px; list-style: none; overflow: hidden; }
+.vfp-app #address-suggestions:empty { display: none; }
+.vfp-app #address-suggestions li + li { border-top: 1px solid #edf1e5; }
+.vfp-app #address-suggestions button { display: block; width: 100%; min-height: 48px; padding: 13px 17px; border: 0; background: #fff; color: #6d875a; font: inherit; font-size: 12px; line-height: 1.8; text-align: left; overflow-wrap: anywhere; cursor: pointer; }
+.vfp-app #address-suggestions button:hover { background: #f3f7ec; color: #476b3d; }
+.vfp-app #address-suggestions button:focus-visible { position: relative; outline-offset: -3px; background: #f3f7ec; }
+.vfp-app .vfc-notice ul { margin: 0; padding-left: 18px; }
+.vfp-app .vfp-success { border-color: #dce7ce; background: #edf5e5; color: #6a8b53; }
+.vfp-app #save-pickup-location:disabled { opacity: .5; cursor: not-allowed; }
+.vfp-help-card { min-width: 0; padding: 28px; border: 1px solid #e1e8d4; border-radius: 13px; background: #f0f4e7; }
+.vfp-help-icon { display: grid; place-items: center; width: 46px; height: 48px; margin-bottom: 23px; border: 1px solid #d9e4c9; border-radius: 15px; background: #f8fbf1; color: #8aa473; }
+.vfp-help-card h2 { margin: 0 0 12px; color: #5d7d49; font: 25px/1.4 Georgia, serif; letter-spacing: -.5px; }
+.vfp-help-card > p { margin: 0 0 25px; color: #7d8e6b; font-size: 12px; line-height: 1.9; }
+.vfp-help-card ol { display: grid; gap: 21px; margin: 0; padding: 0; list-style: none; }
+.vfp-help-card li { display: flex; align-items: start; gap: 12px; }
+.vfp-help-card li > span { display: grid; place-items: center; width: 24px; height: 24px; flex-shrink: 0; border: 1px solid #d5e1c5; border-radius: 50%; background: #f8fbf2; color: #8ba075; font-size: 10px; }
+.vfp-help-card li strong { display: block; margin-bottom: 5px; color: #718d5c; font-size: 12px; font-weight: 600; }
+.vfp-help-card li p { margin: 0; color: #7e8f6b; font-size: 12px; line-height: 1.9; }
+
+.vfc-footer { margin-top: 20px; padding-top: 43px; border-top: 1px solid #e1e6d7; background: #f0f3e8; }
+.vfc-footer-brand { display: inline-flex; align-items: center; gap: 9px; margin-bottom: 15px; color: #638054; font: 28px/1.2 Georgia, serif; letter-spacing: -.5px; }
+.vfc-footer-brand .vfo-icon { width: 27px; height: 27px; color: #8aa374; stroke-width: 1.3; }
+.vfc-footer-intro p { max-width: 385px; margin: 0; color: #9aa68b; font-size: 11px; line-height: 2; }
+.vfc-footer h2 { margin: 0 0 17px; color: #748b62; font-size: 12px; font-weight: 600; }
+.vfc-footer ul { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.vfc-footer li a { color: #99a68a; font-size: 11px; }
+.vfc-footer li a:hover { color: #4e7542; }
+.vfc-footer-bottom { margin-top: 35px; padding: 23px 0; border-top: 1px solid #e0e6d4; color: #a3ad96; font-size: 10px; text-align: center; }
+
+@media (min-width: 1800px) {
+    .vfc-container { max-width: 1460px; }
+    .vfc-header-main { min-height: 104px; }
+    .vfc-main .vfo-page-heading h1 { font-size: 48px; }
+    .vfc-main { padding-top: 36px; padding-bottom: 75px; }
+    .vfc-app .vfc-tracking-shop { grid-template-columns: 285px minmax(0, 1fr); }
+    .vfc-tracking-history { padding: 30px 38px 16px; }
+    .vfc-timeline > li { min-height: 81px; }
+    .vfc-event-content strong { font-size: 13px; }
+}
+@media (max-width: 1250px) {
+    .vfc-container { width: calc(100% - 48px); }
+    .vfc-header-main { gap: 20px; }
+    .vfc-header-search { max-width: 375px; }
+    .vfc-header-actions { gap: 13px; }
+    .vfc-app .vfc-header [data-notification-bell] { font-size: 0; gap: 4px; }
+    .vfc-app .vfc-header [data-notification-bell] > span:first-child { font-size: 16px; }
+    .vfc-app .vfc-tracking-shop { grid-template-columns: 230px minmax(0, 1fr); }
+    .vfc-tracking-history { padding-right: 25px; padding-left: 25px; }
+    .vfc-timeline > li { grid-template-columns: 115px 14px minmax(0, 1fr); gap: 14px; }
+    .vfc-timeline > li:not(:last-child)::before { left: 135px; }
+    .vfp-layout { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 20px; }
+    .vfp-app #pickup-location-display, .vfp-app #pickup-location-editor { padding: 22px; }
+    .vfp-help-card { padding: 23px; }
+}
+@media (max-width: 991px) {
+    .vfc-header-main { min-height: 80px; padding-top: 12px; padding-bottom: 12px; }
+    .vfc-container { width: calc(100% - 40px); }
+    .vfc-main { padding-top: 25px; scroll-margin-top: 135px; }
+    .vfc-refund-layout { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; }
+    .vfc-refund-form { padding: 24px; }
+    .vfc-refund-amount-card { padding: 24px; }
+    .vfp-layout { grid-template-columns: minmax(0, 1fr); }
+    .vfp-help-card ol { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+    .vfp-help-card > p { max-width: 640px; }
+}
+@media (max-width: 767px) {
+    .vfc-container { width: calc(100% - 36px); }
+    .vfc-header-main { gap: 14px; min-height: 76px; }
+    .vfc-header-actions { gap: 11px; }
+    .vfc-header-nav > div { gap: 25px; min-height: 40px; }
+    .vfc-header-nav a { min-height: 40px; font-size: 10px; }
+    .vfc-main { padding-top: 24px; padding-bottom: 40px; }
+    .vfc-main .vfo-page-heading h1 { font-size: 34px; }
+    .vfc-order-reference { gap: 12px; padding: 20px; }
+    .vfc-order-reference strong { font-size: 14px; }
+    .vfc-app .vfc-tracking-shop { grid-template-columns: minmax(0, 1fr); }
+    .vfc-shop-summary { padding: 23px; border-right: 0; border-bottom: 1px solid var(--vfo-border); }
+    .vfc-shop-icon { width: 40px; height: 42px; margin-bottom: 15px; border-radius: 13px; }
+    .vfc-shop-summary h2 { margin-bottom: 18px; font-size: 24px; }
+    .vfc-shop-order-status { margin-top: 16px; padding-top: 13px; }
+    .vfc-tracking-history { padding: 24px 23px 8px; }
+    .vfc-history-heading { margin-bottom: 23px; padding-bottom: 17px; }
+    .vfc-refund-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "summary" "form"; gap: 22px; }
+    .vfc-refund-summary { gap: 16px; }
+    .vfc-refund-amount-card { padding: 23px; }
+    .vfc-refund-summary-icon { margin-bottom: 18px; }
+    .vfc-refund-amount-card h2 { margin-bottom: 20px; }
+    .vfc-refund-code { margin-bottom: 18px; padding-bottom: 18px; }
+    .vfc-refund-amount { font-size: 36px; }
+    .vfc-refund-note { padding: 20px 23px; }
+    .vfc-refund-form { padding: 23px; }
+    .vfc-form-actions > .btn { width: 100%; }
+    .vfp-location-display-content { padding: 18px; }
+    .vfp-help-card ol { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+    .vfp-main .vfo-page-heading h1 { font-size: 32px; }
+    .vfc-footer { padding-top: 32px; }
+    .vfc-footer-brand { font-size: 26px; }
+    .vfc-footer-bottom { margin-top: 26px; padding: 20px 0; line-height: 1.9; }
+}
+@media (max-width: 480px) {
+    .vfc-container { width: calc(100% - 28px); }
+    .vfc-header-main { min-height: 71px; gap: 9px; }
+    .vfc-header-actions { gap: 8px; }
+    .vfc-app .header-account summary { gap: 2px; }
+    .vfc-app .vfc-header .header-account-chevron { display: none; }
+    .vfc-cart-link { width: 29px; height: 32px; }
+    .vfc-cart-link > .vfo-icon { width: 19px; height: 19px; }
+    .vfc-cart-link > span { min-width: 15px; height: 15px; font-size: 7px; }
+    .vfc-main .vfo-page-heading h1 { font-size: 31px; letter-spacing: -.9px; }
+    .vfc-order-reference { padding: 18px; }
+    .vfc-order-reference strong { font-size: 13px; }
+    .vfc-shop-summary, .vfc-tracking-history { padding: 20px; }
+    .vfc-timeline > li { grid-template-columns: 12px minmax(0, 1fr); gap: 4px 14px; min-height: 92px; padding-bottom: 26px; }
+    .vfc-event-time { grid-column: 2; grid-row: 1; font-size: 10px; }
+    .vfc-timeline-dot { grid-column: 1; grid-row: 1 / 3; margin-top: 5px; }
+    .vfc-event-content { grid-column: 2; grid-row: 2; }
+    .vfc-timeline > li:not(:last-child)::before { top: 18px; bottom: -3px; left: 5px; }
+    .vfc-event-content strong { font-size: 12px; }
+    .vfc-event-content p { font-size: 11px; }
+    .vfc-refund-form, .vfc-refund-amount-card { padding: 20px; }
+    .vfc-refund-amount { font-size: 32px; }
+    .vfc-refund-note { padding: 18px 20px; }
+    .vfp-main .vfo-page-heading h1 { font-size: 30px; }
+    .vfp-app #pickup-location-display, .vfp-app #pickup-location-editor { padding: 18px; }
+    .vfp-location-display-content { flex-direction: column; gap: 13px; padding: 18px; }
+    .vfp-location-actions > .btn { width: 100%; }
+    .vfp-help-card { padding: 22px; }
+    .vfp-help-card h2 { font-size: 24px; }
+}
+@media print {
+    .vfc-header, .vfc-footer, .vfc-main .vfo-page-heading > .btn, .vfc-form-actions, .vfp-help-card, .vfp-location-actions { display: none !important; }
+    .vfc-app { display: block; min-height: 0; background: #fff; }
+    .vfc-container { width: 100%; max-width: none; }
+    .vfc-main { margin: 0; padding: 0; }
+    .vfc-refund-amount-card { border-color: #aaa; background: #fff; color: #000; }
+    .vfc-refund-amount-card h2, .vfc-refund-amount-card dt, .vfc-refund-amount, .vfc-refund-code { color: #000; }
+}

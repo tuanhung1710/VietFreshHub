@@ -1,65 +1,74 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/order-pages :: head('Lịch sử thanh toán')}"></head>
-<body>
-<header th:replace="~{fragments/storefront :: header}"></header>
-<main class="container page order-history-page payment-history-page">
+<head th:replace="~{fragments/interface-layout :: customerHead('Lịch sử thanh toán')}"></head>
+<body class="purchase-page vfo-app vfr-app vfc-app vfr-customer" data-vfr-section="orders">
+<th:block th:replace="~{fragments/interface-layout :: navigation('customer','orders')}"></th:block>
+
+<main class="container page purchase-layout vfr-page" id="customer-content" tabindex="-1">
+<div class="purchase-content order-history-page payment-history-page payment-template">
     <div class="page-heading payments-heading">
-        <div><p class="eyebrow">Thanh toán của bạn</p><h1 class="checkout-title">Lịch sử thanh toán</h1>
-            <p class="muted">Theo dõi các khoản thanh toán và trạng thái xử lý thanh toán của đơn hàng.</p></div>
-        <a class="button secondary" th:href="@{/customer/order-receipts}">Đơn hàng của tôi <span aria-hidden="true">↗</span></a>
+        <div><h1 class="checkout-title">Lịch sử thanh toán</h1></div>
+        <a class="button secondary" th:href="@{/customer/orders}">Đơn hàng của tôi <span aria-hidden="true">↗</span></a>
     </div>
-    <div class="notice info payments-explanation">
-        <strong>Mỗi bản ghi có một trạng thái thanh toán riêng.</strong>
-        <p>Khoản chờ thanh toán, thất bại hoặc đã hủy không phải số tiền đã thu. Số tiền của từng bản ghi không phải tổng tiền đã thu của đơn hàng.</p>
-    </div>
+<div class="payment-overview" th:unless="${invalidFilter}"><div><span>Tổng mục thanh toán phù hợp</span><strong th:text="${paymentPage.totalElements}"></strong></div><div><span>Đã thanh toán · trang này</span><strong th:text="${#lists.size(paymentPage.content.?[displayStatus == 'PAID'])}"></strong></div><div><span>Đang xử lý hoàn tiền · trang này</span><strong th:text="${#lists.size(paymentPage.content.?[displayStatus == 'REFUND_PROCESSING'])}"></strong></div><div><span>Đã hủy / Thất bại · trang này</span><strong th:text="${#lists.size(paymentPage.content.?[displayStatus == 'CANCELLED' or displayStatus == 'FAILED'])}"></strong></div></div>
     <p th:if="${filterError != null}" class="notice error" role="alert" th:text="${filterError}"></p>
     <p th:if="${pageNotice != null}" class="notice info" role="status" th:text="${pageNotice}"></p>
-    <form class="panel order-filters" th:action="@{/customer/payments}" th:object="${filter}" method="get" aria-label="Lọc bản ghi thanh toán">
-        <div><label for="payment-keyword">Mã đơn hàng liên quan</label><input id="payment-keyword" type="search" th:field="*{keyword}" maxlength="100" placeholder="Tìm theo mã đơn hàng"></div>
-        <div><label for="payment-status">Trạng thái thanh toán</label><select id="payment-status" th:field="*{status}">
+    <form class="panel purchase-filters" th:action="@{/customer/payments}" th:object="${filter}" method="get" aria-label="Lọc bản ghi thanh toán">
+        <input type="hidden" name="size" th:value="${filter.size}">
+        <div><label for="payment-keyword">Mã đơn hàng liên quan</label><input id="payment-keyword" type="search" th:field="*{keyword}" maxlength="100" placeholder="Tìm theo mã đơn hàng" class="form-control"></div>
+        <div><label for="payment-status">Trạng thái thanh toán</label><select id="payment-status" th:field="*{status}" class="form-control">
             <option value="">Tất cả</option>
             <option th:if="${#fields.hasErrors('status')}" th:value="*{status}">Trạng thái không hợp lệ</option>
             <option th:each="state : ${statusOptions}" th:value="${state.key}" th:text="${state.value}"></option>
         </select></div>
-        <div><label for="payment-from">Từ ngày tạo</label><input id="payment-from" type="date" min="0001-01-01" max="9999-12-31" th:field="*{fromDate}"></div>
-        <div><label for="payment-to">Đến ngày tạo</label><input id="payment-to" type="date" min="0001-01-01" max="9999-12-31" th:field="*{toDate}"></div>
+        <div><label for="payment-from">Từ ngày tạo</label><input id="payment-from" type="date" min="0001-01-01" max="9999-12-31" th:field="*{fromDate}" class="form-control"></div>
+        <div><label for="payment-to">Đến ngày tạo</label><input id="payment-to" type="date" min="0001-01-01" max="9999-12-31" th:field="*{toDate}" class="form-control"></div>
         <button class="button" type="submit">Lọc thanh toán</button>
         <a class="filter-reset" th:href="@{/customer/payments}">Xóa bộ lọc</a>
     </form>
-    <div th:unless="${invalidFilter}" class="payments-result-heading"><h2>Các bản ghi thanh toán</h2>
-        <span class="muted" th:text="${paymentPage.totalElements} + ' bản ghi thanh toán'" aria-live="polite"></span></div>
+    <div th:unless="${invalidFilter}" class="payments-result-heading"><h2>Danh sách giao dịch thanh toán</h2>
+        <span class="muted" th:text="${paymentPage.totalElements} + ' mục thanh toán theo đơn'" aria-live="polite"></span></div>
     <section th:if="${!invalidFilter and paymentPage.empty}" class="panel empty">
         <h2 th:text="${filter.hasFilters()} ? 'Không tìm thấy thanh toán phù hợp' : 'Bạn chưa có lịch sử thanh toán'"></h2>
         <p class="muted" th:text="${filter.hasFilters()} ? 'Thử đổi mã đơn, trạng thái hoặc khoảng ngày để tìm lại bản ghi.' : 'Các bản ghi thanh toán sẽ xuất hiện sau khi bạn đặt hàng.'"></p>
         <a th:if="${filter.hasFilters()}" class="button secondary" th:href="@{/customer/payments}">Xóa bộ lọc</a>
-        <a th:unless="${filter.hasFilters()}" class="button" th:href="@{/customer/order-receipts}">Xem đơn hàng của tôi</a>
+        <a th:unless="${filter.hasFilters()}" class="button" th:href="@{/customer/orders}">Xem đơn hàng của tôi</a>
     </section>
-    <section class="order-list" aria-label="Danh sách bản ghi thanh toán">
-        <article th:each="payment : ${paymentPage.content}" class="panel history-order payment-history-record" th:attr="data-payment-id=${payment.paymentId}">
+    <section class="order-list payment-table" aria-label="Danh sách bản ghi thanh toán"><div class="payment-table-heading" aria-hidden="true"><span>Thời gian / Trạng thái</span><span>Mã đơn / Phương thức thanh toán</span><span>Số tiền / Thao tác</span></div>
+        <article th:each="payment : ${paymentPage.content}" class="panel history-order payment-history-record" th:attr="data-payment-id=${payment.paymentId},data-shop-order-id=${payment.shopOrderId}">
             <div class="history-order-top">
                 <div><span class="muted payment-created" th:text="'Tạo lúc ' + ${#temporals.format(payment.createdAtLocal(),'HH:mm dd/MM/yyyy')}"></span>
-                    <h2 class="payment-record-title" th:text="'Bản ghi #' + ${payment.paymentId}"></h2></div>
-                <span class="order-state payment-status" th:attr="data-payment-status=${payment.status}" th:text="${payment.statusLabel()}"></span>
+                    <h2 class="payment-record-title" th:text="${payment.shopOrderId != null ? payment.orders[0].orderCode() : 'Bản ghi #' + payment.paymentId}"></h2><span th:if="${payment.shopOrderId != null}" class="muted" th:text="'Bản ghi thanh toán #' + ${payment.paymentId}"></span></div>
+                <span class="order-state payment-status" th:attr="data-payment-status=${payment.displayStatus}" th:text="${payment.statusLabel()}"></span>
             </div>
             <dl class="payment-record-data">
-                <div><dt>Đơn hàng liên quan</dt><dd><a th:href="@{/customer/order-receipts/{id}(id=${payment.orderId})}" th:text="${payment.orderCode}"></a></dd></div>
+                <div><dt>Đơn hàng liên quan</dt><dd><div th:each="reference : ${payment.orders}"><a class="order-code" th:href="@{/customer/orders/{id}(id=${reference.shopOrderId})}" th:text="${reference.orderCode()}"></a></div><a th:if="${#lists.isEmpty(payment.orders)}" th:href="@{/customer/orders(keyword=${payment.orderCode})}" th:text="'Lượt mua: ' + ${payment.orderCode}"></a></dd></div>
                 <div><dt>Phương thức thanh toán</dt><dd th:text="${payment.methodName}"></dd></div>
-                <div th:if="${payment.paidAt != null}"><dt>Thời điểm ghi nhận thanh toán</dt><dd th:text="${#temporals.format(payment.paidAtLocal(),'HH:mm dd/MM/yyyy')}"></dd></div>
+                <div th:if="${payment.paidAt != null and payment.methodCode != 'COD'}"><dt>Thời điểm ghi nhận thanh toán</dt><dd th:text="${#temporals.format(payment.paidAtLocal(),'HH:mm dd/MM/yyyy')}"></dd></div>
                 <div th:if="${payment.transactionReference != null}" class="payment-reference"><dt>Mã tham chiếu thanh toán</dt><dd th:text="${payment.transactionReference}"></dd></div>
             </dl>
-            <p th:if="${payment.pendingCod()}" class="payment-cod-note">Thanh toán khi nhận hàng. Hệ thống chưa xác nhận đã thu tiền COD cho bản ghi này.</p>
+            <p th:if="${payment.displayStatus == 'REFUND_PROCESSING'}" class="payment-cod-note">Khoản thanh toán đang được xử lý hoàn tiền. Thời gian khách thực tế nhận lại tiền không được theo dõi trên hệ thống.</p><p th:if="${payment.pendingCod()}" class="payment-cod-note">Thanh toán khi nhận hàng. Hệ thống chưa xác nhận đã thu tiền COD cho đơn cửa hàng này.</p>
             <div class="history-order-bottom">
-                <div><span class="muted">Số tiền của bản ghi</span><strong class="price" th:text="${#numbers.formatDecimal(payment.amount,1,'POINT',payment.amount.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></strong></div>
-                <a class="button secondary" th:href="@{/customer/order-receipts/{id}(id=${payment.orderId})}">Xem đơn hàng <span aria-hidden="true">↗</span></a>
+                <div><span class="muted">Giá trị đơn cửa hàng</span><strong class="price" th:text="${#numbers.formatDecimal(payment.displayedAmount(),1,'POINT',payment.amount.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></strong></div>
+                <a th:if="${#lists.size(payment.orders) == 1}" class="button secondary" th:href="@{/customer/orders/{id}(id=${payment.orders[0].shopOrderId})}">Xem đơn hàng <span aria-hidden="true">↗</span></a><a th:unless="${#lists.size(payment.orders) == 1}" class="button secondary" th:href="@{/customer/orders(keyword=${payment.orderCode})}">Xem lượt mua <span aria-hidden="true">↗</span></a>
             </div>
         </article>
     </section>
-    <nav th:if="${paymentPage.totalPages > 1}" class="pagination" aria-label="Phân trang thanh toán">
-        <a th:if="${paymentPage.hasPrevious()}" class="button secondary" th:href="@{/customer/payments(page=${paymentPage.number},keyword=${filter.keyword},status=${filter.status},fromDate=${filter.fromDate != null ? #temporals.format(filter.fromDate,'yyyy-MM-dd') : null},toDate=${filter.toDate != null ? #temporals.format(filter.toDate,'yyyy-MM-dd') : null})}">← Trang trước</a>
-        <span th:text="'Trang ' + ${paymentPage.number+1} + ' / ' + ${paymentPage.totalPages}"></span>
-        <a th:if="${paymentPage.hasNext()}" class="button secondary" th:href="@{/customer/payments(page=${paymentPage.number+2},keyword=${filter.keyword},status=${filter.status},fromDate=${filter.fromDate != null ? #temporals.format(filter.fromDate,'yyyy-MM-dd') : null},toDate=${filter.toDate != null ? #temporals.format(filter.toDate,'yyyy-MM-dd') : null})}">Trang tiếp →</a>
-    </nav>
-</main>
-<footer th:replace="~{fragments/storefront :: footer}"></footer>
+    <div class="customer-pagination-panel" th:unless="${invalidFilter}">
+        <nav th:replace="~{fragments/customer-pagination :: pagination(${paymentPage}, @{/customer/payments(size=${filter.size},page=${paymentPage.number},keyword=${filter.keyword},status=${filter.status},fromDate=${filter.fromDate != null ? #temporals.format(filter.fromDate,'yyyy-MM-dd') : null},toDate=${filter.toDate != null ? #temporals.format(filter.toDate,'yyyy-MM-dd') : null})}, @{/customer/payments(size=${filter.size},page=${paymentPage.number+2},keyword=${filter.keyword},status=${filter.status},fromDate=${filter.fromDate != null ? #temporals.format(filter.fromDate,'yyyy-MM-dd') : null},toDate=${filter.toDate != null ? #temporals.format(filter.toDate,'yyyy-MM-dd') : null})}, 'Phân trang thanh toán', 'bản ghi')}"></nav>
+        <form class="customer-page-size" method="get" th:action="@{/customer/payments}">
+            <input type="hidden" name="keyword" th:value="${filter.keyword}">
+            <input type="hidden" name="status" th:value="${filter.status}">
+            <input type="hidden" name="fromDate" th:value="${filter.fromDate != null ? #temporals.format(filter.fromDate,'yyyy-MM-dd') : null}">
+            <input type="hidden" name="toDate" th:value="${filter.toDate != null ? #temporals.format(filter.toDate,'yyyy-MM-dd') : null}">
+            <label for="historyPageSize">Bản ghi mỗi trang</label>
+            <select name="size" id="historyPageSize" class="form-control">
+                <option th:each="size : ${T(VietFreshHub.common.PageSizes).OPTIONS}" th:value="${size}" th:selected="${filter.size == size}" th:text="${size}"></option>
+            </select>
+            <button type="submit" class="btn btn-success">Áp dụng</button>
+        </form>
+    </div>
+</div></main>
+
+<footer th:replace="~{fragments/customer-service :: footer}"></footer>
 </body></html>

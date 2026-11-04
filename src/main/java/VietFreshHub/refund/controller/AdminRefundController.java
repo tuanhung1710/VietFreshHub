@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.io.IOException;
+import VietFreshHub.common.Pagination;
+import org.springframework.data.domain.PageImpl;
 
 @Controller
 @RequiredArgsConstructor
@@ -28,8 +30,15 @@ public class AdminRefundController {
 
     @GetMapping
     public String list(@RequestParam(required = false) String from,
-                       @RequestParam(required = false) String to, Model model) {
-        model.addAttribute("period", refunds.getAdminPeriod(from, to));
+                       @RequestParam(required = false) String to,
+                       @RequestParam(defaultValue = "1") int page,
+                       @RequestParam(defaultValue = "10") int size, Model model) {
+        var period = refunds.getAdminPeriod(from, to);
+        var pageable = Pagination.clamp(page, size, period.requests().size());
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), period.requests().size());
+        model.addAttribute("period", period);
+        model.addAttribute("refundsPage", new PageImpl<>(period.requests().subList(start, end), pageable, period.requests().size()));
         return "admin/refund-requests";
     }
 

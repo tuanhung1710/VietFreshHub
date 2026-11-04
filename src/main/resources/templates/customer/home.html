@@ -2,10 +2,10 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
     <head th:replace="~{fragments/customer-shop :: head('Trang chủ')}">
     </head>
-    <body>
+    <body class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
         <header th:replace="~{fragments/customer-shop :: header}">
         </header>
-        <main class="container">
+        <main class="container vfr-page">
             <div th:replace="~{fragments/customer-shop :: messages}">
             </div>
             <div id="home">
@@ -125,10 +125,10 @@
                             Chưa có sản phẩm đang được bán.
                         </p>
                     </div>
-                    <nav class="pagination" id="homePagination" aria-label="Phân trang gợi ý hôm nay">
+                    <nav class="customer-pagination-panel" id="homePagination" aria-label="Phân trang gợi ý hôm nay">
                         <div th:replace="~{fragments/storefront-catalog :: pagination(${rows},@{/home(page=${rows.number},size=${rows.size})},@{/home(page=${rows.number + 2},size=${rows.size})})}">
                         </div>
-                        <form class="pager-right" th:action="@{/home}" method="get">
+                        <form class="customer-page-size" th:action="@{/home}" method="get">
                             <th:block th:replace="~{fragments/storefront-catalog :: pageSize(${rows},'homePageSize')}">
                             </th:block>
                         </form>
@@ -136,7 +136,6 @@
                 </section>
             </div>
         </main>
-        <footer th:replace="~{fragments/customer-shop :: footer}">
-        </footer>
+        <footer th:replace="~{fragments/footer :: footer}"></footer>
     </body>
 </html>

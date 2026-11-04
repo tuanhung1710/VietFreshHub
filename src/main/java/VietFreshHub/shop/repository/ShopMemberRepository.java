@@ -15,6 +15,16 @@ import java.util.Optional;
 public interface ShopMemberRepository extends JpaRepository<ShopMember, Long> {
 
     @Query("""
+            select sm.user.userId
+            from ShopMember sm
+            where sm.shop.shopId = :shopId
+              and sm.memberRole = 'OWNER'
+              and sm.status = 'ACTIVE'
+            order by sm.user.userId
+            """)
+    List<Long> findActiveOwnerUserIds(@Param("shopId") Long shopId);
+
+    @Query("""
             select m from ShopMember m
             where m.userId=:userId and m.status='ACTIVE' and m.memberRole='OWNER'
               and (select count(u) from ShopMember u where u.userId=:userId and u.status='ACTIVE')=1
@@ -24,7 +34,13 @@ public interface ShopMemberRepository extends JpaRepository<ShopMember, Long> {
 
     List<ShopMember> findByShopIdAndUserIdIn(Long shopId, Collection<Long> userIds);
 
-@Query("""
+    List<ShopMember> findAllByUserIdAndStatus(Long userId, String status);
+
+    List<ShopMember> findAllByShopIdAndStatus(Long shopId, String status);
+
+    Optional<ShopMember> findByShopIdAndUserId(Long shopId, Long userId);
+
+    @Query("""
             select sm from ShopMember sm
             join fetch sm.shop s
             where sm.user.userId = :userId

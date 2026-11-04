@@ -1,79 +1,23 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chi tiết giao hàng | VIETFRESH HUB</title>
-    <style>
-        body {
-            max-width: 1000px;
-            margin: 24px auto;
-            padding: 0 16px;
-            font-family: Arial, sans-serif;
-            line-height: 1.5;
-        }
-
-        section, .delivery-actions {
-            margin-top: 24px;
-        }
-
-        .information-card, .delivery-actions {
-            border: 1px solid black;
-            padding: 16px;
-        }
-
-        .information-card h2 {
-            margin-top: 0;
-        }
-
-        .delivery-actions {
-            text-align: right;
-        }
-
-        .delivery-actions button {
-            padding: 8px 16px;
-        }
-
-        dt {
-            font-weight: bold;
-        }
-
-        dd {
-            margin: 0 0 12px;
-        }
-
-        .delivery-failed {
-            font-weight: bold;
-            font-style: italic;
-            color: red;
-        }
-
-        .delivery-success, .return-confirmed {
-            font-weight: bold;
-            font-style: italic;
-            color: green;
-        }
-
-        .return-pending {
-            font-weight: bold;
-            font-style: italic;
-            color: #9a6700;
-        }
-    </style>
-</head>
-<body>
-<header>
-    <span th:replace="~{fragments/notifications :: bell}"></span>
-    <p>VIETFRESH HUB</p>
-    <a th:href="@{/delivery}">Trang chủ</a>
-</header>
-<main>
-    <h1>CHI TIẾT GIAO HÀNG</h1>
-    <p th:if="${errorMessage != null}" th:text="${errorMessage}" role="alert"></p>
-    <p>Mã đơn hàng: #<span th:text="${deliveryDetail.orderCode}"></span></p>
-    <section class="information-card" aria-labelledby="pickup-heading">
-        <h2 id="pickup-heading">ĐỊA ĐIỂM NHẬN HÀNG</h2>
-        <dl>
+<head th:replace="~{fragments/delivery-layout :: head('Chi tiết giao hàng')}"></head>
+<body class="vfo-app vfd-app">
+<th:block th:replace="~{fragments/delivery-layout :: navigation(${deliveryDetail.assignmentId == null ? 'available' : 'home'})}"></th:block>
+<div id="delivery-content" class="vfo-workspace" tabindex="-1">
+<main class="vfo-main vfd-detail-page">
+    <header class="vfo-page-heading">
+        <div><h1>Chi tiết giao hàng</h1></div>
+    </header>
+    <p class="vfd-alert vfd-alert-danger" th:if="${errorMessage != null}" th:text="${errorMessage}" role="alert"></p>
+    <div class="vfd-order-banner">
+        <span class="vfo-banner-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-truck"/></svg></span>
+        <div><span class="vfo-meta-label">Mã đơn hàng</span><strong class="vfo-order-code">#<span th:text="${deliveryDetail.orderCode}"></span></strong></div>
+        <span class="vfo-status" th:attr="data-status=${deliveryDetail.deliveryStatus}" th:text="${deliveryDetail.deliveryStatusLabel}"></span>
+    </div>
+    <div class="vfd-detail-grid">
+    <section class="card vfd-information-card" aria-labelledby="pickup-heading">
+        <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-shop"/></svg></span><h2 id="pickup-heading">Địa điểm nhận hàng</h2></div>
+        <dl class="vfd-facts">
             <dt>Cửa hàng</dt>
             <dd th:text="${deliveryDetail.shopName ?: '—'}"></dd>
             <dt>Địa chỉ nhận hàng</dt>
@@ -92,9 +36,9 @@
             </dd>
         </dl>
     </section>
-    <section class="information-card" aria-labelledby="recipient-heading">
-        <h2 id="recipient-heading">THÔNG TIN NGƯỜI NHẬN</h2>
-        <dl>
+    <section class="card vfd-information-card" aria-labelledby="recipient-heading">
+        <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-pin"/></svg></span><h2 id="recipient-heading">Thông tin người nhận</h2></div>
+        <dl class="vfd-facts">
             <dt>Người nhận</dt>
             <dd th:text="${deliveryDetail.recipientName ?: '—'}"></dd>
             <dt>SĐT</dt>
@@ -103,9 +47,9 @@
             <dd th:text="${deliveryDetail.deliveryLocation == null or #strings.isEmpty(#strings.trim(deliveryDetail.deliveryLocation.formattedAddress)) ? '—' : deliveryDetail.deliveryLocation.formattedAddress}"></dd>
         </dl>
     </section>
-    <section class="information-card" aria-labelledby="progress-heading">
-        <h2 id="progress-heading">TIẾN ĐỘ GIAO HÀNG</h2>
-        <dl>
+    <section class="card vfd-information-card" aria-labelledby="progress-heading">
+        <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-history"/></svg></span><h2 id="progress-heading">Tiến độ giao hàng</h2></div>
+        <dl class="vfd-facts">
             <dt>Thời gian chấp nhận</dt>
             <dd th:text="${deliveryDetail.acceptedAt == null ? '—' : #temporals.format(deliveryDetail.acceptedAt, 'dd-MM-yyyy HH:mm')}"></dd>
             <dt>Thời gian nhận hàng</dt>
@@ -136,49 +80,55 @@
             </th:block>
         </dl>
     </section>
-    <section class="information-card" aria-labelledby="cash-heading">
-        <h2 id="cash-heading">THANH TOÁN CỦA ĐƠN HÀNG</h2>
+    <section class="card vfd-information-card" aria-labelledby="cash-heading">
+        <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-bank"/></svg></span><h2 id="cash-heading">Thanh toán của đơn hàng</h2></div>
         <p>Giá trị đơn hàng: <strong th:text="${#numbers.formatDecimal(deliveryDetail.totalAmount, 1, 'POINT', deliveryDetail.totalAmount.stripTrailingZeros().scale() > 0 ? 2 : 0, 'COMMA')} + ' VND'"></strong></p>
         <p th:text="${deliveryDetail.paymentStatusLabel}"></p>
-        <p>Số tiền còn cần thu:</p>
-        <p th:text="${#numbers.formatDecimal(deliveryDetail.cashToCollect, 1, 'POINT', deliveryDetail.cashToCollect.stripTrailingZeros().scale() > 0 ? 2 : 0, 'COMMA')} + ' VND'"></p>
+        <p class="vfd-cash-label">Số tiền còn cần thu:</p>
+        <p class="vfd-cash-amount" th:text="${#numbers.formatDecimal(deliveryDetail.cashToCollect, 1, 'POINT', deliveryDetail.cashToCollect.stripTrailingZeros().scale() > 0 ? 2 : 0, 'COMMA')} + ' VND'"></p>
     </section>
-    <form class="delivery-actions" method="post"
+    </div>
+    <div class="vfd-action-grid"
+         th:classappend="${deliveryDetail.assignmentId != null and deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'OUT_FOR_DELIVERY' ? 'vfd-completion-actions' : ''}">
+    <form class="delivery-actions card vfd-action-card" method="post"
           th:if="${deliveryDetail.assignmentId == null and deliveryDetail.deliveryStatus.name() == 'UNASSIGNED'}"
           th:action="@{/delivery/available/{deliveryId}/claim(deliveryId=${deliveryDetail.deliveryId})}">
-        <button type="submit">NHẬN ĐƠN</button>
+        <button class="btn vfo-btn-primary" type="submit">NHẬN ĐƠN</button>
     </form>
-    <p th:if="${deliveryDetail.assignmentId != null and deliveryDetail.assignmentStatus.name() == 'ASSIGNED'}" role="status">
+    <p class="vfd-alert vfd-alert-warning" th:if="${deliveryDetail.assignmentId != null and deliveryDetail.assignmentStatus.name() == 'ASSIGNED'}" role="status">
         Phân công cũ chưa hoàn tất chuyển đổi; chỉ có thể xem và cần đối soát thủ công.
     </p>
-    <form class="delivery-actions" method="post"
+    <form class="delivery-actions card vfd-action-card" method="post"
           th:if="${deliveryDetail.assignmentId != null and deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'ACCEPTED'}"
           th:action="@{/delivery/assignments/{assignmentId}/pickup(assignmentId=${deliveryDetail.assignmentId})}">
-        <button type="submit">LẤY HÀNG THÀNH CÔNG</button>
+        <button class="btn vfo-btn-primary" type="submit">LẤY HÀNG THÀNH CÔNG</button>
     </form>
-    <form class="delivery-actions" method="post"
+    <form class="delivery-actions card vfd-action-card" method="post"
           th:if="${deliveryDetail.assignmentId != null and deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'PICKED_UP'}"
           th:action="@{/delivery/assignments/{assignmentId}/start-delivery(assignmentId=${deliveryDetail.assignmentId})}">
-        <button type="submit">BẮT ĐẦU GIAO HÀNG</button>
+        <button class="btn vfo-btn-primary" type="submit">BẮT ĐẦU GIAO HÀNG</button>
     </form>
-    <form class="delivery-actions" method="post"
+    <form class="delivery-actions vfd-action-card" method="post"
           th:if="${deliveryDetail.assignmentId != null and deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'OUT_FOR_DELIVERY'}"
           th:action="@{/delivery/assignments/{assignmentId}/delivered(assignmentId=${deliveryDetail.assignmentId})}">
-        <button type="submit">GIAO HÀNG THÀNH CÔNG</button>
+        <button class="btn vfo-btn-primary" type="submit">GIAO HÀNG THÀNH CÔNG</button>
     </form>
-    <form class="delivery-actions" method="post"
+    <form class="delivery-actions vfd-action-card vfd-failure-card" method="post"
           th:if="${deliveryDetail.assignmentId != null and deliveryDetail.assignmentStatus.name() == 'ACCEPTED' and deliveryDetail.deliveryStatus.name() == 'OUT_FOR_DELIVERY'}"
           th:action="@{/delivery/assignments/{assignmentId}/failed(assignmentId=${deliveryDetail.assignmentId})}"
           th:object="${failureRequest}">
         <details th:open="${#fields.hasAnyErrors()}">
             <summary>GIAO HÀNG THẤT BẠI</summary>
-            <p th:each="error : ${#fields.globalErrors()}" th:text="${error}" role="alert"></p>
+            <p class="vfd-field-error" th:each="error : ${#fields.globalErrors()}" th:text="${error}" role="alert"></p>
             <label for="failureReason">Lý do giao hàng thất bại</label>
-            <textarea id="failureReason" th:field="*{failureReason}" maxlength="1000" required rows="4"></textarea>
-            <p th:if="${#fields.hasErrors('failureReason')}" th:errors="*{failureReason}" role="alert"></p>
-            <button type="submit">XÁC NHẬN GIAO HÀNG THẤT BẠI</button>
+            <textarea class="form-control" id="failureReason" th:field="*{failureReason}" maxlength="1000" required rows="4"></textarea>
+            <p class="vfd-field-error" th:if="${#fields.hasErrors('failureReason')}" th:errors="*{failureReason}" role="alert"></p>
+            <button class="btn vfo-btn-primary" type="submit">XÁC NHẬN GIAO HÀNG THẤT BẠI</button>
         </details>
     </form>
+    </div>
 </main>
+<footer th:replace="~{fragments/delivery-layout :: footer}"></footer>
+</div>
 </body>
 </html>

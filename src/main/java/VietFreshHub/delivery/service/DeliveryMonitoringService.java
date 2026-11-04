@@ -25,6 +25,7 @@ import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import VietFreshHub.common.PageSizes;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -47,8 +48,6 @@ import java.util.Set;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DeliveryMonitoringService {
-
-    private static final int PAGE_SIZE = 15;
 
     private final DeliveryRepository deliveryRepository;
     private final DeliveryAssignmentRepository deliveryAssignmentRepository;
@@ -75,9 +74,9 @@ public class DeliveryMonitoringService {
 
     public Page<DeliveryMonitoringRow> getManagedShopDeliveries(Authentication authentication,
                                                                DeliveryStatus status, String orderCode,
-                                                               String sortBy, String direction, int page) {
+                                                               String sortBy, String direction, int page, int size) {
         Long shopId = shopService.getManagedShopId(authentication);
-        return findDeliveries(shopId, status, orderCode, sortBy, direction, page);
+        return findDeliveries(shopId, status, orderCode, sortBy, direction, page, size);
     }
 
     public DeliveryMonitoringDetail getManagedShopDeliveryDetail(Long deliveryId, Authentication authentication) {
@@ -89,9 +88,9 @@ public class DeliveryMonitoringService {
     }
 
     public Page<DeliveryMonitoringRow> getAdminDeliveries(Authentication authentication, DeliveryStatus status,
-                                                         String orderCode, Long shopId, String sortBy, String direction, int page) {
+                                                         String orderCode, Long shopId, String sortBy, String direction, int page, int size) {
         requireAdmin(authentication);
-        return findDeliveries(shopId, status, orderCode, sortBy, direction, page);
+        return findDeliveries(shopId, status, orderCode, sortBy, direction, page, size);
     }
 
     public List<ShopOption> getAdminShopOptions(Authentication authentication) {
@@ -141,7 +140,7 @@ public class DeliveryMonitoringService {
     }
 
     private Page<DeliveryMonitoringRow> findDeliveries(Long shopId, DeliveryStatus status, String orderCode,
-                                                       String sortBy, String direction, int page) {
+                                                       String sortBy, String direction, int page, int size) {
         if (page < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Số trang không hợp lệ.");
         }
@@ -230,7 +229,7 @@ public class DeliveryMonitoringService {
             }
             return builder.and(predicates.toArray(Predicate[]::new));
         };
-        Page<Delivery> deliveries = deliveryRepository.findAll(specification, PageRequest.of(page, PAGE_SIZE));
+        Page<Delivery> deliveries = deliveryRepository.findAll(specification, PageRequest.of(page, PageSizes.normalize(size)));
         List<Long> deliveryIds = deliveries.getContent().stream().map(Delivery::getDeliveryId).toList();
         Map<Long, List<DeliveryAssignment>> assignments = findAssignments(deliveryIds);
         Set<String> confirmations = deliveryIds.isEmpty() ? Set.of() : confirmationKeys(deliveryStatusHistoryRepository

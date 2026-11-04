@@ -1,8 +1,16 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org"><head>
-    <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+    
     <title>Không tìm thấy sản phẩm | VietFresh Hub</title><link rel="stylesheet" th:href="@{/css/storefront.css}">
-</head><body><main class="container page"><section class="panel empty">
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+</head><body class="vfo-app vfr-app vfc-app vfr-customer" data-vfr-section="account">
+<th:block th:replace="~{fragments/interface-layout :: navigation('customer','account')}"></th:block>
+<main class="container page vfr-page" id="customer-content" tabindex="-1"><section class="panel empty">
     <p class="eyebrow">VietFresh Hub</p><h1>Sản phẩm không còn khả dụng</h1>
     <p class="muted" th:text="${message}"></p><a class="button" th:href="@{/home}">Khám phá sản phẩm khác</a>
-</section></main></body></html>
+</section></main><footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</body></html>

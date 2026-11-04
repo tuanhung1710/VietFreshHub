@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
     <head th:replace="~{fragments/product-inventory :: head('Nhật ký hoạt động','inventory')}"></head>
-    <body>
+    <body class="vfo-app vfr-app vfr-product vfr-seller" data-vfr-section="inventory">
         <header th:replace="~{fragments/product-inventory :: nav('inventory')}"></header>
-        <div class="vf-workspace">
-        <main class="container vf-main vf-inventory-main">
+        <div class="vf-workspace" id="order-content" tabindex="-1">
+        <main class="container vf-main vf-inventory-main vfr-page">
             <a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{${inventoryReturnUrl}}">
                 ← Quay lại
             </a>
             <h1>Nhật ký hoạt động</h1>
-            <p class="text-body-secondary mb-4">Theo dõi các thay đổi về sản phẩm và tồn kho của cửa hàng. Thời gian hiển thị theo giờ Việt Nam.</p>
+            <a class="btn btn-light mb-3" th:href="@{/seller/inventory/journal}">Xem biến động kho</a>
             <form class="card p-3 mb-4 vf-inventory-filter-form" th:action="@{/seller/inventory/audit}" method="get">
                 <input type="hidden" name="returnTo" th:value="${inventoryReturnUrl}">
                 <input type="hidden" name="size" th:value="${events.size}">
@@ -115,5 +115,6 @@
         </main>
 
         </div>
-    </body>
+    <div class="vfr-product-footer"><footer th:replace="~{fragments/seller-orders :: footer}"></footer></div>
+</body>
 </html>

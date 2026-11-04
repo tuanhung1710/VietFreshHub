@@ -23,9 +23,6 @@ public class SellerApplicationForm {
     private MultipartFile identityCard;
     private MultipartFile businessLicense;
 
-    @AssertTrue(message = "Bạn cần đồng ý với cam kết pháp lý")
-    private boolean legalAgree;
-
-    @AssertTrue(message = "Bạn cần đồng ý với chính sách hoạt động")
-    private boolean policyAgree;
+    @AssertTrue(message = "Bạn cần xác nhận cam kết và điều khoản")
+    private boolean termsAgree;
 }

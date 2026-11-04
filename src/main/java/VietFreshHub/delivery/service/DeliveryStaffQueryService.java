@@ -28,6 +28,8 @@ import VietFreshHub.shop.service.ShopService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.data.domain.Page;
+import VietFreshHub.common.Pagination;
+import VietFreshHub.common.PageSizes;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
@@ -59,11 +61,16 @@ public class DeliveryStaffQueryService {
     private final DeliveryStaffHistoryRepository staffHistory;
 
     @Transactional(readOnly = true)
-    public List<AvailableDeliveryResponse> getAvailableDeliveries(Authentication authentication) {
+    public Page<AvailableDeliveryResponse> getAvailableDeliveries(Authentication authentication, int page, int size) {
         authService.getCurrentDeliveryStaffId(authentication);
-        return deliveryRepository.findAll(DeliveryRepository.availableForClaim(), Sort.by(Sort.Direction.DESC, "createdAt", "deliveryId")).stream()
-                .map(this::toAvailableDeliveryResponse)
-                .toList();
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt", "deliveryId");
+        var specification = DeliveryRepository.availableForClaim();
+        Page<Delivery> deliveries = deliveryRepository.findAll(specification, Pagination.request(page, size).withSort(sort));
+        if (deliveries.getNumber() > 0 && deliveries.getNumber() >= deliveries.getTotalPages()) {
+            deliveries = deliveryRepository.findAll(specification,
+                    Pagination.clamp(page, size, deliveries.getTotalElements()).withSort(sort));
+        }
+        return deliveries.map(this::toAvailableDeliveryResponse);
     }
 
     @Transactional(readOnly = true)
@@ -137,7 +144,9 @@ public class DeliveryStaffQueryService {
         LocalDateTime start = from == null ? null : historyDayStart(from);
         LocalDateTime until = to == null || to.equals(LocalDate.of(9999, 12, 31))
                 ? null : historyDayStart(to.plusDays(1));
-        var records = staffHistory.findHistory(staffId, filter, start, until, PageRequest.of(page, 15));
+        var pageable = PageRequest.of(page, PageSizes.normalize(filter.getSize()));
+        filter.setSize(pageable.getPageSize());
+        var records = staffHistory.findHistory(staffId, filter, start, until, pageable);
         if (page > 0 && records.getPageable().getOffset() >= records.getTotalElements()) {
             throw historyFilterError("Trang lịch sử không tồn tại. Vui lòng quay về trang đầu.");
         }
@@ -148,7 +157,7 @@ public class DeliveryStaffQueryService {
     @Transactional(readOnly = true)
     public DeliveryHistoryPage getDeliveryHistoryOptions(Authentication authentication) {
         Long staffId = authService.getCurrentDeliveryStaffId(authentication);
-        return new DeliveryHistoryPage(Page.empty(PageRequest.of(0, 15)), staffHistory.shops(staffId),
+        return new DeliveryHistoryPage(Page.empty(Pagination.request(1, PageSizes.DEFAULT)), staffHistory.shops(staffId),
                 staffHistory.paymentMethods(staffId), staffHistory.countAll(staffId), staffHistory.countUnresolved(staffId));
     }
 
@@ -167,7 +176,7 @@ public class DeliveryStaffQueryService {
         filter.setReturnStatus(historyValue(filter.getReturnStatus(), "ALL"));
         filter.setSort(historyValue(filter.getSort(), "NEWEST"));
         filter.setPaymentMethod(historyValue(filter.getPaymentMethod(), ""));
-        if (page < 0 || (long) page * 15 > Integer.MAX_VALUE) {
+        if (page < 0 || (long) page * PageSizes.normalize(filter.getSize()) > Integer.MAX_VALUE) {
             throw historyFilterError("Số trang không hợp lệ.");
         }
         if (!List.of("ALL", "DELIVERED", "FAILED").contains(filter.getStatus())) {

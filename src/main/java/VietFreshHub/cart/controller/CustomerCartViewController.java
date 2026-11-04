@@ -36,6 +36,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class CustomerCartViewController {
     private final CartService cartService;
+    private final VietFreshHub.catalog.service.CatalogService catalogService;
     private final CurrentCustomerService currentCustomer;
     private final ProductRecommendationService recommendations;
 
@@ -52,6 +53,10 @@ public class CustomerCartViewController {
         model.addAttribute("cart", cart);
         model.addAttribute("selectableCount", selectableCount);
         model.addAttribute("shopGroups", shopGroups);
+        model.addAttribute("cartSuggestions", catalogService.listProducts(1).getContent().stream()
+                .filter(product -> product.getSelectedVariant() != null && product.getSelectedVariant().isPurchasable())
+                .filter(product -> cart.getItems().stream().noneMatch(item -> item.getVariantId().equals(product.getSelectedVariant().getVariantId())))
+                .limit(4).toList());
         return "customer/cart";
     }
 
@@ -64,11 +69,12 @@ public class CustomerCartViewController {
             flash.addFlashAttribute("requestedQuantity", form.getQuantity());
         } else {
             try {
-                var added = cartService.addToCart(currentCustomer.requireCustomerId(authentication), form);
-                flash.addFlashAttribute("successMessage", "Đã thêm sản phẩm vào giỏ hàng.");
                 if ("checkout".equals(redirect)) {
-                    return "redirect:/customer/checkout?selectionSubmitted=true&itemIds=" + added.getCartItemId();
+                    currentCustomer.requireCustomerId(authentication);
+                    return "redirect:/customer/checkout?buyNowVariantId=" + form.getVariantId() + "&buyNowQuantity=" + form.getQuantity();
                 }
+                cartService.addToCart(currentCustomer.requireCustomerId(authentication), form);
+                flash.addFlashAttribute("successMessage", "Đã thêm sản phẩm vào giỏ hàng.");
             } catch (OutOfStockException | ResourceNotFoundException | IllegalArgumentException ex) {
                 flash.addFlashAttribute("errorMessage", ex.getMessage());
                 flash.addFlashAttribute("requestedQuantity", form.getQuantity());

@@ -1,0 +1,16 @@
+.loyalty-page { background:var(--canvas); color:var(--ink); }
+.loyalty-page .page-content { width:min(900px,calc(100% - 48px)); }
+.loyalty-nav { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 16px; }
+.loyalty-nav a { display:inline-flex; align-items:center; min-height:36px; padding:0 13px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--green-800); font-size:11px; font-weight:600; text-decoration:none; }
+.loyalty-nav a[aria-current="page"],.loyalty-nav a:hover { border-color:var(--green-800); background:var(--green-800); color:#fff; }
+.loyalty-card { max-width:none; }
+.loyalty-card-body { padding:24px; }
+.loyalty-page .form-label,.loyalty-page .form-check-label { color:var(--ink); font-size:12px; }
+.loyalty-page .form-control,.loyalty-page .input-group-text { min-height:38px; border-color:var(--line); color:var(--ink); font:inherit; font-size:12px; }
+.loyalty-page .form-control:focus { border-color:var(--green-700); box-shadow:0 0 0 3px color-mix(in srgb,var(--green-700) 12%,transparent); }
+.loyalty-page .form-check-input:checked { border-color:var(--green-800); background-color:var(--green-800); }
+.loyalty-page .alert-success { border-color:#d2e8d7; background:#f1f8f2; color:var(--green-800); }
+.loyalty-page .alert-danger { border-color:#f2d3d0; background:#fff5f4; color:#a6423b; }
+.loyalty-actions { display:flex; justify-content:flex-end; gap:8px; padding-top:16px; border-top:1px solid var(--line); }
+.loyalty-actions .button { display:inline-flex; align-items:center; justify-content:center; text-decoration:none; }
+@media (max-width:600px) { .loyalty-card-body { padding:17px; } }

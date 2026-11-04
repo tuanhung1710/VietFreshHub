@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+    
+    
+    <title>Cấu hình quy tắc dùng tiền thưởng | VietFresh Hub</title>
+    
+    <link rel="stylesheet" th:href="@{/css/admin-accounts.css}">
+    <link rel="stylesheet" th:href="@{/css/admin-dashboard.css}">
+    <link rel="stylesheet" th:href="@{/css/admin-loyalty.css}">
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+</head>
+<body class="loyalty-page vfo-app vfr-app vfr-admin" data-vfr-section="loyalty">
+<th:block th:replace="~{fragments/interface-layout :: navigation('admin','loyalty')}"></th:block>
+
+<div class="app-shell">
+    
+<div class="vfo-workspace vfr-workspace" id="workspace-content" tabindex="-1">
+<main class="page-content vfr-page">
+    <section class="page-heading"><div><h1>Cấu hình quy tắc dùng tiền thưởng</h1></div></section>
+    <nav class="loyalty-nav" aria-label="Cấu hình tiền thưởng">
+        <a th:href="@{/admin/loyalty-rules/earning}">Quy tắc tích thưởng</a>
+        <a th:href="@{/admin/loyalty-rules/redemption}" aria-current="page">Quy tắc dùng tiền thưởng</a>
+    </nav>
+
+    <div class="accounts-panel loyalty-card">
+        <div class="loyalty-card-body">
+            <div th:if="${successMessage}" class="alert alert-success" role="status" th:text="${successMessage}"></div>
+            <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
+
+            <form th:action="@{/admin/loyalty-rules/redemption}" th:object="${form}" method="post">
+                <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <div class="alert alert-danger" role="alert" th:if="${#fields.hasAnyErrors()}">
+                    <strong>Vui lòng kiểm tra lại:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li th:each="error : ${#fields.allErrors()}" th:text="${error}"></li>
+                    </ul>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="minRedemptionAmount" class="form-label fw-semibold">
+                            Số tiền thưởng đổi tối thiểu <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group has-validation">
+                            <input id="minRedemptionAmount" type="number" class="form-control"
+                                   th:field="*{minRedemptionAmount}" th:errorclass="is-invalid"
+                                   min="1" max="9999999999999999" step="1" placeholder="1000" required>
+                            <span class="input-group-text">₫</span>
+                            <div class="invalid-feedback" th:errors="*{minRedemptionAmount}"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="maxRedemptionPercent" class="form-label fw-semibold">
+                            Phần trăm giảm tối đa <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group has-validation">
+                            <input id="maxRedemptionPercent" type="number" class="form-control"
+                                   th:field="*{maxRedemptionPercent}" th:errorclass="is-invalid"
+                                   min="1" max="100" step="1" placeholder="20"
+                                   required>
+                            <span class="input-group-text">%</span>
+                            <div class="invalid-feedback" th:errors="*{maxRedemptionPercent}"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <div class="form-check form-switch">
+                        <input id="redemptionEnabled" type="checkbox" role="switch" class="form-check-input"
+                               th:field="*{redemptionEnabled}" th:errorclass="is-invalid">
+                        <label for="redemptionEnabled" class="form-check-label fw-semibold">Bật dùng tiền thưởng</label>
+                        <div class="invalid-feedback" th:errors="*{redemptionEnabled}"></div>
+                    </div>
+                </div>
+
+                <div class="loyalty-actions">
+                    <a th:href="@{/admin/accounts}" class="button">Hủy</a>
+                    <button type="submit" class="button primary">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+<footer th:replace="~{fragments/admin-workspace :: footer}"></footer>
+</div>
+</div>
+</body>
+</html>

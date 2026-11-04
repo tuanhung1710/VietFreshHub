@@ -302,6 +302,7 @@ CREATE TABLE dbo.categories (
     name                NVARCHAR(150) NOT NULL,
     slug                VARCHAR(200) NOT NULL, /* Là chuỗi để tạo url dễ đọc: https://vietfreshhub.com/shops/trai-cay-son-fresh*/
     description         NVARCHAR(1000) NULL,
+    image_url           NVARCHAR(1000) NULL,
     status              VARCHAR(20) NOT NULL CONSTRAINT DF_categories_status DEFAULT (''ACTIVE''),
     created_at          DATETIME2(0) NOT NULL CONSTRAINT DF_categories_created_at DEFAULT (SYSUTCDATETIME()),
     updated_at          DATETIME2(0) NOT NULL CONSTRAINT DF_categories_updated_at DEFAULT (SYSUTCDATETIME()),
@@ -850,7 +851,7 @@ CREATE TABLE dbo.seller_payouts (
     CONSTRAINT UQ_seller_payouts_shop_order UNIQUE (shop_order_id),
     CONSTRAINT UQ_seller_payouts_id_shop UNIQUE (payout_id, shop_id),
     CONSTRAINT FK_seller_payouts_funds_confirmed_by FOREIGN KEY (funds_confirmed_by) REFERENCES dbo.users(user_id),
-    CONSTRAINT CK_seller_payouts_funds_source CHECK (funds_source IN (''UNCONFIRMED'', ''COD'', ''BANK_TRANSFER'', ''VNPAY'', ''MANUAL'')),
+    CONSTRAINT CK_seller_payouts_funds_source CHECK (funds_source IN (''UNCONFIRMED'', ''COD'', ''BANK_TRANSFER'', ''VNPAY'', ''MANUAL'', ''ONLINE'')),
     CONSTRAINT CK_seller_payouts_funds_confirmation CHECK (
         (funds_confirmed_at IS NULL AND funds_confirmed_by IS NULL)
         OR (funds_confirmed_at IS NOT NULL AND funds_source <> ''UNCONFIRMED'')
@@ -2058,7 +2059,8 @@ IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE parent_object_id = OBJE
 
 ';
 
-EXEC sys.sp_executesql N'IF NOT EXISTS(SELECT 1 FROM sys.key_constraints WHERE parent_object_id=OBJECT_ID(''dbo.shop_orders'') AND name=''UQ_shop_orders_id_order'')
+EXEC sys.sp_executesql N'IF COL_LENGTH(''dbo.categories'',''image_url'') IS NULL ALTER TABLE dbo.categories ADD image_url NVARCHAR(1000) NULL;
+IF NOT EXISTS(SELECT 1 FROM sys.key_constraints WHERE parent_object_id=OBJECT_ID(''dbo.shop_orders'') AND name=''UQ_shop_orders_id_order'')
  ALTER TABLE dbo.shop_orders ADD CONSTRAINT UQ_shop_orders_id_order UNIQUE(shop_order_id,order_id);
 IF COL_LENGTH(''dbo.seller_payouts'',''eligible_at'') IS NULL ALTER TABLE dbo.seller_payouts ADD eligible_at DATETIME2(0) NULL;
 IF COL_LENGTH(''dbo.seller_payouts'',''funds_source'') IS NULL ALTER TABLE dbo.seller_payouts ADD funds_source VARCHAR(20) NOT NULL CONSTRAINT DF_seller_payouts_funds_source DEFAULT(''UNCONFIRMED'') WITH VALUES;
@@ -2069,8 +2071,12 @@ IF NOT EXISTS(SELECT 1 FROM sys.key_constraints WHERE parent_object_id=OBJECT_ID
 
 EXEC sys.sp_executesql N'IF NOT EXISTS(SELECT 1 FROM sys.foreign_keys WHERE parent_object_id=OBJECT_ID(''dbo.seller_payouts'') AND name=''FK_seller_payouts_funds_confirmed_by'')
  ALTER TABLE dbo.seller_payouts WITH CHECK ADD CONSTRAINT FK_seller_payouts_funds_confirmed_by FOREIGN KEY(funds_confirmed_by) REFERENCES dbo.users(user_id);
-IF OBJECT_ID(''dbo.CK_seller_payouts_funds_source'',''C'') IS NULL
- ALTER TABLE dbo.seller_payouts WITH CHECK ADD CONSTRAINT CK_seller_payouts_funds_source CHECK(funds_source IN(''UNCONFIRMED'',''COD'',''BANK_TRANSFER'',''VNPAY'',''MANUAL''));
+IF NOT EXISTS(SELECT 1 FROM sys.check_constraints WHERE parent_object_id=OBJECT_ID(''dbo.seller_payouts'') AND name=''CK_seller_payouts_funds_source'' AND definition LIKE ''%ONLINE%'')
+BEGIN
+ IF OBJECT_ID(''dbo.CK_seller_payouts_funds_source'',''C'') IS NOT NULL ALTER TABLE dbo.seller_payouts DROP CONSTRAINT CK_seller_payouts_funds_source;
+ ALTER TABLE dbo.seller_payouts WITH CHECK ADD CONSTRAINT CK_seller_payouts_funds_source CHECK(funds_source IN(''UNCONFIRMED'',''COD'',''BANK_TRANSFER'',''VNPAY'',''MANUAL'',''ONLINE''));
+END;
+UPDATE dbo.seller_payouts SET funds_source=''ONLINE'' WHERE funds_source=''BANK_TRANSFER'';
 IF OBJECT_ID(''dbo.CK_seller_payouts_funds_confirmation'',''C'') IS NULL
  ALTER TABLE dbo.seller_payouts WITH CHECK ADD CONSTRAINT CK_seller_payouts_funds_confirmation CHECK((funds_confirmed_at IS NULL AND funds_confirmed_by IS NULL) OR (funds_confirmed_at IS NOT NULL AND funds_source<>''UNCONFIRMED''));
 IF COL_LENGTH(''dbo.subscription_plans'',''max_products'') IS NULL ALTER TABLE dbo.subscription_plans ADD max_products INT NULL;';
@@ -2197,6 +2203,30 @@ END;
 
 -- Shared additions are installed for both paths, including all former standalone migrations.
 
+-- One shared shipping policy for both new and existing databases.
+EXEC sys.sp_executesql N'IF OBJECT_ID(N''dbo.shipping_fee_settings'', N''U'') IS NULL
+BEGIN
+    CREATE TABLE dbo.shipping_fee_settings (
+        settings_id BIGINT NOT NULL CONSTRAINT PK_shipping_fee_settings PRIMARY KEY,
+        base_fee DECIMAL(18,2) NOT NULL CONSTRAINT DF_shipping_fee_settings_base DEFAULT (15000),
+        included_distance_km DECIMAL(11,3) NOT NULL CONSTRAINT DF_shipping_fee_settings_included DEFAULT (2),
+        additional_fee_per_km DECIMAL(18,2) NOT NULL CONSTRAINT DF_shipping_fee_settings_additional DEFAULT (5000),
+        max_delivery_distance_km DECIMAL(11,3) NOT NULL CONSTRAINT DF_shipping_fee_settings_range DEFAULT (15),
+        created_at DATETIME2(0) NOT NULL CONSTRAINT DF_shipping_fee_settings_created DEFAULT (SYSUTCDATETIME()),
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT DF_shipping_fee_settings_updated DEFAULT (SYSUTCDATETIME()),
+        CONSTRAINT CK_shipping_fee_settings_singleton CHECK (settings_id = 1),
+        CONSTRAINT CK_shipping_fee_settings_base CHECK (base_fee >= 0 AND base_fee = FLOOR(base_fee)),
+        CONSTRAINT CK_shipping_fee_settings_additional CHECK (additional_fee_per_km >= 0 AND additional_fee_per_km = FLOOR(additional_fee_per_km)),
+        CONSTRAINT CK_shipping_fee_settings_distance CHECK (
+            included_distance_km >= 0 AND max_delivery_distance_km > 0
+            AND included_distance_km <= max_delivery_distance_km),
+        CONSTRAINT CK_shipping_fee_settings_max_fee CHECK (
+            ROUND(base_fee + (max_delivery_distance_km - included_distance_km) * additional_fee_per_km, -3)
+            <= 9999999999999999.99),
+        CONSTRAINT CK_shipping_fee_settings_dates CHECK (updated_at >= created_at)
+    );
+END;';
+
 -- Complete legacy shop addresses from the same shop's stored components.
 -- Preserve any formatted address already entered by the seller.
 EXEC sys.sp_executesql N'UPDATE dbo.shop_locations
@@ -2237,6 +2267,29 @@ IF NOT EXISTS(SELECT 1 FROM dbo.subscription_plans WHERE name=N''Free'')
  VALUES(N''Free'',N''Gói miễn phí mặc định cho cửa hàng.'',0,''MONTHLY'',N''Được public tối đa 5 sản phẩm.'',5,''ACTIVE'');';
 
 -- BEGIN SHARED VIEWS, FUNCTIONS, PROCEDURES AND TRIGGERS
+
+EXEC sys.sp_executesql N'IF NOT EXISTS (SELECT 1 FROM dbo.shipping_fee_settings WHERE settings_id = 1)
+    INSERT dbo.shipping_fee_settings (settings_id) VALUES (1);';
+
+EXEC sys.sp_executesql N'CREATE OR ALTER TRIGGER dbo.tr_shipping_fee_settings_guard
+ON dbo.shipping_fee_settings
+AFTER UPDATE, DELETE
+AS
+BEGIN
+    SET NOCOUNT ON;
+    IF NOT EXISTS (SELECT 1 FROM deleted) RETURN;
+    IF NOT EXISTS (SELECT 1 FROM inserted)
+        THROW 51600, N''Không được xóa cấu hình phí vận chuyển.'', 1;
+    IF EXISTS (
+        SELECT 1 FROM inserted i JOIN deleted d ON d.settings_id = i.settings_id
+        WHERE i.created_at <> d.created_at
+    )
+        THROW 51601, N''Không được thay đổi thời điểm tạo cấu hình phí vận chuyển.'', 1;
+    IF TRIGGER_NESTLEVEL(OBJECT_ID(N''dbo.tr_shipping_fee_settings_guard'')) > 1 RETURN;
+
+    UPDATE s SET updated_at = SYSUTCDATETIME()
+    FROM dbo.shipping_fee_settings s JOIN inserted i ON i.settings_id = s.settings_id;
+END;';
 
 EXEC sys.sp_executesql N'CREATE OR ALTER FUNCTION dbo.fn_catalog_category_active(@category_id BIGINT)
 RETURNS BIT
@@ -2771,8 +2824,10 @@ BEGIN
         WHERE d.batch_item_id IS NOT NULL AND (i.payout_id<>d.payout_id OR i.shop_id<>d.shop_id OR i.batch_id<>d.batch_id))
         THROW 51411,N''Khong doi payout/shop/batch cua lich su chuyen tien.'',1;
     IF EXISTS (SELECT 1 FROM inserted i JOIN dbo.seller_payouts p WITH (UPDLOCK,HOLDLOCK) ON p.payout_id=i.payout_id
-        JOIN dbo.shop_orders s ON s.shop_order_id=p.shop_order_id LEFT JOIN deleted d ON d.batch_item_id=i.batch_item_id
-        WHERE i.status IN (''PENDING'',''PAID'') AND (i.transfer_amount<>p.net_amount OR p.eligible_at IS NULL OR p.eligible_at>SYSUTCDATETIME()
+        JOIN dbo.shop_orders s ON s.shop_order_id=p.shop_order_id JOIN dbo.seller_payout_batches b ON b.batch_id=i.batch_id
+        LEFT JOIN deleted d ON d.batch_item_id=i.batch_item_id
+        WHERE i.status IN (''PENDING'',''PAID'') AND (i.transfer_amount<>p.net_amount OR p.eligible_at IS NULL
+            OR (b.scheduled_slot NOT LIKE ''MANUAL-%'' AND p.eligible_at>SYSUTCDATETIME())
             OR p.funds_confirmed_at IS NULL OR p.funds_confirmed_at>SYSUTCDATETIME() OR p.funds_source=''UNCONFIRMED''
             OR s.status<>''COMPLETED'' OR s.payment_status<>''PAID'' OR p.status IN (''FAILED'',''CANCELLED'')
             OR (p.status=''PAID'' AND (d.batch_item_id IS NULL OR d.status=''FAILED''))))
@@ -2780,7 +2835,7 @@ BEGIN
     IF EXISTS (SELECT 1 FROM inserted i LEFT JOIN deleted d ON d.batch_item_id=i.batch_item_id
         LEFT JOIN dbo.shop_payout_accounts a ON a.shop_id=i.shop_id
         WHERE i.status IN (''PENDING'',''PAID'') AND (d.batch_item_id IS NULL OR d.status=''FAILED'')
-          AND (a.shop_id IS NULL OR a.verified=0 OR i.bank_code_snapshot<>a.bank_code OR i.bank_name_snapshot<>a.bank_name
+          AND (a.shop_id IS NULL OR i.bank_code_snapshot<>a.bank_code OR i.bank_name_snapshot<>a.bank_name
             OR i.account_number_snapshot<>a.account_number OR i.account_holder_snapshot<>a.account_holder))
         THROW 51413,N''Tai khoan nhan tien chua xac minh hoac snapshot khong khop.'',1;
     IF EXISTS (SELECT 1 FROM inserted i JOIN dbo.seller_payouts p ON p.payout_id=i.payout_id
@@ -2803,10 +2858,10 @@ UPDATE dbo.seller_payout_batch_items SET status=status;';
 
 COMMIT TRANSACTION;
 SELECT CASE WHEN @freshInstall=1 THEN N'SCHEMA_CREATED' ELSE N'SCHEMA_UPDATED' END AS result,
- DB_NAME() AS database_name,(SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped=0) AS table_count;
+       DB_NAME() AS database_name,(SELECT COUNT(*) FROM sys.tables WHERE is_ms_shipped=0) AS table_count;
 END TRY
 BEGIN CATCH
- IF XACT_STATE()<>0 ROLLBACK TRANSACTION;
+IF XACT_STATE()<>0 ROLLBACK TRANSACTION;
  THROW;
 END CATCH;
 GO

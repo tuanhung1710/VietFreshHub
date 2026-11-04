@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/customer-shop :: head('Ưu đãi cửa hàng')}"></head>
-<body>
+<body class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
 <header th:replace="~{fragments/customer-shop :: header}"></header>
-<main class="container">
+<main class="container vfr-page">
     <section th:replace="~{fragments/customer-shop :: shopHeader(${shop},'offers')}"></section>
     <div class="sectiontop"><div><h2>Ưu đãi dành cho bạn</h2><p class="muted">Các khuyến mãi và mã giảm giá đang áp dụng tại cửa hàng.</p></div></div>
     <p th:if="${offersPage.empty}" class="notice">Hiện chưa có ưu đãi.</p>
@@ -23,6 +23,6 @@
         <a th:if="${offersPage.hasNext()}" th:href="@{/shops/{id}/offers(id=${shop.shopId},page=${offersPage.number + 2})}">Trang tiếp →</a>
     </nav>
 </main>
-<footer th:replace="~{fragments/customer-shop :: footer}"></footer>
+<footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>
 </html>

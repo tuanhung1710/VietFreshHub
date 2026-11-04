@@ -11,6 +11,7 @@ import VietFreshHub.cart.service.CartService;
 import VietFreshHub.catalog.entity.CatalogProduct;
 import VietFreshHub.catalog.entity.CatalogVariant;
 import VietFreshHub.catalog.service.CatalogService;
+import VietFreshHub.coupon.services.CouponApplicationService;
 import VietFreshHub.checkout.dto.CheckoutDraft;
 import VietFreshHub.checkout.dto.CheckoutPreview;
 import VietFreshHub.checkout.dto.CheckoutRequest;
@@ -22,6 +23,7 @@ import VietFreshHub.checkout.service.CheckoutShippingQuoteService;
 import VietFreshHub.checkout.service.InventoryReservationService;
 import VietFreshHub.customer.service.CustomerAddressService;
 import VietFreshHub.exception.CheckoutException;
+import VietFreshHub.loyalty.services.LoyaltyService;
 import VietFreshHub.order.entity.Order;
 import VietFreshHub.order.repository.OrderRepository;
 import VietFreshHub.order.service.OrderPlacedEvent;
@@ -60,6 +62,8 @@ import static VietFreshHub.checkout.service.CheckoutCartSupport.selectCartItems;
 @Service
 @RequiredArgsConstructor
 public class CheckoutServiceImpl implements CheckoutService {
+    private final VietFreshHub.catalog.repository.CatalogVariantRepository buyNowVariants;
+    private final VietFreshHub.checkout.repository.CheckoutInventoryBatchRepository buyNowStock;
     private final UserRepository userRepository;
     private final CartRepository cartRepository;
     private final CartService cartService;
@@ -75,6 +79,8 @@ public class CheckoutServiceImpl implements CheckoutService {
     private final ApplicationEventPublisher eventPublisher;
     private final VietFreshHub.payment.repository.PaymentRepository paymentRepository;
     private final VietFreshHub.payment.vnpay.VnpayProperties vnpayProperties;
+    private final CouponApplicationService couponApplicationService;
+    private final LoyaltyService loyaltyService;
 
     @Override
     @Transactional(readOnly = true)
@@ -86,6 +92,10 @@ public class CheckoutServiceImpl implements CheckoutService {
     @Transactional(readOnly = true)
     public CheckoutPreview preview(Long customerId, List<Long> selectedItemIds) {
         CartDto selectedCart = selectCartItems(cartService.getActiveCart(customerId), selectedItemIds);
+        return previewForSelection(customerId, selectedCart);
+    }
+
+    private CheckoutPreview previewForSelection(Long customerId, CartDto selectedCart) {
         List<CheckoutPreview.AddressOption> addressOptions = new ArrayList<>();
         for (Address address : checkoutAddressRepository.findByUserUserIdOrderByIsDefaultDescAddressIdAsc(customerId)) {
             addressOptions.add(new CheckoutPreview.AddressOption(
@@ -101,13 +111,36 @@ public class CheckoutServiceImpl implements CheckoutService {
     }
 
     @Override
+    @Transactional(readOnly=true)
+    public CheckoutPreview previewBuyNow(Long customerId, Long variantId, Integer quantity) {
+        CartItem item = buyNowItem(variantId, quantity);
+        return previewForSelection(customerId, buyNowCart(customerId, item));
+    }
+
+    private CartItem buyNowItem(Long variantId, Integer quantity) {
+        if (variantId == null || variantId < 1 || quantity == null || quantity < 1)
+            throw new CheckoutException("Sản phẩm hoặc số lượng mua ngay không hợp lệ.");
+        var variant=buyNowVariants.findById(variantId).orElseThrow(() -> new CheckoutException("Sản phẩm không còn tồn tại."));
+        var item=new CartItem(); item.setCartItemId(variantId); item.setVariant(variant);
+        item.setQuantity(quantity); item.setUnitPriceSnapshot(variant.getPrice());
+        return item;
+    }
+
+    private CartDto buyNowCart(Long customerId, CartItem item) {
+        var dto=VietFreshHub.cart.service.CartViewMapper.toCartItem(item,
+                buyNowStock.getAvailableStockByVariantId(item.getVariant().getVariantId()), catalogService.isPurchasable(item.getVariant()));
+        return CartDto.builder().userId(customerId).status("BUY_NOW").items(List.of(dto))
+                .totalItems(item.getQuantity()).totalAmount(dto.getItemSubtotal()).hasUnavailableItems(!dto.isPurchasable()).build();
+    }
+
+    @Override
     @Transactional
     public CheckoutResult confirm(Long customerId, CheckoutDraft draft, CheckoutRequest request) {
         // 1. Kiểm tra phiên và trả lại đơn đã có nếu khách gửi lặp cùng token.
         validateDraft(customerId, draft, request);
         User buyer = lockBuyer(customerId);
-        String orderCode = "VF-" + draft.token();
-        Optional<Order> existingOrder = orderRepository.findByOrderCodeAndCustomerUserId(orderCode, customerId);
+        String checkoutReference = "VF-" + draft.token();
+        Optional<Order> existingOrder = orderRepository.findByOrderCodeAndCustomerUserId(checkoutReference, customerId);
         if (existingOrder.isPresent()) {
             return toCheckoutResult(existingOrder.get());
         }
@@ -115,8 +148,8 @@ public class CheckoutServiceImpl implements CheckoutService {
         // 2. Kiểm tra lại địa chỉ, mặt hàng và báo giá ngay trước khi tạo đơn.
         PaymentMethod paymentMethod = requirePaymentMethod(request.getPaymentMethodCode());
         Address deliveryAddress = lockAddress(customerId, request.getAddressId());
-        Cart cart = requireActiveCart(customerId, draft.cartId());
-        List<CartItem> selectedItems = requireSelectedItems(cart, draft.selectedItemIds());
+        Cart cart = draft.buyNow() ? null : requireActiveCart(customerId, draft.cartId());
+        List<CartItem> selectedItems = draft.buyNow() ? List.of(buyNowItem(draft.buyNowVariantId(), draft.buyNowQuantity())) : requireSelectedItems(cart, draft.selectedItemIds());
         validateCurrentItems(customerId, draft, selectedItems);
         Map<Long, List<CartItem>> itemsByShopId = groupItemsByShop(selectedItems);
         BigDecimal subtotal = calculateSubtotal(selectedItems);
@@ -124,7 +157,7 @@ public class CheckoutServiceImpl implements CheckoutService {
                 draft, deliveryAddress, itemsByShopId.keySet());
 
         // 3. Tạo đơn tổng, đơn từng shop, giữ kho và ghi nhận payment theo phương thức đã chọn.
-        Order order = checkoutOrderService.createOrder(buyer, orderCode, subtotal, shippingFee, deliveryAddress);
+        Order order = checkoutOrderService.createOrder(buyer, checkoutReference, subtotal, shippingFee, deliveryAddress);
         if ("BANK_TRANSFER".equals(paymentMethod.getMethodCode())) order.setPaymentStatus("PENDING");
         CheckoutOrderService.CreatedShopOrders createdShopOrders = checkoutOrderService.createShopOrders(order, buyer, itemsByShopId, draft.shopQuotes());
         inventoryReservationService.reserve(createdShopOrders.reservations(), customerId);
@@ -133,6 +166,28 @@ public class CheckoutServiceImpl implements CheckoutService {
                 entityManager.getReference(VietFreshHub.order.entity.ShopOrder.class, shopOrderId).setPaymentStatus("PENDING");
             }
         }
+
+        if (request.getCouponCode() != null && !request.getCouponCode().isBlank()) {
+            try {
+                couponApplicationService.applyToOrder(customerId, order.getOrderId(), request.getCouponCode());
+            } catch (IllegalArgumentException ex) {
+                throw new CheckoutException(ex.getMessage());
+            }
+        }
+        BigDecimal rewardAmountToUse = request.getRewardAmountToUse();
+        if (rewardAmountToUse == null || rewardAmountToUse.signum() < 0
+                || rewardAmountToUse.stripTrailingZeros().scale() > 0
+                || rewardAmountToUse.compareTo(new BigDecimal("9999999999999999")) > 0) {
+            throw new CheckoutException("Tiền thưởng phải là số đồng nguyên không âm, tối đa 16 chữ số");
+        }
+        if (rewardAmountToUse.signum() > 0) {
+            try {
+                loyaltyService.redeemToOrder(customerId, order.getOrderId(), rewardAmountToUse);
+            } catch (IllegalArgumentException ex) {
+                throw new CheckoutException(ex.getMessage());
+            }
+        }
+
         var payment = checkoutOrderService.createPendingPayment(order, paymentMethod);
         if ("BANK_TRANSFER".equals(paymentMethod.getMethodCode())) {
             payment.setProvider("VNPAY");
@@ -141,9 +196,9 @@ public class CheckoutServiceImpl implements CheckoutService {
         }
 
         // 4. Giữ lại món chưa chọn; nếu đặt hết giỏ thì đóng giỏ hiện tại.
-        if (selectedItems.size() == cart.getItems().size()) {
+        if (cart != null && selectedItems.size() == cart.getItems().size()) {
             cart.setStatus("CHECKED_OUT");
-        } else {
+        } else if (cart != null) {
             cart.getItems().removeAll(selectedItems);
         }
         // flush chưa phải commit; consumer gửi thông báo cần xử lý AFTER_COMMIT.
@@ -241,7 +296,7 @@ public class CheckoutServiceImpl implements CheckoutService {
                         + ": sản phẩm hoặc cửa hàng không còn nhận đơn. Vui lòng kiểm tra lại giỏ.");
             }
         }
-        CartDto currentSelection = selectCartItems(cartService.getActiveCart(customerId), draft.selectedItemIds());
+        CartDto currentSelection = draft.buyNow() ? buyNowCart(customerId, selectedItems.getFirst()) : selectCartItems(cartService.getActiveCart(customerId), draft.selectedItemIds());
         if (!createCartFingerprint(currentSelection).equals(draft.fingerprint())) {
             throw new CheckoutException("Giá hoặc số lượng trong giỏ vừa thay đổi. Vui lòng xem lại đơn và xác nhận lần nữa.");
         }

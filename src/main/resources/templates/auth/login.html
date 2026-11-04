@@ -1,69 +1,18 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/head :: head('Trang chủ | VietFresh Hub')}"></head>
-<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col">
-<div th:replace="~{fragments/header :: header}"></div>
-<main class="w-full pt-20 bg-surface flex-1"><div class="max-w-[1280px] mx-auto px-margin py-space-lg"><div class="flex flex-col w-full">
-    <div class="relative w-full py-space-xl flex items-center justify-center">
+<head th:replace="~{fragments/interface-layout :: head('Đăng nhập | VietFresh Hub')}"></head>
+<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen vfo-app vfr-app vfr-utility vfc-app vfr-customer vfr-public" data-vfr-section="account">
+
+<main class="w-full min-h-screen flex items-center justify-center bg-surface px-4 py-6 vfr-page" id="customer-content" tabindex="-1"><div class="w-full max-w-[1280px] mx-auto py-space-lg"><div class="flex flex-col w-full">
+    <div class="relative w-full py-space-lg flex items-center justify-center">
         <!-- Organic Background Accents -->
         <div class="absolute -top-16 -left-12 w-96 h-96 bg-primary-fixed/30 rounded-full blur-3xl pointer-events-none -z-10"></div>
         <div class="absolute -bottom-20 -right-10 w-80 h-80 bg-secondary-fixed/20 rounded-full blur-3xl pointer-events-none -z-10"></div>
-        <div class="w-full max-w-[1080px] grid grid-cols-1 lg:grid-cols-12 bg-surface-container-lowest rounded-xl shadow-xl overflow-hidden">
-            <!-- Brand Storytelling Visual Side Panel (Desktop) -->
-            <div class="hidden lg:flex lg:col-span-5 relative flex-col justify-between p-space-xl overflow-hidden bg-primary text-on-primary">
-                <div class="absolute inset-0 bg-gradient-to-b from-primary/70 via-primary/85 to-primary z-10"></div>
-                <div class="absolute inset-0 bg-cover bg-center z-0" data-alt="Vườn cây ăn trái hữu cơ xanh tươi sum suê vào buổi sáng nắng sớm ấm áp tại miền Tây Nam Bộ Việt Nam, những chùm bưởi da xanh và cam sành mọng nước phủ sương sớm mai, phong cách chụp ảnh nông trại tự nhiên cao cấp chân thực và tràn đầy sức sống" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCLB1Ml9eXZv2LlfS2Do3qFVPjEUUZE2i2q6j09ayLOtDoDo6y9x5WTZ6FPyfImOJC3eOWbpbGp5WTFSG_Obz4fvom84GvkePP9lpfiNVIbdMltcv3rlxQmkywIeKcOSSWza-KyJwjtmT7JonV-K442Y0mk5vAae9OnhOfRPrA0gLRRNwGjmp9j7WHSpXM5CO8BH9NbbzWZfW66zjvkiVnTnoJey8ByzgijOgT-c1PgebD68ZiaCOzb')"></div>
-                <!-- Top Brand Stamp -->
-                <div class="relative z-20 flex items-center gap-space-sm">
-                    <div class="w-10 h-10 rounded-lg bg-surface flex items-center justify-center shadow-md">
-                        <span class="material-symbols-outlined text-primary text-2xl" style="font-variation-settings: 'FILL' 1;">eco</span>
-                    </div>
-                    <div>
-                        <span class="font-title-md text-title-md text-on-primary block tracking-wide">VIETFRESH HUB</span>
-                        <span class="font-label-sm text-label-sm text-on-primary/80 uppercase tracking-wider">Hệ Sinh Thái Nông Sản</span>
-                    </div>
-                </div>
-                <!-- Center Highlight Metric Card -->
-                <div class="relative z-20 my-auto py-space-lg flex flex-col gap-space-md">
-                    <div class="inline-flex items-center gap-space-xs px-3 py-1 rounded-full bg-surface-container-lowest/20 backdrop-blur-md text-on-primary w-fit font-label-md text-label-sm">
-                        <span class="material-symbols-outlined text-[16px]">verified</span>
-                        <span class="">Tiêu Chuẩn Nông Nghiệp Sạch 4.0</span>
-                    </div>
-                    <h2 class="font-headline-lg text-headline-lg text-on-primary leading-snug">
-                        Khởi nguồn vị ngọt lành từ đất mẹ Việt Nam.
-                    </h2>
-                    <p class="font-body-md text-body-md text-on-primary/80">
-                        Truy xuất nguồn gốc minh bạch từng nông trại, giao nhanh 2 giờ bảo toàn độ tươi nguyên vẹn đến bàn ăn gia đình bạn.
-                    </p>
-                    <div class="grid grid-cols-2 gap-space-md mt-space-sm pt-space-md border-t border-on-primary/10">
-                        <div class="flex flex-col">
-                            <span class="font-headline-sm text-headline-sm text-primary-fixed">100%</span>
-                            <span class="font-label-sm text-label-sm text-on-primary/75">Chứng nhận VietGAP</span>
-                        </div>
-                        <div class="flex flex-col">
-                            <span class="font-headline-sm text-headline-sm text-secondary-fixed">2 Giờ</span>
-                            <span class="font-label-sm text-label-sm text-on-primary/75">Giao hỏa tốc nội thành</span>
-                        </div>
-                    </div>
-                </div>
-                <!-- Bottom Trust Badges -->
-                <div class="relative z-20 flex items-center gap-space-sm text-on-primary/90 font-label-sm text-label-sm">
-                    <span class="material-symbols-outlined text-primary-fixed text-lg">shield</span>
-                    <span class="">Bảo mật dữ liệu cá nhân theo tiêu chuẩn ISO/IEC 27001</span>
-                </div>
-            </div>
+        <div class="w-full max-w-[520px] bg-surface-container-lowest rounded-xl shadow-xl overflow-hidden">
             <!-- Main Login Form Card -->
-            <div class="col-span-1 lg:col-span-7 p-space-lg sm:p-space-xl flex flex-col justify-center">
-                <!-- Header & Greetings -->
-                <div class="text-left mb-space-lg">
-                    <div class="flex items-center gap-space-xs text-primary font-label-md text-label-md uppercase tracking-wider mb-space-xs">
-                        <span class="material-symbols-outlined text-sm">lock_open</span>
-                        <span class="">Cổng Đăng Nhập Thành Viên</span>
-                    </div>
+            <div class="w-full p-space-lg sm:p-space-xl flex flex-col justify-center">
+                <div class="text-center mb-space-lg">
                     <h1 class="font-headline-lg text-headline-lg text-on-surface">Đăng nhập vào VietFresh Hub</h1>
-                    <p class="font-body-md text-body-md text-on-surface-variant mt-1">
-                        Chào mừng bạn quay lại! Nhập thông tin tài khoản để tiếp tục mua sắm và quản lý đơn hàng.
-                    </p>
                 </div>
                 <!-- Spring Boot Alert Banner Logic (Thymeleaf Integrated) -->
 <!--                <div class="space-y-space-sm mb-space-md" id="alertContainer">-->
@@ -121,16 +70,14 @@
 <!--                    <input name="_csrf" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" type="hidden" value="c92e92c2-8703-4927-b648-csrf-token-sample">-->
                     <!-- Email Input Group -->
                     <div class="flex flex-col gap-1.5">
-                        <label class="font-title-md text-title-md text-on-surface flex items-center justify-between" for="username">
+                        <label class="font-title-md text-title-md text-on-surface" for="username">
                             <span class="">Địa chỉ Email</span>
-                            <span class="font-label-sm text-label-sm text-on-surface-variant font-normal">Định dạng email chuẩn</span>
                         </label>
                         <div class="relative flex items-center">
                             <span class="material-symbols-outlined absolute left-3.5 text-outline pointer-events-none text-xl">alternate_email</span>
                             <input autocomplete="email" class="w-full bg-surface-container-lowest text-on-surface pl-11 pr-space-md py-3 rounded-lg font-body-md text-body-md shadow-sm border border-outline-variant focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-outline" id="username" name="username" placeholder="vidu@vietfresh.vn" required="" type="email">
                             <span class="material-symbols-outlined absolute right-3 text-primary text-xl hidden" id="emailValidationIcon">check_circle</span>
                         </div>
-                        <span class="font-label-sm text-label-sm text-error hidden" id="emailErrorMsg">Vui lòng nhập địa chỉ email hợp lệ.</span>
                     </div>
                     <!-- Password Input Group -->
                     <div class="flex flex-col gap-1.5">
@@ -148,13 +95,6 @@
                             </button>
                         </div>
                     </div>
-                    <!-- Remember Me Checkbox -->
-                    <div class="flex items-center justify-between pt-1">
-                        <label class="flex items-center gap-space-sm cursor-pointer select-none">
-                            <input class="w-4 h-4 rounded text-primary focus:ring-primary/30 cursor-pointer accent-primary" id="rememberMe" name="remember-me" type="checkbox">
-                            <span class="font-body-md text-body-md text-on-surface">Ghi nhớ đăng nhập trên thiết bị này</span>
-                        </label>
-                    </div>
                     <!-- Submit Button (Bootstrap 5 Primary Fresh Green Highlight) -->
                     <div class="pt-space-sm">
                         <button class="w-full bg-primary hover:bg-primary-container active:scale-[0.99] text-on-primary font-title-md text-title-md py-3.5 px-space-md rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-space-sm" id="submitBtn" type="submit">
@@ -170,7 +110,7 @@
                     <div class="flex-grow border-t border-surface-container-high"></div>
                 </div>
                 <!-- Social Authentication Options -->
-                <div class="grid grid-cols-2 gap-space-md">
+                <div class="grid grid-cols-1 gap-space-md">
                     <a class="flex items-center justify-center gap-space-sm py-2.5 px-space-md bg-surface-container-low hover:bg-surface-container text-on-surface rounded-lg font-label-md text-label-md transition-colors shadow-sm" th:href="@{/oauth2/authorization/google}">
                         <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24">
                             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
@@ -179,12 +119,6 @@
                             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"></path>
                         </svg>
                         <span class="">Google</span>
-                    </a>
-                    <a class="flex items-center justify-center gap-space-sm py-2.5 px-space-md bg-surface-container-low hover:bg-surface-container text-on-surface rounded-lg font-label-md text-label-md transition-colors shadow-sm" href="/oauth2/authorization/facebook">
-                        <svg class="w-5 h-5 text-[#1877F2] shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"></path>
-                        </svg>
-                        <span class="">Facebook</span>
                     </a>
                 </div>
                 <!-- Redirect to Registration Section -->
@@ -201,13 +135,6 @@
                         <span class="material-symbols-outlined text-base">storefront</span>
                         <span>Đăng ký bán hàng</span>
                     </a>
-                </div>
-                <!-- Privacy & Security Guarantee Footer Notice -->
-                <div class="mt-space-lg p-space-sm rounded-lg bg-surface-container-low flex items-center justify-center gap-space-sm text-outline">
-                    <span class="material-symbols-outlined text-sm">lock</span>
-                    <p class="font-label-sm text-label-sm text-center">
-                        Cam kết bảo mật dữ liệu tuyệt đối.
-                    </p>
                 </div>
             </div>
         </div>
@@ -241,17 +168,14 @@
         // Simple Real-Time Email Validation indicator
         const emailInput = document.getElementById('username');
         const emailValidationIcon = document.getElementById('emailValidationIcon');
-        const emailErrorMsg = document.getElementById('emailErrorMsg');
 
         if (emailInput) {
           emailInput.addEventListener('input', function () {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (this.value.trim() === '') {
               emailValidationIcon.classList.add('hidden');
-              emailErrorMsg.classList.add('hidden');
             } else if (emailRegex.test(this.value.trim())) {
               emailValidationIcon.classList.remove('hidden');
-              emailErrorMsg.classList.add('hidden');
             } else {
               emailValidationIcon.classList.add('hidden');
             }
@@ -259,6 +183,5 @@
         }
     </script>
 </div></div></main>
-<div th:replace="~{fragments/footer :: footer}"></div>
-
+<footer th:replace="~{fragments/customer-service :: footer}"></footer>
 </body></html>

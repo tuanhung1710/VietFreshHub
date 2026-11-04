@@ -1,6 +1,7 @@
 package VietFreshHub.order.entity;
 
 import VietFreshHub.auth.entity.User;
+import VietFreshHub.common.OrderCodes;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,6 +22,16 @@ public class Order {
     private User customer;
     @Column(name="order_code", nullable=false, length=50, unique=true)
     private String orderCode;
+
+    // Keep the stored checkout reference intact so retries still find the same order.
+    public String getOrderCode() { return OrderCodes.display(orderCode, orderId); }
+
+    public String formatOrderCodeIn(String text) {
+        String displayCode = getOrderCode();
+        if (text == null || orderCode == null || displayCode == null || orderCode.equals(displayCode)) return text;
+        return text.replace(orderCode, displayCode);
+    }
+
     @Enumerated(EnumType.STRING) @Column(nullable=false, length=30)
     private Status status=Status.PENDING;
     @Column(name="payment_status", nullable=false, length=30)

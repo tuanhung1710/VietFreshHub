@@ -3,9 +3,14 @@
 <head th:fragment="head(title)">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+    
+    
     <title th:text="${title}">Hồ sơ cửa hàng | VietFresh Hub</title>
     <link rel="stylesheet" th:href="@{/css/seller-profile.css}">
     <script th:src="@{/js/seller-profile.js}" defer></script>
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
 <body>
 <header th:fragment="header">
@@ -35,6 +40,6 @@
         <div class="summary-line"><span>Nhận đơn</span><strong th:text="${shop.availabilityStatus == 'OPEN' ? 'Mở cửa' : 'Tạm đóng'}"></strong></div>
     </div>
 </section>
-<footer th:fragment="footer"><div class="container"><span>© VietFresh Hub · Quản lý cửa hàng</span><span>Hồ sơ &amp; trạng thái nhận đơn</span></div></footer>
+<footer th:fragment="footer" th:replace="~{fragments/footer :: footer}"></footer>
 </body>
 </html>

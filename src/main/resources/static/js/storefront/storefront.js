@@ -25,11 +25,6 @@
 
     // Tìm kiếm, bộ lọc, sắp xếp và phân trang dùng form GET/link trong template.
     document.addEventListener("click", event => {
-        const information = event.target.closest("[data-footer-info]");
-        if (information) {
-            getElement("informationTitle").textContent = information.dataset.footerInfo;
-            getElement("informationDialog").showModal();
-        }
         const authLink = event.target.closest("a[data-auth-link]");
         if (authLink) {
             const url = new URL(authLink.href, location.origin);

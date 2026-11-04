@@ -5,15 +5,15 @@
     <head th:replace="~{fragments/product-inventory :: head('Lịch sử giá bán','product')}">
     </head>
 
-    <body>
+    <body class="vfo-app vfr-app vfr-product vfr-seller" data-vfr-section="product">
 
         <!-- Điều hướng Seller Portal -->
         <header th:replace="~{fragments/product-inventory :: nav('product')}">
         </header>
 
         <!-- Nội dung chính -->
-        <div class="vf-workspace">
-        <main class="container vf-main">
+        <div class="vf-workspace" id="order-content" tabindex="-1">
+        <main class="container vf-main vfr-page">
             <a
                 class="d-inline-block mb-3 text-success text-decoration-none"
                 th:href="@{/seller/products/{id}(id=${productId})}"
@@ -23,9 +23,6 @@
             <h1>
                 Lịch sử giá bán
             </h1>
-            <p class="text-body-secondary mb-4">
-                Lịch sử giá bán của phân loại. Giá bán cận hạn theo lô hàng được ghi trong lịch sử hoạt động.
-            </p>
             <div class="card mb-3">
                 <div class="table-responsive" role="region" tabindex="0" aria-label="Lịch sử giá bán">
 
@@ -94,5 +91,6 @@
 
         </div>
 
-    </body>
+    <div class="vfr-product-footer"><footer th:replace="~{fragments/seller-orders :: footer}"></footer></div>
+</body>
 </html>

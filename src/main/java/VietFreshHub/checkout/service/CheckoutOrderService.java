@@ -36,10 +36,10 @@ public class CheckoutOrderService {
     private final EntityManager entityManager;
     private final CheckoutShippingQuoteService shippingQuoteService;
 
-    public Order createOrder(User buyer, String orderCode, BigDecimal subtotal, BigDecimal shippingFee, Address address) {
+    public Order createOrder(User buyer, String checkoutReference, BigDecimal subtotal, BigDecimal shippingFee, Address address) {
         Order order = new Order();
         order.setCustomer(buyer);
-        order.setOrderCode(orderCode);
+        order.setOrderCode(checkoutReference);
         order.setSubtotal(normalizeMoney(subtotal));
         order.setShippingFee(shippingFee);
         order.setGrandTotal(normalizeMoney(subtotal.add(shippingFee)));

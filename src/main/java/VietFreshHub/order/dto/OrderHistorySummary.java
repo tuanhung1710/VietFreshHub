@@ -10,5 +10,10 @@ public record OrderHistorySummary(List<Product> products, int productCount, long
         products = List.copyOf(products); shops = List.copyOf(shops); payments = List.copyOf(payments);
     }
     public record Product(String productName, String variantName, int quantity, String imageUrl) {}
-    public record Shop(String name, String fulfillmentLabel, String deliveryStatus, String deliveryLabel) {}
+    public record Shop(String name, String fulfillmentLabel, String deliveryStatus, String deliveryLabel, Long shopOrderId) {
+        public Shop(String name, String fulfillmentLabel, String deliveryStatus, String deliveryLabel) {
+            this(name, fulfillmentLabel, deliveryStatus, deliveryLabel, null);
+        }
+        public String orderCode() { return VietFreshHub.common.BusinessCodes.format("VFH", shopOrderId); }
+    }
 }

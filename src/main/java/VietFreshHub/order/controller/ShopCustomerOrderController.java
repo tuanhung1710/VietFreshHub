@@ -33,7 +33,7 @@ public class ShopCustomerOrderController {
             model.addAttribute("filterError","Bộ lọc không hợp lệ. Vui lòng sửa các thông tin bên dưới rồi lọc lại.");
             model.addAttribute("filterMessages",errors.getAllErrors().stream().map(error -> {
                 if(error instanceof org.springframework.validation.FieldError field && field.isBindingFailure())
-                    return "page".equals(field.getField()) ? "Trang phải là số nguyên hợp lệ." : "Ngày lọc phải có định dạng yyyy-MM-dd.";
+                    return "size".equals(field.getField()) ? "Số bản ghi mỗi trang phải là số nguyên hợp lệ." : "page".equals(field.getField()) ? "Trang phải là số nguyên hợp lệ." : "Ngày lọc phải có định dạng yyyy-MM-dd.";
                 return error.getDefaultMessage();
             }).toList());
             model.addAttribute("orderPage",org.springframework.data.domain.Page.empty());

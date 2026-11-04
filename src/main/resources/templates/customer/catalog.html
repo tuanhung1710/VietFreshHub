@@ -2,10 +2,10 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
     <head th:replace="~{fragments/customer-shop :: head(${catalogTitle})}">
     </head>
-    <body>
+    <body class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
         <header th:replace="~{fragments/customer-shop :: header}">
         </header>
-        <main class="container" id="catalog">
+        <main class="container vfr-page" id="catalog">
             <div class="bread">
                 <a th:href="@{/home}">
                     Trang chủ
@@ -184,10 +184,10 @@
                             Không tìm thấy sản phẩm phù hợp.
                         </p>
                     </div>
-                    <nav class="pagination" id="pagination" aria-label="Phân trang sản phẩm">
+                    <nav class="customer-pagination-panel" id="pagination" aria-label="Phân trang sản phẩm">
                         <div th:replace="~{fragments/storefront-catalog :: pagination(${rows},@{/products(q=${q},category=${category},shopIds=${filters.shopIds},places=${filters.places},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},minRating=${filters.minRating},sort=${filters.sort},page=${rows.number},size=${rows.size})},@{/products(q=${q},category=${category},shopIds=${filters.shopIds},places=${filters.places},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},minRating=${filters.minRating},sort=${filters.sort},page=${rows.number + 2},size=${rows.size})})}">
                         </div>
-                        <form class="pager-right" th:action="@{/products}" method="get">
+                        <form class="customer-page-size" th:action="@{/products}" method="get">
                             <th:block th:replace="~{fragments/storefront-catalog :: filters}">
                             </th:block>
                             <th:block th:replace="~{fragments/storefront-catalog :: pageSize(${rows},'productPageSize')}">
@@ -197,7 +197,6 @@
                 </div>
             </div>
         </main>
-        <footer th:replace="~{fragments/customer-shop :: footer}">
-        </footer>
+        <footer th:replace="~{fragments/footer :: footer}"></footer>
     </body>
 </html>

@@ -1,44 +1,51 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/order-pages :: head('Thông tin nhận hoàn tiền')}"></head>
-<body>
-<header th:replace="~{fragments/storefront :: header}"></header>
-<main class="container page">
-    <p><a th:href="@{${orderDetailPath}}">← Chi tiết đơn hàng</a></p>
-    <section class="panel">
-        <h1>Thông tin nhận hoàn tiền</h1>
-        <p>Mã đơn hàng: <strong th:text="${refund.orderCode}"></strong></p>
-        <p>Số tiền hoàn:
-            <strong th:text="${#numbers.formatInteger(refund.refundAmount,1,'POINT')} + 'đ'"></strong>
-        </p>
-        <p>Vui lòng kiểm tra kỹ thông tin người nhận. VietFreshHub không xác minh tài khoản qua ngân hàng.
-            Thông tin không thể sửa sau khi gửi.</p>
-        <form method="post" th:action="@{${refundAction}}"
-              th:object="${form}">
-            <p th:if="${#fields.hasGlobalErrors()}" th:each="error : ${#fields.globalErrors()}"
-               th:text="${error}" role="alert"></p>
-            <div>
-                <label for="bankName">Ngân hàng nhận tiền</label>
-                <input type="text" id="bankName" th:field="*{bankName}" maxlength="120" required
-                       th:attr="aria-invalid=${#fields.hasErrors('bankName')}">
-                <p th:if="${#fields.hasErrors('bankName')}" th:errors="*{bankName}" role="alert"></p>
-            </div>
-            <div>
-                <label for="bankAccountNumber">Số tài khoản</label>
-                <input type="text" id="bankAccountNumber" th:field="*{bankAccountNumber}" maxlength="50" required
-                       th:attr="aria-invalid=${#fields.hasErrors('bankAccountNumber')}">
-                <p th:if="${#fields.hasErrors('bankAccountNumber')}" th:errors="*{bankAccountNumber}" role="alert"></p>
-            </div>
-            <div>
-                <label for="accountHolderName">Tên chủ tài khoản</label>
-                <input type="text" id="accountHolderName" th:field="*{accountHolderName}" maxlength="150" required
-                       th:attr="aria-invalid=${#fields.hasErrors('accountHolderName')}">
-                <p th:if="${#fields.hasErrors('accountHolderName')}" th:errors="*{accountHolderName}" role="alert"></p>
-            </div>
-            <button type="submit" class="button">Gửi thông tin hoàn tiền</button>
-        </form>
-    </section>
+<head th:replace="~{fragments/customer-service :: head('Thông tin nhận hoàn tiền')}"></head>
+<body class="vfo-app vfc-app vfc-refund-app">
+<th:block th:replace="~{fragments/customer-service :: [th:fragment='header']}"></th:block>
+<main id="customer-content" class="vfc-container vfc-main vfc-refund-page" tabindex="-1">
+    <header class="vfo-page-heading">
+        <div><h1>Thông tin nhận hoàn tiền</h1></div>
+        <a class="btn vfo-btn-secondary" th:href="@{${orderDetailPath}}"><span aria-hidden="true">←</span> Chi tiết đơn hàng</a>
+    </header>
+    <div class="vfc-refund-layout">
+        <aside class="vfc-refund-summary">
+            <section class="vfc-refund-amount-card" aria-labelledby="refund-summary-heading">
+                <span class="vfc-refund-summary-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-history"/></svg></span>
+                <h2 id="refund-summary-heading">Thông tin hoàn tiền</h2>
+                <dl><dt>Mã đơn hàng</dt><dd class="vfc-refund-code" th:text="${refund.orderCode}"></dd><dt>Số tiền hoàn</dt><dd class="vfc-refund-amount" th:text="${#numbers.formatInteger(refund.refundAmount,1,'POINT')} + 'đ'"></dd></dl>
+                <svg class="vfo-icon vfc-refund-leaf" aria-hidden="true"><use href="#vfo-leaf"/></svg>
+            </section>
+            <section class="vfc-refund-note" aria-labelledby="refund-note-heading">
+                <h2 id="refund-note-heading"><span aria-hidden="true">!</span> Lưu ý trước khi gửi</h2>
+                <p>Vui lòng kiểm tra kỹ thông tin người nhận. VietFreshHub không xác minh tài khoản qua ngân hàng. <strong>Thông tin không thể sửa sau khi gửi.</strong></p>
+            </section>
+        </aside>
+        <section class="card vfc-refund-form-card" aria-labelledby="refund-bank-heading">
+            <div class="vfo-card-heading"><span class="vfo-heading-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-bank"/></svg></span><h2 id="refund-bank-heading">Tài khoản nhận hoàn tiền</h2></div>
+            <form class="vfc-refund-form" method="post" th:action="@{${refundAction}}" th:object="${form}">
+                <p class="vfc-notice vfc-notice-danger" th:if="${#fields.hasGlobalErrors()}" th:each="error : ${#fields.globalErrors()}" th:text="${error}" role="alert"></p>
+                <div class="vfc-form-field">
+                    <label for="bankName">Ngân hàng nhận tiền <span aria-hidden="true">*</span></label>
+                    <input class="form-control" type="text" id="bankName" th:field="*{bankName}" maxlength="120" required th:attr="aria-invalid=${#fields.hasErrors('bankName')}">
+                    <p class="vfc-field-error" th:if="${#fields.hasErrors('bankName')}" th:errors="*{bankName}" role="alert"></p>
+                </div>
+                <div class="vfc-form-field">
+                    <label for="bankAccountNumber">Số tài khoản <span aria-hidden="true">*</span></label>
+                    <input class="form-control" type="text" id="bankAccountNumber" th:field="*{bankAccountNumber}" maxlength="50" required th:attr="aria-invalid=${#fields.hasErrors('bankAccountNumber')}">
+                    <p class="vfc-field-error" th:if="${#fields.hasErrors('bankAccountNumber')}" th:errors="*{bankAccountNumber}" role="alert"></p>
+                </div>
+                <div class="vfc-form-field">
+                    <label for="accountHolderName">Tên chủ tài khoản <span aria-hidden="true">*</span></label>
+                    <input class="form-control" type="text" id="accountHolderName" th:field="*{accountHolderName}" maxlength="150" required th:attr="aria-invalid=${#fields.hasErrors('accountHolderName')}">
+                    <p class="vfc-field-error" th:if="${#fields.hasErrors('accountHolderName')}" th:errors="*{accountHolderName}" role="alert"></p>
+                </div>
+                <div class="vfc-form-actions"><button type="submit" class="btn vfo-btn-primary">Gửi thông tin hoàn tiền <svg class="vfo-icon vfo-icon-sm" aria-hidden="true"><use href="#vfo-arrow"/></svg></button></div>
+            </form>
+        </section>
+
+    </div>
 </main>
-<footer th:replace="~{fragments/storefront :: footer}"></footer>
+<footer th:replace="~{fragments/customer-service :: footer}"></footer>
 </body>
 </html>

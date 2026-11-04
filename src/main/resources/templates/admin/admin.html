@@ -1,11 +1,33 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+    
+    
+    <title>Trung tâm quản trị | VietFresh Hub</title>
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body>
-<span th:replace="~{fragments/notifications :: bell}"></span>
-<h1>Admin</h1>
+<body class="vfo-app vfr-app vfr-admin" data-vfr-section="dashboard">
+<th:block th:replace="~{fragments/interface-layout :: navigation('admin','dashboard')}"></th:block>
+<div class="vfo-workspace vfr-workspace" id="workspace-content" tabindex="-1">
+<main class="vfr-page">
+
+
+
+<h1>Trung tâm quản trị</h1>
+<div class="vfr-portal-grid">
+<nav aria-label="Reporting &amp; Dashboard">
+    <a th:href="@{/admin/dashboard}">Reporting &amp; Dashboard</a>
+</nav>
+<nav aria-label="Kiểm duyệt đánh giá">
+    <a th:href="@{/admin/reviews/pending}">Đánh giá chờ duyệt</a>
+    <a th:href="@{/admin/review-reports}">Báo cáo đánh giá</a>
+</nav>
+</div>
+</main>
+<footer th:replace="~{fragments/admin-workspace :: footer}"></footer>
+</div>
 </body>
 </html>

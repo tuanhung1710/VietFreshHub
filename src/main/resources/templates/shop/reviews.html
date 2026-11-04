@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/customer-shop :: head('Đánh giá cửa hàng')}"></head>
-<body>
+<body class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
 <header th:replace="~{fragments/customer-shop :: header}"></header>
-<main class="container">
+<main class="container vfr-page">
     <section th:replace="~{fragments/customer-shop :: shopHeader(${shop},'reviews')}"></section>
     <div class="sectiontop"><div><h2>Khách hàng đánh giá</h2><p th:text="${summary.count > 0 ? #numbers.formatDecimal(summary.average,1,1) + ' / 5 · ' + summary.count + ' đánh giá' : 'Chưa có đánh giá'}"></p></div></div>
     <form class="toolbar" method="get" th:action="@{/shops/{id}/reviews(id=${shop.shopId})}">
-        <label>Số sao <select name="rating"><option value="">Tất cả đánh giá</option>
+        <label>Số sao <select name="rating" class="form-control"><option value="">Tất cả đánh giá</option>
             <option th:each="star : ${#numbers.sequence(1,5)}" th:value="${star}" th:selected="${rating == star}" th:text="${star} + ' sao'"></option>
-        </select></label><button>Áp dụng</button>
+        </select></label><button class="btn btn-success">Áp dụng</button>
     </form>
     <p class="notice" th:if="${reviewsPage.empty}">Chưa có đánh giá phù hợp.</p>
     <div><article class="section" th:each="review : ${reviewsPage.content}">
@@ -22,6 +22,6 @@
         <a th:if="${reviewsPage.hasNext()}" th:href="@{/shops/{id}/reviews(id=${shop.shopId},page=${reviewsPage.number + 2},rating=${rating})}">Trang tiếp →</a>
     </nav>
 </main>
-<footer th:replace="~{fragments/customer-shop :: footer}"></footer>
+<footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>
 </html>

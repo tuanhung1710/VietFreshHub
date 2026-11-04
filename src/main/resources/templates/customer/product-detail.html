@@ -3,36 +3,35 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width,initial-scale=1">
+        <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
         <title th:text="${product.name} + ' | VietFresh Hub'">
             Chi tiết sản phẩm | VietFresh Hub
         </title>
         <link rel="stylesheet" th:href="@{/css/product-detail.css}">
         <link rel="stylesheet" th:href="@{/css/discount-pricing.css}">
-        <th:block th:replace="~{fragments/account-menu :: assets}">
-        </th:block>
         <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
         <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
         <script type="module" th:src="@{/js/storefront/product-detail.js}">
         </script>
+        <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
     </head>
     <body th:with="mainUrl=${#strings.isEmpty(product.imageUrl) ? '/images/product/product-placeholder.svg' : product.imageUrl}"
-      th:attr="data-customer=${#authorization.expression('hasRole(''CUSTOMER'')')}">
-        <header>
+          class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account"
+          th:attr="data-customer=${#authorization.expression('hasRole(''CUSTOMER'')')}">
+        <header class="vfc-header">
             <div class="wrap">
-                <div class="utility">
-                    <span>
-                        VietFresh Hub · Gian hàng trái cây
-                    </span>
-                    <th:block th:replace="~{fragments/customer-shop :: accountLinks}">
-                    </th:block>
-                </div>
-                <div class="headrow">
+                <div class="vfc-header-main">
                     <a class="brand" th:href="@{/home}">
                         VietFresh Hub
                     </a>
+                    <div class="vfo-topbar-actions vfc-header-actions">
+                        <th:block th:replace="~{fragments/customer-shop :: accountLinks}"></th:block>
+                    </div>
+                </div>
+                <div class="headrow vfc-header-tools">
                     <form class="searchbar" th:action="@{/shops/{id}/products(id=${shop.shopId})}" method="get" role="search">
-                        <input type="search" name="q" maxlength="100" placeholder="Tìm trái cây trong gian hàng..." aria-label="Tìm sản phẩm trong shop">
-                        <button type="submit">
+                        <input class="form-control" type="search" name="q" maxlength="100" placeholder="Tìm trái cây trong gian hàng..." aria-label="Tìm sản phẩm trong shop">
+                        <button class="btn btn-success" type="submit">
                             TÌM
                         </button>
                     </form>
@@ -46,7 +45,7 @@
                 </div>
             </div>
         </header>
-        <main class="wrap">
+        <main class="wrap vfr-page">
             <div class="crumb">
                 <a th:href="@{/shops/{id}(id=${shop.shopId})}">
                     Gian hàng
@@ -102,6 +101,7 @@
                             </strong>
                         </span>
                     </div>
+                    <p><a th:href="@{/reviews/product/{id}(id=${product.productId})}">Xem đánh giá và xếp hạng</a> · <a th:href="@{/reviews/shop/{id}(id=${shop.shopId})}">Xem đánh giá cửa hàng</a></p>
                     <div class="pricebox" aria-live="polite">
                         <div class="price-line">
                             <div class="price" id="currentPrice" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'POINT')} + ' VND'">
@@ -128,7 +128,7 @@
                             <div>
                                 <div class="optionrow" role="radiogroup" aria-labelledby="variantLabel">
                                     <label th:each="variant : ${product.variants}" class="variant" th:classappend="${variant.variantId == product.selectedVariant.variantId ? 'selected' : ''}">
-                                        <input type="radio" name="variantId" th:value="${variant.variantId}" th:checked="${variant.variantId == product.selectedVariant.variantId}"
+                                        <input type="radio" name="variantId" class="form-check-input" th:value="${variant.variantId}" th:checked="${variant.variantId == product.selectedVariant.variantId}"
                      th:attr="data-price=${variant.price},data-compare-at-price=${variant.compareAtPrice},data-discount-percent=${variant.discountPercent},data-stock=${variant.availableStock},data-name=${variant.variantName},data-image=${variant.imageUrl}">
                                         <span th:text="${variant.variantName}">
                                         </span>
@@ -143,11 +143,11 @@
                                 Số lượng
                             </label>
                             <div class="qtyrow">
-                                <button id="minus" type="button" aria-label="Giảm số lượng" disabled>
+                                <button id="minus" class="btn btn-success" type="button" aria-label="Giảm số lượng" disabled>
                                     −
                                 </button>
-                                <input id="quantity" name="quantity" type="number" min="1" step="1" required th:max="${product.selectedVariant.availableStock}" th:value="${requestedQuantity != null ? requestedQuantity : 1}" aria-label="Số lượng mua">
-                                <button id="plus" type="button" aria-label="Tăng số lượng">
+                                <input id="quantity" class="form-control" name="quantity" type="number" min="1" step="1" required th:max="${product.selectedVariant.availableStock}" th:value="${requestedQuantity != null ? requestedQuantity : 1}" aria-label="Số lượng mua">
+                                <button id="plus" class="btn btn-success" type="button" aria-label="Tăng số lượng">
                                     +
                                 </button>
                                 <span class="stock" id="stock" th:text="${product.selectedVariant.availableStock} + ' phần có sẵn'">
@@ -162,7 +162,7 @@
                             </div>
                         </div>
                         <div class="cta" th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}">
-                            <button type="submit" name="redirect" value="detail" id="addCart">
+                            <button type="submit" name="redirect" value="detail" id="addCart" class="btn btn-success">
                                 + Thêm vào giỏ hàng
                             </button>
                             <button type="submit" name="redirect" value="checkout" class="solid" id="buyNow">
@@ -356,55 +356,7 @@
                 </div>
             </section>
         </main>
-        <footer class="footer">
-            <div class="wrap">
-                <div class="footergrid">
-                    <div>
-                        <h3>
-                            VietFresh Hub
-                        </h3>
-                        <p>
-                            Sàn mua sắm trái cây từ nhiều nhà bán hàng. Khám phá trái cây nội địa, nhập khẩu và sản phẩm theo mùa.
-                        </p>
-                    </div>
-                    <div>
-                        <h3>
-                            Khám phá
-                        </h3>
-                        <p>
-                            <a th:href="@{/shops/{id}(id=${shop.shopId})}">
-                                Gian hàng
-                            </a>
-                            <br>
-                            <a th:href="@{/shops}">
-                                Danh sách gian hàng
-                            </a>
-                            <br>
-                            <a th:href="@{/products}">
-                                Tất cả sản phẩm
-                            </a>
-                        </p>
-                    </div>
-                    <div>
-                        <h3>
-                            Hỗ trợ &amp; chính sách
-                        </h3>
-                        <p>
-                            <a th:href="@{/customer/orders}">
-                                Theo dõi đơn hàng
-                            </a>
-                            <br>
-                            <a th:href="@{/cart}">
-                                Giỏ hàng của tôi
-                            </a>
-                        </p>
-                    </div>
-                </div>
-                <div class="copyright">
-                    © 2026 VietFresh Hub. All rights reserved.
-                </div>
-            </div>
-        </footer>
+        <footer th:replace="~{fragments/footer :: footer}"></footer>
         <div id="notice" class="toast hide" role="status" aria-live="polite">
         </div>
         <div id="modal">

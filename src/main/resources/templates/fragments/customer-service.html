@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title + ' | VietFresh Hub'}">VietFresh Hub</title>
+    <th:block th:replace="~{fragments/seller-orders :: assets}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/order-service-pages.css}">
+    <link rel="stylesheet" th:href="@{/css/customer-navigation.css}">
+    <script defer th:src="@{/js/cart.js}"></script>
+</head>
+<body>
+<th:block th:fragment="header">
+    <th:block th:replace="~{fragments/interface-layout :: customerHeader('orders')}"></th:block>
+</th:block>
+
+<main th:fragment="tracking(shopView)" id="customer-content" class="vfc-container vfc-main vfc-tracking-page" tabindex="-1">
+    <header class="vfo-page-heading">
+        <div><h1>Theo dõi đơn hàng</h1></div>
+    </header>
+    <div class="vfc-order-reference"><span class="vfc-reference-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-order"/></svg></span><div><span th:text="${shopView ? 'Mã đơn hàng' : 'Mã lượt mua'}">Mã đơn hàng</span><strong th:text="${tracking.orderCode}"></strong></div><svg class="vfo-icon vfc-reference-leaf" aria-hidden="true"><use href="#vfo-leaf"/></svg></div>
+    <div class="vfc-tracking-shops">
+        <section th:each="shop : ${tracking.shops}" class="card vfc-tracking-shop">
+            <div class="vfc-shop-summary">
+                <span class="vfc-shop-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-shop"/></svg></span>
+                <p class="vfo-eyebrow">Cửa hàng</p>
+                <h2 th:text="${shop.shopName}"></h2>
+                <p class="vfc-shop-order-status" th:unless="${shopView}">Mã đơn hàng: <a th:href="@{/customer/orders/{id}(id=${shop.shopOrderId})}" th:text="${shop.orderCode()}"></a></p>
+                <div class="vfc-shop-delivery"><span>Trạng thái giao hàng</span><strong class="vfo-status vfc-delivery-state" th:attr="data-status=${shop.deliveryStatusCode}" th:text="${shop.deliveryStatus}"></strong></div>
+                <p class="vfc-shop-order-status" th:if="${shopView}">Trạng thái đơn hàng: <strong th:text="${shop.orderStatus}"></strong></p>
+            </div>
+            <div class="vfc-tracking-history">
+                <div class="vfc-history-heading"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-history"/></svg><h3>Nhật ký đơn hàng</h3></div>
+                <div th:if="${!shopView and shop.deliveryStatusCode == 'FAILED'}" class="vfc-notice vfc-notice-danger" role="status"><strong>Lý do giao hàng thất bại:</strong><p th:text="${shop.failureReason != null ? shop.failureReason : 'Chưa ghi nhận lý do. Vui lòng liên hệ cửa hàng để được hỗ trợ.'}"></p></div>
+                <div class="vfc-tracking-empty" th:if="${#lists.isEmpty(shop.events)}"><span class="vfo-empty-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-history"/></svg></span><p>Chưa có lịch sử cập nhật.</p></div>
+                <ol class="vfc-timeline">
+                    <li th:each="event : ${shop.events}" th:attr="data-recorded=${event.verified and event.occurredAt != null}">
+                        <div class="vfc-event-time"><time th:if="${event.occurredAt != null}" th:text="${#temporals.format(event.occurredAt,'HH:mm dd/MM/yyyy')}"></time><span th:if="${event.occurredAt == null}">Chưa ghi nhận thời gian</span></div>
+                        <span class="vfc-timeline-dot" aria-hidden="true"></span>
+                        <div class="vfc-event-content"><strong th:text="${event.label}"></strong><p th:if="${event.note != null}" th:text="${event.note}"></p></div>
+                    </li>
+                </ol>
+            </div>
+        </section>
+    </div>
+</main>
+
+<footer th:fragment="footer" th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

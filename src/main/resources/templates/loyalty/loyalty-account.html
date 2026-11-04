@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/interface-layout :: customerHead('Tiền thưởng và điểm tích lũy')}"></head>
+<body class="purchase-page vfo-app vfr-app vfc-app vfr-customer" data-vfr-section="loyalty">
+<th:block th:replace="~{fragments/interface-layout :: navigation('customer','loyalty')}"></th:block>
+
+<main class="container page purchase-layout loyalty-page vfr-page" id="customer-content" tabindex="-1">
+    <div class="purchase-content">
+    <div class="page-heading"><h1>Tiền thưởng và điểm tích lũy</h1></div>
+    <div th:if="${successMessage}" th:text="${successMessage}"
+         class="alert alert-success" role="status"></div>
+    <div th:if="${errorMessage}" th:text="${errorMessage}"
+         class="alert alert-danger" role="alert"></div>
+
+    <section class="loyalty-balance" aria-label="Số dư tiền thưởng">
+        <div class="loyalty-summary">
+            <div>
+                <div class="card loyalty-featured h-100">
+                    <div class="card-body p-4">
+                        <span class="loyalty-metric-icon"><svg th:replace="~{fragments/account-menu :: icon('award')}"></svg></span>
+                        <h2 class="loyalty-metric-label">Tiền thưởng hiện có</h2>
+                        <p class="loyalty-amount" id="reward-balance"
+                           th:text="${#numbers.formatInteger(balance.rewardBalance, 1, 'POINT') + ' ₫'}"></p>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="card h-100">
+                    <div class="card-body p-4">
+                        <span class="loyalty-metric-icon"><svg th:replace="~{fragments/account-menu :: icon('bank')}"></svg></span>
+                        <h2 class="loyalty-metric-label">Tổng tiền thưởng đã tích</h2>
+                        <p class="loyalty-amount" id="total-earned"
+                           th:text="${#numbers.formatInteger(balance.totalEarnedAmount, 1, 'POINT') + ' ₫'}"></p>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="card h-100">
+                    <div class="card-body p-4">
+                        <span class="loyalty-metric-icon"><svg th:replace="~{fragments/account-menu :: icon('cart')}"></svg></span>
+                        <h2 class="loyalty-metric-label">Tổng tiền thưởng đã đổi</h2>
+                        <p class="loyalty-amount" id="total-redeemed"
+                           th:text="${#numbers.formatInteger(balance.totalRedeemedAmount, 1, 'POINT') + ' ₫'}"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p th:if="${balance.loyaltyAccountId == null}" class="text-secondary">
+            Bạn chưa có tiền thưởng. Các lượt tích và sử dụng tiền thưởng sẽ được hiển thị tại đây.
+        </p>
+        <p th:if="${balance.updatedAt != null}" class="text-secondary small"
+           th:text="${'Cập nhật lần cuối (UTC): ' + #temporals.format(balance.updatedAt, 'dd/MM/yyyy HH:mm:ss')}"></p>
+    </section>
+
+    <section class="panel loyalty-history" aria-labelledby="history-heading">
+        <div class="loyalty-history-heading">
+            <h2 id="history-heading">Lịch sử giao dịch tiền thưởng</h2>
+            <span class="loyalty-count" th:text="${transactionPage.totalElements + ' giao dịch'}"></span>
+        </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <caption class="px-3">Giao dịch mới nhất hiển thị trước. Thời gian hiển thị theo UTC.</caption>
+                    <thead class="table-light">
+                    <tr>
+                        <th scope="col">Thời điểm (UTC)</th>
+                        <th scope="col">Loại giao dịch</th>
+                        <th scope="col">Mã đơn hàng</th>
+                        <th scope="col" class="text-end">Số tiền thưởng</th>
+                        <th scope="col" class="text-end">Số dư sau giao dịch</th>
+                        <th scope="col">Ghi chú</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${transactionPage.empty}">
+                        <td colspan="6" class="text-center text-secondary py-5"
+                            th:text="${transactionPage.totalElements == 0
+                                ? 'Chưa có giao dịch tiền thưởng.'
+                                : 'Không có giao dịch ở trang này. Vui lòng quay lại trang đầu.'}"></td>
+                    </tr>
+                    <tr th:each="transaction : ${transactionPage.content}">
+                        <td class="text-nowrap"
+                            th:text="${transaction.createdAt != null
+                                ? #temporals.format(transaction.createdAt, 'dd/MM/yyyy HH:mm:ss') : '—'}"></td>
+                        <td th:switch="${transaction.transactionType.name()}">
+                            <span th:case="'EARN'" class="badge bg-success-subtle text-success">Tích thưởng</span>
+                            <span th:case="'REDEEM'" class="badge bg-warning-subtle text-dark">Dùng tiền thưởng</span>
+                            <span th:case="'REFUND'" class="badge bg-info-subtle text-dark">Hoàn tiền thưởng</span>
+                            <span th:case="'ADJUSTMENT'" class="badge bg-secondary-subtle text-secondary">Điều chỉnh</span>
+                        </td>
+                        <td>
+                            <a th:if="${transaction.orderId != null}" class="text-success"
+                               th:href="@{/customer/orders/{id}(id=${transaction.orderId})}"
+                               th:text="${#strings.isEmpty(transaction.orderCode)
+                                   ? '#' + transaction.orderId : transaction.orderCode}"></a>
+                            <span th:unless="${transaction.orderId != null}" class="text-secondary">—</span>
+                        </td>
+                        <td class="text-end text-nowrap fw-semibold"
+                            th:text="${#numbers.formatInteger(transaction.amount, 1, 'POINT') + ' ₫'}"></td>
+                        <td class="text-end text-nowrap"
+                            th:text="${#numbers.formatInteger(transaction.balanceAfterAmount, 1, 'POINT') + ' ₫'}"></td>
+                        <td class="loyalty-note"
+                            th:text="${#strings.isEmpty(transaction.note) ? '—' : transaction.note}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        <nav th:if="${transactionPage.totalPages > 0}" class="loyalty-pagination" aria-label="Phân trang giao dịch tiền thưởng">
+            <ul class="pagination flex-wrap mb-0">
+                <li class="page-item" th:classappend="${!transactionPage.hasPrevious() ? 'disabled' : ''}">
+                    <a th:if="${transactionPage.hasPrevious()}" class="page-link text-success"
+                       th:href="@{/customer/loyalty(page=0)}">Đầu</a>
+                    <span th:unless="${transactionPage.hasPrevious()}" class="page-link">Đầu</span>
+                </li>
+                <li class="page-item" th:classappend="${!transactionPage.hasPrevious() ? 'disabled' : ''}">
+                    <a th:if="${transactionPage.hasPrevious()}" class="page-link text-success"
+                       th:href="@{/customer/loyalty(page=${transactionPage.number - 1})}">Trước</a>
+                    <span th:unless="${transactionPage.hasPrevious()}" class="page-link">Trước</span>
+                </li>
+                <li class="page-item">
+                    <span class="page-link text-dark" aria-current="page"
+                          th:text="${'Trang ' + (transactionPage.number + 1) + ' / ' + transactionPage.totalPages}"></span>
+                </li>
+                <li class="page-item" th:classappend="${!transactionPage.hasNext() ? 'disabled' : ''}">
+                    <a th:if="${transactionPage.hasNext()}" class="page-link text-success"
+                       th:href="@{/customer/loyalty(page=${transactionPage.number + 1})}">Sau</a>
+                    <span th:unless="${transactionPage.hasNext()}" class="page-link">Sau</span>
+                </li>
+                <li class="page-item" th:classappend="${!transactionPage.hasNext() ? 'disabled' : ''}">
+                    <a th:if="${transactionPage.hasNext()}" class="page-link text-success"
+                       th:href="@{/customer/loyalty(page=${transactionPage.totalPages - 1})}">Cuối</a>
+                    <span th:unless="${transactionPage.hasNext()}" class="page-link">Cuối</span>
+                </li>
+            </ul>
+        </nav>
+    </section>
+    </div>
+</main>
+<footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</body>
+</html>

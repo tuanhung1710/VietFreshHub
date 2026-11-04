@@ -6,11 +6,18 @@ public record NotificationRow(Long notificationId, String type, String title, St
                               String entityType, Long entityId, LocalDateTime createdAt,
                               LocalDateTime readAt) {
 
+    public NotificationRow {
+        if ("ORDER".equals(entityType) || "SHOP_ORDER".equals(entityType)) {
+            content = VietFreshHub.common.OrderCodes.displayInText(content);
+        }
+    }
+
     public boolean hasDetail() {
         if (entityId == null || type == null) {
             return false;
         }
         return switch (type) {
+            case "REVIEW_REMINDER" -> "CUSTOMER_ORDER".equals(entityType);
             case "LOW_STOCK" -> "INVENTORY_VARIANT".equals(entityType);
             case "NEAR_EXPIRY", "EXPIRED_STOCK" -> "INVENTORY_BATCH".equals(entityType);
             case "DELIVERY_ASSIGNED", "GOODS_RETURN_CONFIRMED" -> "DELIVERY_ASSIGNMENT".equals(entityType);

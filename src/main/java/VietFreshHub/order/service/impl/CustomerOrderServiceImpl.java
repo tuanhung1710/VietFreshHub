@@ -98,13 +98,13 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         LocalDateTime from = historyStartDate(filter.getFromDate(), customerZone);
         LocalDateTime until = historyEndDateExclusive(filter.getToDate(), customerZone);
         Sort sort = Sort.by(Sort.Order.desc("placedAt"), Sort.Order.desc("orderId"));
-        PageRequest requestedPage = PageRequest.of(filter.getPage() - 1, 10, sort);
+        PageRequest requestedPage = PageRequest.of(filter.getPage() - 1, filter.getSize(), sort);
         Page<OrderListRow> result = orders.findHistory(customerId, status, filter.getKeyword(), from, until, requestedPage);
         if (result.getTotalElements() == 0) {
-            return Page.empty(PageRequest.of(0, 10, sort));
+            return Page.empty(PageRequest.of(0, filter.getSize(), sort));
         }
         if (result.getNumber() >= result.getTotalPages()) {
-            PageRequest lastPage = PageRequest.of(result.getTotalPages() - 1, 10, sort);
+            PageRequest lastPage = PageRequest.of(result.getTotalPages() - 1, filter.getSize(), sort);
             return orders.findHistory(customerId, status, filter.getKeyword(), from, until, lastPage);
         }
         return result;
@@ -192,14 +192,14 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
             OrderHistorySummary summary = new OrderHistorySummary(
                     historyProducts(lines), lines.size(), unitCount,
                     historyShops(shops, deliveryRows), historyPayments(paymentRows), paymentRows.size(),
-                    cancellationHint(parent, shops, deliveryRows) == null, !lines.isEmpty(), !shops.isEmpty());
+                    cancellationHint(parent, shops, deliveryRows) == null, !lines.isEmpty() && !shops.isEmpty() && shops.stream().allMatch(shop -> "CANCELLED".equals(shop.getStatus())), !shops.isEmpty());
             result.put(orderId, summary);
         }
         return Map.copyOf(result);
     }
 
     private void validateHistoryOrderIds(Long customerId, List<Long> orderIds) {
-        if (customerId == null || customerId < 1 || orderIds == null || orderIds.size() > 10) {
+        if (customerId == null || customerId < 1 || orderIds == null || orderIds.size() > java.util.Collections.max(VietFreshHub.common.PageSizes.OPTIONS)) {
             throw new CustomerOrderException("Danh sách đơn hàng không hợp lệ.");
         }
         for (Long orderId : orderIds) {
@@ -254,7 +254,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
                 deliveryStatus = matchedDelivery.getStatus();
                 deliveryLabel = historyDeliveryLabel(deliveryStatus);
             }
-            result.add(new OrderHistorySummary.Shop(shop.getShop().getShopName(), fulfillmentLabel, deliveryStatus, deliveryLabel));
+            result.add(new OrderHistorySummary.Shop(shop.getShop().getShopName(), fulfillmentLabel, deliveryStatus, deliveryLabel, shop.getShopOrderId()));
         }
         return result;
     }
@@ -380,10 +380,9 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         if(children.isEmpty()) return "Đơn hàng chưa có thông tin cửa hàng, không thể hủy.";
         if(children.stream().anyMatch(c -> "CANCELLED".equals(c.getStatus())))
             return "Một đơn cửa hàng đã được hủy. Không thể hủy lại hoặc hủy một phần đơn này.";
-        // UC-22 / GBR-25: confirmation still allows cancellation; preparation does not.
         for (ShopOrder child : children) {
-            if (!"PENDING".equals(child.getStatus()) && !"CONFIRMED".equals(child.getStatus())) {
-                return "Một cửa hàng đã bắt đầu chuẩn bị hoặc xử lý đơn. Bạn không thể hủy toàn bộ đơn này.";
+            if (!"PENDING".equals(child.getStatus()) || child.getConfirmedAt() != null) {
+                return "Một cửa hàng đã xác nhận hoặc bắt đầu xử lý đơn. Bạn không thể hủy toàn bộ đơn này.";
             }
         }
         if(delivery.stream().anyMatch(d -> !Set.of("UNASSIGNED","ASSIGNED","ACCEPTED","CANCELLED").contains(d.getStatus())))
@@ -399,6 +398,9 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         User buyer = lockCustomer(customerId);
         owned(customerId, orderId);
         List<ShopOrder> children = shopOrders.findByOrderOrderIdOrderByShopOrderIdAsc(orderId);
+        if (children.isEmpty() || children.stream().anyMatch(shop -> !"CANCELLED".equals(shop.getStatus()))) {
+            throw new CustomerOrderException("Chỉ có thể mua lại lượt mua khi tất cả đơn cửa hàng đã hủy. Với lượt mua hỗn hợp, hãy mở riêng đơn đã hủy để mua lại.");
+        }
         Map<Long, Long> quantities = new TreeMap<>();
         Map<Long, OrderItem> originalItems = new HashMap<>();
         for (ShopOrder child : children) {

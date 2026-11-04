@@ -4,10 +4,10 @@ import VietFreshHub.order.dto.IncomingOrderResponse;
 import VietFreshHub.order.dto.OrderFilterRequest;
 import VietFreshHub.order.service.OrderService;
 import VietFreshHub.order.service.OrderLabels;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.CacheControl;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import java.io.IOException;
 
 @Controller
 @RequiredArgsConstructor
@@ -64,22 +66,6 @@ public class OrderController {
                               Authentication authentication, Model model) {
         return showOrders(orderService.getReadyOrders(authentication, filter, page), "Sẵn sàng giao",
                 "Hiện không có đơn hàng sẵn sàng giao.", "/seller/ready-orders", "ready", false, model);
-    }
-
-    @GetMapping("/seller/failed-orders")
-    public String failedOrders(@ModelAttribute("filter") OrderFilterRequest filter,
-                               @RequestParam(defaultValue = "0") int page,
-                               Authentication authentication, Model model) {
-        return showOrders(orderService.getFailedOrders(authentication, filter, page), "Giao hàng thất bại",
-                "Hiện không có đơn hàng giao thất bại.", "/seller/failed-orders", "failed", false, model);
-    }
-
-    @GetMapping("/seller/cancelled-orders")
-    public String cancelledOrders(@ModelAttribute("filter") OrderFilterRequest filter,
-                                  @RequestParam(defaultValue = "0") int page,
-                                  Authentication authentication, Model model) {
-        return showOrders(orderService.getCancelledOrders(authentication, filter, page), "Đã hủy",
-                "Hiện không có đơn hàng đã hủy.", "/seller/cancelled-orders", "cancelled", false, model);
     }
 
     @GetMapping({"/seller/completed-orders", "/seller/processed-orders"})
@@ -133,6 +119,7 @@ public class OrderController {
                               String emptyMessage, String filterAction, String orderView,
                               boolean showStatusFilter, Model model) {
         model.addAttribute("orders", orders.getContent());
+        model.addAttribute("ordersPage", orders);
         addPageAttributes(orders, model);
         model.addAttribute("pageTitle", pageTitle);
         model.addAttribute("emptyMessage", emptyMessage);
@@ -152,7 +139,7 @@ public class OrderController {
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<Void> handleAccessDenied() {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    public void handleAccessDenied(HttpServletResponse response) throws IOException {
+        response.sendError(HttpServletResponse.SC_FORBIDDEN);
     }
 }

@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/storefront :: head(${addressFormTitle})}"></head>
-<body>
-<header th:replace="~{fragments/storefront :: header}"></header>
-<main class="container page checkout-address-page">
+<head th:replace="~{fragments/interface-layout :: customerHead(${addressFormTitle})}"></head>
+<body class="vfo-app vfr-app vfc-app vfr-customer" data-vfr-section="account">
+<th:block th:replace="~{fragments/interface-layout :: navigation('customer','account')}"></th:block>
+
+
+<main class="container page checkout-address-page vfr-page" id="customer-content" tabindex="-1">
     <div class="page-heading"><h1 class="checkout-title" th:text="${addressFormTitle}">Địa chỉ giao hàng</h1></div>
     <section class="panel" aria-label="Thông tin địa chỉ giao hàng">
         <form th:action="@{${addressFormAction}}" th:object="${addressForm}" method="post" class="address-create-form" data-customer-address-autocomplete th:data-autocomplete-url="@{/api/vietmap/autocomplete}" th:data-address-original-text="${currentAddress != null ? currentAddress.searchText : null}">
@@ -22,17 +24,17 @@
             <div class="address-form-grid">
                 <div>
                     <label for="recipient-name">Tên người nhận</label>
-                    <input id="recipient-name" th:field="*{recipientName}" autocomplete="name" maxlength="150" required>
+                    <input id="recipient-name" th:field="*{recipientName}" autocomplete="name" maxlength="150" required class="form-control">
                     <small th:errors="*{recipientName}"></small>
                 </div>
                 <div>
                     <label for="recipient-phone">Số điện thoại</label>
-                    <input id="recipient-phone" th:field="*{phone}" type="tel" autocomplete="tel" maxlength="30" required>
+                    <input id="recipient-phone" th:field="*{phone}" type="tel" autocomplete="tel" maxlength="30" required class="form-control">
                     <small th:errors="*{phone}"></small>
                 </div>
                 <div class="address-location">
                     <label for="address-search">Địa chỉ giao hàng</label>
-                    <input id="address-search" th:field="*{searchText}" data-address-search autocomplete="off" required>
+                    <input id="address-search" th:field="*{searchText}" data-address-search autocomplete="off" required class="form-control">
                     <ul data-address-suggestions aria-label="Gợi ý địa chỉ"></ul>
                     <p data-address-status role="status" aria-live="polite" class="muted"></p>
                     <small th:errors="*{refId}"></small>
@@ -40,7 +42,7 @@
             </div>
             <th:block th:unless="${checkoutAddressForm}">
                 <p>
-                    <label><input type="checkbox" th:field="*{default}"> Đặt làm địa chỉ mặc định</label>
+                    <label><input type="checkbox" th:field="*{default}" class="form-check-input"> Đặt làm địa chỉ mặc định</label>
                 </p>
                 <p class="item-error" th:errors="*{default}"></p>
             </th:block>
@@ -56,8 +58,9 @@
         </form>
     </section>
 </main>
-<footer th:replace="~{fragments/storefront :: footer}"></footer>
+
 <script defer th:src="@{/js/customer-address-autocomplete.js}"></script>
 <script defer th:src="@{/js/checkout.js}"></script>
+<footer th:replace="~{fragments/customer-service :: footer}"></footer>
 </body>
 </html>

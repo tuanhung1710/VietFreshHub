@@ -2,10 +2,10 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
     <head th:replace="~{fragments/customer-shop :: head('Danh sách gian hàng')}">
     </head>
-    <body>
+    <body class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
         <header th:replace="~{fragments/customer-shop :: header}">
         </header>
-        <main class="container" id="shopspage">
+        <main class="container vfr-page" id="shopspage">
             <div class="bread">
                 <a th:href="@{/home}">
                     Trang chủ
@@ -25,7 +25,6 @@
                 </p>
             </div>
         </main>
-        <footer th:replace="~{fragments/customer-shop :: footer}">
-        </footer>
+        <footer th:replace="~{fragments/footer :: footer}"></footer>
     </body>
 </html>
