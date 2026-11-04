@@ -131,15 +131,19 @@
                 <div class="table-responsive vf-inventory-table-wrap" th:if="${!rows.empty}" tabindex="0" aria-label="Bảng tồn kho, có thể cuộn ngang">
 
                     <!-- Bảng dữ liệu -->
+                    <!-- lowercase vào đây: mở rộng bảng để đủ cột hết hạn sử dụng. -->
                     <table
                         class="table align-middle mb-0 vf-inventory-table"
                         aria-label="Tồn kho theo sản phẩm"
+                        style="min-width:1160px"
                     >
                         <colgroup>
                             <col class="vf-col-name">
                             <col class="vf-col-quantity">
                             <col class="vf-col-quantity">
                             <col class="vf-col-sale">
+                            <!-- lowercase vào đây: cột số lượng hết hạn. -->
+                            <col class="vf-col-quantity">
                             <col class="vf-col-batches">
                             <col class="vf-col-actions">
                         </colgroup>
@@ -157,7 +161,11 @@
                                 <th title="Số lượng còn hạn, không bị khóa và chưa giữ cho đơn hàng.">
                                     Khả dụng
                                 </th>
-                                <th>
+                                <!-- lowercase vào đây: tiêu đề số lượng hết hạn, gồm cả hàng giữ cho đơn. -->
+                                <th title="Số lượng còn trong kho của các lô đã quá hạn, gồm cả hàng giữ cho đơn.">
+                                    Hết hạn sử dụng
+                                </th>
+                                <th class="text-end">
                                     Lô hàng
                                 </th>
                                 <th>
@@ -212,6 +220,10 @@
                                         <strong th:text="${r.inventoryAvailable}">
                                         </strong>
                                     </td>
+                                    <!-- lowercase vào đây: cộng tồn hết hạn của toàn bộ lô thuộc các phân loại đang hiển thị. -->
+                                    <td data-label="Hết hạn sử dụng" class="vf-table-number">
+                                        <strong th:text="${#aggregates.sum(vs.![#aggregates.sum(batches.?[expired].![batch.quantityOnHand]) ?: 0]) ?: 0}"></strong>
+                                    </td>
                                     <td th:text="${r.batchCount}" data-label="Lô hàng" class="vf-table-number">
                                     </td>
                                     <td data-label="Thao tác" class="vf-table-actions">
@@ -251,7 +263,8 @@
                                     </td>
                                 </tr>
                                 <tr class="vf-collapse-row">
-                                    <td colspan="6">
+                                    <!-- lowercase vào đây: dòng mở rộng phủ đủ 7 cột. -->
+                                    <td colspan="7">
                                         <div
                                             class="collapse" th:classappend="${inventoryFilters.variantId != null ? 'show' : ''}"
                                             th:id="${'inventory-product-'+r.product.productId}"
@@ -266,6 +279,8 @@
                                                     <col class="vf-col-quantity">
                                                     <col class="vf-col-quantity">
                                                     <col class="vf-col-sale">
+                                                    <!-- lowercase vào đây: giữ cột hết hạn thẳng hàng với bảng sản phẩm. -->
+                                                    <col class="vf-col-quantity">
                                                     <col class="vf-col-batches">
                                                     <col class="vf-col-actions">
                                                 </colgroup>
@@ -283,7 +298,11 @@
                                                         <th title="Số lượng còn hạn, không bị khóa và chưa giữ cho đơn hàng.">
                                                             Khả dụng
                                                         </th>
-                                                        <th>
+                                                        <!-- lowercase vào đây: tiêu đề cột hết hạn của phân loại. -->
+                                                        <th title="Số lượng còn trong kho của các lô đã quá hạn, gồm cả hàng giữ cho đơn.">
+                                                            Hết hạn sử dụng
+                                                        </th>
+                                                        <th class="text-end">
                                                             Lô hàng
                                                         </th>
                                                         <th>
@@ -337,6 +356,10 @@
                                                                     </span>
                                                                 </div>
                                                             </td>
+                                                            <!-- lowercase vào đây: cộng tồn của các lô đã hết hạn trong phân loại, kể cả khi đang lọc danh sách lô. -->
+                                                            <td data-label="Hết hạn sử dụng" class="vf-table-number">
+                                                                <strong th:text="${#aggregates.sum(v.batches.?[expired].![batch.quantityOnHand]) ?: 0}"></strong>
+                                                            </td>
                                                             <td th:text="${v.matchedBatches == null ? v.batchCount : v.inventoryBatches.size() + ' / ' + v.batchCount}" title="Lô khớp bộ lọc / tổng số lô khi có lọc hạn sử dụng" data-label="Lô hàng" class="vf-table-number">
                                                             </td>
                                                             <td data-label="Thao tác" class="vf-table-actions">
@@ -365,7 +388,8 @@
                                                             </td>
                                                         </tr>
                                                         <tr class="vf-collapse-row">
-                                                            <td colspan="6">
+                                                            <!-- lowercase vào đây: phần chi tiết lô phủ đủ 7 cột. -->
+                                                            <td colspan="7">
                                                                 <div
                                                                     class="collapse" th:classappend="${inventoryFilters.variantId != null ? 'show' : ''}"
                                                                     th:id="${'inventory-details-'+v.variant.variantId}"
@@ -420,6 +444,8 @@
                                                                                     <col class="vf-col-quantity">
                                                                                     <col class="vf-col-quantity">
                                                                                     <col class="vf-col-sale">
+                                                                                    <!-- lowercase vào đây: giữ cột hết hạn thẳng hàng ở cấp lô. -->
+                                                                                    <col class="vf-col-quantity">
                                                                                     <col class="vf-col-batches">
                                                                                     <col class="vf-col-actions">
                                                                                 </colgroup>
@@ -437,7 +463,11 @@
                                                                                         <th title="Số lượng còn hạn, không bị khóa và chưa giữ cho đơn hàng.">
                                                                                             Khả dụng
                                                                                         </th>
-                                                                                        <th>
+                                                                                        <!-- lowercase vào đây: tiêu đề cột hết hạn của lô hàng. -->
+                                                                                        <th title="Số lượng còn trong kho của lô đã quá hạn, gồm cả hàng giữ cho đơn.">
+                                                                                            Hết hạn sử dụng
+                                                                                        </th>
+                                                                                        <th class="text-end">
                                                                                             Lô hàng
                                                                                         </th>
                                                                                         <th>
@@ -482,6 +512,10 @@
                                                                                             th:text="${b.available}"
                                                                                          data-label="Khả dụng" class="vf-table-number">
                                                                                         </td>
+                                                                                        <!-- lowercase vào đây: dùng cờ expired đã được xử lý, lô chưa hết hạn hiển thị 0. -->
+                                                                                        <td data-label="Hết hạn sử dụng" class="vf-table-number"
+                                                                                            th:text="${b.expired ? b.batch.quantityOnHand : 0}">
+                                                                                        </td>
                                                                                         <td class="vf-table-number text-secondary" data-label="Lô hàng" aria-label="Không áp dụng">—</td>
                                                                                         <td class="vf-table-actions vf-batch-actions-cell" data-label="Thao tác">
                                                                                             <div th:replace="~{fragments/inventory-actions :: batchActions(${b}, ${r.published&&v.variant.status.name()=='ACTIVE'}, false)}"></div>
@@ -501,8 +535,9 @@
                                                         </tr>
                                                     </th:block>
                                                     <tr th:if="${vs.empty}">
+                                                        <!-- lowercase vào đây: thông báo trống phủ đủ 7 cột. -->
                                                         <td
-                                                            colspan="6"
+                                                            colspan="7"
                                                             class="text-center text-secondary py-4"
                                                         >
                                                             Chưa có phân loại.

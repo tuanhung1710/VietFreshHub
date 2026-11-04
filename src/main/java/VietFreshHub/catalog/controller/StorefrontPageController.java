@@ -1,62 +1,49 @@
 package VietFreshHub.catalog.controller;
 
+import VietFreshHub.catalog.dto.CatalogBrowseFilter;
+import VietFreshHub.catalog.dto.CatalogProductResponse;
 import VietFreshHub.catalog.service.CatalogService;
 import VietFreshHub.catalog.service.StorefrontService;
-import VietFreshHub.exception.ResourceNotFoundException;
+import VietFreshHub.shop.entity.Shop;
 import VietFreshHub.shop.service.ShopBrowseService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 @RequiredArgsConstructor
+@RequestMapping("/product-detail")
 public class StorefrontPageController {
-    private final CatalogService catalog;
-    private final ShopBrowseService shops;
-    private final StorefrontService storefront;
 
-    @GetMapping({"/home", "/customer/home"})
-    public String home() { return "customer/home"; }
+    private final CatalogService catalogService;
+    private final ShopBrowseService shopBrowseService;
+    private final StorefrontService storefrontService;
 
-    @GetMapping("/shops")
-    public String shops() { return "customer/home"; }
-
-    @GetMapping("/shops/{shopId}")
-    public String shop(@PathVariable Long shopId, Model model) {
-        addShopInformation(shopId, model);
-        return "shop/detail";
-    }
-
-    private void addShopInformation(Long shopId, Model model) {
-        var shop = shops.profile(shopId);
-        model.addAttribute("shop", shop);
-        model.addAttribute("formattedAddress", storefront.shopAddress(shopId).orElse("Chưa cập nhật địa chỉ"));
-        model.addAttribute("joinedDate", shop.getCreatedAt() == null ? null
-                : shop.getCreatedAt().atOffset(java.time.ZoneOffset.UTC)
-                .atZoneSameInstant(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate());
-    }
-
-    @GetMapping({"/product-detail", "/product-detail/{variantId}"})
-    public String product(@PathVariable(required = false) Long variantId, @RequestParam(required = false) Long productId,
-                          @RequestParam(required = false) String slug, Model model) {
-        var product = catalog.getProduct(variantId, productId, slug);
-        addShopInformation(product.getShopId(), model);
-        var filter = new VietFreshHub.catalog.dto.CatalogBrowseFilter();
-        filter.setShopId(product.getShopId());
-        var related = catalog.listProducts(filter);
+    /** Hiển thị sản phẩm, các quy cách mua được và sản phẩm liên quan trong cùng cửa hàng. */
+    @GetMapping({"", "/{variantId}"})
+    public String detail(
+            @PathVariable(required = false) Long variantId,
+            @RequestParam(required = false) Long productId,
+            @RequestParam(required = false) String slug,
+            Model model) {
+        CatalogProductResponse product = catalogService.getProduct(variantId, productId, slug);
+        Shop shop = shopBrowseService.profile(product.getShopId());
+        CatalogBrowseFilter filters = new CatalogBrowseFilter();
+        filters.setShopId(product.getShopId());
+        Page<CatalogProductResponse> related = catalogService.listProducts(filters);
         model.addAttribute("product", product);
-        model.addAttribute("details", storefront.productDetails(product.getProductId()));
+        model.addAttribute("shop", shop);
+        model.addAttribute("details", storefrontService.productDetails(product.getProductId()));
+        model.addAttribute("formattedAddress", storefrontService.shopAddress(shop.getShopId()).orElse("Chưa cập nhật địa chỉ"));
+        model.addAttribute("joinedDate", shop.getCreatedAt() == null ? null : shop.getCreatedAt().plusHours(7).toLocalDate());
         model.addAttribute("shopProductCount", related.getTotalElements());
-        model.addAttribute("related", related.stream().filter(item -> !item.getProductId().equals(product.getProductId())).limit(5).toList());
+        model.addAttribute("related", related.stream()
+                .filter(item -> !item.getProductId().equals(product.getProductId())).limit(5).toList());
         return "customer/product-detail";
-    }
-
-    @ExceptionHandler(ResourceNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public String unavailable(ResourceNotFoundException exception, Model model) {
-        model.addAttribute("message", exception.getMessage());
-        return "customer/catalog-error";
     }
 }

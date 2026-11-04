@@ -11,7 +11,6 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.NotBlank;
 import java.math.BigDecimal;
 import java.util.List;
-import org.springframework.web.util.UriComponentsBuilder;
 import lombok.Getter;
 import lombok.Setter;
 import VietFreshHub.common.PageSizes;
@@ -52,27 +51,4 @@ public class CatalogBrowseFilter {
         return PageSizes.isAllowed(pageSize);
     }
 
-    public String urlForPage(int targetPage) {
-        return url().queryParam("page", targetPage).build().encode().toUriString();
-    }
-
-    public String urlForCategory(Long targetCategory) {
-        var builder = url().replaceQueryParam("categoryId");
-        if (targetCategory != null) builder.queryParam("categoryId", targetCategory);
-        return builder.build().encode().toUriString();
-    }
-
-    private UriComponentsBuilder url() {
-        var builder = UriComponentsBuilder.fromPath("/home").queryParam("keyword", keyword);
-        if (categoryId != null) builder.queryParam("categoryId", categoryId);
-        if (shopId != null) builder.queryParam("shopId", shopId);
-        if (shopIds != null && !shopIds.isEmpty()) builder.queryParam("shopIds", shopIds);
-        if (places != null && !places.isEmpty()) builder.queryParam("places", places);
-        if (minRating > 0) builder.queryParam("minRating", minRating);
-        builder.queryParam("pageSize", pageSize);
-        if (minPrice != null) builder.queryParam("minPrice", minPrice);
-        if (maxPrice != null) builder.queryParam("maxPrice", maxPrice);
-        if (!"popular".equals(sort)) builder.queryParam("sort", sort);
-        return builder;
-    }
 }

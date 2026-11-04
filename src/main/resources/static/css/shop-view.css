@@ -32,3 +32,14 @@ a{color:inherit}
 .footgrid p{margin-bottom:8px}
 #footerCategories p{margin:0;font-size:13px;line-height:1.7}
 @media(max-width:550px){.stat{gap:8px}.stat strong{min-width:90px}.identity{gap:12px}.perpage{gap:8px;flex-wrap:wrap}.utility{gap:12px;align-items:center}}
+
+/* Shop navigation and pagination are normal server-rendered links. */
+.button{display:inline-block;border:1px solid #999;padding:10px 14px;background:#fff;text-decoration:none;text-align:center}
+.button:hover{background:#ededed}.button.disabled{opacity:.3;cursor:default}
+.nav a{border-right:1px solid #ddd;padding:13px 19px;text-decoration:none}.nav a.active{font-weight:bold;text-decoration:underline}
+.nav a:hover,.product:hover{background:#ededed}.products>.product{display:block;background:#fff;text-decoration:none}
+.actions a.active{background:#111;color:#fff}.pagecount small{display:block}
+.modal::backdrop{background:#0008}.modal form{margin:0}
+.pager-left,.pager-info{display:flex;align-items:center;gap:15px}
+.pager-info{flex-direction:column;gap:7px;min-width:100px}
+.pager-info small{display:block;color:#777}
