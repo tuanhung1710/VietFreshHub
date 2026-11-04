@@ -114,7 +114,8 @@ public class BatchAllocationHistoryService {
         LocalDateTime updatedAt = history.stream().map(InventoryTransaction::getCreatedAt)
                 .filter(Objects::nonNull).max(Comparator.naturalOrder()).orElse(null);
         List<ProcessingEvent> events = history.stream().map(event -> new ProcessingEvent(
-                event.getCreatedAt(), description(event, unit), note(event))).toList();
+                event.getCreatedAt(), description(event, unit), order.getOrder() == null ? note(event)
+                        : order.getOrder().formatOrderCodeIn(note(event)))).toList();
         String orderCode = order.getOrder() == null ? "Đơn hàng" : order.getOrder().getOrderCode();
         return new AllocationResponse(allocation.getAllocationId(), line.getOrderItemId(), orderCode,
                 line.getQuantity(), unit, allocation.getStatus(), updatedAt, events);

@@ -1025,7 +1025,7 @@ SET @total=@subtotal-@discount+@shipping;
    VALUES(@customer,'TMP-'+CONVERT(VARCHAR(36),NEWID()),CASE WHEN @status='COMPLETED' THEN 'COMPLETED' WHEN @status='CANCELLED' THEN 'CANCELLED' WHEN @status='PENDING' THEN 'PENDING' WHEN @status='CONFIRMED' THEN 'CONFIRMED' ELSE 'PROCESSING' END,
     CASE WHEN @refunded=1 THEN 'REFUNDED' WHEN @paid=1 THEN 'PAID' ELSE 'UNPAID' END,@subtotal,@discount,@shipping,@total,@placed,CASE WHEN @status='COMPLETED' THEN DATEADD(HOUR,3,@placed) END,CASE WHEN @status='CANCELLED' THEN DATEADD(HOUR,2,@placed) END);
   SET @order=SCOPE_IDENTITY();
-UPDATE dbo.orders SET order_code='ORD-'+CASE WHEN LEN(CONVERT(VARCHAR(20),@order))<6 THEN REPLICATE('0',6-LEN(CONVERT(VARCHAR(20),@order))) ELSE '' END+CONVERT(VARCHAR(20),@order) WHERE order_id=@order;
+UPDATE dbo.orders SET order_code='VFH-'+CASE WHEN LEN(CONVERT(VARCHAR(20),@order))<6 THEN REPLICATE('0',6-LEN(CONVERT(VARCHAR(20),@order))) ELSE '' END+CONVERT(VARCHAR(20),@order) WHERE order_id=@order;
 INSERT dbo.order_addresses(order_id,recipient_name,phone,province,ward,address_line,formatted_address,latitude,longitude)
 SELECT @order,recipient_name,phone,province,ward,address_line,formatted_address,latitude,longitude FROM dbo.addresses WHERE user_id=@customer AND is_default=1;
 -- Insert lines while PENDING so preparation snapshot triggers run normally.

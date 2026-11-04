@@ -171,7 +171,6 @@ public class CheckoutController {
                 // A connection/commit failure may leave the outcome unknown. Keep the original
                 // idempotency token and avoid another database/provider call on the error path.
                 model.addAttribute("checkoutToken", draft.token());
-                model.addAttribute("orderCode", "VF-" + draft.token());
                 return "customer/checkout-unavailable";
             }
         }

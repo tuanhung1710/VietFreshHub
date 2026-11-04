@@ -17,6 +17,11 @@ public class JournalResponse {
         return VietFreshHub.common.BusinessCodes.format("LOT", event.getBatchId());
     }
 
+    public String getDisplayNote() {
+        return "ORDER_ITEM".equals(event.getReferenceType())
+                ? VietFreshHub.common.OrderCodes.displayInText(event.getNote()) : event.getNote();
+    }
+
     public String getDisplayProductName() {
         return hasText(productName) ? productName : "Sản phẩm không còn dữ liệu";
     }
