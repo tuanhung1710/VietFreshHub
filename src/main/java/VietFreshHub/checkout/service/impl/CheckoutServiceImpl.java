@@ -159,7 +159,7 @@ public class CheckoutServiceImpl implements CheckoutService {
                 draft, deliveryAddress, itemsByShopId.keySet());
 
         // Tạo đơn tổng, đơn từng shop, giữ kho và ghi nhận payment theo phương thức đã chọn.
-        Order order = checkoutOrderService.createOrder(buyer, orderCode, subtotal, shippingFee, deliveryAddress);
+        Order order = checkoutOrderService.createOrder(buyer, checkoutReference, subtotal, shippingFee, deliveryAddress);
         if ("BANK_TRANSFER".equals(paymentMethod.getMethodCode())) order.setPaymentStatus("PENDING");
         CheckoutOrderService.CreatedShopOrders createdShopOrders = checkoutOrderService.createShopOrders(order, buyer, itemsByShopId, draft.shopQuotes());
         inventoryReservationService.reserve(createdShopOrders.reservations(), customerId);
