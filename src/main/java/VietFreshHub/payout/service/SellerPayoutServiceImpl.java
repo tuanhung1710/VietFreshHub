@@ -178,6 +178,8 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
     private SellerPayoutBatch createBatch(List<SellerPayout> eligible,
                                           Map<Long, ShopPayoutAccount> payoutAccounts,
                                           LocalDateTime scheduledAt, String scheduledSlot) {
+        recalculatePayoutAmounts(eligible);
+
         SellerPayoutBatch batch = new SellerPayoutBatch();
         batch.setScheduledSlot(scheduledSlot);
         batch.setScheduledAt(scheduledAt);
@@ -213,19 +215,26 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
     public List<AdminPayoutRow> getQueue() {
         Map<Long, ShopPayoutAccount> accountsByShop = accounts.findAll().stream()
                 .collect(Collectors.toMap(ShopPayoutAccount::getShopId, Function.identity()));
-        return payouts.findByStatusInOrderByEligibleAtAscPayoutIdAsc(
-                        List.of(SellerPayout.Status.PENDING, SellerPayout.Status.FAILED))
+        List<SellerPayout> queue = payouts.findByStatusInOrderByEligibleAtAscPayoutIdAsc(
+                List.of(SellerPayout.Status.PENDING, SellerPayout.Status.FAILED));
+        Map<Long, BigDecimal> couponDiscounts = couponDiscounts(queue.stream()
+                .map(payout -> payout.getShopOrder().getShopOrderId()).toList());
+
+        return queue
                 .stream().map(payout -> {
                     boolean hasPayoutAccount = accountsByShop.containsKey(payout.getShopId());
                     boolean canManualBatch = BATCHABLE_STATUSES.contains(payout.getStatus())
                             && payout.getEligibleAt() != null
                             && payout.getFundsConfirmedAt() != null && hasPayoutAccount;
+                    Long shopOrderId = payout.getShopOrder().getShopOrderId();
+                    PayoutAmounts amounts = calculatePayoutAmounts(payout.getShopOrder(),
+                            couponDiscounts.getOrDefault(shopOrderId, BigDecimal.ZERO));
                     return new AdminPayoutRow(
                             payout.getPayoutId(), payout.getShopId(), payout.getShop().getShopName(),
-                            payout.getShopOrder().getShopOrderId(), payout.getShopOrder().getOrder().getOrderCode(),
+                            shopOrderId, payout.getShopOrder().getOrder().getOrderCode(),
                             payout.getFundsSource().name(), payout.getShopOrder().getSubtotal(),
-                            payout.getShopOrder().getDiscountTotal(), payout.getGrossAmount(),
-                            payout.getCommissionAmount(), payout.getNetAmount(), payout.getStatus().name(),
+                            couponDiscounts.getOrDefault(shopOrderId, BigDecimal.ZERO), amounts.grossAmount(),
+                            amounts.commissionAmount(), amounts.netAmount(), payout.getStatus().name(),
                             payout.getEligibleAt(), payout.getFundsConfirmedAt(), hasPayoutAccount, canManualBatch);
                 })
                 .toList();
@@ -344,13 +353,17 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
     public PayoutBatchExport getBatchExport(Long batchId) {
         SellerPayoutBatch batch = batches.findByBatchId(batchId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đợt chi trả."));
-        List<PayoutBatchExportItem> items = batchItems.findForBatch(batchId).stream().map(item -> {
+        List<SellerPayoutBatchItem> batchPayoutItems = batchItems.findForBatch(batchId);
+        Map<Long, BigDecimal> couponDiscounts = couponDiscounts(batchPayoutItems.stream()
+                .map(item -> item.getPayout().getShopOrder().getShopOrderId()).toList());
+        List<PayoutBatchExportItem> items = batchPayoutItems.stream().map(item -> {
             SellerPayout payout = item.getPayout();
             ShopOrder shopOrder = payout.getShopOrder();
             return new PayoutBatchExportItem(item.getShopId(), item.getShopNameSnapshot(), item.getBankNameSnapshot(),
                     item.getBankCodeSnapshot(), item.getAccountNumberSnapshot(), item.getAccountHolderSnapshot(),
                     shopOrder.getShopOrderId(), shopOrder.getOrder().getOrderCode(), shopOrder.getSubtotal(),
-                    payout.getGrossAmount(), shopOrder.getDiscountTotal(), payout.getCommissionAmount(),
+                    payout.getGrossAmount(), couponDiscounts.getOrDefault(shopOrder.getShopOrderId(), BigDecimal.ZERO),
+                    payout.getCommissionAmount(),
                     item.getTransferAmount());
         }).toList();
         return new PayoutBatchExport(batch.getBatchId(), batch.getScheduledSlot(), batch.getScheduledAt(),
@@ -375,26 +388,74 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
 
     private SellerPayout newPayout(ShopOrder shopOrder, LocalDateTime eligibleAt,
                                    SellerPayout.FundsSource source, LocalDateTime fundsConfirmedAt) {
-        validateCommissionRate();
-        BigDecimal subtotal = money(shopOrder.getSubtotal());
-        BigDecimal discount = money(shopOrder.getDiscountTotal());
-        BigDecimal eligibleAmount = subtotal.subtract(discount);
-        if (eligibleAmount.signum() < 0) {
-            throw new IllegalStateException("Tổng giảm giá không được lớn hơn tiền hàng của đơn.");
-        }
         SellerPayout payout = new SellerPayout();
         payout.setShopId(shopOrder.getShopId());
         payout.setShop(shopReference(shopOrder.getShopId()));
         payout.setShopOrder(shopOrder);
-        payout.setGrossAmount(eligibleAmount);
-        BigDecimal commission = eligibleAmount.multiply(commissionRate).setScale(2, RoundingMode.HALF_UP);
-        payout.setCommissionAmount(commission);
-        payout.setNetAmount(eligibleAmount.subtract(commission));
+        BigDecimal couponDiscount = couponDiscounts(List.of(shopOrder.getShopOrderId()))
+                .getOrDefault(shopOrder.getShopOrderId(), BigDecimal.ZERO);
+        recalculatePayoutAmounts(payout, couponDiscount);
         payout.setEligibleAt(eligibleAt);
         payout.setFundsSource(source);
         payout.setFundsConfirmedAt(fundsConfirmedAt);
         payout.setStatus(SellerPayout.Status.PENDING);
         return payout;
+    }
+
+    private void recalculatePayoutAmounts(List<SellerPayout> payoutRows) {
+        if (payoutRows.isEmpty()) return;
+
+        Map<Long, BigDecimal> couponDiscounts = couponDiscounts(payoutRows.stream()
+                .map(payout -> payout.getShopOrder().getShopOrderId()).toList());
+        recalculatePayoutAmounts(payoutRows, couponDiscounts);
+    }
+
+    private void recalculatePayoutAmounts(List<SellerPayout> payoutRows,
+                                         Map<Long, BigDecimal> couponDiscounts) {
+        for (SellerPayout payout : payoutRows) {
+            Long shopOrderId = payout.getShopOrder().getShopOrderId();
+            recalculatePayoutAmounts(payout,
+                    couponDiscounts.getOrDefault(shopOrderId, BigDecimal.ZERO));
+        }
+    }
+
+    private void recalculatePayoutAmounts(SellerPayout payout, BigDecimal couponDiscount) {
+        PayoutAmounts amounts = calculatePayoutAmounts(payout.getShopOrder(), couponDiscount);
+        payout.setGrossAmount(amounts.grossAmount());
+        payout.setCommissionAmount(amounts.commissionAmount());
+        payout.setNetAmount(amounts.netAmount());
+    }
+
+    private PayoutAmounts calculatePayoutAmounts(ShopOrder shopOrder, BigDecimal couponDiscount) {
+        validateCommissionRate();
+        BigDecimal eligibleAmount = money(shopOrder.getSubtotal()).subtract(money(couponDiscount));
+        if (eligibleAmount.signum() < 0) {
+            throw new IllegalStateException("Tiền coupon giảm không được lớn hơn tiền hàng của đơn.");
+        }
+
+        BigDecimal commission = eligibleAmount.multiply(commissionRate).setScale(2, RoundingMode.HALF_UP);
+        return new PayoutAmounts(eligibleAmount, commission, eligibleAmount.subtract(commission));
+    }
+
+    private Map<Long, BigDecimal> couponDiscounts(List<Long> shopOrderIds) {
+        List<Long> distinctShopOrderIds = shopOrderIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (distinctShopOrderIds.isEmpty()) return Map.of();
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = entityManager.createNativeQuery("""
+                        SELECT shop_order_id, SUM(discount_amount)
+                        FROM dbo.order_discounts
+                        WHERE coupon_id IS NOT NULL AND shop_order_id IN (:shopOrderIds)
+                        GROUP BY shop_order_id
+                        """)
+                .setParameter("shopOrderIds", distinctShopOrderIds)
+                .getResultList();
+
+        Map<Long, BigDecimal> discounts = new LinkedHashMap<>();
+        for (Object[] row : rows) {
+            discounts.put(((Number) row[0]).longValue(), money((BigDecimal) row[1]));
+        }
+        return discounts;
     }
 
     private Shop shopReference(Long shopId) {
@@ -430,4 +491,6 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
     }
 
     private record PaymentState(SellerPayout.FundsSource source, LocalDateTime confirmedAt) { }
+
+    private record PayoutAmounts(BigDecimal grossAmount, BigDecimal commissionAmount, BigDecimal netAmount) { }
 }

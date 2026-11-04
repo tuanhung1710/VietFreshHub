@@ -158,6 +158,9 @@ body.vfr-app.vfr-customer:not(.vfr-retail) { display:flex; flex-direction:column
 .vfr-retail .vfr-page :is(.avatar,.storeavatar) { border-color:#dce6d0; border-radius:16px; filter:none; }
 .vfr-retail .vfr-page :is(.pricebox,.note,.notice) { border-color:#e1e9d5; border-radius:10px; background:#f4f8ed; }
 .vfr-retail .vfr-page :is(.variant,.qtyrow button,.qtyrow input) { border-color:#d6e2c9; color:#6e895a; }
+.vfr-app.vfr-retail .vfr-page .qtyrow button { border-color:#30634e; background-color:#30634e; color:#fff; }
+.vfr-app.vfr-retail .vfr-page .qtyrow button:hover:not(:disabled) { border-color:#254e3c; background-color:#254e3c; color:#fff; }
+.vfr-app.vfr-retail .vfr-page .qtyrow button:disabled { border-color:#cbd8c1; background-color:#e8f0df; color:#526f46; opacity:1; }
 .vfr-retail .vfr-page .variant { border-radius:8px; }
 .vfr-retail .vfr-page .variant.selected { border-color:#6e945b; background:#f0f6e8; }
 .vfr-retail .vfr-page .cta .solid { border-color:#30634e; border-radius:9px; background:#30634e; color:#fff; }
@@ -207,17 +210,22 @@ body.vfr-app.vfr-customer:not(.vfr-retail) { display:flex; flex-direction:column
 .vfr-app .vfr-demo-tools { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:25px; padding:18px; border:1px solid #e0e7d6; border-radius:12px; background:#fff; }
 
 /* Existing chat events, connection state and scroll containers remain intact. */
-.vfr-app.vfr-chat .chat-app { width:calc(100% - 48px); max-width:1390px; height:calc(100dvh - 170px); min-height:480px; margin:20px auto; border-color:#e0e7d6; border-radius:14px; box-shadow:0 5px 25px #29432c05; }
+.vfr-app.vfr-chat .chat-app { width:calc(100% - 48px); max-width:1320px; height:calc(100dvh - 170px); min-height:480px; margin:20px auto; border-color:#e0e7d6; border-radius:14px; box-shadow:0 5px 25px #29432c05; }
 .vfr-chat .vfo-workspace .chat-app { height:calc(100dvh - 135px); }
 .vfr-chat .chat-sidebar { border-color:#e3e9db; background:#fdfefb; }
 .vfr-chat :is(.sidebar-header,.shop-picker,.message-header,.message-form) { border-color:#e4eadd; }
-.vfr-chat .sidebar-header h1 { color:#3d633f; font-family:Georgia,serif; font-weight:400; }
+.vfr-chat .chat-app[data-mode="shop"] .sidebar-header { display:flex; min-height:76px; align-items:center; }
+.vfr-chat .chat-app[data-mode="shop"] .sidebar-header h1 { margin:0; }
+.vfr-chat .sidebar-header h1 { color:#3d633f; font-family:"Times New Roman",Georgia,serif; font-weight:400; letter-spacing:normal; }
 .vfr-chat .shop-picker { background:#f3f7eb; }
 .vfr-chat :is(.message-form button,.shop-picker button) { background:#30634e; color:#fff; }
 .vfr-chat .conversation-item.selected { border-left-color:#7a9a66; background:#eef4e6; }
+.vfr-app.vfr-chat .conversation-item { width:calc(100% - 24px); margin:4px 12px; padding:15px; border-radius:10px; }
 .vfr-chat .conversation-avatar { background:#e7f0dc; color:#72955c; }
 .vfr-chat .message-bubble { border-radius:12px; }
 .vfr-chat .message.own .message-bubble, .vfr-chat .message-bubble.own { background:#30634e; color:#fff; }
+.vfr-chat .quick-replies { gap:8px; padding:12px 20px 10px; border-top:1px solid #e4eadd; background:#fdfefb; }
+.vfr-app.vfr-chat .quick-replies .btn { min-height:36px; padding:7px 13px; border-radius:18px; font-size:12px; line-height:1.35; }
 .vfr-chat-workspace > .vfo-footer { margin-top:0; }
 .vfr-demo > .vfo-footer { margin-left:300px; }
 
@@ -260,6 +268,13 @@ body.vfr-app.vfr-customer:not(.vfr-retail) { display:flex; flex-direction:column
     .vfr-app.vfr-chat .chat-app { grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr); width:calc(100% - 28px); margin-top:15px; }
     .vfr-chat .sidebar-header, .vfr-chat .shop-picker { padding:15px; }
 }
+@media(max-width:700px) {
+    .vfr-app.vfr-chat .chat-app {
+        grid-template-columns:minmax(0,1fr);
+        width:calc(100% - 32px);
+    }
+    .vfr-app.vfr-chat .chat-app :is(.chat-sidebar,.chat-panel) { min-width:0; }
+}
 @media(max-width:480px) {
     .vfr-app .vfr-page { padding:20px 14px 30px; }
     .vfr-app.vfr-customer:not(.vfr-retail) .vfr-page { width:calc(100% - 28px); }
@@ -283,4 +298,130 @@ body.vfr-app.vfr-customer:not(.vfr-retail) { display:flex; flex-direction:column
     .vfr-app .vfr-page { width:100%!important; max-width:none; margin:0; padding:0; }
     .vfr-app .vfr-workspace, .vfr-product .vf-workspace { width:100%; margin:0; padding:0; }
     .vfr-app .vfc-header, .vfr-app .vfc-footer, .vfr-product-footer { display:none!important; }
+}
+
+/* Keep public authentication fields wide and their primary actions centered. */
+#loginForm,
+#registrationForm,
+#forgotPasswordForm {
+    width:min(100%, 680px);
+    margin-inline:auto;
+}
+#loginForm .relative.flex.items-center,
+#registrationForm .relative.flex.items-center {
+    display:block;
+    width:100%;
+}
+#loginForm .relative.flex.items-center > .absolute,
+#registrationForm .relative.flex.items-center > .absolute {
+    top:50%;
+    transform:translateY(-50%);
+}
+#loginForm .relative.flex.items-center > input,
+#registrationForm .relative.flex.items-center > input {
+    display:block;
+    box-sizing:border-box;
+    width:100%;
+    max-width:none;
+}
+#loginForm > div:last-child {
+    display:flex;
+    justify-content:center;
+}
+#loginForm #submitBtn,
+#registrationForm > #submitBtn {
+    width:auto;
+    min-width:190px;
+    margin-inline:auto;
+}
+#forgotPasswordForm > div > input[type="email"] {
+    display:block;
+    box-sizing:border-box;
+    width:100%;
+    max-width:none;
+}
+#forgotPasswordForm > button[type="submit"] {
+    display:block;
+    width:max-content;
+    min-width:190px;
+    margin-inline:auto;
+}
+#sellerOnboardingRegisterForm {
+    width:min(100%, 680px);
+    margin-inline:auto;
+}
+#sellerOnboardingRegisterForm input:not([type="checkbox"]) {
+    display:block;
+    box-sizing:border-box;
+    width:100%;
+    max-width:none;
+}
+#sellerOnboardingRegisterForm > button[type="submit"] {
+    display:block;
+    width:max-content;
+    min-width:190px;
+    margin-inline:auto;
+}
+
+/* Align the customer seller application form and its document controls. */
+#sellerApplicationForm {
+    width:100%;
+    max-width:64rem;
+    margin-inline:auto;
+}
+#sellerApplicationForm input:not([type="checkbox"]):not([type="file"]):not([type="hidden"]) {
+    display:block;
+    box-sizing:border-box;
+    width:100%;
+    max-width:none;
+}
+#sellerApplicationForm .relative > input[readonly] {
+    padding-right:2.75rem;
+}
+#sellerApplicationForm .relative > .absolute.right-3 {
+    top:50%;
+    transform:translateY(-50%);
+}
+#sellerApplicationForm .w-9.h-9 {
+    flex:0 0 2.25rem;
+    width:2.25rem;
+    height:2.25rem;
+}
+#sellerApplicationForm .w-6.h-6 {
+    flex:0 0 1.5rem;
+    width:1.5rem;
+    height:1.5rem;
+}
+#sellerApplicationForm .seller-document-grid {
+    display:grid;
+    grid-template-columns:minmax(0,1fr);
+    gap:1rem;
+}
+#sellerApplicationForm .upload-field > div.flex.flex-wrap.items-start.gap-3 > label {
+    box-sizing:border-box;
+    flex:0 0 8rem;
+    width:8rem;
+    height:8rem;
+}
+#sellerApplicationForm .seller-application-actions {
+    justify-content:center;
+}
+#sellerApplicationForm .seller-application-actions > div {
+    width:auto;
+    max-width:100%;
+    flex-wrap:wrap;
+    justify-content:center;
+}
+#sellerApplicationForm .seller-application-actions > div > a,
+#sellerApplicationForm .seller-application-actions > div > button {
+    width:auto;
+    max-width:100%;
+}
+
+/* Keep Vietnamese diacritics aligned on the four reported page headings. */
+body.vfo-app.vfr-app.vfr-admin[data-vfr-section="applications"] .vfr-page h1,
+body.vfo-app.vfr-app.vfr-admin[data-vfr-section="dashboard"] .vfr-page h1,
+body.vfo-app.vfr-app.vfr-admin.loyalty-page[data-vfr-section="loyalty"] .vfr-page h1 {
+    font-family:"Times New Roman",Georgia,serif;
+    letter-spacing:normal;
 }

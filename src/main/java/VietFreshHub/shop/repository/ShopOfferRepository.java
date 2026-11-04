@@ -33,7 +33,9 @@ public class ShopOfferRepository {
             FROM dbo.coupons c JOIN dbo.promotions p ON p.promotion_id=c.promotion_id
             WHERE p.shop_id=:shop AND p.status='ACTIVE' AND p.start_at<=:now AND p.end_at>:now
                 AND c.status='ACTIVE' AND c.start_at<=:now AND c.end_at>:now
-                AND (c.usage_limit IS NULL OR (SELECT COUNT(*) FROM dbo.coupon_usages u WHERE u.coupon_id=c.coupon_id)<c.usage_limit)
+                AND (c.usage_limit IS NULL OR (SELECT COUNT(*) FROM dbo.coupon_usages u
+                    JOIN dbo.orders o ON o.order_id=u.order_id
+                    WHERE u.coupon_id=c.coupon_id AND o.status<>'CANCELLED')<c.usage_limit)
         )
         """;
 

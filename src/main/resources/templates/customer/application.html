@@ -371,10 +371,6 @@
                         th:errors="*{taxCode}">
                 </p>
 
-                <span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
-      <span class="material-symbols-outlined text-[14px] text-outline">pin</span>
-
-    </span>
               </div>
 
             </div>
@@ -397,7 +393,7 @@
                 <span>PDF, JPG hoặc PNG · tối đa 10 MB/tài liệu</span>
               </div>
             </div>
-            <div class="flex flex-col gap-space-lg">
+            <div class="flex flex-col gap-space-lg seller-document-grid">
               <!-- DOCUMENT 1: IDENTITY_CARD -->
               <div class="flex flex-col gap-space-xs p-space-md rounded-xl bg-surface-container-low">
                 <div class="flex items-center justify-between">
@@ -550,7 +546,7 @@
               <p class="text-error text-sm" th:if="${#fields.hasErrors('termsAgree')}" th:errors="*{termsAgree}"></p>
             </div>
             <!-- Action Buttons Bar -->
-            <div class="flex flex-col sm:flex-row items-center justify-end gap-space-md pt-space-md border-t border-surface-container-low">
+            <div class="flex flex-col sm:flex-row items-center justify-end gap-space-md pt-space-md border-t border-surface-container-low seller-application-actions">
               <div class="w-full sm:w-auto flex items-center gap-space-sm">
                 <a class="w-1/2 sm:w-auto px-space-md py-3 rounded-lg text-on-surface-variant hover:text-on-surface font-title-md text-title-md text-center transition-colors" data-path="trang-chu" href="#">
                   Hủy bỏ

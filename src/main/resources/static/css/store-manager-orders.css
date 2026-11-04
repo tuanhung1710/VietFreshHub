@@ -453,3 +453,9 @@
     body.vfo-shell.vfo-sidebar-collapsed .vf-workspace { width: calc(100% - 56px); margin-left: 56px; }
     body.vfo-shell.vfo-sidebar-collapsed .vfr-product-footer { margin-left: 56px; }
 }
+
+/* Keep Vietnamese diacritics aligned on the refund request heading. */
+body.vfo-app.vfa-app .vfa-refund-page .vfo-page-heading h1 {
+    font-family:"Times New Roman", Georgia, serif;
+    letter-spacing:normal;
+}

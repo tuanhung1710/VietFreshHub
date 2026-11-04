@@ -3,6 +3,7 @@ import VietFreshHub.order.service.CustomerOrderService;
 import VietFreshHub.order.service.OrderInventoryReleaseService;
 import VietFreshHub.order.service.OrderCancelledEvent;
 import VietFreshHub.order.service.OrderLabels;
+import VietFreshHub.loyalty.services.LoyaltyService;
 
 import VietFreshHub.auth.entity.User;
 import VietFreshHub.auth.repository.UserRepository;
@@ -78,6 +79,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
     private final CatalogService catalog;
     private final CheckoutInventoryBatchRepository stock;
     private final OrderInventoryReleaseService inventory;
+    private final LoyaltyService loyaltyService;
     private final EntityManager em;
     private final ApplicationEventPublisher events;
 
@@ -345,6 +347,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
         }
         order.setStatus(Order.Status.CANCELLED);
         order.setCancelledAt(now);
+        loyaltyService.refundRedeemedRewardForCancelledOrder(customerId, orderId);
         em.flush();
         events.publishEvent(new OrderCancelledEvent(orderId, customerId));
     }

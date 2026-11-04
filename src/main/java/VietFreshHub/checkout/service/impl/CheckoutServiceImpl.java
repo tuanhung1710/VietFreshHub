@@ -158,14 +158,8 @@ public class CheckoutServiceImpl implements CheckoutService {
 
         // 3. Tạo đơn tổng, đơn từng shop, giữ kho và ghi nhận payment theo phương thức đã chọn.
         Order order = checkoutOrderService.createOrder(buyer, checkoutReference, subtotal, shippingFee, deliveryAddress);
-        if ("BANK_TRANSFER".equals(paymentMethod.getMethodCode())) order.setPaymentStatus("PENDING");
         CheckoutOrderService.CreatedShopOrders createdShopOrders = checkoutOrderService.createShopOrders(order, buyer, itemsByShopId, draft.shopQuotes());
         inventoryReservationService.reserve(createdShopOrders.reservations(), customerId);
-        if ("BANK_TRANSFER".equals(paymentMethod.getMethodCode())) {
-            for (Long shopOrderId : createdShopOrders.shopOrderIds()) {
-                entityManager.getReference(VietFreshHub.order.entity.ShopOrder.class, shopOrderId).setPaymentStatus("PENDING");
-            }
-        }
 
         if (request.getCouponCode() != null && !request.getCouponCode().isBlank()) {
             try {
@@ -185,6 +179,15 @@ public class CheckoutServiceImpl implements CheckoutService {
                 loyaltyService.redeemToOrder(customerId, order.getOrderId(), rewardAmountToUse);
             } catch (IllegalArgumentException ex) {
                 throw new CheckoutException(ex.getMessage());
+            }
+        }
+
+        // Keep the order UNPAID while coupon and reward services validate it.
+        // Mark it pending only after discounts have been applied and before payment creation.
+        if ("BANK_TRANSFER".equals(paymentMethod.getMethodCode())) {
+            order.setPaymentStatus("PENDING");
+            for (Long shopOrderId : createdShopOrders.shopOrderIds()) {
+                entityManager.getReference(VietFreshHub.order.entity.ShopOrder.class, shopOrderId).setPaymentStatus("PENDING");
             }
         }
 
