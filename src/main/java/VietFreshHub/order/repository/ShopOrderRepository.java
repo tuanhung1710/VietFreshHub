@@ -31,11 +31,6 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, Jpa
         Long getCompletedOrders();
     }
 
-    interface StatusCount {
-        String getStatus();
-        Long getOrderCount();
-    }
-
     @Query("""
             select coalesce(sum(s.subtotal), 0) as salesAmount,
                    coalesce(sum(s.discountTotal), 0) as discounts,
@@ -49,24 +44,6 @@ public interface ShopOrderRepository extends JpaRepository<ShopOrder, Long>, Jpa
                                        @Param("from") LocalDateTime from,
                                        @Param("to") LocalDateTime to);
 
-    @Query("""
-            select s.status as status, count(s) as orderCount
-            from ShopOrder s join s.order o
-            where s.shopId = :shopId and o.placedAt >= :from and o.placedAt < :to
-            group by s.status order by s.status
-            """)
-    List<StatusCount> getOrderCountsByStatus(@Param("shopId") Long shopId,
-                                             @Param("from") LocalDateTime from,
-                                             @Param("to") LocalDateTime to);
-
-    @Query("""
-            select count(distinct o.customer.userId)
-            from ShopOrder s join s.order o
-            where s.shopId = :shopId and o.placedAt >= :from and o.placedAt < :to
-            """)
-    long countDistinctCustomers(@Param("shopId") Long shopId,
-                                @Param("from") LocalDateTime from,
-                                @Param("to") LocalDateTime to);
     String CUSTOMER_HISTORY_FROM = "from ShopOrder s join s.order o left join OrderDeliveryView d on d.shopOrder = s "
             + "where o.customer.userId = :customerId "
             + "and (:status = '' or (" + OrderRepository.CUSTOMER_SHOP_STATUS + ") = :status) "

@@ -5,7 +5,7 @@ import VietFreshHub.order.dto.OrderCountsResponse;
 import VietFreshHub.order.dto.OrderDetailResponse;
 import VietFreshHub.order.dto.OrderFilterRequest;
 import VietFreshHub.order.dto.SellerDashboardOrder;
-import VietFreshHub.order.dto.ShopReportSummary;
+import VietFreshHub.order.dto.ShopSalesSummary;
 import VietFreshHub.order.repository.OrderItemRepository.BestSellingProduct;
 import VietFreshHub.order.dto.OrderProcessingHistoryEntry;
 import VietFreshHub.order.entity.OrderAddress;
@@ -43,9 +43,7 @@ public interface OrderService {
 
     List<BestSellingProduct> getBestSellingProducts(Authentication authentication);
 
-    ShopReportSummary.Sales getShopSalesSummary(Authentication authentication, LocalDate date);
-
-    ShopReportSummary getShopReport(Authentication authentication, LocalDate from, LocalDate to);
+    ShopSalesSummary getShopSalesSummary(Authentication authentication, LocalDate date);
 
     OrderDetailResponse getOrderDetail(Long shopOrderId, Authentication authentication);
 

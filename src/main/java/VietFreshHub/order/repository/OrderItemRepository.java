@@ -52,16 +52,4 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     List<BestSellingProduct> findTopSellingProducts(@Param("shopId") Long shopId,
                                                     org.springframework.data.domain.Pageable pageable);
 
-    @Query("""
-            select v.product.name as productName, sum(i.quantity) as unitsSold
-            from OrderItem i join i.shopOrder so join i.variant v
-            where so.shopId = :shopId and so.status = 'COMPLETED'
-              and so.completedAt >= :from and so.completedAt < :to
-            group by v.product.productId, v.product.name
-            order by sum(i.quantity) desc
-            """)
-    List<BestSellingProduct> findTopSellingProductsInPeriod(@Param("shopId") Long shopId,
-                                                             @Param("from") java.time.LocalDateTime from,
-                                                             @Param("to") java.time.LocalDateTime to,
-                                                             org.springframework.data.domain.Pageable pageable);
 }
