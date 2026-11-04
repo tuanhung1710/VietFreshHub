@@ -138,7 +138,7 @@ public class CheckoutServiceImpl implements CheckoutService {
     @Override
     @Transactional
     public CheckoutResult confirm(Long customerId, CheckoutDraft draft, CheckoutRequest request) {
-        // 1. Kiểm tra phiên và trả lại đơn đã có nếu khách gửi lặp cùng token.
+
         validateDraft(customerId, draft, request);
         User buyer = lockBuyer(customerId);
         String orderCode = "VF-" + draft.token();
@@ -147,7 +147,7 @@ public class CheckoutServiceImpl implements CheckoutService {
             return toCheckoutResult(existingOrder.get());
         }
 
-        // 2. Kiểm tra lại địa chỉ, mặt hàng và báo giá ngay trước khi tạo đơn.
+        // Kiểm tra lại địa chỉ, mặt hàng và báo giá ngay trước khi tạo đơn.
         PaymentMethod paymentMethod = requirePaymentMethod(request.getPaymentMethodCode());
         Address deliveryAddress = lockAddress(customerId, request.getAddressId());
         Cart cart = draft.buyNow() ? null : requireActiveCart(customerId, draft.cartId());
@@ -158,7 +158,7 @@ public class CheckoutServiceImpl implements CheckoutService {
         BigDecimal shippingFee = shippingQuoteService.validateForConfirmation(
                 draft, deliveryAddress, itemsByShopId.keySet());
 
-        // 3. Tạo đơn tổng, đơn từng shop, giữ kho và ghi nhận payment theo phương thức đã chọn.
+        // Tạo đơn tổng, đơn từng shop, giữ kho và ghi nhận payment theo phương thức đã chọn.
         Order order = checkoutOrderService.createOrder(buyer, orderCode, subtotal, shippingFee, deliveryAddress);
         if ("BANK_TRANSFER".equals(paymentMethod.getMethodCode())) order.setPaymentStatus("PENDING");
         CheckoutOrderService.CreatedShopOrders createdShopOrders = checkoutOrderService.createShopOrders(order, buyer, itemsByShopId, draft.shopQuotes());
@@ -197,7 +197,7 @@ public class CheckoutServiceImpl implements CheckoutService {
             payment.setTransactionReference("VF" + payment.getPaymentId());
         }
 
-        // 4. Giữ lại món chưa chọn; nếu đặt hết giỏ thì đóng giỏ hiện tại.
+        // Giữ lại món chưa chọn; nếu đặt hết giỏ thì đóng giỏ hiện tại.
         if (cart != null && selectedItems.size() == cart.getItems().size()) {
             cart.setStatus("CHECKED_OUT");
         } else if (cart != null) {
