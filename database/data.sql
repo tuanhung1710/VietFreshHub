@@ -24,6 +24,8 @@ IF OBJECT_ID('dbo.tr_order_items_shop_match','TR') IS NULL
  OR COL_LENGTH('dbo.loyalty_accounts','reward_balance') IS NULL
  OR COL_LENGTH('dbo.loyalty_transactions','balance_after_amount') IS NULL
  OR OBJECT_ID('dbo.loyalty_rules','U') IS NULL
+ OR OBJECT_ID('dbo.shipping_fee_settings','U') IS NULL
+ OR OBJECT_ID('dbo.tr_shipping_fee_settings_guard','TR') IS NULL
  OR OBJECT_ID('dbo.refund_requests','U') IS NULL
  OR OBJECT_ID('dbo.seller_payout_batch_items','U') IS NULL
  OR OBJECT_ID('dbo.tr_refund_requests_limits','TR') IS NULL
@@ -36,6 +38,8 @@ BEGIN TRANSACTION;
 EXEC @lock=sys.sp_getapplock @Resource=N'VietFreshHub.Demo.20261017',@LockMode='Exclusive',@LockOwner='Transaction',@LockTimeout=10000;
  IF @lock<0 THROW 58002,N'Khong lay duoc khoa nap demo.',1;
  -- Configuration is idempotent for both a fresh schema and an upgraded database.
+ IF NOT EXISTS(SELECT 1 FROM dbo.shipping_fee_settings WHERE settings_id=1)
+  INSERT dbo.shipping_fee_settings(settings_id) VALUES(1);
  IF NOT EXISTS(SELECT 1 FROM dbo.loyalty_rules WHERE rule_id=1) INSERT dbo.loyalty_rules(rule_id) VALUES(1);
  IF NOT EXISTS(SELECT 1 FROM dbo.subscription_plans WHERE name=N'Free')
   INSERT dbo.subscription_plans(name,description,price,billing_period,benefits,max_products)
