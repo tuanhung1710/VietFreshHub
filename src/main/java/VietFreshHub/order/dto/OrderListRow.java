@@ -5,6 +5,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 public record OrderListRow(Long orderId,String orderCode,Order.Status status,String paymentStatus,
                            BigDecimal grandTotal,LocalDateTime placedAt,String stage) {
+    public OrderListRow {
+        orderCode = VietFreshHub.common.OrderCodes.display(orderCode, orderId);
+    }
+
     public OrderListRow(Long orderId,String orderCode,Order.Status status,String paymentStatus,BigDecimal grandTotal,LocalDateTime placedAt) {
         this(orderId,orderCode,status,paymentStatus,grandTotal,placedAt,
                 status==Order.Status.CANCELLED ? "CANCELLED" : status==Order.Status.COMPLETED ? "COMPLETED"

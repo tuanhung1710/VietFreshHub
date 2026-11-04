@@ -93,7 +93,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 transaction.getTransactionType(),
                 transaction.getAmount(),
                 transaction.getBalanceAfterAmount(),
-                transaction.getNote(),
+                order == null ? transaction.getNote() : order.formatOrderCodeIn(transaction.getNote()),
                 transaction.getCreatedAt()
         );
     }

@@ -20,10 +20,9 @@
     <section class="panel recovery-panel" aria-labelledby="recovery-title">
         <h1 id="recovery-title">Chưa xác nhận được kết quả đặt hàng</h1>
         <p role="alert">Hệ thống đang gặp sự cố. Yêu cầu có thể đã được ghi nhận, nhưng hiện chúng tôi chưa thể xác nhận kết quả.</p>
-        <p>Mã tham chiếu: <strong class="recovery-code" th:text="${orderCode}"></strong></p>
-        <p class="muted">Vui lòng kiểm tra mã này trong Đơn hàng của tôi trước khi thử lại. Nếu đơn đã xuất hiện, bạn có thể mở để theo dõi.</p>
+        <p class="muted">Vui lòng kiểm tra đơn vừa đặt trong Đơn hàng của tôi trước khi thử lại. Nếu đơn đã xuất hiện, bạn có thể mở để theo dõi.</p>
         <div class="recovery-actions">
-            <a class="button" th:href="@{/customer/orders(keyword=${orderCode})}">Kiểm tra đơn hàng</a>
+            <a class="button" th:href="@{/customer/orders}">Kiểm tra đơn hàng</a>
             <a class="button secondary" th:href="@{/customer/checkout(checkoutToken=${checkoutToken})}">Xem lại bước đặt hàng</a>
         </div>
         <p class="muted">Nếu hệ thống vẫn chưa truy cập được, vui lòng thử lại sau.</p>

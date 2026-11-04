@@ -139,8 +139,8 @@ public class CheckoutServiceImpl implements CheckoutService {
         // 1. Kiểm tra phiên và trả lại đơn đã có nếu khách gửi lặp cùng token.
         validateDraft(customerId, draft, request);
         User buyer = lockBuyer(customerId);
-        String orderCode = "VF-" + draft.token();
-        Optional<Order> existingOrder = orderRepository.findByOrderCodeAndCustomerUserId(orderCode, customerId);
+        String checkoutReference = "VF-" + draft.token();
+        Optional<Order> existingOrder = orderRepository.findByOrderCodeAndCustomerUserId(checkoutReference, customerId);
         if (existingOrder.isPresent()) {
             return toCheckoutResult(existingOrder.get());
         }
@@ -157,7 +157,7 @@ public class CheckoutServiceImpl implements CheckoutService {
                 draft, deliveryAddress, itemsByShopId.keySet());
 
         // 3. Tạo đơn tổng, đơn từng shop, giữ kho và ghi nhận payment theo phương thức đã chọn.
-        Order order = checkoutOrderService.createOrder(buyer, orderCode, subtotal, shippingFee, deliveryAddress);
+        Order order = checkoutOrderService.createOrder(buyer, checkoutReference, subtotal, shippingFee, deliveryAddress);
         if ("BANK_TRANSFER".equals(paymentMethod.getMethodCode())) order.setPaymentStatus("PENDING");
         CheckoutOrderService.CreatedShopOrders createdShopOrders = checkoutOrderService.createShopOrders(order, buyer, itemsByShopId, draft.shopQuotes());
         inventoryReservationService.reserve(createdShopOrders.reservations(), customerId);
