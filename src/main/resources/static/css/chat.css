@@ -1,6 +1,6 @@
 :root {
     color-scheme: light;
-    font-family: Inter, "Segoe UI", Arial, sans-serif;
+    font-family: var(--vf-font-family);
     color: #20332b;
     background: #f4f7f5;
     font-synthesis: none;

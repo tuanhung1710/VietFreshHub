@@ -54,7 +54,7 @@ body.invoice-open {
     border: 1px solid black;
     background: white;
     color: black;
-    font-family: Arial, sans-serif;
+    font-family: var(--vf-font-family);
     font-size: 14px;
     line-height: 1.45;
 }

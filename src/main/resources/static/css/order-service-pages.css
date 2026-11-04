@@ -5,7 +5,7 @@
 .vfc-main { flex: 1; min-width: 0; padding-top: 28px; padding-bottom: 64px; scroll-margin-top: 155px; }
 .vfc-main:focus, .vfp-main:focus { outline: none; }
 .vfc-main .vfo-page-heading { margin-bottom: 28px; }
-.vfc-main .vfo-page-heading h1 { font-size: clamp(31px, 3.05vw, 44px); }
+.vfc-main .vfo-page-heading h1 { font-size:var(--vf-page-title-size); }
 .vfc-main .vfo-page-description { max-width: 700px; }
 
 /* Shopping navigation retains search, cart, notifications and the account menu. */
@@ -42,7 +42,7 @@
 .vfc-shop-summary { min-width: 0; padding: 28px 26px; border-right: 1px solid var(--vfo-border); background: #fbfcf7; }
 .vfc-shop-icon { display: grid; place-items: center; width: 46px; height: 48px; margin-bottom: 22px; border: 1px solid #e1e9d7; border-radius: 15px; background: #f0f5e8; color: #8ca477; }
 .vfc-shop-summary .vfo-eyebrow { margin-bottom: 7px; font-size: 8px; letter-spacing: 1.4px; }
-.vfc-shop-summary h2 { margin: 0 0 25px; color: #496841; font: 23px/1.4 Georgia, serif; letter-spacing: -.4px; overflow-wrap: anywhere; }
+.vfc-shop-summary h2 { margin: 0 0 25px; color: #496841; font: 23px/1.4 var(--vf-font-display); letter-spacing: -.4px; overflow-wrap: anywhere; }
 .vfc-shop-delivery > span { display: block; margin-bottom: 9px; color: #99a28d; font-size: 10px; }
 .vfc-app .vfc-delivery-state { max-width: 100%; font-size: 10px; white-space: normal; }
 .vfc-app .vfc-delivery-state[data-status="DELIVERED"] { background: #e6efdf; color: #4f784b; }
@@ -85,7 +85,7 @@
 .vfc-refund-summary { display: grid; grid-area: summary; gap: 20px; min-width: 0; }
 .vfc-refund-amount-card { position: relative; padding: 28px; border: 1px solid #30634e; border-radius: 14px; background: linear-gradient(125deg, #30634e, #254e3c); color: #fff; overflow: hidden; }
 .vfc-refund-summary-icon { display: grid; place-items: center; width: 44px; height: 46px; margin-bottom: 23px; border: 1px solid #ffffff25; border-radius: 14px; background: #ffffff0b; color: #d1dec5; }
-.vfc-refund-amount-card h2 { position: relative; z-index: 1; margin: 0 0 24px; color: #e1ead7; font: 25px/1.4 Georgia, serif; letter-spacing: -.5px; }
+.vfc-refund-amount-card h2 { position: relative; z-index: 1; margin: 0 0 24px; color: #e1ead7; font: 25px/1.4 var(--vf-font-display); letter-spacing: -.5px; }
 .vfc-refund-amount-card dl { position: relative; z-index: 1; margin: 0; }
 .vfc-refund-amount-card dt { margin-bottom: 5px; color: #afc5a4; font-size: 11px; font-weight: 400; }
 .vfc-refund-code { margin: 0 0 25px; padding-bottom: 22px; border-bottom: 1px solid #ffffff20; color: #dae8d0; font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
@@ -130,7 +130,7 @@
 .vfp-app #save-pickup-location:disabled { opacity: .5; cursor: not-allowed; }
 .vfp-help-card { min-width: 0; padding: 28px; border: 1px solid #e1e8d4; border-radius: 13px; background: #f0f4e7; }
 .vfp-help-icon { display: grid; place-items: center; width: 46px; height: 48px; margin-bottom: 23px; border: 1px solid #d9e4c9; border-radius: 15px; background: #f8fbf1; color: #8aa473; }
-.vfp-help-card h2 { margin: 0 0 12px; color: #5d7d49; font: 25px/1.4 Georgia, serif; letter-spacing: -.5px; }
+.vfp-help-card h2 { margin: 0 0 12px; color: #5d7d49; font: 25px/1.4 var(--vf-font-display); letter-spacing: -.5px; }
 .vfp-help-card > p { margin: 0 0 25px; color: #7d8e6b; font-size: 12px; line-height: 1.9; }
 .vfp-help-card ol { display: grid; gap: 21px; margin: 0; padding: 0; list-style: none; }
 .vfp-help-card li { display: flex; align-items: start; gap: 12px; }
@@ -139,7 +139,7 @@
 .vfp-help-card li p { margin: 0; color: #7e8f6b; font-size: 12px; line-height: 1.9; }
 
 .vfc-footer { margin-top: 20px; padding-top: 43px; border-top: 1px solid #e1e6d7; background: #f0f3e8; }
-.vfc-footer-brand { display: inline-flex; align-items: center; gap: 9px; margin-bottom: 15px; color: #638054; font: 28px/1.2 Georgia, serif; letter-spacing: -.5px; }
+.vfc-footer-brand { display: inline-flex; align-items: center; gap: 9px; margin-bottom: 15px; color: #638054; font: 28px/1.2 var(--vf-font-display); letter-spacing: -.5px; }
 .vfc-footer-brand .vfo-icon { width: 27px; height: 27px; color: #8aa374; stroke-width: 1.3; }
 .vfc-footer-intro p { max-width: 385px; margin: 0; color: #9aa68b; font-size: 11px; line-height: 2; }
 .vfc-footer h2 { margin: 0 0 17px; color: #748b62; font-size: 12px; font-weight: 600; }
@@ -151,7 +151,7 @@
 @media (min-width: 1800px) {
     .vfc-container { max-width: 1460px; }
     .vfc-header-main { min-height: 104px; }
-    .vfc-main .vfo-page-heading h1 { font-size: 48px; }
+    .vfc-main .vfo-page-heading h1 { font-size:var(--vf-page-title-size); }
     .vfc-main { padding-top: 36px; padding-bottom: 75px; }
     .vfc-app .vfc-tracking-shop { grid-template-columns: 285px minmax(0, 1fr); }
     .vfc-tracking-history { padding: 30px 38px 16px; }
@@ -191,7 +191,7 @@
     .vfc-header-nav > div { gap: 25px; min-height: 40px; }
     .vfc-header-nav a { min-height: 40px; font-size: 10px; }
     .vfc-main { padding-top: 24px; padding-bottom: 40px; }
-    .vfc-main .vfo-page-heading h1 { font-size: 34px; }
+    .vfc-main .vfo-page-heading h1 { font-size:var(--vf-page-title-size); }
     .vfc-order-reference { gap: 12px; padding: 20px; }
     .vfc-order-reference strong { font-size: 14px; }
     .vfc-app .vfc-tracking-shop { grid-template-columns: minmax(0, 1fr); }
@@ -213,7 +213,7 @@
     .vfc-form-actions > .btn { width: 100%; }
     .vfp-location-display-content { padding: 18px; }
     .vfp-help-card ol { grid-template-columns: minmax(0, 1fr); gap: 18px; }
-    .vfp-main .vfo-page-heading h1 { font-size: 32px; }
+    .vfp-main .vfo-page-heading h1 { font-size:var(--vf-page-title-size); }
     .vfc-footer { padding-top: 32px; }
     .vfc-footer-brand { font-size: 26px; }
     .vfc-footer-bottom { margin-top: 26px; padding: 20px 0; line-height: 1.9; }
@@ -227,7 +227,7 @@
     .vfc-cart-link { width: 29px; height: 32px; }
     .vfc-cart-link > .vfo-icon { width: 19px; height: 19px; }
     .vfc-cart-link > span { min-width: 15px; height: 15px; font-size: 7px; }
-    .vfc-main .vfo-page-heading h1 { font-size: 31px; letter-spacing: -.9px; }
+    .vfc-main .vfo-page-heading h1 { font-size:var(--vf-page-title-size); letter-spacing:var(--vf-page-title-spacing); }
     .vfc-order-reference { padding: 18px; }
     .vfc-order-reference strong { font-size: 13px; }
     .vfc-shop-summary, .vfc-tracking-history { padding: 20px; }
@@ -241,7 +241,7 @@
     .vfc-refund-form, .vfc-refund-amount-card { padding: 20px; }
     .vfc-refund-amount { font-size: 32px; }
     .vfc-refund-note { padding: 18px 20px; }
-    .vfp-main .vfo-page-heading h1 { font-size: 30px; }
+    .vfp-main .vfo-page-heading h1 { font-size:var(--vf-page-title-size); }
     .vfp-app #pickup-location-display, .vfp-app #pickup-location-editor { padding: 18px; }
     .vfp-location-display-content { flex-direction: column; gap: 13px; padding: 18px; }
     .vfp-location-actions > .btn { width: 100%; }
