@@ -57,6 +57,8 @@ Review `src/main/resources/application.properties`. Set your local SQL Server co
 
 Spring Boot environment-variable overrides or private external configuration are preferable to committing credentials. **Do not publish real secrets.** VNPay endpoints are configured for the **sandbox** environment by default.
 
+The current `application.properties` defines a fallback for `VNPAY_HASH_SECRET`, so a missing environment variable alone does not make the application fail at startup. Before deployment, provide the VNPay secret through a secure environment or private configuration and remove reliance on the source configuration fallback. Set `VNPAY_ENABLED=false` when running without VNPay.
+
 ### 3. Start the application
 
 ```bash
