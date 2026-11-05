@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/interface-layout :: customerHead(${addressFormTitle})}"></head>
-<body class="vfo-app vfr-app vfc-app vfr-customer" data-vfr-section="account">
-<th:block th:replace="~{fragments/interface-layout :: navigation('customer','account')}"></th:block>
+<body class="vfo-app vfr-app vfc-app vfr-customer vfc-workspace-page" data-vfr-section="account">
+<th:block th:replace="~{fragments/interface-layout :: customerHeader('addresses')}"></th:block>
+<div class="vfo-workspace" id="workspace-content" tabindex="-1">
 
 
 <main class="container page checkout-address-page vfr-page" id="customer-content" tabindex="-1">
@@ -62,5 +63,6 @@
 <script defer th:src="@{/js/customer-address-autocomplete.js}"></script>
 <script defer th:src="@{/js/checkout.js}"></script>
 <footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</div>
 </body>
 </html>

@@ -14,20 +14,18 @@
     <link rel="stylesheet" th:href="@{/css/admin-accounts.css}">
     <script defer th:src="@{/js/admin-accounts.js}"></script>
     <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/admin-account-page.css}">
 </head>
-<body class="vfo-app vfr-app vfr-admin" data-vfr-section="accounts">
-<th:block th:replace="~{fragments/interface-layout :: navigation('admin','accounts')}"></th:block>
+<body class="vfo-app vfr-app vfr-admin admin-accounts-page" data-vfr-section="accounts" data-accounts-page>
+<th:block th:replace="~{fragments/admin-workspace :: navigation('accounts')}"></th:block>
 
-<div class="app-shell" data-accounts-page>
-    
-
-    <div class="vfo-workspace vfr-workspace" id="workspace-content" tabindex="-1">
-<main class="page-content vfr-page">
-        <section class="page-heading">
+<div class="vfo-workspace vfr-workspace" id="workspace-content" tabindex="-1">
+<main class="vfo-main vfr-page">
+        <header class="vfo-page-heading">
             <div>
                 <h1>Quản lý tài khoản</h1>
             </div>
-        </section>
+        </header>
 
         <div th:if="${successMessage}" class="flash-message flash-success" role="status" th:text="${successMessage}"></div>
         <div th:if="${errorMessage}" class="flash-message flash-error" role="alert" th:text="${errorMessage}"></div>
@@ -35,26 +33,26 @@
         <section class="summary-grid" aria-label="Tổng quan tài khoản">
             <a class="summary-card" th:classappend="${selectedStatus == 'ALL'} ? ' selected' : ''"
                th:href="@{/admin/accounts(keyword=${keyword},role=${selectedRole},status='ALL',sort=${selectedSort},page=1)}">
-                <span class="summary-icon icon-total" aria-hidden="true">◎</span><span class="summary-copy"><span>Tất cả</span><strong th:text="${stats.total}">0</strong></span>
+                <span class="summary-icon icon-total" aria-hidden="true"><svg class="vfo-icon"><use href="#vfo-user"/></svg></span><span class="summary-copy"><span>Tất cả tài khoản</span><strong th:text="${stats.total}">0</strong></span>
             </a>
             <a class="summary-card" th:classappend="${selectedStatus == 'ACTIVE'} ? ' selected' : ''"
                th:href="@{/admin/accounts(keyword=${keyword},role=${selectedRole},status='ACTIVE',sort=${selectedSort},page=1)}">
-                <span class="summary-icon icon-active" aria-hidden="true">✓</span><span class="summary-copy"><span>Active</span><strong th:text="${stats.active}">0</strong></span>
+                <span class="summary-icon icon-active" aria-hidden="true"><svg class="vfo-icon"><use href="#vfo-check"/></svg></span><span class="summary-copy"><span>Đang hoạt động</span><strong th:text="${stats.active}">0</strong></span>
             </a>
             <a class="summary-card" th:classappend="${selectedStatus == 'INACTIVE'} ? ' selected' : ''"
                th:href="@{/admin/accounts(keyword=${keyword},role=${selectedRole},status='INACTIVE',sort=${selectedSort},page=1)}">
-                <span class="summary-icon icon-inactive" aria-hidden="true">Ⅱ</span><span class="summary-copy"><span>Inactive</span><strong th:text="${stats.inactive}">0</strong></span>
+                <span class="summary-icon icon-inactive" aria-hidden="true"><svg class="vfo-icon" viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></svg></span><span class="summary-copy"><span>Ngừng hoạt động</span><strong th:text="${stats.inactive}">0</strong></span>
             </a>
         </section>
 
-        <section class="accounts-panel" aria-labelledby="accounts-title">
-            <div class="panel-heading">
-                <div><h2 id="accounts-title">Danh sách tài khoản</h2><p class="muted" th:text="|${accountsPage.totalElements} tài khoản phù hợp|">0 tài khoản</p></div>
+        <section class="card accounts-panel vfo-list-card" aria-labelledby="accounts-title">
+            <div class="vfo-list-heading">
+                <div><span class="vfo-section-marker" aria-hidden="true"></span><h2 id="accounts-title">Danh sách tài khoản</h2><span class="vfo-count" th:text="${accountsPage.totalElements}">0</span></div>
             </div>
 
-            <form class="filter-bar" method="get" th:action="@{/admin/accounts}">
+            <form class="filter-bar accounts-filters" method="get" th:action="@{/admin/accounts}">
                 <label class="search-box">
-                    <span class="visually-hidden">Tìm kiếm tài khoản</span><span class="search-icon" aria-hidden="true">⌕</span>
+                    <span class="visually-hidden">Tìm kiếm tài khoản</span><svg class="vfo-icon search-icon" aria-hidden="true"><use href="#vfo-search"/></svg>
                     <input id="search-input" type="search" name="keyword" th:value="${keyword}" placeholder="Tìm tên, email hoặc số điện thoại…" autocomplete="off" class="form-control">
                 </label>
                 <label class="select-filter"><span class="visually-hidden">Sắp xếp tài khoản</span>
@@ -75,12 +73,12 @@
                 <label class="select-filter"><span class="visually-hidden">Lọc theo trạng thái</span>
                     <select name="status" aria-label="Lọc theo trạng thái" class="form-control">
                         <option value="ALL" th:selected="${selectedStatus == 'ALL'}">Tất cả trạng thái</option>
-                        <option value="ACTIVE" th:selected="${selectedStatus == 'ACTIVE'}">Active</option>
-                        <option value="INACTIVE" th:selected="${selectedStatus == 'INACTIVE'}">Inactive</option>
+                        <option value="ACTIVE" th:selected="${selectedStatus == 'ACTIVE'}">Đang hoạt động</option>
+                        <option value="INACTIVE" th:selected="${selectedStatus == 'INACTIVE'}">Ngừng hoạt động</option>
                     </select>
                 </label>
                 <input type="hidden" name="page" value="1">
-                <button class="button primary filter-submit" type="submit">Lọc</button>
+                <button class="btn vfo-btn-primary filter-submit" type="submit">Lọc</button>
                 <a class="reset-button" th:href="@{/admin/accounts}">Xóa lọc</a>
             </form>
 
@@ -95,19 +93,19 @@
                         <th scope="col" class="actions-heading">THAO TÁC</th></tr></thead>
                     <tbody>
                     <tr th:each="account, rowIndex : ${accounts}"
-                        th:attr="data-account-row='',data-id=${account.userId},data-name=${account.fullName},data-email=${account.email},data-phone=${account.phone},data-status=${account.status},data-created=${#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(account.createdAt), 'dd/MM/yyyy')},data-verified=${account.emailVerifiedAt != null},data-methods=${account.providersLabel()},data-role-ids=${account.roleIdsCsv()},data-role-names=${account.roleNamesCsv()},data-profile-url=@{/admin/accounts/{id}/profile(id=${account.userId})},data-roles-url=@{/admin/accounts/{id}/roles(id=${account.userId})},data-status-url=@{/admin/accounts/{id}/status(id=${account.userId})}">
+                        th:attr="data-account-row='',data-id=${account.userId},data-name=${account.fullName},data-email=${account.email},data-phone=${account.phone},data-status=${account.status},data-created=${#temporals.format(account.createdAtLocal(), 'dd/MM/yyyy')},data-verified=${account.emailVerifiedAt != null},data-methods=${account.providersLabel()},data-role-ids=${account.roleIdsCsv()},data-role-names=${account.roleNamesCsv()},data-profile-url=@{/admin/accounts/{id}/profile(id=${account.userId})},data-roles-url=@{/admin/accounts/{id}/roles(id=${account.userId})},data-status-url=@{/admin/accounts/{id}/status(id=${account.userId})}">
                         <td><div class="account-cell"><span class="account-avatar" th:classappend="${rowIndex.index % 4 == 1} ? ' avatar-1' : (${rowIndex.index % 4 == 2} ? ' avatar-2' : (${rowIndex.index % 4 == 3} ? ' avatar-3' : ''))"
                                 th:text="${#strings.isEmpty(account.fullName) ? '?' : #strings.substring(account.fullName, 0, 1)}">A</span><div><div class="account-name" th:text="${account.fullName}">Nguyễn An</div><div class="account-email"><span th:text="${account.email}">an@example.com</span><span th:if="${account.phone != null}" th:text="| · ${account.phone}|"></span></div></div></div></td>
                         <td><div class="role-list"><span class="role-chip" th:each="roleName : ${account.roleNames}" th:classappend="${roleName == 'ROLE_ADMIN'} ? ' role-admin' : (${roleName == 'ROLE_STORE_MANAGER'} ? ' role-store' : '')" th:text="${roleName == 'ROLE_ADMIN' ? 'Quản trị viên' : (roleName == 'ROLE_CUSTOMER' ? 'Khách hàng' : (roleName == 'ROLE_DELIVERY_STAFF' ? 'Nhân viên giao hàng' : (roleName == 'ROLE_STORE_MANAGER' ? 'Quản lý cửa hàng' : roleName)))}">Khách hàng</span><span th:if="${#lists.isEmpty(account.roleNames)}" class="muted">Chưa có vai trò</span></div></td>
                         <td><span class="status-pill" th:classappend="${' status-' + #strings.toLowerCase(account.status)}"
-                                  th:text="${account.status == 'ACTIVE' ? 'Active' : 'Inactive'}">Active</span></td>
-                        <td class="date-cell" th:text="${#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(account.createdAt), 'dd/MM/yyyy')}">08/10/2026</td>
+                                  th:text="${account.status == 'ACTIVE' ? 'Đang hoạt động' : 'Ngừng hoạt động'}">Đang hoạt động</span></td>
+                        <td class="date-cell" th:text="${#temporals.format(account.createdAtLocal(), 'dd/MM/yyyy')}">08/10/2026</td>
                         <td><div class="row-actions">
                             <button class="table-action" type="button" data-action="details">Chi tiết</button>
                             <button class="table-action primary" type="button" data-action="edit">Sửa hồ sơ</button>
                             <button class="table-action" type="button" data-action="roles"
                                     th:disabled="${#lists.contains(account.roleNames, 'ROLE_ADMIN')}"
-                                    th:title="${#lists.contains(account.roleNames, 'ROLE_ADMIN')} ? 'Tài khoản ADMIN không thể điều chỉnh role' : null">Đổi vai trò</button>
+                                    th:title="${#lists.contains(account.roleNames, 'ROLE_ADMIN')} ? 'Tài khoản quản trị viên không thể điều chỉnh vai trò' : null">Đổi vai trò</button>
                             <button class="table-action" type="button" data-action="status">Trạng thái</button>
                         </div></td>
                     </tr>
@@ -128,7 +126,7 @@
             </footer>
         </section>
 
-        <p class="demo-disclaimer"><strong>Ghi chú:</strong> Tài khoản Inactive hoặc thay đổi role sẽ cần đăng nhập lại để quyền mới có hiệu lực.</p>
+        <p class="demo-disclaimer"><strong>Ghi chú:</strong> Tài khoản ngừng hoạt động hoặc thay đổi vai trò sẽ cần đăng nhập lại để quyền mới có hiệu lực.</p>
     </main>
 <footer th:replace="~{fragments/admin-workspace :: footer}"></footer>
 </div>
@@ -147,6 +145,5 @@
         </section>
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-</div>
 </body>
 </html>

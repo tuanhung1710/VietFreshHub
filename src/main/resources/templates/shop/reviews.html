@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/customer-shop :: head('Đánh giá cửa hàng')}"></head>
-<body class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
-<header th:replace="~{fragments/customer-shop :: header}"></header>
-<main class="container vfr-page">
+<body class="vfo-app vfr-app vfr-retail vfr-customer vfc-workspace-page" data-vfr-section="account">
+<header th:replace="~{fragments/customer-shop :: header(shoppingActive='shops')}"></header>
+<div class="vfo-workspace" id="workspace-content" tabindex="-1">
+<main id="customer-content" class="container vfr-page">
     <section th:replace="~{fragments/customer-shop :: shopHeader(${shop},'reviews')}"></section>
     <div class="sectiontop"><div><h2>Khách hàng đánh giá</h2><p th:text="${summary.count > 0 ? #numbers.formatDecimal(summary.average,1,1) + ' / 5 · ' + summary.count + ' đánh giá' : 'Chưa có đánh giá'}"></p></div></div>
     <form class="toolbar" method="get" th:action="@{/shops/{id}/reviews(id=${shop.shopId})}">
@@ -23,5 +24,6 @@
     </nav>
 </main>
 <footer th:replace="~{fragments/footer :: footer}"></footer>
+</div>
 </body>
 </html>

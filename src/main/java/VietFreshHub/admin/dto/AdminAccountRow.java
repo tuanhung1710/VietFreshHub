@@ -1,5 +1,6 @@
 package VietFreshHub.admin.dto;
 
+import VietFreshHub.order.service.OrderLabels;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,6 +17,10 @@ public record AdminAccountRow(
         List<String> roleNames,
         List<String> providers
 ) {
+    public LocalDateTime createdAtLocal() {
+        return OrderLabels.local(createdAt);
+    }
+
     public String roleIdsCsv() {
         return roleIds.stream().map(String::valueOf).collect(Collectors.joining(","));
     }

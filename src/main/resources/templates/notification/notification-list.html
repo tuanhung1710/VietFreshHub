@@ -21,8 +21,9 @@
     </style>
     <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body class="vfo-app vfr-app vfc-app vfr-customer" data-vfr-section="account">
+<body class="vfo-app vfr-app vfc-app vfr-customer vfc-workspace-page" data-vfr-section="account">
 <th:block th:replace="~{fragments/interface-layout :: navigation('customer','account')}"></th:block>
+<div class="vfo-workspace" id="workspace-content" tabindex="-1">
 
 <main class="vfr-page" id="customer-content" tabindex="-1">
     <h1>Thông báo của bạn</h1>
@@ -48,5 +49,6 @@
     </nav>
 </main>
 <footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</div>
 </body>
 </html>

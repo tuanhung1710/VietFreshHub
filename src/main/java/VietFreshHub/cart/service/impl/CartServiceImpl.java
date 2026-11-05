@@ -12,6 +12,7 @@ import VietFreshHub.catalog.dto.StockCheckResponse;
 import VietFreshHub.catalog.entity.CatalogVariant;
 import VietFreshHub.catalog.repository.CatalogVariantRepository;
 import VietFreshHub.catalog.service.CatalogService;
+import VietFreshHub.shop.service.ShopPurchasePolicy;
 import VietFreshHub.exception.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -30,6 +31,7 @@ public class CartServiceImpl implements CartService {
     private final CatalogPricingService pricing;
     private final UserRepository userRepository;
     private final CatalogService catalogService;
+    private final ShopPurchasePolicy shopPurchasePolicy;
 
     @Override
     @Transactional(readOnly = true)
@@ -46,6 +48,9 @@ public class CartServiceImpl implements CartService {
         }
         User user = lockCustomer(userId);
         CatalogVariant variant = requirePurchasable(request.getVariantId());
+        if (shopPurchasePolicy.ownsShop(userId, variant.getProduct().getShop().getShopId())) {
+            throw new IllegalArgumentException(ShopPurchasePolicy.OWN_SHOP_MESSAGE);
+        }
         Cart cart = cartRepository.findByUserUserIdAndStatus(userId, "ACTIVE").orElseGet(() -> {
             Cart created = new Cart();
             created.setUser(user);
@@ -79,7 +84,9 @@ public class CartServiceImpl implements CartService {
         if (cart == null) return CartDto.builder().userId(userId).status("ACTIVE").totalItems(0).totalAmount(BigDecimal.ZERO).build();
         var offers = pricing.offers(cart.getItems().stream()
                 .map(i -> i.getVariant().getVariantId()).distinct().toList());
-        List<CartItemDto> items = cart.getItems().stream().map(i -> toItem(i, offers.get(i.getVariant().getVariantId())))
+        var ownedShopIds = shopPurchasePolicy.ownedShopIds(userId);
+        List<CartItemDto> items = cart.getItems().stream().map(i -> toItem(i, offers.get(i.getVariant().getVariantId()),
+                        ownedShopIds.contains(i.getVariant().getProduct().getShop().getShopId())))
                 .sorted(Comparator.comparing(CartItemDto::getShopId).thenComparing(CartItemDto::getCartItemId)).toList();
         return CartDto.builder().cartId(cart.getCartId()).userId(userId).status(cart.getStatus()).items(items)
                 .totalItems(items.stream().mapToLong(CartItemDto::getQuantity).sum())
@@ -88,13 +95,14 @@ public class CartServiceImpl implements CartService {
                 .hasUnavailableItems(items.stream().anyMatch(i -> !i.isPurchasable())).build();
     }
 
-    private CartItemDto toItem(CartItem item, CatalogOffer offer) {
+    private CartItemDto toItem(CartItem item, CatalogOffer offer, boolean ownShop) {
         CatalogVariant variant = item.getVariant();
         int stock = offer == null ? 0 : offer.availableStock();
         BigDecimal price = offer == null ? variant.getPrice() : offer.price();
-        boolean eligible = catalogService.isPurchasable(variant);
+        boolean eligible = !ownShop && catalogService.isPurchasable(variant);
         boolean purchasable = eligible && stock > 0 && item.getQuantity() <= stock;
-        String message = !eligible ? "Sản phẩm hoặc cửa hàng hiện không nhận đơn."
+        String message = ownShop ? ShopPurchasePolicy.OWN_SHOP_MESSAGE
+                : !eligible ? "Sản phẩm hoặc cửa hàng hiện không nhận đơn."
                 : stock == 0 ? "Tạm hết hàng. Bạn có thể giữ lại trong giỏ hoặc xóa sản phẩm."
                 : item.getQuantity() > stock ? "Chỉ còn " + stock + " sản phẩm. Vui lòng giảm số lượng." : null;
         return CartItemDto.builder().cartItemId(item.getCartItemId()).variantId(variant.getVariantId())
@@ -131,6 +139,9 @@ public class CartServiceImpl implements CartService {
             return;
         }
         CatalogVariant variant = requirePurchasable(variantId);
+        if (shopPurchasePolicy.ownsShop(userId, variant.getProduct().getShop().getShopId())) {
+            throw new IllegalArgumentException(ShopPurchasePolicy.OWN_SHOP_MESSAGE);
+        }
         var offer = offer(variantId);
         int stock = offer.availableStock();
         if (quantity > stock) throw insufficientStock(stock);

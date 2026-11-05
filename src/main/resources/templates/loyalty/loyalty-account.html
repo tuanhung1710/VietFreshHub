@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/interface-layout :: customerHead('Tiền thưởng và điểm tích lũy')}"></head>
-<body class="purchase-page vfo-app vfr-app vfc-app vfr-customer" data-vfr-section="loyalty">
-<th:block th:replace="~{fragments/interface-layout :: navigation('customer','loyalty')}"></th:block>
+<body class="purchase-page vfo-app vfr-app vfc-app vfr-customer vfc-workspace-page" data-vfr-section="loyalty">
+<th:block th:replace="~{fragments/customer-navigation :: workspace('loyalty')}"></th:block>
+<div class="vfo-workspace" id="workspace-content" tabindex="-1">
 
 <main class="container page purchase-layout loyalty-page vfr-page" id="customer-content" tabindex="-1">
     <div class="purchase-content">
@@ -136,5 +137,6 @@
     </div>
 </main>
 <footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</div>
 </body>
 </html>

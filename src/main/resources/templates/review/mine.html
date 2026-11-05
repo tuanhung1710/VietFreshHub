@@ -6,8 +6,9 @@
     <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
     <title>Đánh giá của tôi · VietFresh Hub</title>    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body class="vfo-app vfr-app vfc-app vfr-customer" data-vfr-section="account">
-<th:block th:replace="~{fragments/interface-layout :: navigation('customer','account')}"></th:block>
+<body class="vfo-app vfr-app vfc-app vfr-customer vfc-workspace-page" data-vfr-section="reviews">
+<th:block th:replace="~{fragments/customer-navigation :: workspace('reviews')}"></th:block>
+<div class="vfo-workspace" id="workspace-content" tabindex="-1">
 <main class="vfr-page" id="customer-content" tabindex="-1">
     <h1>Đánh giá của tôi</h1>
     <p th:if="${#lists.isEmpty(reviews.content)}">Bạn chưa gửi đánh giá nào.</p>
@@ -32,4 +33,5 @@
     </nav>
     <a th:href="@{/home}">Về trang chủ</a>
 </main><footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</div>
 </body></html>

@@ -6,8 +6,9 @@
     <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
     <title>Đánh giá · VietFresh Hub</title>    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body class="vfo-app vfr-app vfc-app vfr-customer" data-vfr-section="account">
-<th:block th:replace="~{fragments/interface-layout :: navigation('customer','account')}"></th:block>
+<body class="vfo-app vfr-app vfc-app vfr-customer vfc-workspace-page" data-vfr-section="account">
+<th:block th:replace="~{fragments/interface-layout :: navigation('customer','reviews')}"></th:block>
+<div class="vfo-workspace" id="workspace-content" tabindex="-1">
 <main class="vfr-page" id="customer-content" tabindex="-1">
     <h1 th:text="${targetType == 'product' ? 'Đánh giá sản phẩm' : 'Đánh giá cửa hàng'}">Đánh giá</h1>
     <p th:text="${'Điểm trung bình: ' + (rating.averageRating == null ? 'Chưa có' : #numbers.formatDecimal(rating.averageRating,1,1)) + ' · ' + rating.ratingCount + ' đánh giá'}">Xếp hạng</p>
@@ -50,4 +51,5 @@
     </nav>
     <a th:href="@{/home}">Về trang chủ</a>
 </main><footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</div>
 </body></html>

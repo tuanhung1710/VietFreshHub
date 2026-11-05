@@ -16,13 +16,13 @@
     <script defer th:src="@{/js/chat.js}"></script>
     <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body class="vfo-app vfr-app vfr-utility vfr-chat" th:classappend="${chatMode == 'customer' ? 'vfc-app' : ''}" data-vfr-section="chat">
+<body class="vfo-app vfr-app vfr-utility vfr-chat" th:classappend="${chatMode == 'customer' ? 'vfc-app vfc-workspace-page' : ''}" data-vfr-section="chat">
 <th:block th:if="${chatMode == 'shop'}"><th:block th:replace="~{fragments/interface-navigation :: seller('chat')}"></th:block></th:block>
-<th:block th:if="${chatMode == 'customer'}"><th:block th:replace="~{fragments/interface-layout :: customerHeader('account')}"></th:block></th:block>
+<th:block th:if="${chatMode == 'customer'}"><th:block th:replace="~{fragments/interface-layout :: customerHeader('chat')}"></th:block></th:block>
 
 
 <style>body:has(> header) .chat-app { margin-top: 112px; height: calc(100dvh - 132px); } body:has(> header) { font-family: var(--vf-font-family); background: #f8f9ff; }</style>
-<div class="vfr-chat-workspace" th:id="${chatMode == 'shop' ? 'order-content' : 'customer-content'}" tabindex="-1" th:classappend="${chatMode == 'shop' ? 'vfo-workspace' : ''}">
+<div class="vfr-chat-workspace vfo-workspace" th:id="${chatMode == 'shop' ? 'order-content' : 'workspace-content'}" tabindex="-1">
 <main class="chat-app" id="chatApp"
       th:attr="data-mode=${chatMode},data-user-id=${currentUserId}">
     <aside class="chat-sidebar">

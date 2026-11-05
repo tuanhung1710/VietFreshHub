@@ -5,7 +5,9 @@
     
     <title>Không tìm thấy đơn hàng | VietFresh Hub</title><link rel="stylesheet" th:href="@{/css/storefront.css}">
 <link rel="stylesheet" th:href="@{/css/customer-shell.css}">    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
-</head><body class="vfo-app vfr-app vfr-utility vfc-app vfr-customer" data-vfr-section="orders">
-<th:block th:replace="~{fragments/interface-layout :: navigation('customer','orders')}"></th:block>
+</head><body class="vfo-app vfr-app vfr-utility vfc-app vfr-customer vfc-workspace-page" data-vfr-section="orders">
+<th:block th:replace="~{fragments/interface-layout :: customerHeader('orders')}"></th:block>
+<div class="vfo-workspace" id="workspace-content" tabindex="-1">
 <main class="container page vfr-page" id="customer-content" tabindex="-1"><section class="panel empty"><h1>Không tìm thấy đơn hàng</h1><p class="muted">Đơn hàng không tồn tại hoặc không thuộc tài khoản của bạn.</p><a class="button" th:href="@{/home}">Tiếp tục mua sắm</a></section></main><footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</div>
 </body></html>
