@@ -32,8 +32,8 @@
         <h2 th:text="${item.title}"></h2>
         <p class="content" th:text="${item.content}"></p>
         <p class="muted">
-            <time th:text="${#temporals.format(item.createdAt, 'dd/MM/yyyy HH:mm')}"></time>
-            <span> UTC · </span>
+            <time th:text="${#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(item.createdAt), 'dd/MM/yyyy HH:mm')}"></time>
+            <span>Giờ Việt Nam · </span>
             <span th:text="${item.readAt == null ? 'Chưa đọc' : 'Đã đọc'}"></span>
         </p>
         <form th:if="${item.readAt == null}"

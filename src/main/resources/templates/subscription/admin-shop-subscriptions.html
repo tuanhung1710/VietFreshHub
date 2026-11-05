@@ -43,7 +43,7 @@
 
     <div class="card shadow-sm border-0 rounded-3 overflow-hidden"><div class="table-responsive">
         <table class="table table-hover align-middle mb-0 table align-middle">
-            <caption class="px-3">Lịch sử đăng ký và thời hạn sử dụng. Thời gian hiển thị theo UTC.</caption>
+            <caption class="px-3">Lịch sử đăng ký và thời hạn sử dụng. Thời gian hiển thị theo giờ Việt Nam.</caption>
             <thead class="table-light"><tr><th scope="col">Mã đăng ký</th><th scope="col">Shop</th><th scope="col">Gói dịch vụ</th><th scope="col">Bắt đầu</th><th scope="col">Hết hạn</th><th scope="col">Trạng thái</th></tr></thead>
             <tbody>
                 <tr th:if="${subscriptionPage.empty}"><td colspan="6" class="text-center text-secondary py-5">Chưa có đăng ký gói dịch vụ.</td></tr>
@@ -51,8 +51,8 @@
                     <td th:text="${subscription.subscriptionId}"></td>
                     <td><div class="fw-semibold" th:text="${subscription.shopName}"></div><small class="text-secondary" th:text="${'ID: ' + subscription.shopId}"></small></td>
                     <td class="fw-semibold" th:text="${subscription.planName}"></td>
-                    <td class="text-nowrap" th:text="${subscription.startAt != null ? #temporals.format(subscription.startAt, 'dd/MM/yyyy HH:mm') : '—'}"></td>
-                    <td class="text-nowrap" th:text="${subscription.endAt != null ? #temporals.format(subscription.endAt, 'dd/MM/yyyy HH:mm') : '—'}"></td>
+                    <td class="text-nowrap" th:text="${subscription.startAt != null ? #temporals.format(T(VietFreshHub.order.service.OrderLabels).local(subscription.startAt), 'dd/MM/yyyy HH:mm') : '—'}"></td>
+                    <td class="text-nowrap" th:text="${subscription.endAt != null ? #temporals.format(T(VietFreshHub.order.service.OrderLabels).local(subscription.endAt), 'dd/MM/yyyy HH:mm') : '—'}"></td>
                     <td><span class="badge rounded-pill" th:classappend="${subscription.status.name() == 'ACTIVE' ? 'bg-success-subtle text-success' : (subscription.status.name() == 'UPGRADED' ? 'bg-warning-subtle text-dark' : (subscription.status.name() == 'CANCELLED' ? 'bg-danger-subtle text-danger' : 'bg-secondary-subtle text-secondary'))}" th:text="${subscription.status}"></span></td>
                 </tr>
             </tbody>

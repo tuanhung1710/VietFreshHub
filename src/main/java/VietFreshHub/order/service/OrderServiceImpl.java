@@ -11,7 +11,7 @@ import VietFreshHub.order.dto.OrderDetailResponse;
 import VietFreshHub.order.dto.OrderFilterRequest;
 import VietFreshHub.order.dto.OrderItemResponse;
 import VietFreshHub.order.dto.SellerDashboardOrder;
-import VietFreshHub.order.dto.ShopReportSummary;
+import VietFreshHub.order.dto.ShopSalesSummary;
 import VietFreshHub.order.dto.OrderProcessingHistoryEntry;
 import VietFreshHub.order.entity.Order;
 import VietFreshHub.order.entity.OrderAddress;
@@ -195,34 +195,15 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public ShopReportSummary.Sales getShopSalesSummary(Authentication authentication, LocalDate date) {
+    public ShopSalesSummary getShopSalesSummary(Authentication authentication, LocalDate date) {
         LocalDate salesDate = date == null ? LocalDate.now(BUSINESS_ZONE) : date;
         return salesSummary(shopService.getManagedShopId(authentication), salesDate, salesDate);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public ShopReportSummary getShopReport(Authentication authentication, LocalDate from, LocalDate to) {
-        LocalDate today = LocalDate.now(BUSINESS_ZONE);
-        from = from == null ? today.minusDays(29) : from;
-        to = to == null ? today : to;
-        if (from.isAfter(to) || to.isAfter(today)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Khoảng ngày báo cáo không hợp lệ.");
-        }
-        Long shopId = shopService.getManagedShopId(authentication);
-        LocalDateTime start = startOfBusinessDayUtc(from);
-        LocalDateTime end = startOfBusinessDayUtc(to.plusDays(1));
-        return new ShopReportSummary(from, to,
-                salesSummary(shopId, from, to),
-                shopOrderRepository.getOrderCountsByStatus(shopId, start, end),
-                shopOrderRepository.countDistinctCustomers(shopId, start, end),
-                orderItemRepository.findTopSellingProductsInPeriod(shopId, start, end, PageRequest.of(0, 10)));
-    }
-
-    private ShopReportSummary.Sales salesSummary(Long shopId, LocalDate from, LocalDate to) {
+    private ShopSalesSummary salesSummary(Long shopId, LocalDate from, LocalDate to) {
         ShopOrderRepository.SalesTotals totals = shopOrderRepository.getCompletedSalesTotals(shopId,
                 startOfBusinessDayUtc(from), startOfBusinessDayUtc(to.plusDays(1)));
-        return new ShopReportSummary.Sales(totals.getSalesAmount(), totals.getDiscounts(),
+        return new ShopSalesSummary(totals.getSalesAmount(), totals.getDiscounts(),
                 totals.getShippingFees(), totals.getCompletedOrders());
     }
 

@@ -60,12 +60,12 @@
                                 </td>
                                 <td
                                     data-label="Hiệu lực từ (giờ Việt Nam)"
-                                    th:text="${#temporals.format(e.effectiveFrom.plusHours(7),'dd/MM/yyyy HH:mm:ss')}"
+                                    th:text="${#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(e.effectiveFrom),'dd/MM/yyyy HH:mm:ss')}"
                                 >
                                 </td>
                                 <td
                                     data-label="Hiệu lực đến"
-                                    th:text="${e.effectiveTo==null?'Đang áp dụng':#temporals.format(e.effectiveTo.plusHours(7),'dd/MM/yyyy HH:mm:ss')}"
+                                    th:text="${e.effectiveTo==null?'Đang áp dụng':#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(e.effectiveTo),'dd/MM/yyyy HH:mm:ss')}"
                                 >
                                 </td>
                                 <td data-label="Người cập nhật" th:text="${e.changedBy==null?'Hệ thống':'#'+e.changedBy}">

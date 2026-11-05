@@ -18,12 +18,11 @@
             <a class="nav-link" th:classappend="${active == 'chat' ? 'active' : ''}" th:attr="aria-current=${active == 'chat' ? 'page' : null}" th:href="@{/store_manager/chat}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-chat"/></svg>Tin nhắn</a>
         </div>
     </details>
-    <details class="vfo-nav-group" th:open="${active == 'promotions' or active == 'coupons' or active == 'reports'}">
-        <summary>Tiếp thị &amp; báo cáo</summary>
+    <details class="vfo-nav-group" th:open="${active == 'promotions' or active == 'coupons'}">
+        <summary>Tiếp thị &amp; khuyến mãi</summary>
         <div class="vfo-group-links">
             <a class="nav-link" th:classappend="${active == 'promotions' ? 'active' : ''}" th:attr="aria-current=${active == 'promotions' ? 'page' : null}" th:href="@{/seller/promotions}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-promotion"/></svg>Khuyến mãi</a>
             <a class="nav-link" th:classappend="${active == 'coupons' ? 'active' : ''}" th:attr="aria-current=${active == 'coupons' ? 'page' : null}" th:href="@{/seller/coupons}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-tag"/></svg>Coupon</a>
-            <a class="nav-link" th:classappend="${active == 'reports' ? 'active' : ''}" th:attr="aria-current=${active == 'reports' ? 'page' : null}" th:href="@{/seller/reports}"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-chart"/></svg>Báo cáo bán hàng</a>
         </div>
     </details>
 </nav>

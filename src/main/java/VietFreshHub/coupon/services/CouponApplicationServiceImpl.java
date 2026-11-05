@@ -178,11 +178,34 @@ public class CouponApplicationServiceImpl
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
-    public CouponApplicationResponse applyToOrder(
+    public List<CouponApplicationResponse> applyToOrder(
             Long customerId,
             Long orderId,
-            String code
+            List<String> codes
     ) {
+        var applications = new java.util.ArrayList<CouponApplicationResponse>();
+        var shopIds = new HashSet<Long>();
+        var normalizedCodes = new HashSet<String>();
+        if (codes != null) for (String code : codes) {
+            if (code == null || code.isBlank()) continue;
+            String normalizedCode = normalizeCode(code);
+            if (!normalizedCodes.add(normalizedCode)) throw invalid("Mã coupon bị trùng");
+            Coupon coupon = couponRepository.findByCodeIgnoreCase(normalizedCode)
+                    .orElseThrow(() -> invalid("Mã coupon không tồn tại"));
+            if (!shopIds.add(coupon.getPromotion().getShopId())) throw invalid("Mỗi shop chỉ được áp dụng một coupon");
+        }
+        if (codes != null) for (String code : codes) {
+            if (code == null || code.isBlank()) continue;
+            var application = applyCouponToOrder(customerId, orderId, code);
+            if (applications.stream().anyMatch(existing -> existing.shopId().equals(application.shopId()))) {
+                throw invalid("Mỗi shop chỉ được áp dụng một coupon");
+            }
+            applications.add(application);
+        }
+        return List.copyOf(applications);
+    }
+
+    private CouponApplicationResponse applyCouponToOrder(Long customerId, Long orderId, String code) {
         requireId(customerId);
         requireId(orderId);
         String normalizedCode = normalizeCode(code);
@@ -223,11 +246,6 @@ public class CouponApplicationServiceImpl
             );
         }
 
-        if (hasRecordedDiscount(orderId)
-                || order.getDiscountTotal().signum() != 0) {
-            throw invalid("Đơn hàng đã có ưu đãi được áp dụng");
-        }
-
         Coupon coupon = couponRepository
                 .findByCodeForUpdate(normalizedCode)
                 .orElseThrow(() -> invalid("Mã coupon không tồn tại"));
@@ -255,9 +273,7 @@ public class CouponApplicationServiceImpl
                 .getResultList();
 
         if (shopOrders.isEmpty()
-                || shopOrders.stream().anyMatch(s ->
-                !"PENDING".equals(s.getStatus())
-                        || s.getDiscountTotal().signum() != 0)) {
+                || shopOrders.stream().anyMatch(s -> !"PENDING".equals(s.getStatus()))) {
             throw invalid("Đơn con không đủ điều kiện áp dụng coupon");
         }
 
@@ -267,6 +283,10 @@ public class CouponApplicationServiceImpl
                 .orElseThrow(() -> invalid(
                         "Đơn hàng không có sản phẩm của shop phát hành mã"
                 ));
+
+        if (target.getDiscountTotal().signum() != 0) {
+            throw invalid("Shop này đã có coupon hoặc ưu đãi được áp dụng");
+        }
 
         List<OrderItem> items = em.createQuery("""
                 SELECT i
@@ -545,30 +565,6 @@ public class CouponApplicationServiceImpl
                 .getSingleResult();
 
         return matched.intValue() == 1;
-    }
-
-    private boolean hasRecordedDiscount(Long orderId) {
-        Number count = (Number) em.createNativeQuery("""
-                SELECT COUNT(*)
-                FROM dbo.order_discounts d
-                WHERE d.order_id = :orderId
-                   OR d.shop_order_id IN (
-                        SELECT shop_order_id
-                        FROM dbo.shop_orders
-                        WHERE order_id = :orderId
-                   )
-                   OR d.order_item_id IN (
-                        SELECT i.order_item_id
-                        FROM dbo.order_items i
-                        JOIN dbo.shop_orders s
-                          ON s.shop_order_id = i.shop_order_id
-                        WHERE s.order_id = :orderId
-                   )
-                """)
-                .setParameter("orderId", orderId)
-                .getSingleResult();
-
-        return count.longValue() > 0;
     }
 
     private BigDecimal lineTotal(BigDecimal price, Integer quantity) {

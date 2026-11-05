@@ -166,7 +166,7 @@
                             <span class="badge" th:if="${row.category.status.name() == 'ACTIVE'}">Đang hoạt động</span>
                             <span class="badge inactive" th:unless="${row.category.status.name() == 'ACTIVE'}">Ngừng hoạt động</span>
                         </td>
-                        <td th:text="${row.category.updatedAt == null ? '—' : #temporals.format(row.category.updatedAt, 'dd/MM/yyyy HH:mm')}">01/11/2026 10:30</td>
+                        <td th:text="${row.category.updatedAt == null ? '—' : #temporals.format(T(VietFreshHub.order.service.OrderLabels).local(row.category.updatedAt), 'dd/MM/yyyy HH:mm')}">01/11/2026 10:30</td>
                         <td>
                             <div class="row-actions">
                                 <a class="link-button"

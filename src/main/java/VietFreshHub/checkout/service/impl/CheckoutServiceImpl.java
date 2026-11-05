@@ -163,9 +163,9 @@ public class CheckoutServiceImpl implements CheckoutService {
         CheckoutOrderService.CreatedShopOrders createdShopOrders = checkoutOrderService.createShopOrders(order, buyer, itemsByShopId, draft.shopQuotes());
         inventoryReservationService.reserve(createdShopOrders.reservations(), customerId);
 
-        if (request.getCouponCode() != null && !request.getCouponCode().isBlank()) {
+        if (request.getCouponCodes() != null && request.getCouponCodes().stream().anyMatch(code -> code != null && !code.isBlank())) {
             try {
-                couponApplicationService.applyToOrder(customerId, order.getOrderId(), request.getCouponCode());
+                couponApplicationService.applyToOrder(customerId, order.getOrderId(), request.getCouponCodes());
             } catch (IllegalArgumentException ex) {
                 throw new CheckoutException(ex.getMessage());
             }

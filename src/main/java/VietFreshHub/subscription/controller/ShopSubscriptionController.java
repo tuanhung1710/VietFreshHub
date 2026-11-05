@@ -13,6 +13,8 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import jakarta.servlet.http.HttpServletRequest;
+import VietFreshHub.payment.vnpay.VnpayProperties;
 
 @Controller
 @RequestMapping("/seller/subscription")
@@ -23,6 +25,7 @@ public class ShopSubscriptionController {
     private final ShopSubscriptionService subscriptionService;
     private final SubscriptionPlanService planService;
     private final ShopService shopService;
+    private final VnpayProperties vnpayProperties;
 
     @GetMapping
     public String currentSubscription(
@@ -68,7 +71,8 @@ public class ShopSubscriptionController {
             SubscriptionPaymentForm form,
             BindingResult bindingResult,
             Model model,
-            RedirectAttributes redirectAttributes
+            RedirectAttributes redirectAttributes,
+            HttpServletRequest request
     ) {
         Long shopId = shopService.getManagedShopId(authentication);
 
@@ -83,14 +87,9 @@ public class ShopSubscriptionController {
                     form
             );
 
-            redirectAttributes.addFlashAttribute(
-                    "successMessage",
-                    "Đã tạo yêu cầu thanh toán. "
-                            + "Gói sẽ được kích hoạt sau khi xác nhận nhận tiền."
-            );
-
-            return "redirect:/seller/subscription/payments/"
-                    + payment.subscriptionPaymentId();
+            String returnUrl = subscriptionReturnUrl();
+            return "redirect:" + subscriptionService.startVnpayPayment(shopId,
+                    payment.subscriptionPaymentId(), request.getRemoteAddr(), returnUrl);
 
         } catch (IllegalArgumentException ex) {
             bindingResult.reject(
@@ -118,6 +117,25 @@ public class ShopSubscriptionController {
         );
 
         return "subscription/subscription-payment-detail";
+    }
+
+    @PostMapping("/payments/{paymentId}/vnpay")
+    public String resumeVnpayPayment(Authentication authentication, @PathVariable Long paymentId,
+                                     HttpServletRequest request, RedirectAttributes flash) {
+        Long shopId = shopService.getManagedShopId(authentication);
+        String returnUrl = subscriptionReturnUrl();
+        try {
+            return "redirect:" + subscriptionService.startVnpayPayment(shopId, paymentId,
+                    request.getRemoteAddr(), returnUrl);
+        } catch (IllegalArgumentException ex) {
+            flash.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/seller/subscription/payments/" + paymentId;
+        }
+    }
+
+    private String subscriptionReturnUrl() {
+        return org.springframework.web.util.UriComponentsBuilder.fromUriString(vnpayProperties.getReturnUrl())
+                .replacePath("/payment/vnpay/subscription/return").replaceQuery(null).build().toUriString();
     }
 
     @GetMapping("/payments")

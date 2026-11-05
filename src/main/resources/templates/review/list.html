@@ -16,7 +16,7 @@
         <h2>Đánh giá sau khi mua</h2>
         <form th:if="${targetType == 'product'}" method="post" th:action="@{/reviews/product/{id}(id=${targetId})}" th:object="${reviewForm}">
             <label for="orderItemId">Đơn hàng đã hoàn thành</label>
-            <select id="orderItemId" name="orderItemId" required class="form-control"><option th:each="id : ${eligiblePurchases}" th:value="${id}" th:text="${'Dòng đơn hàng #' + id}"></option></select>
+            <select id="orderItemId" name="orderItemId" required class="form-control"><option th:each="purchase : ${eligiblePurchases}" th:value="${purchase.orderItemId}" th:text="${purchase.productName + ' · ' + purchase.variantName + ' · Đơn ' + purchase.orderCode}"></option></select>
             <label for="rating-product">Điểm từ 1 đến 5</label><input id="rating-product" type="number" min="1" max="5" th:field="*{rating}" required class="form-control">
             <label for="content-product">Nội dung (không bắt buộc)</label><textarea id="content-product" maxlength="3000" th:field="*{content}" class="form-control"></textarea>
             <button type="submit" class="btn btn-success">Gửi đánh giá</button>
@@ -38,7 +38,8 @@
             <input type="hidden" name="returnTo" th:value="${'/reviews/' + targetType + '/' + targetId}">
             <label th:for="${'reason-' + review.reviewId}">Báo cáo đánh giá</label>
             <input th:id="${'reason-' + review.reviewId}" th:field="*{reason}" maxlength="100" placeholder="Lý do" required class="form-control">
-            <textarea th:field="*{description}" maxlength="1000" placeholder="Mô tả thêm (không bắt buộc)" class="form-control"></textarea>
+            <label th:for="${'description-' + review.reviewId}">Mô tả thêm (không bắt buộc)</label>
+            <textarea th:id="${'description-' + review.reviewId}" th:field="*{description}" maxlength="1000" placeholder="Mô tả thêm (không bắt buộc)" class="form-control"></textarea>
             <button type="submit" class="btn btn-success">Báo cáo</button>
         </form>
     </article>

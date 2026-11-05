@@ -21,6 +21,10 @@
 .metric-card strong { color:var(--green-900); font-size:25px; letter-spacing:-.04em; overflow-wrap:anywhere; }
 .metric-card small { color:var(--muted); font-size:10px; line-height:1.5; }
 .revenue-card { margin-bottom:12px; }
+.revenue-breakdown { display:grid; grid-template-columns:minmax(0,1fr); gap:10px; }
+.revenue-breakdown > div { display:grid; gap:4px; min-width:0; }
+.revenue-breakdown span { color:var(--muted); font-size:11px; line-height:1.45; }
+.revenue-breakdown strong { color:var(--green-900); font-size:18px; letter-spacing:-.03em; overflow-wrap:anywhere; }
 .panel { overflow:hidden; }
 .chart-panel { padding-bottom:14px; }
 .panel-heading { padding:18px 20px 14px; }

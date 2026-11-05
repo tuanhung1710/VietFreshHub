@@ -109,9 +109,9 @@
 </div>
         <!-- Trình bày thời gian trong nhật ký hoạt động. -->
         <time th:fragment="historyTime(timestamp)" class="vf-history-time-content"
-              th:datetime="${timestamp.plusHours(7)} + '+07:00'">
-            <span th:text="${#temporals.format(timestamp.plusHours(7),'dd/MM/yyyy')}"></span>
-            <small class="text-body-secondary" th:text="${#temporals.format(timestamp.plusHours(7),'HH:mm:ss')}"></small>
+              th:datetime="${T(VietFreshHub.order.service.OrderLabels).local(timestamp)} + '+07:00'">
+            <span th:text="${#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(timestamp),'dd/MM/yyyy')}"></span>
+            <small class="text-body-secondary" th:text="${#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(timestamp),'HH:mm:ss')}"></small>
         </time>
 
         <!-- Cụm chuyển trang gọn; hai nút giữ vị trí khi bị vô hiệu hóa. -->

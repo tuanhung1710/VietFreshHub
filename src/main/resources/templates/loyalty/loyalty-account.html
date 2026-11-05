@@ -49,7 +49,7 @@
             Bạn chưa có tiền thưởng. Các lượt tích và sử dụng tiền thưởng sẽ được hiển thị tại đây.
         </p>
         <p th:if="${balance.updatedAt != null}" class="text-secondary small"
-           th:text="${'Cập nhật lần cuối (UTC): ' + #temporals.format(balance.updatedAt, 'dd/MM/yyyy HH:mm:ss')}"></p>
+           th:text="${'Cập nhật lần cuối (giờ Việt Nam): ' + #temporals.format(T(VietFreshHub.order.service.OrderLabels).local(balance.updatedAt), 'dd/MM/yyyy HH:mm:ss')}"></p>
     </section>
 
     <section class="panel loyalty-history" aria-labelledby="history-heading">
@@ -59,10 +59,10 @@
         </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <caption class="px-3">Giao dịch mới nhất hiển thị trước. Thời gian hiển thị theo UTC.</caption>
+                    <caption class="px-3">Giao dịch mới nhất hiển thị trước. Thời gian hiển thị theo giờ Việt Nam.</caption>
                     <thead class="table-light">
                     <tr>
-                        <th scope="col">Thời điểm (UTC)</th>
+                        <th scope="col">Thời điểm (giờ Việt Nam)</th>
                         <th scope="col">Loại giao dịch</th>
                         <th scope="col">Mã đơn hàng</th>
                         <th scope="col" class="text-end">Số tiền thưởng</th>
@@ -80,7 +80,7 @@
                     <tr th:each="transaction : ${transactionPage.content}">
                         <td class="text-nowrap"
                             th:text="${transaction.createdAt != null
-                                ? #temporals.format(transaction.createdAt, 'dd/MM/yyyy HH:mm:ss') : '—'}"></td>
+                                ? #temporals.format(T(VietFreshHub.order.service.OrderLabels).local(transaction.createdAt), 'dd/MM/yyyy HH:mm:ss') : '—'}"></td>
                         <td th:switch="${transaction.transactionType.name()}">
                             <span th:case="'EARN'" class="badge bg-success-subtle text-success">Tích thưởng</span>
                             <span th:case="'REDEEM'" class="badge bg-warning-subtle text-dark">Dùng tiền thưởng</span>

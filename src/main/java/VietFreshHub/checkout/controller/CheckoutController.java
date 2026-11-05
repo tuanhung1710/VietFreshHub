@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -76,11 +77,11 @@ public class CheckoutController {
                        @RequestParam(required = false) Long addressId,
                        @RequestParam(required = false) Long buyNowVariantId,
                        @RequestParam(required = false) Integer buyNowQuantity,
-                       @RequestParam(required = false) String couponCode,
+                       @RequestParam(required = false) List<String> couponCodes,
                        @RequestParam(defaultValue = "0") BigDecimal rewardAmountToUse) {
         Long customerId = currentCustomer.requireCustomerId(authentication);
         CheckoutRequest form = new CheckoutRequest();
-        form.setCouponCode(couponCode);
+        form.setCouponCodes(couponCodes == null ? new ArrayList<>() : couponCodes);
         form.setRewardAmountToUse(rewardAmountToUse);
         CheckoutDraft draft = null;
         if (checkoutToken != null) {
@@ -340,8 +341,9 @@ public class CheckoutController {
         BigDecimal couponDiscount = BigDecimal.ZERO;
         BigDecimal loyaltyDiscount = BigDecimal.ZERO;
 
-        model.addAttribute("couponApplication", null);
-        model.addAttribute("couponError", null);
+        model.addAttribute("couponApplications", List.of());
+        Map<String, String> couponErrors = new LinkedHashMap<>();
+        model.addAttribute("couponErrors", couponErrors);
         model.addAttribute("redemption", null);
         model.addAttribute("loyaltyError", null);
         model.addAttribute("loyaltyBalance", loyaltyService.getBalance(customerId));
@@ -350,25 +352,27 @@ public class CheckoutController {
                 : couponApplicationService.getAvailableCoupons(customerId, draft.selectedItemIds()));
 
         boolean couponValid = true;
-        String couponCode = form.getCouponCode();
-
-        if (couponCode != null && !couponCode.isBlank()) {
+        List<VietFreshHub.coupon.dto.CouponApplicationResponse> couponApplications = new ArrayList<>();
+        Set<Long> selectedCouponShops = new java.util.HashSet<>();
+        for (String code : Objects.requireNonNullElse(form.getCouponCodes(), List.<String>of())) {
+            if (code == null || code.isBlank()) continue;
             try {
                 var application = draft.buyNow()
-                        ? couponApplicationService.previewBuyNow(customerId, couponCode, draft.buyNowVariantId(), draft.buyNowQuantity())
-                        : couponApplicationService.preview(
-                        customerId,
-                        couponCode,
-                        draft.selectedItemIds()
-                );
-
-                couponDiscount = application.discountAmount();
-                model.addAttribute("couponApplication", application);
+                        ? couponApplicationService.previewBuyNow(customerId, code, draft.buyNowVariantId(), draft.buyNowQuantity())
+                        : couponApplicationService.preview(customerId, code, draft.selectedItemIds());
+                if (!selectedCouponShops.add(application.shopId())) {
+                    couponErrors.put(code, "Mỗi shop chỉ được áp dụng một coupon.");
+                    couponValid = false;
+                    continue;
+                }
+                couponApplications.add(application);
+                couponDiscount = couponDiscount.add(application.discountAmount());
             } catch (IllegalArgumentException ex) {
+                couponErrors.put(code, ex.getMessage());
                 couponValid = false;
-                model.addAttribute("couponError", ex.getMessage());
             }
         }
+        model.addAttribute("couponApplications", couponApplications);
 
         if (couponValid) {
             BigDecimal goodsAmountAfterCoupon = preview.cart()
@@ -424,7 +428,6 @@ public class CheckoutController {
     @PostMapping("/coupon/preview")
     public String previewCoupon(
             @ModelAttribute("form") CheckoutRequest form,
-            @RequestParam(defaultValue = "") String couponInput,
             Authentication authentication,
             HttpSession session,
             Model model
@@ -444,7 +447,7 @@ public class CheckoutController {
             );
         }
 
-        form.setCouponCode(couponInput.strip());
+        form.setCouponCodes(Objects.requireNonNullElse(form.getCouponCodes(), List.<String>of()).stream().filter(code -> code != null && !code.isBlank()).map(String::strip).toList());
 
         var preview = previewDraft(customerId, draft);
 

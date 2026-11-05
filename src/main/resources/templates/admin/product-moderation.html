@@ -136,7 +136,7 @@
                     <span class="badge locked" th:if="${product.moderationBlocked and product.approvalStatus == 'PENDING'}">Chờ duyệt mở khóa · đang khóa</span>
                     <span class="badge locked" th:if="${product.moderationBlocked and product.approvalStatus != 'PENDING'}">Đang bị khóa</span>
                 </td>
-                <td th:text="${#temporals.format(product.createdAt, 'dd/MM/yyyy HH:mm')}">19/10/2026</td>
+                <td th:text="${#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(product.createdAt), 'dd/MM/yyyy HH:mm')}">19/10/2026</td>
                 <td>
                     <div class="actions">
                         <form th:if="${product.approvalStatus == 'PENDING' and !product.moderationBlocked}"

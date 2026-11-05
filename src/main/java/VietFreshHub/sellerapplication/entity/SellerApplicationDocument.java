@@ -4,9 +4,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Nationalized;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Getter
 @Setter
@@ -50,11 +50,15 @@ public class SellerApplicationDocument {
     @Column(name = "verification_status", nullable = false, length = 30)
     private DocumentVerificationStatus verificationStatus =
             DocumentVerificationStatus.PENDING;
-
-    @CreationTimestamp
     @Column(name = "uploaded_at", nullable = false, updatable = false)
     private LocalDateTime uploadedAt;
 
     @Column(name = "verified_at")
     private LocalDateTime verifiedAt;
+
+    @PrePersist
+    void setUtcTimestamps() {
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
+        if (uploadedAt == null) uploadedAt = now;
+    }
 }

@@ -1,5 +1,6 @@
 package VietFreshHub.product.dto;
 
+import VietFreshHub.order.service.OrderLabels;
 import VietFreshHub.product.entity.Product;
 
 import lombok.Getter;
@@ -40,6 +41,6 @@ public class ProductResponse {
      */
     public LocalDateTime getCatalogUpdatedAt() {
         var date = product.getUpdatedAt() == null ? product.getCreatedAt() : product.getUpdatedAt();
-        return date == null ? null : date.plusHours(7);
+        return OrderLabels.local(date);
     }
 }

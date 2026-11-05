@@ -50,8 +50,8 @@
                     <dt class="col-sm-5">Gói dịch vụ</dt><dd class="col-sm-7" th:text="${payment.planName}"></dd>
                     <dt class="col-sm-5">Thao tác</dt><dd class="col-sm-7" th:text="${payment.action.name() == 'SUBSCRIBE' ? 'Đăng ký' : (payment.action.name() == 'RENEW' ? 'Gia hạn' : 'Nâng cấp')}"></dd>
                     <dt class="col-sm-5">Số tiền</dt><dd class="col-sm-7 fw-bold text-success" th:text="${#numbers.formatDecimal(payment.amount, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></dd>
-                    <dt class="col-sm-5">Ngày tạo (UTC)</dt><dd class="col-sm-7" th:text="${payment.createdAt != null ? #temporals.format(payment.createdAt, 'dd/MM/yyyy HH:mm') : '—'}"></dd>
-                    <dt class="col-sm-5">Ngày xử lý (UTC)</dt><dd class="col-sm-7" th:text="${payment.reviewedAt != null ? #temporals.format(payment.reviewedAt, 'dd/MM/yyyy HH:mm') : '—'}"></dd>
+                    <dt class="col-sm-5">Ngày tạo (giờ Việt Nam)</dt><dd class="col-sm-7" th:text="${payment.createdAt != null ? #temporals.format(T(VietFreshHub.order.service.OrderLabels).local(payment.createdAt), 'dd/MM/yyyy HH:mm') : '—'}"></dd>
+                    <dt class="col-sm-5">Ngày xử lý (giờ Việt Nam)</dt><dd class="col-sm-7" th:text="${payment.reviewedAt != null ? #temporals.format(T(VietFreshHub.order.service.OrderLabels).local(payment.reviewedAt), 'dd/MM/yyyy HH:mm') : '—'}"></dd>
                     <dt class="col-sm-5">Mã giao dịch</dt><dd class="col-sm-7 text-break" th:text="${payment.transactionReference ?: '—'}"></dd>
                     <dt class="col-sm-5">Ghi chú / Lý do từ chối</dt><dd class="col-sm-7 benefits" th:text="${payment.note ?: '—'}"></dd>
                 </dl>
@@ -59,18 +59,16 @@
         </section>
         <section class="col-lg-6">
             <div class="card border-0 shadow-sm rounded-3 h-100"><div class="card-body p-4">
-                <h2 class="h5 fw-bold mb-3">Hướng dẫn chuyển khoản</h2>
+                <h2 class="h5 fw-bold mb-3">Thanh toán VNPay</h2>
                 <div th:if="${payment.status.name() == 'PENDING'}">
-                    <div class="alert alert-warning">Thông tin tài khoản nhận tiền chưa được cung cấp trên hệ thống. Vui lòng liên hệ quản trị viên, cung cấp mã yêu cầu bên cạnh để nhận tài khoản và nội dung chuyển khoản chính xác.</div>
-                    <ol class="ps-3">
-                        <li class="mb-2">Xác nhận ngân hàng, số tài khoản và tên người nhận với quản trị viên.</li>
-                        <li class="mb-2">Chuyển đúng số tiền <strong th:text="${#numbers.formatDecimal(payment.amount, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></strong> cùng nội dung do quản trị viên hướng dẫn, có mã yêu cầu <strong th:text="${payment.subscriptionPaymentId}"></strong>.</li>
-                        <li>Lưu biên lai và chờ quản trị viên đối soát. Không chuyển lại nếu đã thanh toán.</li>
-                    </ol>
-                    <a class="btn btn-outline-success" th:href="@{/seller/subscription/payments/{id}(id=${payment.subscriptionPaymentId})}">Cập nhật trạng thái</a>
+                    <div class="alert alert-warning">Đang chờ VNPay xác nhận. Gói chỉ được kích hoạt sau khi hệ thống xác minh giao dịch thành công.</div>
+                    <form method="post" th:action="@{/seller/subscription/payments/{id}/vnpay(id=${payment.subscriptionPaymentId})}">
+                        <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button type="submit" class="btn btn-success">Tiếp tục thanh toán VNPay</button>
+                    </form>
                 </div>
-                <p th:if="${payment.status.name() == 'PAID'}" class="alert alert-success">Đã xác nhận nhận tiền. Bạn có thể xem gói tại trang Gói hiện tại.</p>
-                <div th:if="${payment.status.name() == 'FAILED'}" class="alert alert-danger">Yêu cầu đã bị từ chối. Vui lòng xem lý do và liên hệ quản trị viên nếu bạn đã chuyển tiền.</div>
+                <p th:if="${payment.status.name() == 'PAID'}" class="alert alert-success">VNPay đã xác nhận thanh toán và gói đã được kích hoạt.</p>
+                <div th:if="${payment.status.name() == 'FAILED'}" class="alert alert-danger">Thanh toán VNPay thất bại hoặc đã hết hạn. Bạn có thể tạo yêu cầu mới.</div>
             </div></div>
         </section>
     </div>

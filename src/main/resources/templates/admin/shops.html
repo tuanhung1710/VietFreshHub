@@ -98,7 +98,7 @@
                             <span class="role-chip"
                                   th:text="${shop.availabilityStatus == 'OPEN' ? 'Đang mở cửa' : (shop.availabilityStatus == 'CLOSED' ? 'Đang đóng cửa' : shop.availabilityStatus)}">Đang mở cửa</span>
                         </td>
-                        <td class="date-cell" th:text="${#temporals.format(shop.createdAt, 'dd/MM/yyyy')}">01/01/2026</td>
+                        <td class="date-cell" th:text="${#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(shop.createdAt), 'dd/MM/yyyy')}">01/01/2026</td>
                         <td>
                             <div class="row-actions">
                                 <form method="post"

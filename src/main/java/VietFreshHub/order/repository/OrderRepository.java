@@ -14,26 +14,9 @@ public interface OrderRepository extends JpaRepository<Order,Long> {
         Long getOrderCount();
     }
 
-    interface VolumeByHour {
-        Integer getOrderYear();
-        Integer getOrderMonth();
-        Integer getOrderDay();
-        Integer getOrderHour();
-        Long getOrderCount();
-    }
-
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select o from Order o where o.orderId = :orderId")
     Optional<Order> findByIdForUpdate(@Param("orderId") Long orderId);
-
-    @Query("""
-            select year(o.placedAt) as orderYear, month(o.placedAt) as orderMonth,
-                   day(o.placedAt) as orderDay, hour(o.placedAt) as orderHour, count(o) as orderCount
-            from Order o where o.placedAt >= :from and o.placedAt < :to
-            group by year(o.placedAt), month(o.placedAt), day(o.placedAt), hour(o.placedAt)
-            order by year(o.placedAt), month(o.placedAt), day(o.placedAt), hour(o.placedAt)
-            """)
-    List<VolumeByHour> findOrderVolumeByHour(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
     @org.springframework.data.jpa.repository.Query("""
             select o.status as status, count(o) as orderCount
@@ -42,6 +25,19 @@ public interface OrderRepository extends JpaRepository<Order,Long> {
             """)
     List<StatusCount> countOrdersByStatus(@org.springframework.data.repository.query.Param("from") LocalDateTime from,
                                           @org.springframework.data.repository.query.Param("to") LocalDateTime to);
+
+    @Query("""
+            select count(o)
+            from Order o
+            where o.status = VietFreshHub.order.entity.Order.Status.PENDING
+              and o.placedAt >= :from and o.placedAt < :to
+              and exists (
+                  select s.shopOrderId from ShopOrder s
+                  where s.order = o and s.status not in ('PENDING', 'CANCELLED')
+              )
+            """)
+    long countPendingOrdersWithStartedShopOrder(@Param("from") LocalDateTime from,
+                                                @Param("to") LocalDateTime to);
 
     @org.springframework.data.jpa.repository.Query("select new VietFreshHub.order.dto.OrderListRow(o.orderId,o.orderCode,o.status,o.paymentStatus,o.grandTotal,o.placedAt, "
             + CustomerOrderStageQuery.EXPRESSION + ") from Order o where o.customer.userId=:customerId "

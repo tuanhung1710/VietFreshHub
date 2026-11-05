@@ -22,10 +22,10 @@ public interface CouponApplicationService {
 
     // Kiểm tra lại coupon trên dữ liệu đơn đã tạo,
     // áp dụng giảm giá và ghi nhận lượt sử dụng.
-    CouponApplicationResponse applyToOrder(
+    List<CouponApplicationResponse> applyToOrder(
             Long customerId,
             Long orderId,
-            String code
+            List<String> codes
     );
 
     // Shop xem lịch sử sử dụng một coupon của mình.

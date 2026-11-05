@@ -116,7 +116,7 @@
                     </td>
                     <td>
                         <span class="text-secondary small text-nowrap"
-                              th:text="${plan.updatedAt != null ? #temporals.format(plan.updatedAt, 'dd-MM-yyyy HH:mm') : (#temporals.format(plan.createdAt, 'dd-MM-yyyy HH:mm'))}"></span>
+                              th:text="${plan.updatedAt != null ? #temporals.format(T(VietFreshHub.order.service.OrderLabels).local(plan.updatedAt), 'dd-MM-yyyy HH:mm') : (#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(plan.createdAt), 'dd-MM-yyyy HH:mm'))}"></span>
                     </td>
                     <td class="text-center">
                         <div class="d-flex justify-content-center gap-2">

@@ -48,8 +48,8 @@
                 <span class="badge rounded-pill" th:classappend="${currentSubscription.status.name() == 'ACTIVE' ? 'bg-success-subtle text-success' : (currentSubscription.status.name() == 'UPGRADED' ? 'bg-warning-subtle text-dark' : (currentSubscription.status.name() == 'CANCELLED' ? 'bg-danger-subtle text-danger' : 'bg-secondary-subtle text-secondary'))}" th:text="${currentSubscription.status}"></span>
             </div>
             <dl class="row">
-                <dt class="col-sm-4">Bắt đầu (UTC)</dt><dd class="col-sm-8" th:text="${currentSubscription.startAt != null ? #temporals.format(currentSubscription.startAt, 'dd/MM/yyyy HH:mm') : '—'}"></dd>
-                <dt class="col-sm-4">Hết hạn (UTC)</dt><dd class="col-sm-8" th:text="${currentSubscription.endAt != null ? #temporals.format(currentSubscription.endAt, 'dd/MM/yyyy HH:mm') : '—'}"></dd>
+                <dt class="col-sm-4">Bắt đầu (giờ Việt Nam)</dt><dd class="col-sm-8" th:text="${currentSubscription.startAt != null ? #temporals.format(T(VietFreshHub.order.service.OrderLabels).local(currentSubscription.startAt), 'dd/MM/yyyy HH:mm') : '—'}"></dd>
+                <dt class="col-sm-4">Hết hạn (giờ Việt Nam)</dt><dd class="col-sm-8" th:text="${currentSubscription.endAt != null ? #temporals.format(T(VietFreshHub.order.service.OrderLabels).local(currentSubscription.endAt), 'dd/MM/yyyy HH:mm') : '—'}"></dd>
                 <dt class="col-sm-4">Hạn mức sản phẩm</dt><dd class="col-sm-8" th:text="${currentSubscription.maxProducts}"></dd>
                 <dt class="col-sm-4">Quyền lợi</dt><dd class="col-sm-8 benefits" th:text="${#strings.isEmpty(currentSubscription.benefits) ? 'Chưa có mô tả quyền lợi.' : currentSubscription.benefits}"></dd>
             </dl>

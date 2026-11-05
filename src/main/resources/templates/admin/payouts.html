@@ -57,8 +57,8 @@
                     <td class="money strong" th:text="${#numbers.formatDecimal(payout.netAmount, 1, 'COMMA', 2, 'POINT')}">0.00</td>
                     <td><span class="status" th:text="${payout.status == 'PENDING' ? 'Chưa đưa vào đợt chi trả' : (payout.status == 'PROCESSING' ? 'Đã vào đợt · chờ chuyển khoản' : (payout.status == 'FAILED' ? 'Chuyển khoản thất bại · chờ xử lý lại' : payout.status))}">Chưa đưa vào đợt chi trả</span>
                         <small th:if="${payout.eligibleAt == null}">Chưa ghi nhận giao hàng thành công</small>
-                        <small th:if="${payout.eligibleAt != null}" th:text="|Mốc kết thúc chờ 24 giờ: ${#temporals.format(payout.eligibleAt, 'dd/MM/yyyy HH:mm')} UTC|"></small>
-                        <small th:if="${payout.fundsConfirmedAt != null}" th:text="|Đã xác nhận tiền về sàn lúc: ${#temporals.format(payout.fundsConfirmedAt, 'dd/MM/yyyy HH:mm')} UTC|"></small>
+                        <small th:if="${payout.eligibleAt != null}" th:text="|Mốc kết thúc chờ 24 giờ: ${#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(payout.eligibleAt), 'dd/MM/yyyy HH:mm')} giờ Việt Nam|"></small>
+                        <small th:if="${payout.fundsConfirmedAt != null}" th:text="|Đã xác nhận tiền về sàn lúc: ${#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(payout.fundsConfirmedAt), 'dd/MM/yyyy HH:mm')} giờ Việt Nam|"></small>
                         <small th:if="${payout.fundsConfirmedAt == null}">Chưa xác nhận tiền đã về sàn</small>
                         <small th:if="${(payout.status == 'PENDING' or payout.status == 'FAILED') and !payout.hasPayoutAccount}">Shop chưa khai báo tài khoản nhận tiền</small></td>
                     <td>
@@ -88,7 +88,7 @@
         <article class="batch-card" th:each="batch : ${batches}">
             <header class="batch-heading">
                 <div><strong th:text="${#strings.startsWith(batch.scheduledSlot, 'MANUAL-') ? 'Đợt thủ công #' + batch.batchId : 'Đợt tự động ' + batch.scheduledSlot}">Đợt chi trả</strong>
-                    <small th:text="|Tạo lúc ${#temporals.format(batch.createdAt, 'dd/MM/yyyy HH:mm')} · ${batch.payoutCount} đơn shop · ${batch.shopCount} cửa hàng · Tổng tiền: ${#numbers.formatDecimal(batch.totalAmount, 1, 'COMMA', 2, 'POINT')}|">Tổng đợt</small></div>
+                    <small th:text="|Tạo lúc ${#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(batch.createdAt), 'dd/MM/yyyy HH:mm')} · ${batch.payoutCount} đơn shop · ${batch.shopCount} cửa hàng · Tổng tiền: ${#numbers.formatDecimal(batch.totalAmount, 1, 'COMMA', 2, 'POINT')}|">Tổng đợt</small></div>
                 <a class="button primary" th:href="@{/admin/payouts/batches/{id}/export.xlsx(id=${batch.batchId})}">Tải file Excel</a>
             </header>
             <div class="table-scroll">

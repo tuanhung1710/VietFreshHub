@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 public final class OrderLabels {
+    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private OrderLabels() {}
     public static String order(Order.Status status) { return switch(status) {
         case PENDING -> "Chờ cửa hàng xác nhận"; case CONFIRMED -> "Đã xác nhận"; case PROCESSING -> "Đang xử lý";
@@ -82,5 +83,6 @@ public final class OrderLabels {
         return status == VietFreshHub.payment.entity.Payment.Status.PENDING && "COD".equals(methodCode)
                 ? "Chờ thu COD" : paymentTransaction(status);
     }
-    public static LocalDateTime local(LocalDateTime utc) { return utc==null ? null : LocalDateTime.ofInstant(utc.toInstant(ZoneOffset.UTC),ZoneId.of("Asia/Ho_Chi_Minh")); }
+    public static LocalDateTime local(LocalDateTime utc) { return utc == null ? null : utc.atOffset(ZoneOffset.UTC).atZoneSameInstant(VIETNAM_ZONE).toLocalDateTime(); }
+    public static LocalDateTime utc(LocalDateTime vietnamLocal) { return vietnamLocal == null ? null : vietnamLocal.atZone(VIETNAM_ZONE).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime(); }
 }

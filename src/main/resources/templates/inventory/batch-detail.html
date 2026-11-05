@@ -50,7 +50,7 @@
                     <dd class="col-7" th:text="${row.sku}">
                     </dd>
                     <dt class="col-5">Ngày nhập kho</dt>
-                    <dd class="col-7" th:text="${row.batch.receivedAt==null?'—':#temporals.format(row.batch.receivedAt.plusHours(7),'dd/MM/yyyy')}"></dd>
+                    <dd class="col-7" th:text="${row.batch.receivedAt==null?'—':#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(row.batch.receivedAt),'dd/MM/yyyy')}"></dd>
                     <dt class="col-5">
                         Hạn sử dụng
                     </dt>
@@ -126,7 +126,7 @@
                                     <td data-label="Đơn vị tính"><span th:text="${#strings.isEmpty(allocation.unit) ? '—' : allocation.unit}"></span></td>
                                     <td data-label="Trạng thái"><span class="badge" th:classappend="${allocation.statusTone}" th:text="${allocation.statusLabel}"></span></td>
                                     <td data-label="Cập nhật lần cuối" class="vf-allocation-updated-cell">
-                                        <span class="vf-allocation-updated" th:text="${allocation.updatedAt == null ? 'Chưa có dữ liệu' : #temporals.format(allocation.updatedAt.plusHours(7), 'dd/MM/yyyy · HH:mm')}"></span>
+                                        <span class="vf-allocation-updated" th:text="${allocation.updatedAt == null ? 'Chưa có dữ liệu' : #temporals.format(T(VietFreshHub.order.service.OrderLabels).local(allocation.updatedAt), 'dd/MM/yyyy · HH:mm')}"></span>
                                     </td>
                                     <td data-label="Thao tác" class="vf-table-actions">
                                         <details th:id="${'allocation-history-'+allocation.allocationId}">
@@ -134,7 +134,7 @@
                                             <p class="text-body-secondary mb-0" th:if="${allocation.history.empty}">Chưa có lịch sử xử lý đơn hàng.</p>
                                             <ol class="vf-allocation-timeline" th:if="${!allocation.history.empty}">
                                                 <li th:each="event : ${allocation.history}">
-                                                    <span class="vf-allocation-event-time" th:text="${event.occurredAt == null ? 'Chưa rõ thời gian' : #temporals.format(event.occurredAt.plusHours(7), 'dd/MM/yyyy · HH:mm')}"></span>
+                                                    <span class="vf-allocation-event-time" th:text="${event.occurredAt == null ? 'Chưa rõ thời gian' : #temporals.format(T(VietFreshHub.order.service.OrderLabels).local(event.occurredAt), 'dd/MM/yyyy · HH:mm')}"></span>
                                                     <div>
                                                         <strong th:text="${event.description}"></strong>
                                                         <p class="vf-allocation-event-note" th:if="${event.note != null}" th:text="${event.note}"></p>
