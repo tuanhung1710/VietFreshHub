@@ -50,7 +50,7 @@ body.vfo-app.vfr-error {
 }
 
 .vfr-error-code {
-    font: 400 clamp(80px, 10vw, 124px)/1 Georgia, "Times New Roman", serif;
+    font: 400 clamp(80px, 10vw, 124px)/1 var(--vf-font-display);
     letter-spacing: -5px;
 }
 

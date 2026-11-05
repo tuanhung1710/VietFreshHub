@@ -1,8 +1,10 @@
 package VietFreshHub.product.entity;
 
+import VietFreshHub.common.VietnamDatabaseTime;
 import VietFreshHub.product.enums.CategoryStatus;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -17,7 +19,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Nationalized;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -56,9 +60,13 @@ public class Category {
     private CategoryStatus status = CategoryStatus.ACTIVE;
 
     @Column(name = "created_at", nullable = false, updatable = false)
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime updatedAt;
 
     @PrePersist

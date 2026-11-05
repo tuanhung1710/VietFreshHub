@@ -12,6 +12,6 @@
     <input type="hidden" name="minPrice" th:value="${filters.minPrice}">
     <input type="hidden" name="maxPrice" th:value="${filters.maxPrice}">
 </th:block>
-<span th:fragment="money(value)" th:text="${#numbers.formatDecimal(value,0,'POINT',0,'COMMA') + 'đ'}"></span>
+<span th:fragment="money(value)" th:text="${@vndAmounts.format(value) + 'đ'}"></span>
 </body>
 </html>

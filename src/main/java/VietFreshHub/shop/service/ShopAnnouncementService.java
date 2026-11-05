@@ -1,7 +1,6 @@
 package VietFreshHub.shop.service;
 
 import VietFreshHub.auth.service.AuthService;
-import VietFreshHub.notification.entity.Notification;
 import VietFreshHub.notification.repository.NotificationRepository;
 import VietFreshHub.notification.service.NotificationService;
 import VietFreshHub.shop.repository.ShopRepository;

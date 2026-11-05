@@ -38,7 +38,8 @@ public class InventoryJournalServiceImpl implements InventoryJournalService {
         InventoryRules.require(type != null, "Vui lòng chọn loại biến động kho.");
         InventoryRules.require(quantity != 0, "Số lượng thay đổi phải khác 0.");
 
-        // quantity giữ nguyên dấu do nơi gọi truyền: dấu và loại giao dịch quyết định biến động tồn hay lượng giữ.
+        // quantity giữ nguyên dấu do nơi gọi truyền: dấu và loại giao dịch quyết định biến động tồn
+        // hay lượng giữ.
         InventoryTransaction transaction = new InventoryTransaction();
         transaction.setVariantId(variantId);
         transaction.setBatchId(batchId);

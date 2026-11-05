@@ -5,6 +5,7 @@ import static VietFreshHub.inventory.rule.InventoryRules.expired;
 import static VietFreshHub.inventory.rule.InventoryRules.now;
 import static VietFreshHub.inventory.rule.InventoryRules.require;
 import static VietFreshHub.inventory.rule.InventoryRules.today;
+
 import VietFreshHub.auth.service.AuthService;
 import VietFreshHub.inventory.entity.BatchMarkdown;
 import VietFreshHub.inventory.entity.InventoryBatch;
@@ -29,17 +30,24 @@ import VietFreshHub.product.repository.ProductRepository;
 import VietFreshHub.product.repository.ProductVariantRepository;
 import VietFreshHub.product.service.ProductAvailabilityService;
 import VietFreshHub.shop.service.ShopService;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * Quản lý giữ hàng, xuất bán và giải phóng hàng cho dòng đơn. Khóa lô theo ID để tránh khóa chéo,
+ * sau đó cấp hàng theo hạn sử dụng sớm nhất; không đổi thứ tự cấp hàng thành thứ tự khóa.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -159,9 +167,10 @@ public class StockAllocationServiceImpl implements StockAllocationService {
         List<InventoryBatch> snapshots =
                 inventoryBatchRepository.findByVariantIdOrderByExpiryDateAscBatchIdAsc(variantId);
         // Thứ tự khóa theo ID để các giao dịch không chờ khóa chéo nhau.
-        List<InventoryBatch> snapshotsById = snapshots.stream()
-                .sorted(Comparator.comparing(InventoryBatch::getBatchId))
-                .toList();
+        List<InventoryBatch> snapshotsById =
+                snapshots.stream()
+                        .sorted(Comparator.comparing(InventoryBatch::getBatchId))
+                        .toList();
         for (InventoryBatch snapshot : snapshotsById) {
             InventoryBatch batch = getBatchForUpdate(snapshot.getBatchId());
             if (available(batch, date) <= 0) {
@@ -411,7 +420,9 @@ public class StockAllocationServiceImpl implements StockAllocationService {
                 shopOrderRepository
                         .findForUpdateByShopOrderIdAndShopId(snapshot.getShopOrderId(), shopId)
                         .orElseThrow(
-                                () -> new AccessDeniedException("Sản phẩm trong đơn không thuộc cửa hàng của bạn."));
+                                () ->
+                                        new AccessDeniedException(
+                                                "Sản phẩm trong đơn không thuộc cửa hàng của bạn."));
         inventoryLockHelper.refresh(order);
         InventoryOrderLine line = inventoryOrderLineRepository.lockById(orderItemId).orElseThrow();
         inventoryLockHelper.refresh(line);

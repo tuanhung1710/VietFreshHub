@@ -1,8 +1,10 @@
 package VietFreshHub.inventory.dto;
 
 import VietFreshHub.inventory.rule.InventoryRules;
+
 import lombok.Getter;
 import lombok.Setter;
+
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
@@ -14,8 +16,9 @@ import java.util.Map;
 @Setter
 public class ActivityHistoryFilter {
     public static final Map<String, String> ACTIONS;
-    public static final Map<String, String> ENTITIES = Map.of(
-            "PRODUCT", "Sản phẩm", "VARIANT", "Phân loại", "BATCH", "Lô hàng");
+    public static final Map<String, String> ENTITIES =
+            Map.of("PRODUCT", "Sản phẩm", "VARIANT", "Phân loại", "BATCH", "Lô hàng");
+
     static {
         Map<String, String> actions = new LinkedHashMap<>();
         actions.put("CREATE", "Tạo sản phẩm");
@@ -42,8 +45,10 @@ public class ActivityHistoryFilter {
     private String q = "";
     private String action = "";
     private String entity = "";
+
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate from;
+
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate to;
 
@@ -55,9 +60,12 @@ public class ActivityHistoryFilter {
         action = action == null ? "" : action.trim();
         entity = entity == null ? "" : entity.trim();
         InventoryRules.require(q.length() <= 200, "Từ khóa tìm kiếm không được quá 200 ký tự.");
-        InventoryRules.require(action.isEmpty() || ACTIONS.containsKey(action), "Chọn loại hoạt động hợp lệ.");
-        InventoryRules.require(entity.isEmpty() || ENTITIES.containsKey(entity), "Chọn đối tượng hợp lệ.");
-        InventoryRules.require(from == null || to == null || !from.isAfter(to),
+        InventoryRules.require(
+                action.isEmpty() || ACTIONS.containsKey(action), "Chọn loại hoạt động hợp lệ.");
+        InventoryRules.require(
+                entity.isEmpty() || ENTITIES.containsKey(entity), "Chọn đối tượng hợp lệ.");
+        InventoryRules.require(
+                from == null || to == null || !from.isAfter(to),
                 "Ngày bắt đầu không được sau ngày kết thúc.");
     }
 

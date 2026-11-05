@@ -5,7 +5,9 @@ import VietFreshHub.product.service.ProductImageStorageService;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -39,14 +41,24 @@ public class ProductImageStorageServiceImpl implements ProductImageStorageServic
         byte[] bytes = file.getBytes();
         validateImage(bytes);
         try {
-            Map<?, ?> result = cloudinary.uploader().upload(bytes, ObjectUtils.asMap(
-                    "resource_type", "image",
-                    "type", "upload",
-                    "public_id", "vietfresh/products/" + UUID.randomUUID(),
-                    "overwrite", false
-            ));
-            if (result == null || !(result.get("secure_url") instanceof String url)
-                    || !url.startsWith("https://") || url.length() > 1000) {
+            Map<?, ?> result =
+                    cloudinary
+                            .uploader()
+                            .upload(
+                                    bytes,
+                                    ObjectUtils.asMap(
+                                            "resource_type",
+                                            "image",
+                                            "type",
+                                            "upload",
+                                            "public_id",
+                                            "vietfresh/products/" + UUID.randomUUID(),
+                                            "overwrite",
+                                            false));
+            if (result == null
+                    || !(result.get("secure_url") instanceof String url)
+                    || !url.startsWith("https://")
+                    || url.length() > 1000) {
                 throw new IOException("Cloudinary không trả về URL ảnh HTTPS hợp lệ.");
             }
             return url;
@@ -73,7 +85,8 @@ public class ProductImageStorageServiceImpl implements ProductImageStorageServic
                 if (!List.of("jpeg", "jpg", "png").contains(format)) {
                     throw new CatalogException("Chỉ hỗ trợ ảnh JPG hoặc PNG.");
                 }
-                // Kiểm tra số điểm ảnh trước khi giải mã toàn bộ để tránh tệp nhỏ nhưng kích thước ảnh quá lớn.
+                // Kiểm tra số điểm ảnh trước khi giải mã toàn bộ để tránh tệp nhỏ nhưng kích thước
+                // ảnh quá lớn.
                 validateDimensions(reader.getWidth(0), reader.getHeight(0));
                 if (reader.read(0) == null) {
                     throw new CatalogException("Không thể đọc ảnh đã chọn. Hãy chọn ảnh khác.");
@@ -83,7 +96,8 @@ public class ProductImageStorageServiceImpl implements ProductImageStorageServic
                 reader.dispose();
             }
         } catch (IOException exception) {
-            throw new CatalogException("Không thể đọc ảnh đã chọn. Hãy chọn ảnh JPG hoặc PNG hợp lệ.");
+            throw new CatalogException(
+                    "Không thể đọc ảnh đã chọn. Hãy chọn ảnh JPG hoặc PNG hợp lệ.");
         }
     }
 

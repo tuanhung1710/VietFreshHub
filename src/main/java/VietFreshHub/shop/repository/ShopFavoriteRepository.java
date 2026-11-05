@@ -1,5 +1,7 @@
 package VietFreshHub.shop.repository;
 
+import VietFreshHub.common.VietnamDatabaseTime;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -21,7 +23,8 @@ public class ShopFavoriteRepository {
 
     public void add(Long userId, Long shopId) {
         jdbc.update("INSERT INTO dbo.favorite_shops(user_id,shop_id,created_at) VALUES(:user,:shop,:now)",
-                parameters(userId, shopId).addValue("now", VietFreshHub.inventory.rule.InventoryRules.now()));
+                parameters(userId, shopId).addValue("now",
+                        VietnamDatabaseTime.toDatabase(VietFreshHub.inventory.rule.InventoryRules.now())));
     }
 
     public void remove(Long userId, Long shopId) {

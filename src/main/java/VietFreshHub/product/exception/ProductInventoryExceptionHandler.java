@@ -7,12 +7,24 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @ControllerAdvice(assignableTypes = {ProductController.class, InventoryController.class})
 public class ProductInventoryExceptionHandler {
+
+    /** Dữ liệu không chuyển đổi được phải hiển thị trang lỗi MVC với HTTP 400. */
+    @ExceptionHandler({BindException.class, MethodArgumentTypeMismatchException.class})
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public String invalidInput(Model model) {
+        model.addAttribute(
+                "message",
+                "Dữ liệu biểu mẫu hoặc bộ lọc không hợp lệ. Vui lòng kiểm tra lại giá trị đã nhập.");
+        return "product/error";
+    }
 
     /** Hiển thị lỗi không có quyền truy cập sản phẩm hoặc kho với mã HTTP 403. */
     @ExceptionHandler(AccessDeniedException.class)

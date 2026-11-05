@@ -1,6 +1,9 @@
 package VietFreshHub.product.entity;
 
+import VietFreshHub.common.VietnamDatabaseTime;
+
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -10,6 +13,9 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -32,9 +38,13 @@ public class PriceHistory {
     private BigDecimal price;
 
     @Column(name = "effective_from")
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime effectiveFrom;
 
     @Column(name = "effective_to")
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime effectiveTo;
 
     @Column(name = "changed_by")

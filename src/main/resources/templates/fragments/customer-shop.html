@@ -1,37 +1,79 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head th:fragment="head(title)">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
-    
-<title th:text="${title} + ' | VietFresh Hub'"></title><link rel="stylesheet" th:href="@{/css/customer-shop.css}">
-<meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}"><meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
-
-<script type="module" th:src="@{/js/storefront/storefront.js}"></script>    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
-</head>
-<body>
-<header th:fragment="header" class="vfc-header">
-  <div class="container">
-    <div class="vfc-header-main">
-      <button class="brand" data-home>VietFresh Hub</button>
-      <div class="vfo-topbar-actions vfc-header-actions">
+    <head th:fragment="head(title)">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+        <title th:text="${title} + ' | VietFresh Hub'">
+        </title>
+        <link rel="stylesheet" th:href="@{/css/customer-shop.css}">
+        <link rel="stylesheet" th:href="@{/css/discount-pricing.css}">
+        <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
+        <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
+        <script defer th:src="@{/js/storefront/storefront.js}">
+        </script>
+        <link rel="stylesheet" th:href="@{/css/customer-pagination.css}">
+        <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+    </head>
+    <body>
+        <header th:fragment="header" class="vfc-header">
+            <div class="container">
+                <div class="vfc-header-main">
+                    <a class="brand" th:href="@{/home}">
+                        VietFresh Hub
+                    </a>
+                    <div class="vfo-topbar-actions vfc-header-actions">
+                        <th:block th:replace="~{fragments/customer-shop :: accountLinks}"></th:block>
+                    </div>
+                </div>
+                <div class="headmain vfc-header-tools">
+                    <form class="search" th:action="@{/products}" method="get" role="search">
+                        <input id="search" class="form-control" type="search" name="q" maxlength="100" th:value="${q}" placeholder="Tìm trái cây trên toàn sàn..." aria-label="Tìm sản phẩm">
+                        <button id="searchGo" class="btn btn-success" type="submit">
+                            TÌM
+                        </button>
+                    </form>
+                    <a id="cart" th:href="@{/cart}" class="cart-link">
+                        Giỏ hàng (
+                        <span id="cartCount" aria-live="polite" th:text="${storefrontCartCount}">
+                            0
+                        </span>
+                        )
+                    </a>
+                </div>
+                <nav class="headcats" id="headcats">
+                    <a th:href="@{/products}">
+                        Tất cả sản phẩm
+                    </a>
+                    <a th:each="category : ${headerCategories}" th:href="@{/products(category=${category.categoryId})}" th:text="${category.name}">
+                    </a>
+                </nav>
+            </div>
+        </header>
+        <div th:fragment="messages" aria-live="polite">
+            <p th:if="${successMessage}" class="notice" th:text="${successMessage}">
+            </p>
+            <p th:if="${errorMessage}" class="notice" th:text="${errorMessage}">
+            </p>
+        </div>
+        <section th:fragment="shopHeader(shop,active)">
+            <div class="bread">
+                <a th:href="@{/home}">
+                    Trang chủ
+                </a>
+                /
+                <a th:href="@{/shops}">
+                    Gian hàng
+                </a>
+                /
+                <span th:text="${shop.shopName}">
+                </span>
+            </div>
+            <h1 th:text="${shop.shopName}">
+            </h1>
+        </section>
         <th:block th:fragment="accountLinks">
-        <th:block th:replace="~{fragments/account-menu :: menu}"></th:block>
+            <th:block th:replace="~{fragments/account-menu :: menu}"></th:block>
         </th:block>
-      </div>
-    </div>
-    <div class="headmain vfc-header-tools">
-      <div class="search"><input id="search" placeholder="Tìm trái cây trên toàn sàn..." aria-label="Tìm sản phẩm"><button id="searchGo">TÌM</button></div>
-      <a id="cart" th:href="@{/cart}" style="border:1px solid #888;padding:7px 12px;text-decoration:none;white-space:nowrap">Giỏ hàng (<span id="cartCount" aria-live="polite">0</span>)</a>
-    </div>
-    <nav class="headcats" id="headcats"></nav>
-  </div>
-</header>
-<div th:fragment="messages" aria-live="polite"><p th:if="${successMessage}" class="notice" th:text="${successMessage}"></p><p th:if="${errorMessage}" class="notice" th:text="${errorMessage}"></p></div>
-<section th:fragment="shopHeader(shop,active)"><h1 th:text="${shop.shopName}"></h1></section>
-<th:block th:fragment="footer">
-  <th:block th:replace="~{fragments/footer :: footer}"></th:block>
-  <div id="notice" class="notice hide"></div><div id="modal"></div>
-</th:block>
-</body></html>
+    </body>
+</html>

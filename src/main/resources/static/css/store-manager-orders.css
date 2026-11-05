@@ -17,7 +17,7 @@
     margin: 0;
     background: var(--vfo-cream);
     color: var(--vfo-ink);
-    font: 14px/1.65 "Segoe UI", Arial, sans-serif;
+    font: 14px/1.65 var(--vf-font-family);
     -webkit-font-smoothing: antialiased;
 }
 .vfo-app *, .vfo-app *::before, .vfo-app *::after { box-sizing: border-box; }
@@ -36,7 +36,7 @@
 .vfo-brand { gap: 12px; flex-shrink: 0; }
 .vfo-brand-mark { display: grid; place-items: center; width: 50px; height: 52px; border-radius: 20px 20px 20px 4px; background: var(--vfo-green); color: #f5f5dc; }
 .vfo-brand-mark .vfo-icon { width: 31px; height: 31px; stroke-width: 1.25; }
-.vfo-brand-name { display: block; color: var(--vfo-green); font: 30px/1.1 Georgia, "Times New Roman", serif; letter-spacing: -1px; }
+.vfo-brand-name { display: block; color: var(--vfo-green); font: 30px/1.1 var(--vf-font-display); letter-spacing: -1px; }
 .vfo-brand-name strong { font-weight: 700; }
 .vfo-brand-tagline { display: block; margin-top: 7px; color: #818479; font-size: 8px; text-transform: uppercase; letter-spacing: 2.7px; }
 .vfo-portal-label { padding-left: 28px; border-left: 1px solid var(--vfo-border); color: var(--vfo-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1.4px; }
@@ -57,7 +57,7 @@
 .vfo-sidebar { --bs-offcanvas-width: 290px; --bs-offcanvas-bg: var(--vfo-cream); background: var(--vfo-cream) !important; }
 .vfo-sidebar .offcanvas-body { display: flex; flex-direction: column; padding: 18px 15px 0; overflow-y: auto !important; scrollbar-width: thin; scrollbar-color: #cbd3c2 transparent; }
 .vfo-sidebar .offcanvas-header { border-bottom: 1px solid var(--vfo-border); }
-.vfo-sidebar .offcanvas-title { font: 23px Georgia, serif; color: var(--vfo-green); }
+.vfo-sidebar .offcanvas-title { font: 23px var(--vf-font-display); color: var(--vfo-green); }
 .vfo-store-card { display: flex; align-items: center; gap: 12px; flex-shrink: 0; margin: 0 8px 14px; padding: 12px 0 24px; border-bottom: 1px solid var(--vfo-border); }
 .vfo-store-mark { display: grid; place-items: center; width: 44px; height: 46px; flex-shrink: 0; border-radius: 15px 15px 15px 4px; background: var(--vfo-sage); color: var(--vfo-green); }
 .vfo-store-mark .vfo-icon { width: 25px; height: 25px; }
@@ -96,7 +96,7 @@
 .vfo-breadcrumb .breadcrumb-item + .breadcrumb-item { padding-left: 10px; }
 .vfo-page-heading { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 30px; }
 .vfo-eyebrow { margin: 0 0 8px; color: #819176; font-size: 9px; font-weight: 650; letter-spacing: 1.7px; text-transform: uppercase; }
-.vfo-page-heading h1 { margin: 0; color: #293a2f; font: 400 clamp(30px, 2.6vw, 46px)/1.22 Georgia, "Times New Roman", serif; letter-spacing: -1.3px; }
+.vfo-page-heading h1 { margin: 0; color: #293a2f; font: 400 var(--vf-page-title-size)/1.35 var(--vf-font-display); letter-spacing:var(--vf-page-title-spacing); }
 .vfo-page-description { margin: 12px 0 0; color: var(--vfo-muted); font-size: 13px; line-height: 1.7; }
 .vfo-app .btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; min-height: 43px; padding: 10px 17px; border-radius: 9px; font-size: 12px; font-weight: 600; line-height: 1.6; transition: background-color .18s, border-color .18s, box-shadow .18s; }
 .vfo-app .vfo-btn-primary, .vfo-app .order-search-button, .vfo-app .order-filter-apply { border: 1px solid var(--vfo-green); background: var(--vfo-green); color: #fff; }
@@ -127,8 +127,8 @@
 .vfo-app .order-filter-dialog::backdrop { background: #1b302a70; backdrop-filter: blur(3px); }
 .vfo-app .order-filter-header, .vfo-app .order-filter-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .vfo-app .order-filter-header { margin: -26px -26px 24px; padding: 24px 26px 20px; border-bottom: 1px solid var(--vfo-border); background: var(--vfo-cream); }
-.vfo-app .order-filter-header h2 { margin: 0; font: 29px/1.25 Georgia, serif; letter-spacing: -.6px; }
-.vfo-app .order-filter-close { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid var(--vfo-border); border-radius: 50%; background: #fff; color: var(--vfo-muted); font: 25px/1 Arial, sans-serif; cursor: pointer; }
+.vfo-app .order-filter-header h2 { margin: 0; font: 29px/1.25 var(--vf-font-display); letter-spacing: -.6px; }
+.vfo-app .order-filter-close { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid var(--vfo-border); border-radius: 50%; background: #fff; color: var(--vfo-muted); font: 25px/1 var(--vf-font-family); cursor: pointer; }
 .vfo-app .order-filter-dialog fieldset { min-width: 0; margin: 0 0 24px; padding: 0; border: 0; }
 .vfo-app .order-filter-dialog legend { float: none; width: auto; margin-bottom: 12px; color: var(--vfo-ink); font-size: 13px; font-weight: 650; }
 .vfo-app .order-filter-options { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -271,7 +271,7 @@
 
 .vfo-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; margin: 26px 38px 0; padding: 24px 0; border-top: 1px solid var(--vfo-border); color: #98a08e; font-size: 10px; }
 .vfo-footer > div { display: flex; flex-direction: column; gap: 5px; }
-.vfo-footer .vfo-footer-brand { display: inline-flex; align-items: center; gap: 7px; color: #72826a; font: 18px Georgia, serif; }
+.vfo-footer .vfo-footer-brand { display: inline-flex; align-items: center; gap: 7px; color: #72826a; font: 18px var(--vf-font-display); }
 .vfo-footer-brand .vfo-icon { width: 17px; height: 17px; }
 .vfo-footer p { margin: 0; }
 .vfo-footer > a { font-size: 11px; }
@@ -311,7 +311,7 @@
     .vfo-brand-name { font-size: 25px; }
     .vfo-brand-tagline { font-size: 7px; letter-spacing: 2px; }
     .vfo-main { padding-top: 24px; }
-    .vfo-page-heading h1 { font-size: 36px; }
+    .vfo-page-heading h1 { font-size:var(--vf-page-title-size); }
     .vfo-facts > div { grid-template-columns: 105px minmax(0, 1fr); }
 }
 @media (max-width: 767px) {
@@ -323,7 +323,7 @@
     .vfo-page-heading > .btn { min-height: 39px; }
     .vfo-breadcrumb { margin-bottom: 22px; }
     .vfo-main { padding: 22px 18px 28px; }
-    .vfo-page-heading h1 { font-size: 34px; }
+    .vfo-page-heading h1 { font-size:var(--vf-page-title-size); }
     .vfo-page-description { margin-top: 10px; font-size: 12px; }
     .vfo-order-tabs { margin-bottom: 14px; padding: 6px; }
     .vfo-order-tabs .nav-link { padding: 10px 14px; font-size: 11px; }
@@ -359,7 +359,7 @@
     .vfo-app .header-account summary { gap: 2px; }
     .vfo-app .header-account-chevron { display: none; }
     .vfo-main { padding-right: 14px; padding-left: 14px; }
-    .vfo-page-heading h1 { font-size: 31px; letter-spacing: -.9px; }
+    .vfo-page-heading h1 { font-size:var(--vf-page-title-size); letter-spacing:var(--vf-page-title-spacing); }
     .vfo-eyebrow { font-size: 8px; letter-spacing: 1.3px; }
     .vfo-app .order-filter-toolbar { grid-template-columns: minmax(0, 1fr); }
     .vfo-app .order-filter-button { grid-column: 1; grid-row: 2; justify-self: end; min-height: 36px; padding: 6px 13px; }
@@ -390,7 +390,7 @@
     .vfo-app .invoice-close { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 1px solid #dce3d5; border-radius: 50%; color: #6c7b60; font-size: 24px; }
     .vfo-app .invoice { border-color: #d9e2d1; border-radius: 9px; color: #334a38; }
     .vfo-app .invoice header { border-radius: 9px 9px 0 0; background: #f4f7ed; }
-    .vfo-app .invoice-brand { color: #30634e; font-family: Georgia, serif; }
+    .vfo-app .invoice-brand { color: #30634e; font-family: var(--vf-font-display); }
     .vfo-app .invoice h2 { margin: 12px 0 20px; font-size: 23px; }
     .vfo-app .invoice section, .vfo-app .invoice th, .vfo-app .invoice td, .vfo-app .invoice-grand-total { border-color: #dfe6d8; }
     .vfo-app .invoice th { background: #f1f4eb; color: #6f805e; }
@@ -418,7 +418,6 @@
     body.vfo-shell .vfo-topbar { position: relative; inset: auto; }
     body.vfo-shell .vfo-workspace { min-height: calc(100vh - var(--vfo-topbar-height)); padding-top: 0; }
     body.vfo-shell .vf-workspace { padding-top: 0; }
-    body.vfo-shell .vf-list-page { --vf-list-top: 0px; }
     body.vfo-shell .vfo-main { scroll-margin-top: 20px; }
     body.vfo-shell .vfr-chat-workspace .chat-app { margin-top: 20px; }
     body.vfo-shell .vfo-sidebar-toggle {

@@ -1,11 +1,9 @@
 package VietFreshHub.product.service;
 
 import VietFreshHub.inventory.dto.InventoryAttentionSummary;
-import VietFreshHub.inventory.dto.InventoryCatalogFilter;
 import VietFreshHub.product.dto.ActionRequest;
 import VietFreshHub.product.dto.BulkProductActionRequest;
 import VietFreshHub.product.dto.ProductCatalogFilter;
-import VietFreshHub.product.dto.CatalogSummary;
 import VietFreshHub.product.dto.ProductRequest;
 import VietFreshHub.product.dto.ProductResponse;
 import VietFreshHub.product.dto.ProductTabSummary;
@@ -22,23 +20,18 @@ import java.util.List;
 
 public interface ProductService {
 
-    /** Tìm sản phẩm và phân loại khớp bộ lọc kho trong cửa hàng người dùng quản lý. */
-    Page<ProductResponse> searchInventory(Authentication authentication,
-            InventoryCatalogFilter filters, int page, int size);
-
     /** Lấy danh sách quản lý sản phẩm theo bộ lọc, có phân trang. */
-    Page<ProductResponse> searchManagement(Authentication authentication, ProductCatalogFilter filters, int page, int size);
+    Page<ProductResponse> searchManagement(
+            Authentication authentication, ProductCatalogFilter filters, int page, int size);
 
     /** Đổi trạng thái nhiều sản phẩm trong cùng giao dịch; một lỗi sẽ hoàn tác toàn bộ lựa chọn. */
     void changeStatuses(Authentication authentication, BulkProductActionRequest form);
 
     /** Đếm sản phẩm theo các nhóm trạng thái quản lý trên toàn cửa hàng. */
     ProductTabSummary productTabSummary(Authentication authentication);
+
     /** Tổng hợp cảnh báo tồn thấp, cận hạn và hết hạn trên toàn cửa hàng. */
     InventoryAttentionSummary inventoryAttentionSummary(Authentication authentication);
-
-    /** Đếm sản phẩm và phân loại chưa ngừng kinh doanh của cửa hàng. */
-    CatalogSummary catalogSummary(Authentication authentication);
 
     /** Lấy chi tiết sản phẩm sau khi kiểm tra quyền quản lý cửa hàng. */
     ProductResponse get(Authentication authentication, Long productId);
@@ -75,7 +68,8 @@ public interface ProductService {
             Authentication authentication, Long productId, Long variantId, VariantRequest form);
 
     /** Xóa mềm phân loại; tự tạm ẩn sản phẩm nếu không còn phân loại đang bật. */
-    void deleteVariant(Authentication authentication, Long productId, Long variantId, String reason);
+    void deleteVariant(
+            Authentication authentication, Long productId, Long variantId, String reason);
 
     /** Đổi trạng thái phân loại, bảo đảm các điều kiện về hàng giữ và phân loại đang bật. */
     void changeVariantStatus(

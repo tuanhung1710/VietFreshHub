@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+    <head th:replace="~{fragments/shop-layout :: head(${shop.shopName})}">
+    </head>
+    <body class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
+        <header th:replace="~{fragments/shop-layout :: header}">
+        </header>
+        <main class="wrap vfr-page">
+            <th:block th:replace="~{fragments/shop-layout :: shopInformation}">
+            </th:block>
+            <div th:replace="~{fragments/customer-shop :: messages}">
+            </div>
+            <section class="section" id="catalog" aria-label="Sản phẩm của shop">
+                <!-- Sắp xếp trong phạm vi cửa hàng hiện tại. -->
+                <div class="toolbar">
+                    <div class="actions">
+                        <span>
+                            Sắp xếp theo:
+                        </span>
+                        <a class="button" th:classappend="${filters.sort == 'popular' ? 'active' : ''}" th:href="@{/shops/{id}/products(id=${shop.shopId},q=${q},category=${category},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},minRating=${filters.minRating},sort='popular',size=${rows.size})}">
+                            Phổ biến
+                        </a>
+                        <a class="button" th:classappend="${filters.sort == 'latest' ? 'active' : ''}" th:href="@{/shops/{id}/products(id=${shop.shopId},q=${q},category=${category},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},minRating=${filters.minRating},sort='latest',size=${rows.size})}">
+                            Mới nhất
+                        </a>
+                        <a class="button" th:classappend="${filters.sort == 'sales' ? 'active' : ''}" th:href="@{/shops/{id}/products(id=${shop.shopId},q=${q},category=${category},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},minRating=${filters.minRating},sort='sales',size=${rows.size})}">
+                            Bán chạy
+                        </a>
+                        <a class="button" th:classappend="${filters.sort == 'asc' ? 'active' : ''}" th:href="@{/shops/{id}/products(id=${shop.shopId},q=${q},category=${category},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},minRating=${filters.minRating},sort='asc',size=${rows.size})}">
+                            Giá thấp đến cao
+                        </a>
+                        <a class="button" th:classappend="${filters.sort == 'desc' ? 'active' : ''}" th:href="@{/shops/{id}/products(id=${shop.shopId},q=${q},category=${category},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},minRating=${filters.minRating},sort='desc',size=${rows.size})}">
+                            Giá cao đến thấp
+                        </a>
+                    </div>
+                    <div th:text="${rows.totalElements + ' sản phẩm'}">
+                    </div>
+                </div>
+                <!-- Kết quả và phân trang dùng Page giống danh sách sản phẩm của người bán. -->
+                <div class="products" id="results">
+                    <th:block th:each="product : ${rows.content}">
+                        <a th:replace="~{fragments/storefront-catalog :: shopProductCard(${product},null)}">
+                        </a>
+                    </th:block>
+                    <p class="empty-products" th:if="${rows.empty}">
+                        Shop chưa có sản phẩm phù hợp đang được bán.
+                    </p>
+                </div>
+                <div class="catalog-paging">
+                    <nav class="customer-pagination-panel" aria-label="Phân trang sản phẩm">
+                        <div th:replace="~{fragments/storefront-catalog :: pagination(${rows},@{/shops/{id}/products(id=${shop.shopId},q=${q},category=${category},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},minRating=${filters.minRating},sort=${filters.sort},page=${rows.number},size=${rows.size})},@{/shops/{id}/products(id=${shop.shopId},q=${q},category=${category},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},minRating=${filters.minRating},sort=${filters.sort},page=${rows.number + 2},size=${rows.size})})}">
+                        </div>
+                        <form class="customer-page-size" th:action="@{/shops/{id}/products(id=${shop.shopId})}" method="get">
+                            <th:block th:replace="~{fragments/storefront-catalog :: filters}">
+                            </th:block>
+                            <th:block th:replace="~{fragments/storefront-catalog :: pageSize(${rows},'shopPageSize')}">
+                            </th:block>
+                        </form>
+                    </nav>
+                </div>
+            </section>
+        </main>
+        <footer th:replace="~{fragments/footer :: footer}"></footer>
+    </body>
+</html>

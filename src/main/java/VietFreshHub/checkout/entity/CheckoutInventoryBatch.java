@@ -1,5 +1,9 @@
 package VietFreshHub.checkout.entity;
 
+import VietFreshHub.common.VietnamDatabaseTime;
+import jakarta.persistence.Convert;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import VietFreshHub.catalog.entity.CatalogVariant;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -50,15 +54,21 @@ public class CheckoutInventoryBatch {
     private BigDecimal costPrice;
 
     @Column(name = "received_at", nullable = false, updatable = false)
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime receivedAt;
 
     @Column(name = "expiry_date")
     private LocalDate expiryDate;
 
     @Column(name = "created_at", nullable = false, updatable = false)
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime updatedAt;
 
     @PrePersist
