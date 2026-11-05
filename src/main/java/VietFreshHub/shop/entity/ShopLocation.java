@@ -1,17 +1,20 @@
 package VietFreshHub.shop.entity;
 
+import VietFreshHub.common.VietnamDatabaseTime;
+import jakarta.persistence.Convert;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Nationalized;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Getter
 @NoArgsConstructor
@@ -57,13 +60,13 @@ public class ShopLocation {
 
     @Column(name = "longitude", precision = 10, scale = 6)
     private BigDecimal longitude;
-
-    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "datetime2(0)")
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime createdAt;
-
-    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false, columnDefinition = "datetime2(0)")
+    @Convert(converter = VietnamDatabaseTime.class)
+    @JdbcTypeCode(SqlTypes.LOCAL_DATE_TIME)
     private LocalDateTime updatedAt;
 
     public ShopLocation(Long shopId) {
@@ -87,5 +90,17 @@ public class ShopLocation {
         this.formattedAddress = formattedAddress;
         this.latitude = latitude;
         this.longitude = longitude;
+    }
+
+    @jakarta.persistence.PrePersist
+    void setUtcTimestamps() {
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
+        if (createdAt == null) createdAt = now;
+        updatedAt = now;
+    }
+
+    @jakarta.persistence.PreUpdate
+    void updateUtcTimestamp() {
+        updatedAt = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
     }
 }

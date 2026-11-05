@@ -21,7 +21,7 @@
 <th:block th:if="${chatMode == 'customer'}"><th:block th:replace="~{fragments/interface-layout :: customerHeader('account')}"></th:block></th:block>
 
 
-<style>body:has(> header) .chat-app { margin-top: 112px; height: calc(100dvh - 132px); } body:has(> header) { font-family: 'Be Vietnam Pro', sans-serif; background: #f8f9ff; }</style>
+<style>body:has(> header) .chat-app { margin-top: 112px; height: calc(100dvh - 132px); } body:has(> header) { font-family: var(--vf-font-family); background: #f8f9ff; }</style>
 <div class="vfr-chat-workspace" th:id="${chatMode == 'shop' ? 'order-content' : 'customer-content'}" tabindex="-1" th:classappend="${chatMode == 'shop' ? 'vfo-workspace' : ''}">
 <main class="chat-app" id="chatApp"
       th:attr="data-mode=${chatMode},data-user-id=${currentUserId}">
@@ -44,7 +44,7 @@
 
         <div class="conversation-heading">Cuộc trò chuyện</div>
         <nav class="conversation-list" id="conversationList" aria-label="Danh sách cuộc trò chuyện">
-            <button class="conversation-item" type="button"
+            <button class="conversation-item" style="padding: 15px" type="button"
                     th:each="conversation : ${conversations}"
                     th:attr="data-conversation-id=${conversation.conversationId},data-shop-id=${conversation.shopId},data-last-message-at=${conversation.lastMessageAt},data-last-message-id=${conversation.lastMessageId}"
                     th:classappend="${conversationStat.first} ? ' selected' : ''">

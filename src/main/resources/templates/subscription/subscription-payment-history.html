@@ -10,11 +10,10 @@
     <title>Lịch sử thanh toán | VietFresh Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <style>
-        :root { --bs-body-font-family: 'Be Vietnam Pro', sans-serif; --bs-success-rgb: 0,107,44; --bs-primary-rgb: 0,107,44; }
+        :root { --bs-body-font-family: var(--vf-font-family); --bs-success-rgb: 0,107,44; --bs-primary-rgb: 0,107,44; }
         body { background: #f8f9ff; color: #0b1c30; }
         .btn-success { background: #006b2c; border-color: #006b2c; }
         .btn-success:hover, .btn-success:focus { background: #005320; border-color: #005320; }
@@ -45,7 +44,7 @@
 
     <div class="card shadow-sm border-0 rounded-3 overflow-hidden"><div class="table-responsive">
         <table class="table table-hover align-middle mb-0 table align-middle">
-            <caption class="px-3">Các yêu cầu thanh toán của shop. Thời gian hiển thị theo UTC.</caption>
+            <caption class="px-3">Các yêu cầu thanh toán của shop. Thời gian hiển thị theo giờ Việt Nam.</caption>
             <thead class="table-light"><tr><th scope="col">Mã yêu cầu</th><th scope="col">Gói / Thao tác</th><th scope="col">Số tiền</th><th scope="col">Ngày tạo</th><th scope="col">Trạng thái</th><th scope="col">Chi tiết</th></tr></thead>
             <tbody>
                 <tr th:if="${#lists.isEmpty(payments)}"><td colspan="6" class="text-center text-secondary py-5">Chưa có yêu cầu thanh toán.</td></tr>
@@ -53,7 +52,7 @@
                     <td th:text="${payment.subscriptionPaymentId}"></td>
                     <td><div class="fw-semibold" th:text="${payment.planName}"></div><small class="text-secondary" th:text="${payment.action.name() == 'SUBSCRIBE' ? 'Đăng ký' : (payment.action.name() == 'RENEW' ? 'Gia hạn' : 'Nâng cấp')}"></small></td>
                     <td class="text-nowrap" th:text="${#numbers.formatDecimal(payment.amount, 1, 'WHITESPACE', 0, 'POINT') + ' VND'}"></td>
-                    <td class="text-nowrap" th:text="${payment.createdAt != null ? #temporals.format(payment.createdAt, 'dd/MM/yyyy HH:mm') : '—'}"></td>
+                    <td class="text-nowrap" th:text="${payment.createdAt != null ? #temporals.format(T(VietFreshHub.order.service.OrderLabels).local(payment.createdAt), 'dd/MM/yyyy HH:mm') : '—'}"></td>
                     <td><span class="badge rounded-pill" th:classappend="${payment.status.name() == 'PAID' ? 'bg-success-subtle text-success' : (payment.status.name() == 'PENDING' ? 'bg-warning-subtle text-dark' : (payment.status.name() == 'FAILED' ? 'bg-danger-subtle text-danger' : 'bg-secondary-subtle text-secondary'))}" th:text="${payment.status}"></span></td>
                     <td><a class="btn btn-outline-success btn-sm text-nowrap" th:href="@{/seller/subscription/payments/{id}(id=${payment.subscriptionPaymentId})}" th:aria-label="${'Xem yêu cầu ' + payment.subscriptionPaymentId}">Xem chi tiết</a></td>
                 </tr>

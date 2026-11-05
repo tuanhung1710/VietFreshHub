@@ -42,7 +42,8 @@ public interface OrderRepository extends JpaRepository<Order,Long> {
     @org.springframework.data.jpa.repository.Query("select new VietFreshHub.order.dto.OrderListRow(o.orderId,o.orderCode,o.status,o.paymentStatus,o.grandTotal,o.placedAt, "
             + CustomerOrderStageQuery.EXPRESSION + ") from Order o where o.customer.userId=:customerId "
             + "and (:status='' or :status=" + CustomerOrderStageQuery.EXPRESSION + ") "
-            + "and (:keyword='' or locate(lower(:keyword),lower(o.orderCode))>0) "
+            + "and (:keyword='' or locate(lower(:keyword),lower(o.orderCode))>0 "
+            + "or locate(lower(:keyword),lower(" + VietFreshHub.common.OrderCodes.DISPLAY_EXPRESSION + "))>0) "
             + "and (:fromDate is null or o.placedAt>=:fromDate) and (:untilDate is null or o.placedAt<:untilDate)")
     org.springframework.data.domain.Page<VietFreshHub.order.dto.OrderListRow> findHistory(
             @org.springframework.data.repository.query.Param("customerId") Long customerId,
@@ -65,7 +66,8 @@ public interface OrderRepository extends JpaRepository<Order,Long> {
     String CUSTOMER_SHOP_STATUS = """
             case
                 when s.status in ('CANCELLED', 'COMPLETED') then s.status
-                when d.status in ('ACCEPTED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED', 'FAILED', 'REDELIVERY_SCHEDULED') then d.status
+                when d.status in ('ACCEPTED', 'PICKED_UP') then 'READY_FOR_DELIVERY'
+                when d.status in ('OUT_FOR_DELIVERY', 'DELIVERED', 'FAILED', 'REDELIVERY_SCHEDULED') then d.status
                 else s.status
             end
             """;

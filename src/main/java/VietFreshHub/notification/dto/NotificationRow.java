@@ -6,6 +6,12 @@ public record NotificationRow(Long notificationId, String type, String title, St
                               String entityType, Long entityId, LocalDateTime createdAt,
                               LocalDateTime readAt) {
 
+    public NotificationRow {
+        if ("ORDER".equals(entityType) || "SHOP_ORDER".equals(entityType)) {
+            content = VietFreshHub.common.OrderCodes.displayInText(content);
+        }
+    }
+
     public boolean hasDetail() {
         if (entityId == null || type == null) {
             return false;

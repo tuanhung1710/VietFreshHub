@@ -37,4 +37,7 @@ public interface LoyaltyService {
             Long orderId,
             BigDecimal rewardAmountToUse
     );
+
+    // Restore a redemption once when its order is canceled.
+    BigDecimal refundRedeemedRewardForCancelledOrder(Long customerId, Long orderId);
 }

@@ -11,8 +11,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(schema = "dbo", name = "conversations")
@@ -33,8 +33,6 @@ public class Conversation {
 
     @Column(name = "order_id")
     private Long orderId;
-
-    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -73,5 +71,11 @@ public class Conversation {
 
     public void reopen() {
         closedAt = null;
+    }
+
+    @jakarta.persistence.PrePersist
+    void setUtcTimestamps() {
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
+        if (createdAt == null) createdAt = now;
     }
 }

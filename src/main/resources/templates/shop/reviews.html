@@ -22,6 +22,6 @@
         <a th:if="${reviewsPage.hasNext()}" th:href="@{/shops/{id}/reviews(id=${shop.shopId},page=${reviewsPage.number + 2},rating=${rating})}">Trang tiếp →</a>
     </nav>
 </main>
-<footer th:replace="~{fragments/customer-shop :: footer}"></footer>
+<footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>
 </html>

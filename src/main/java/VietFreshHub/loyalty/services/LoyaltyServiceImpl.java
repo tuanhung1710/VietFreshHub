@@ -93,7 +93,7 @@ public class LoyaltyServiceImpl implements LoyaltyService {
                 transaction.getTransactionType(),
                 transaction.getAmount(),
                 transaction.getBalanceAfterAmount(),
-                transaction.getNote(),
+                order == null ? transaction.getNote() : order.formatOrderCodeIn(transaction.getNote()),
                 transaction.getCreatedAt()
         );
     }
@@ -466,6 +466,60 @@ public class LoyaltyServiceImpl implements LoyaltyService {
         transactionRepository.saveAndFlush(transaction);
 
         return response;
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public BigDecimal refundRedeemedRewardForCancelledOrder(Long customerId, Long orderId) {
+        requireCustomerId(customerId);
+        if (orderId == null || orderId <= 0) {
+            throw new IllegalArgumentException("ID đơn hàng không hợp lệ");
+        }
+
+        User customer = em.find(User.class, customerId);
+        if (customer == null) {
+            throw new IllegalArgumentException("Không tìm thấy khách hàng");
+        }
+        em.refresh(customer, LockModeType.PESSIMISTIC_WRITE);
+
+        Order order = em.find(Order.class, orderId);
+        if (order == null || !customerId.equals(order.getCustomer().getUserId())) {
+            throw new IllegalArgumentException("Không tìm thấy đơn hàng của bạn");
+        }
+        if (order.getStatus() != Order.Status.CANCELLED) {
+            throw new IllegalArgumentException("Chỉ hoàn tiền thưởng cho đơn đã hủy");
+        }
+
+        var redemption = transactionRepository
+                .findByLoyaltyAccount_User_UserIdAndOrder_OrderIdAndTransactionType(
+                        customerId, orderId, LoyaltyTransactionType.REDEEM)
+                .orElse(null);
+        if (redemption == null || transactionRepository
+                .existsByLoyaltyAccount_User_UserIdAndOrder_OrderIdAndTransactionType(
+                        customerId, orderId, LoyaltyTransactionType.REFUND)) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal refundAmount = redemption.getAmount().negate();
+        if (refundAmount.signum() <= 0) {
+            throw new IllegalStateException("Giao dịch dùng tiền thưởng của đơn không hợp lệ");
+        }
+
+        LoyaltyAccount account = accountRepository.findByUserIdForUpdate(customerId)
+                .orElseThrow(() -> new IllegalStateException("Không tìm thấy tài khoản tiền thưởng"));
+        em.refresh(account, LockModeType.PESSIMISTIC_WRITE);
+        BigDecimal balanceAfter = account.getRewardBalance().add(refundAmount);
+        account.setRewardBalance(balanceAfter);
+
+        transactionRepository.saveAndFlush(LoyaltyTransaction.builder()
+                .loyaltyAccount(account)
+                .order(order)
+                .transactionType(LoyaltyTransactionType.REFUND)
+                .amount(refundAmount)
+                .balanceAfterAmount(balanceAfter)
+                .note("Hoàn tiền thưởng cho đơn " + order.getOrderCode() + " đã hủy")
+                .build());
+        return refundAmount;
     }
 
     private void validateRewardAmountToUse(BigDecimal rewardAmountToUse) {

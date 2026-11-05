@@ -5,6 +5,7 @@ import VietFreshHub.coupon.dto.CouponResponse;
 import VietFreshHub.coupon.entity.Coupon;
 import VietFreshHub.coupon.entity.CouponStatus;
 import VietFreshHub.coupon.repository.CouponRepository;
+import VietFreshHub.order.service.OrderLabels;
 import VietFreshHub.promotion.entity.Promotion;
 import VietFreshHub.promotion.entity.PromotionStatus;
 import VietFreshHub.promotion.repository.PromotionRepository;
@@ -15,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Locale;
@@ -24,9 +24,6 @@ import java.util.Locale;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CouponServiceImpl implements CouponService {
-
-    private static final ZoneId INPUT_ZONE =
-            ZoneId.of("Asia/Ho_Chi_Minh");
 
     private final CouponRepository couponRepository;
     private final PromotionRepository promotionRepository;
@@ -308,8 +305,6 @@ public class CouponServiceImpl implements CouponService {
     }
 
     private LocalDateTime toUtc(LocalDateTime localTime) {
-        return localTime.atZone(INPUT_ZONE)
-                .withZoneSameInstant(ZoneOffset.UTC)
-                .toLocalDateTime();
+        return OrderLabels.utc(localTime);
     }
 }

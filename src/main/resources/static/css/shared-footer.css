@@ -6,7 +6,7 @@ body.vfo-app footer.vfh-footer {
     border-top: 1px solid #e0e7d5;
     background: #eef3e5;
     color: #7e906f;
-    font: 13px/1.6 "Segoe UI", Arial, sans-serif;
+    font: 13px/1.6 var(--vf-font-family);
     text-align: center;
 }
 

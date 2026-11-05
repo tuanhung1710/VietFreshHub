@@ -41,7 +41,7 @@
                     <td th:text="${request.bankName}"></td>
                     <td class="vfa-bank-account" th:text="${request.maskedAccountNumber}"></td>
                     <td class="vfo-money text-end" th:text="${#numbers.formatInteger(request.refundAmount,1,'POINT')} + 'đ'"></td>
-                    <td class="vfo-date-cell" th:text="${#temporals.format(request.submittedAt,'dd/MM/yyyy HH:mm:ss')}"></td>
+                    <td class="vfo-date-cell" th:text="${#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(request.submittedAt),'dd/MM/yyyy HH:mm:ss')}"></td>
                 </tr></tbody>
             </table>
         </div>

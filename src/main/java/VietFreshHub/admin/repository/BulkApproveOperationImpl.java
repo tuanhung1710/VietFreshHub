@@ -1,5 +1,6 @@
 package VietFreshHub.admin.repository;
 
+import VietFreshHub.common.VietnamDatabaseTime;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
@@ -78,7 +79,7 @@ public class BulkApproveOperationImpl implements BulkApproveOperation {
                 .addValue("fromDate", fromDate)
                 .addValue("untilDate", untilDate)
                 .addValue("adminId", adminId)
-                .addValue("reviewedAt", reviewedAt);
+                .addValue("reviewedAt", VietnamDatabaseTime.toDatabase(reviewedAt));
 
         return jdbcTemplate.queryForObject(BULK_APPROVE_SQL, queryParameters, Integer.class);
     }

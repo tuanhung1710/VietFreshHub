@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+    <head th:fragment="head(title)">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+        <title th:text="${title + ' | VietFresh Hub'}">
+        </title>
+        <link rel="stylesheet" th:href="@{/css/shop-view.css}">
+        <link rel="stylesheet" th:href="@{/css/discount-pricing.css}">
+        <script defer th:src="@{/js/storefront/storefront.js}">
+        </script>
+        <link rel="stylesheet" th:href="@{/css/customer-pagination.css}">
+        <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+    </head>
+    <body>
+        <header th:fragment="header" class="header vfc-header">
+            <div class="wrap">
+                <div class="vfc-header-main">
+                    <a class="logo" th:href="@{/home}">
+                        VietFresh Hub
+                    </a>
+                    <div class="vfo-topbar-actions vfc-header-actions">
+                        <th:block th:replace="~{fragments/customer-shop :: accountLinks}"></th:block>
+                    </div>
+                </div>
+                <div class="headrow vfc-header-tools">
+                    <form class="search" th:action="@{/shops/{id}/products(id=${shop.shopId})}" method="get" role="search">
+                        <input class="form-control" name="q" th:value="${q}" type="search" maxlength="100"
+                               placeholder="Tìm sản phẩm trong gian hàng..." aria-label="Tìm sản phẩm trong shop">
+                        <button class="btn btn-success" type="submit">
+                            TÌM
+                        </button>
+                    </form>
+                    <a class="basket" th:href="@{/cart}">
+                        Giỏ hàng (
+                        <span id="cartCount" aria-live="polite" th:text="${storefrontCartCount}">
+                            0
+                        </span>
+                        )
+                    </a>
+                </div>
+            </div>
+        </header>
+        <!-- Hồ sơ cửa hàng dùng chung cho trang chủ và danh sách sản phẩm của shop. -->
+        <th:block th:fragment="shopInformation">
+            <div class="crumb">
+                <a th:href="@{/home}">
+                    Trang chủ
+                </a>
+                /
+                <a th:href="@{/shops}">
+                    Gian hàng
+                </a>
+                /
+                <span th:text="${shop.shopName}">
+                </span>
+            </div>
+            <section class="shopinfo" aria-label="Thông tin shop">
+                <div class="identity">
+                    <img th:if="${!#strings.isEmpty(shop.bannerUrl)}" class="identity-background"
+                         th:src="${shop.bannerUrl}" alt="" aria-hidden="true" data-shop-background>
+                    <div class="avatar">
+                        <img id="shopLogo" th:if="${!#strings.isEmpty(#strings.trim(shop.logoUrl))}"
+                             th:src="${shop.logoUrl}" th:alt="${'Logo ' + shop.shopName}">
+                        <span id="shopInitial" th:hidden="${!#strings.isEmpty(#strings.trim(shop.logoUrl))}"
+                              th:text="${#strings.substring(shop.shopName,0,1)}">
+                        </span>
+                    </div>
+                    <div>
+                        <h1 th:text="${shop.shopName}">
+                        </h1>
+                        <p th:text="${#strings.isEmpty(shop.description) ? 'Shop chưa cập nhật giới thiệu.' : shop.description}">
+                        </p>
+                    </div>
+                </div>
+                <div class="stats">
+                    <div class="stat">
+                        <strong>
+                            Sản phẩm
+                        </strong>
+                        <span th:text="${shopProductCount + ' sản phẩm'}">
+                        </span>
+                    </div>
+                    <div class="stat">
+                        <strong>
+                            Địa chỉ
+                        </strong>
+                        <span th:text="${formattedAddress}">
+                        </span>
+                    </div>
+                    <div class="stat">
+                        <strong>
+                            Tham gia
+                        </strong>
+                        <span th:text="${joinedDate != null ? #temporals.format(joinedDate,'dd/MM/yyyy') : 'Chưa cập nhật'}">
+                        </span>
+                    </div>
+                </div>
+            </section>
+            <nav class="nav" id="topnav" aria-label="Danh mục sản phẩm trong shop">
+                <a th:href="@{/shops/{id}(id=${shop.shopId})}"
+                   th:classappend="${activeTab == 'home' ? 'active' : ''}">
+                    Trang chủ shop
+                </a>
+                <a th:href="@{/shops/{id}/products(id=${shop.shopId})}"
+                   th:classappend="${activeTab == 'products' and category == null ? 'active' : ''}">
+                    Tất cả sản phẩm
+                </a>
+                <a th:each="c : ${categories}" th:href="@{/shops/{id}/products(id=${shop.shopId},category=${c.categoryId})}"
+                   th:classappend="${activeTab == 'products' and category == c.categoryId ? 'active' : ''}" th:text="${c.name}">
+                </a>
+            </nav>
+        </th:block>
+    </body>
+</html>

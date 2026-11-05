@@ -13,10 +13,6 @@
     <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
 <body>
-<header th:fragment="header">
-    <div class="topline"><div class="container topline-inner"><span>VIETFRESH HUB · QUẢN LÝ CỬA HÀNG</span><a th:href="@{/seller}">Về trang quản lý</a></div></div>
-    <div class="brandbar"><div class="container brand-inner"><a class="brand" th:href="@{/seller}">VietFresh Hub</a><div class="brandnote">Quản lý cửa hàng<br>Hồ sơ &amp; trạng thái nhận đơn</div></div></div>
-</header>
 <section th:fragment="pickup" id="pickup" class="panel section-anchor" aria-labelledby="pickup-title">
     <div class="panel-head"><h2 id="pickup-title">Địa điểm lấy hàng</h2><small>Thông tin phục vụ bàn giao đơn hàng</small></div>
     <div class="panel-body">
@@ -40,6 +36,5 @@
         <div class="summary-line"><span>Nhận đơn</span><strong th:text="${shop.availabilityStatus == 'OPEN' ? 'Mở cửa' : 'Tạm đóng'}"></strong></div>
     </div>
 </section>
-<footer th:fragment="footer" th:replace="~{fragments/footer :: footer}"></footer>
 </body>
 </html>

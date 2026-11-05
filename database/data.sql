@@ -51,7 +51,12 @@ COMMIT TRANSACTION;
 SELECT N'EXISTING_DATA_PRESERVED' AS result,N'Configuration loaded; demo data already present or application database in use.' AS detail;
 RETURN;
 END;
- DECLARE @now DATETIME2(0)=SYSUTCDATETIME(),@today DATE=CONVERT(DATE,DATEADD(HOUR,7,SYSUTCDATETIME()));
+ IF NOT EXISTS (SELECT 1 FROM sys.extended_properties
+                WHERE class=0 AND name=N'VietFreshHub.VietnamTime.v1')
+  THROW 58024,N'Chay vietfresh_hub_script.sql truoc khi nap du lieu mau.',1;
+ DECLARE @now DATETIME2(0)=SYSUTCDATETIME();
+ DECLARE @today DATE=CONVERT(DATE,DATEADD(HOUR,7,@now));
+ DECLARE @businessDayStart DATETIME2(0)=DATEADD(HOUR,-7,CONVERT(DATETIME2(0),@today));
  DECLARE @created DATETIME2(0)=DATEADD(DAY,-45,@now);
  DECLARE @password NVARCHAR(500)=N'$2a$10$jcSfgNwin1KVJzHUwja3weKxynN6BG0qynEEZjHu2N/vygDkyJtJO';
  DECLARE @userPlan TABLE(n INT PRIMARY KEY,email NVARCHAR(255),username VARCHAR(64),full_name NVARCHAR(150),role_name VARCHAR(50),phone NVARCHAR(30),id BIGINT);
@@ -59,10 +64,10 @@ END;
  DECLARE @addressPlan TABLE(user_n INT,address_line NVARCHAR(500),ward NVARCHAR(100),province NVARCHAR(100),latitude DECIMAL(9,6),longitude DECIMAL(10,6));
  DECLARE @productPlan TABLE(n INT PRIMARY KEY,shop_n INT,name NVARCHAR(250),slug VARCHAR(300),image NVARCHAR(1000),description NVARCHAR(MAX),origin NVARCHAR(200),category VARCHAR(20),scenario VARCHAR(20),status VARCHAR(20),approval VARCHAR(20),warning INT,prep BIT,markdown INT,id BIGINT);
  DECLARE @variantPlan TABLE(n INT PRIMARY KEY,product_n INT,pack INT,name NVARCHAR(200),unit NVARCHAR(30),weight DECIMAL(18,3),price DECIMAL(18,2),compare_price DECIMAL(18,2),low_stock INT,status VARCHAR(20),id BIGINT);
- DECLARE @orderPlan TABLE(n INT PRIMARY KEY,shop_n INT,customer_n INT,status VARCHAR(30),minutes_ago INT,method VARCHAR(50),shipping DECIMAL(18,2),id BIGINT,shop_order_id BIGINT,placed DATETIME2(0));
+ DECLARE @orderPlan TABLE(n INT PRIMARY KEY,shop_n INT,customer_n INT,status VARCHAR(30),minutes_ago INT,method VARCHAR(50),shipping DECIMAL(18,2),id BIGINT,shop_order_id BIGINT,placed DATETIME2(0),confirmed_at DATETIME2(0),cancelled_at DATETIME2(0),seller_cancel_reason NVARCHAR(250));
  DECLARE @linePlan TABLE(n INT PRIMARY KEY,order_n INT,variant_n INT,quantity INT,price DECIMAL(18,2),id BIGINT);
  DECLARE @batchPlan TABLE(n INT PRIMARY KEY,variant_n INT,lot INT,expiry_days INT,received_days INT,initial_qty INT,physical_qty INT,reserved_qty INT,dispose_qty INT,status VARCHAR(20),id BIGINT);
- DECLARE @allocationPlan TABLE(line_n INT,batch_n INT,quantity INT,status VARCHAR(20),PRIMARY KEY(line_n,batch_n));
+ DECLARE @allocationPlan TABLE(line_n INT,batch_n INT,quantity INT,status VARCHAR(20),reserved_at DATETIME2(0),resolved_at DATETIME2(0),PRIMARY KEY(line_n,batch_n));
  INSERT @userPlan(n,email,username,full_name,role_name,phone) VALUES
 (1,N'admin@vietfreshhub.vn',N'admin',N'Nguyễn Hoàng Minh',N'ROLE_ADMIN',N'0906784312'),
 (2,N'hoangvanson@gmail.com',N'vuonnhason',N'Hoàng Văn Sơn',N'ROLE_STORE_MANAGER',N'0918372645'),
@@ -133,6 +138,7 @@ UPDATE p SET origin=o.origin FROM @productPlan p JOIN (VALUES
 ) o(n,origin) ON o.n=p.n;
 IF EXISTS(SELECT 1 FROM @productPlan WHERE NULLIF(LTRIM(RTRIM(origin)),N'') IS NULL)
  THROW 58019,N'Thieu xuat xu trong ke hoach du lieu mau.',1;
+-- Variant names identify the packaging or weight. Each lot carries its own expiry date.
 INSERT @variantPlan(n,product_n,pack,name,unit,weight,price,compare_price,low_stock,status) VALUES
 (1,1,1,N'Túi 1 kg',N'kg',1,59000,67000,3,N'ACTIVE'),
 (2,1,2,N'Thùng gia đình 3 kg',N'thùng',3,168000,189000,3,N'ACTIVE'),
@@ -197,13 +203,13 @@ INSERT @orderPlan(n,shop_n,customer_n,status,minutes_ago,method,shipping) VALUES
 (27,1,13,N'PENDING',-121,N'COD',21000),
 (28,1,15,N'PENDING',-164,N'COD',15000),
 (29,1,19,N'PENDING',-207,N'COD',15000),
-(30,1,10,N'PENDING',-250,N'COD',12000),
+(30,1,10,N'CANCELLED',-2940,N'COD',12000),
 (31,1,15,N'PENDING',-293,N'COD',15000),
 (32,1,18,N'PENDING',-336,N'COD',12000),
 (33,1,8,N'PENDING',-379,N'COD',18000),
 (34,1,9,N'PENDING',-422,N'COD',21000),
 (35,1,15,N'PENDING',-465,N'COD',15000),
-(36,1,13,N'PENDING',-508,N'COD',21000),
+(36,1,13,N'CONFIRMED',-2880,N'COD',21000),
 (37,1,9,N'PENDING',-551,N'COD',21000),
 (38,1,19,N'CONFIRMED',-180,N'COD',15000),
 (39,1,13,N'CONFIRMED',-219,N'COD',21000),
@@ -486,7 +492,7 @@ INSERT @linePlan(n,order_n,variant_n,quantity,price) VALUES
 (215,75,23,3,79000),
 (216,75,24,2,149000),
 (217,76,31,1,139000),
-(218,76,24,2,137000),
+(218,76,24,2,149000),
 (219,77,20,2,89000),
 (220,77,21,1,119000),
 (221,77,32,1,269000),
@@ -540,31 +546,31 @@ INSERT @linePlan(n,order_n,variant_n,quantity,price) VALUES
 (269,100,29,1,109000);
 INSERT @batchPlan(n,variant_n,lot,expiry_days,received_days,initial_qty,physical_qty,reserved_qty,dispose_qty,status) VALUES
 (11,1,1,-2,-14,10,2,0,1,N'ACTIVE'),
-(12,1,2,1,-3,5,3,3,0,N'ACTIVE'),
+(12,1,2,0,-3,5,3,3,0,N'ACTIVE'),
 (13,1,3,6,-3,33,31,21,0,N'ACTIVE'),
 (21,2,1,-2,-14,9,3,0,1,N'ACTIVE'),
-(22,2,2,1,-3,6,5,5,0,N'ACTIVE'),
-(23,2,3,6,-3,16,16,5,0,N'ACTIVE'),
+(22,2,2,1,-3,6,4,4,0,N'ACTIVE'),
+(23,2,3,6,-3,16,14,4,0,N'ACTIVE'),
 (31,3,1,-2,-14,10,1,0,1,N'ACTIVE'),
 (32,3,2,1,-3,16,9,8,0,N'ACTIVE'),
 (41,4,1,-2,-14,14,2,0,1,N'ACTIVE'),
 (42,4,2,1,-3,8,8,8,0,N'ACTIVE'),
-(43,4,3,8,-3,38,33,20,0,N'ACTIVE'),
+(43,4,3,8,-3,38,33,26,0,N'ACTIVE'),
 (51,5,1,-2,-14,7,3,0,1,N'ACTIVE'),
 (52,5,2,1,-3,4,4,4,0,N'ACTIVE'),
-(53,5,3,8,-3,20,18,4,0,N'ACTIVE'),
+(53,5,3,8,-3,20,18,6,0,N'ACTIVE'),
 (61,6,1,-2,-14,11,1,0,2,N'ACTIVE'),
-(62,6,2,1,-3,5,5,5,0,N'ACTIVE'),
-(63,6,3,5,-3,25,25,10,0,N'ACTIVE'),
+(62,6,2,1,-3,5,3,3,0,N'ACTIVE'),
+(63,6,3,5,-3,25,23,13,0,N'ACTIVE'),
 (71,7,1,-2,-14,7,2,0,2,N'ACTIVE'),
 (72,7,2,1,-3,6,4,4,0,N'ACTIVE'),
-(73,7,3,5,-3,22,22,6,0,N'ACTIVE'),
+(73,7,3,5,-3,22,20,8,0,N'ACTIVE'),
 (81,8,1,-2,-14,8,3,0,1,N'ACTIVE'),
 (82,8,2,1,-3,7,5,5,0,N'ACTIVE'),
-(83,8,3,6,-3,26,24,22,0,N'ACTIVE'),
+(83,8,3,6,-3,26,18,16,0,N'ACTIVE'),
 (91,9,1,-2,-14,8,1,0,1,N'ACTIVE'),
 (92,9,2,1,-3,8,6,6,0,N'ACTIVE'),
-(93,9,3,7,-3,33,33,15,0,N'ACTIVE'),
+(93,9,3,7,-3,33,28,15,0,N'ACTIVE'),
 (101,10,1,-2,-14,9,2,0,1,N'ACTIVE'),
 (103,10,3,8,-3,3,3,0,0,N'ACTIVE'),
 (111,11,1,-2,-14,3,0,0,0,N'ACTIVE'),
@@ -573,54 +579,56 @@ INSERT @batchPlan(n,variant_n,lot,expiry_days,received_days,initial_qty,physical
 (133,13,3,6,-3,6,6,0,0,N'BLOCKED'),
 (141,14,1,-2,-14,8,3,0,1,N'ACTIVE'),
 (142,14,2,1,-3,8,8,8,0,N'ACTIVE'),
-(143,14,3,7,-3,48,39,16,0,N'ACTIVE'),
+(143,14,3,7,-3,48,30,10,0,N'ACTIVE'),
 (151,15,1,-2,-14,7,1,0,1,N'ACTIVE'),
 (152,15,2,1,-3,4,3,3,0,N'ACTIVE'),
-(153,15,3,7,-3,52,49,25,0,N'ACTIVE'),
+(153,15,3,7,-3,52,49,27,0,N'ACTIVE'),
 (161,16,1,-2,-14,13,2,0,1,N'ACTIVE'),
 (162,16,2,1,-3,5,5,5,0,N'ACTIVE'),
-(163,16,3,7,-3,57,55,30,0,N'ACTIVE'),
+(163,16,3,7,-3,57,44,19,0,N'ACTIVE'),
 (171,17,1,-2,-14,9,3,0,1,N'ACTIVE'),
 (173,17,3,8,-3,5,5,0,0,N'ACTIVE'),
 (181,18,1,-2,-14,10,1,0,2,N'ACTIVE'),
 (182,18,2,1,-3,7,6,6,0,N'ACTIVE'),
 (183,18,3,5,-3,16,15,15,0,N'ACTIVE'),
+(190,19,0,-2,-4,2,2,0,0,N'ACTIVE'),
 (191,19,1,-2,-14,7,2,0,2,N'ACTIVE'),
-(192,19,2,1,-3,8,8,8,0,N'ACTIVE'),
+(192,19,2,1,-3,8,7,7,0,N'ACTIVE'),
+(193,19,3,7,-1,8,8,1,0,N'ACTIVE'),
 (201,20,1,-3,-14,7,3,0,1,N'ACTIVE'),
 (202,20,2,3,-3,2,0,0,0,N'ACTIVE'),
-(203,20,3,18,-3,18,12,6,0,N'ACTIVE'),
+(203,20,3,18,-3,18,11,7,0,N'ACTIVE'),
 (211,21,1,-3,-14,6,1,0,1,N'ACTIVE'),
 (212,21,2,3,-3,3,2,2,0,N'ACTIVE'),
-(213,21,3,18,-3,11,11,4,0,N'ACTIVE'),
+(213,21,3,18,-3,11,9,2,0,N'ACTIVE'),
 (221,22,1,-3,-14,7,2,0,1,N'ACTIVE'),
-(222,22,2,3,-3,3,3,3,0,N'ACTIVE'),
+(222,22,2,3,-3,3,1,1,0,N'ACTIVE'),
 (223,22,3,18,-3,8,8,0,0,N'ACTIVE'),
 (231,23,1,-3,-14,10,3,0,1,N'ACTIVE'),
-(232,23,2,3,-3,12,9,6,0,N'ACTIVE'),
+(232,23,2,2,-3,12,6,4,0,N'ACTIVE'),
 (241,24,1,-3,-14,7,1,0,1,N'ACTIVE'),
-(242,24,2,3,-3,10,8,7,0,N'ACTIVE'),
+(242,24,2,2,-3,10,6,5,0,N'ACTIVE'),
 (251,25,1,-3,-14,10,7,0,1,N'ACTIVE'),
 (261,26,1,-3,-14,8,3,0,2,N'ACTIVE'),
-(262,26,2,3,-3,4,1,1,0,N'ACTIVE'),
-(263,26,3,14,-3,13,13,1,0,N'ACTIVE'),
+(262,26,2,3,-3,4,0,0,0,N'ACTIVE'),
+(263,26,3,14,-3,13,12,0,0,N'ACTIVE'),
 (271,27,1,-3,-14,5,1,0,2,N'ACTIVE'),
 (273,27,3,14,-3,4,4,0,0,N'ACTIVE'),
 (281,28,1,-3,-14,5,2,0,1,N'ACTIVE'),
-(282,28,2,3,-3,2,2,2,0,N'ACTIVE'),
-(283,28,3,15,-3,9,9,4,0,N'ACTIVE'),
+(282,28,2,3,-3,2,1,1,0,N'ACTIVE'),
+(283,28,3,15,-3,9,8,3,0,N'ACTIVE'),
 (291,29,1,-3,-14,6,3,0,1,N'ACTIVE'),
 (292,29,2,3,-3,3,2,2,0,N'ACTIVE'),
 (293,29,3,15,-3,7,7,1,0,N'ACTIVE'),
 (301,30,1,-3,-14,4,1,0,1,N'ACTIVE'),
-(302,30,2,3,-3,4,3,3,0,N'ACTIVE'),
-(303,30,3,16,-3,12,12,5,0,N'ACTIVE'),
+(302,30,2,3,-3,4,2,2,0,N'ACTIVE'),
+(303,30,3,16,-3,12,10,5,0,N'ACTIVE'),
 (311,31,1,-3,-14,6,2,0,1,N'ACTIVE'),
-(312,31,2,3,-3,3,2,2,0,N'ACTIVE'),
-(313,31,3,17,-3,8,8,0,0,N'ACTIVE'),
+(312,31,2,3,-3,3,0,0,0,N'ACTIVE'),
+(313,31,3,17,-3,8,8,1,0,N'ACTIVE'),
 (321,32,1,-3,-14,5,3,0,1,N'ACTIVE'),
 (322,32,2,3,-3,2,1,1,0,N'ACTIVE'),
-(323,32,3,17,-3,18,18,9,0,N'ACTIVE'),
+(323,32,3,17,-3,18,16,7,0,N'ACTIVE'),
 (331,33,1,-3,-14,5,1,0,2,N'ACTIVE'),
 (333,33,3,18,-3,6,6,0,0,N'ACTIVE');
 INSERT @allocationPlan(line_n,batch_n,quantity,status) VALUES
@@ -774,11 +782,11 @@ INSERT @allocationPlan(line_n,batch_n,quantity,status) VALUES
 (196,143,4,N'SOLD'),
 (197,163,2,N'SOLD'),
 (120,182,3,N'RESERVED'),
-(181,163,3,N'RESERVED'),
-(182,143,4,N'RESERVED'),
-(183,83,1,N'RESERVED'),
-(184,93,5,N'RESERVED'),
-(185,73,2,N'RESERVED'),
+(181,163,3,N'SOLD'),
+(182,143,4,N'SOLD'),
+(183,83,1,N'SOLD'),
+(184,93,5,N'SOLD'),
+(185,73,2,N'SOLD'),
 (151,32,1,N'RESERVED'),
 (152,73,2,N'RESERVED'),
 (153,183,3,N'RESERVED'),
@@ -795,10 +803,10 @@ INSERT @allocationPlan(line_n,batch_n,quantity,status) VALUES
 (117,22,1,N'RESERVED'),
 (118,192,1,N'RESERVED'),
 (119,183,2,N'RESERVED'),
-(178,22,1,N'RESERVED'),
-(179,163,5,N'RESERVED'),
-(180,143,5,N'RESERVED'),
-(262,242,2,N'RESERVED'),
+(178,22,1,N'SOLD'),
+(179,163,5,N'SOLD'),
+(180,143,5,N'SOLD'),
+(262,242,2,N'SOLD'),
 (148,153,3,N'RESERVED'),
 (149,32,1,N'RESERVED'),
 (150,183,5,N'RESERVED'),
@@ -812,15 +820,15 @@ INSERT @allocationPlan(line_n,batch_n,quantity,status) VALUES
 (265,232,1,N'SOLD'),
 (266,262,3,N'SOLD'),
 (115,163,2,N'RESERVED'),
-(177,62,2,N'RESERVED'),
-(177,63,2,N'RESERVED'),
+(177,62,2,N'SOLD'),
+(177,63,2,N'SOLD'),
 (244,212,2,N'RESERVED'),
 (244,213,1,N'RESERVED'),
 (245,282,1,N'RESERVED'),
 (246,322,1,N'RESERVED'),
-(259,232,2,N'RESERVED'),
-(260,213,2,N'RESERVED'),
-(261,312,2,N'RESERVED'),
+(259,232,2,N'SOLD'),
+(260,213,2,N'SOLD'),
+(261,312,2,N'SOLD'),
 (87,22,1,N'RESERVED'),
 (88,63,3,N'RESERVED'),
 (89,53,2,N'RESERVED'),
@@ -837,24 +845,24 @@ INSERT @allocationPlan(line_n,batch_n,quantity,status) VALUES
 (264,232,2,N'SOLD'),
 (113,143,5,N'RESERVED'),
 (114,43,5,N'RESERVED'),
-(175,23,1,N'RESERVED'),
-(176,192,1,N'RESERVED'),
+(175,23,1,N'SOLD'),
+(176,192,1,N'SOLD'),
 (242,232,1,N'RESERVED'),
 (243,323,2,N'RESERVED'),
-(256,262,1,N'RESERVED'),
-(256,263,1,N'RESERVED'),
-(257,282,1,N'RESERVED'),
-(257,283,1,N'RESERVED'),
-(258,232,1,N'RESERVED'),
+(256,262,1,N'SOLD'),
+(256,263,1,N'SOLD'),
+(257,282,1,N'SOLD'),
+(257,283,1,N'SOLD'),
+(258,232,1,N'SOLD'),
 (111,192,1,N'RESERVED'),
 (112,23,1,N'RESERVED'),
-(174,23,1,N'RESERVED'),
+(174,23,1,N'SOLD'),
 (240,323,2,N'RESERVED'),
 (241,222,1,N'RESERVED'),
-(253,222,2,N'RESERVED'),
-(254,302,1,N'RESERVED'),
-(254,303,2,N'RESERVED'),
-(255,323,2,N'RESERVED'),
+(253,222,2,N'SOLD'),
+(254,302,1,N'SOLD'),
+(254,303,2,N'SOLD'),
+(255,323,2,N'SOLD'),
 (80,83,3,N'RESERVED'),
 (81,192,1,N'RESERVED'),
 (82,153,1,N'RESERVED'),
@@ -865,10 +873,10 @@ INSERT @allocationPlan(line_n,batch_n,quantity,status) VALUES
 (108,43,3,N'RESERVED'),
 (109,63,2,N'RESERVED'),
 (110,163,4,N'RESERVED'),
-(172,83,5,N'RESERVED'),
-(173,163,3,N'RESERVED'),
+(172,83,5,N'SOLD'),
+(173,163,3,N'SOLD'),
 (239,242,2,N'RESERVED'),
-(252,203,1,N'RESERVED'),
+(252,203,1,N'SOLD'),
 (76,163,4,N'RESERVED'),
 (77,143,2,N'RESERVED'),
 (78,23,1,N'RESERVED'),
@@ -883,8 +891,46 @@ INSERT @allocationPlan(line_n,batch_n,quantity,status) VALUES
 (71,63,3,N'RESERVED'),
 (232,203,3,N'RESERVED'),
 (233,232,2,N'RESERVED'),
-(66,183,5,N'RESERVED');
+(66,183,5,N'RESERVED'),
+-- Remaining pending orders and the two seller decisions after expiry.
+(72,23,1,N'RESERVED'),
+(73,73,2,N'RESERVED'),
+(74,153,2,N'RESERVED'),
+(75,43,4,N'RESERVED'),
+(84,153,4,N'RELEASED'),
+(85,53,2,N'RELEASED'),
+(86,190,1,N'RELEASED'),
+(93,53,2,N'RESERVED'),
+(94,73,2,N'RESERVED'),
+(95,63,2,N'RESERVED'),
+(100,190,1,N'RELEASED'),
+(100,193,1,N'RESERVED'),
+(101,63,3,N'RESERVED'),
+(102,43,2,N'RESERVED'),
+(103,93,5,N'RESERVED'),
+(104,143,3,N'RESERVED'),
+(229,303,2,N'RESERVED'),
+(230,232,1,N'RESERVED'),
+(231,313,1,N'RESERVED'),
+(237,203,2,N'RESERVED');
 
+-- Plan event ordering in UTC. Expiry dates are inclusive local dates in Vietnam.
+UPDATE @orderPlan SET placed=DATEADD(MINUTE,minutes_ago,@now),
+ confirmed_at=CASE WHEN status<>'PENDING' THEN DATEADD(MINUTE,minutes_ago+15,@now) END,
+ cancelled_at=CASE WHEN status='CANCELLED' THEN DATEADD(MINUTE,minutes_ago+120,@now) END;
+-- The old lot expired two days ago. The seller cancelled order 30 before the new lot arrived.
+UPDATE @orderPlan SET confirmed_at=NULL,cancelled_at=DATEADD(HOUR,-20,@businessDayStart),
+ seller_cancel_reason=N'Cửa hàng hủy đơn vì lô đã giữ hết hạn và chưa có lô cùng quy cách để thay thế.'
+WHERE n=30;
+-- The seller kept order 36 after the replacement lot arrived yesterday at noon.
+UPDATE @orderPlan SET confirmed_at=DATEADD(HOUR,-6,@businessDayStart) WHERE n=36;
+
+UPDATE a SET reserved_at=CASE WHEN a.batch_n=193 THEN o.confirmed_at ELSE o.placed END,
+ resolved_at=CASE
+  WHEN a.status='SOLD' THEN DATEADD(MINUTE,60,o.placed)
+  WHEN a.status='RELEASED' THEN COALESCE(o.cancelled_at,o.confirmed_at)
+ END
+FROM @allocationPlan a JOIN @linePlan l ON l.n=a.line_n JOIN @orderPlan o ON o.n=l.order_n;
 
  INSERT dbo.roles(role_name,description) VALUES
  ('ROLE_ADMIN',N'Superadmin quản trị toàn sàn'),('ROLE_STORE_MANAGER',N'Chủ shop, một người vận hành'),
@@ -929,13 +975,14 @@ INSERT dbo.shop_business_hours(shop_id,day_of_week,open_time,close_time,is_close
 SELECT @shop,v.d,CASE WHEN @n=1 THEN '06:30' WHEN @n=2 THEN '08:00' ELSE '07:00' END,CASE WHEN @n=1 THEN '19:30' WHEN @n=2 THEN '21:00' ELSE '18:00' END,0 FROM (VALUES(1),(2),(3),(4),(5),(6),(7)) v(d);
 SET @n+=1;
 END;
- DECLARE @rootCategory BIGINT,@local BIGINT,@imported BIGINT,@cut BIGINT,@gift BIGINT;
- INSERT dbo.categories(name,slug,created_at,updated_at) VALUES(N'Trái cây','trai-cay',@created,@created); SET @rootCategory=SCOPE_IDENTITY();
- INSERT dbo.categories(parent_category_id,name,slug,created_at,updated_at) VALUES(@rootCategory,N'Trái cây Việt Nam','trai-cay-viet-nam',@created,@created); SET @local=SCOPE_IDENTITY();
- INSERT dbo.categories(parent_category_id,name,slug,created_at,updated_at) VALUES(@rootCategory,N'Trái cây nhập khẩu','trai-cay-nhap-khau',@created,@created); SET @imported=SCOPE_IDENTITY();
- INSERT dbo.categories(parent_category_id,name,slug,created_at,updated_at) VALUES(@rootCategory,N'Trái cây sơ chế','trai-cay-so-che',@created,@created); SET @cut=SCOPE_IDENTITY();
- INSERT dbo.categories(parent_category_id,name,slug,created_at,updated_at) VALUES(@rootCategory,N'Quà tặng trái cây','qua-tang-trai-cay',@created,@created); SET @gift=SCOPE_IDENTITY();
- INSERT dbo.categories(name,slug,status,created_at,updated_at) VALUES(N'Danh mục mùa vụ tạm ngừng','mua-vu-tam-ngung','INACTIVE',@created,@created);
+ -- Six peer categories; every category has no parent.
+ DECLARE @local BIGINT,@imported BIGINT,@cut BIGINT,@gift BIGINT;
+ INSERT dbo.categories(parent_category_id,name,slug,image_url,created_at,updated_at) VALUES(NULL,N'Trái cây Việt Nam','trai-cay-viet-nam',N'/images/products/mango-photo.png',@created,@created); SET @local=SCOPE_IDENTITY();
+ INSERT dbo.categories(parent_category_id,name,slug,image_url,created_at,updated_at) VALUES(NULL,N'Trái cây nhập khẩu','trai-cay-nhap-khau',N'/images/products/apple-photo.png',@created,@created); SET @imported=SCOPE_IDENTITY();
+ INSERT dbo.categories(parent_category_id,name,slug,image_url,created_at,updated_at) VALUES(NULL,N'Trái cây hữu cơ','trai-cay-huu-co',N'/images/products/avocado-photo.png',@created,@created);
+ INSERT dbo.categories(parent_category_id,name,slug,image_url,created_at,updated_at) VALUES(NULL,N'Trái cây sơ chế','trai-cay-so-che',N'/images/storefront/fruit-cut.png',@created,@created); SET @cut=SCOPE_IDENTITY();
+ INSERT dbo.categories(parent_category_id,name,slug,image_url,created_at,updated_at) VALUES(NULL,N'Combo trái cây','combo-trai-cay',N'/images/products/grapes-photo.png',@created,@created);
+ INSERT dbo.categories(parent_category_id,name,slug,image_url,created_at,updated_at) VALUES(NULL,N'Quà tặng trái cây','qua-tang-trai-cay',N'/images/storefront/fruit-gift.png',@created,@created); SET @gift=SCOPE_IDENTITY();
  DECLARE @pid BIGINT,@vid BIGINT,@pack INT,@price DECIMAL(18,2),@bid BIGINT,@category VARCHAR(20),@scenario VARCHAR(20),@productCreated DATETIME2(0);
  SET @n=1;
  WHILE @n<=20
@@ -966,7 +1013,7 @@ INSERT dbo.price_history(variant_id,price,effective_from,effective_to,changed_by
    SET @pack+=1;
 END;
 UPDATE dbo.products SET status='ACTIVE',seller_hidden=0 WHERE product_id=@pid;
-IF @scenario<>'pending'
+IF @scenario<>'pending' OR EXISTS(SELECT 1 FROM @variantPlan v JOIN @linePlan l ON l.variant_n=v.n WHERE v.product_n=@n)
 BEGIN
 EXEC dbo.usp_review_product @product_id=@pid,@admin_user_id=@admin,@decision='APPROVED',@note=N'Đối chiếu thông tin nguồn gốc và quy cách sản phẩm';
 UPDATE dbo.products SET approved_at=DATEADD(DAY,1,@productCreated),updated_at=DATEADD(DAY,1,@productCreated) WHERE product_id=@pid;
@@ -977,7 +1024,11 @@ END;
 END;
  -- Initial stock precedes reservations; physical changes are written from the same allocation plan.
  DECLARE @bn INT,@vn INT,@initial INT,@received DATETIME2(0),@expiry DATE;
- DECLARE batches CURSOR LOCAL FAST_FORWARD FOR SELECT n,variant_n,initial_qty,DATEADD(DAY,received_days,@now),DATEADD(DAY,expiry_days,@today) FROM @batchPlan ORDER BY n;
+ DECLARE batches CURSOR LOCAL FAST_FORWARD FOR
+ SELECT n,variant_n,initial_qty,
+  CASE WHEN n IN(192,193) THEN DATEADD(HOUR,-12,@businessDayStart) ELSE DATEADD(DAY,received_days,@now) END,
+  DATEADD(DAY,expiry_days,@today)
+ FROM @batchPlan ORDER BY n;
 OPEN batches; FETCH NEXT FROM batches INTO @bn,@vn,@initial,@received,@expiry;
 WHILE @@FETCH_STATUS=0
 BEGIN
@@ -1012,7 +1063,7 @@ END;
  SET @n=1;
  WHILE @n<=100
 BEGIN
-SELECT @customer=u.id,@shop=s.id,@owner=ow.id,@status=o.status,@method=o.method,@placed=DATEADD(MINUTE,o.minutes_ago,@now),@shipping=o.shipping,@shopN=o.shop_n
+SELECT @customer=u.id,@shop=s.id,@owner=ow.id,@status=o.status,@method=o.method,@placed=o.placed,@shipping=o.shipping,@shopN=o.shop_n
 FROM @orderPlan o JOIN @userPlan u ON u.n=o.customer_n JOIN @shopPlan s ON s.n=o.shop_n JOIN @userPlan ow ON ow.n=s.owner_n WHERE o.n=@n;
 SELECT @subtotal=SUM(quantity*price) FROM @linePlan WHERE order_n=@n;
 SET @discount=0;
@@ -1022,10 +1073,11 @@ SET @total=@subtotal-@discount+@shipping;
   SET @paid=CASE WHEN @status='COMPLETED' OR (@method='BANK_TRANSFER' AND @status NOT IN('PENDING','CANCELLED')) THEN 1 ELSE 0 END;
   SET @refunded=CASE WHEN @method='BANK_TRANSFER' AND @status='CANCELLED' THEN 1 ELSE 0 END;
   INSERT dbo.orders(customer_id,order_code,status,payment_status,subtotal,discount_total,shipping_fee,grand_total,placed_at,completed_at,cancelled_at)
-   VALUES(@customer,'TMP-'+CONVERT(VARCHAR(36),NEWID()),CASE WHEN @status='COMPLETED' THEN 'COMPLETED' WHEN @status='CANCELLED' THEN 'CANCELLED' WHEN @status='PENDING' THEN 'PENDING' WHEN @status='CONFIRMED' THEN 'CONFIRMED' ELSE 'PROCESSING' END,
-    CASE WHEN @refunded=1 THEN 'REFUNDED' WHEN @paid=1 THEN 'PAID' ELSE 'UNPAID' END,@subtotal,@discount,@shipping,@total,@placed,CASE WHEN @status='COMPLETED' THEN DATEADD(HOUR,3,@placed) END,CASE WHEN @status='CANCELLED' THEN DATEADD(HOUR,2,@placed) END);
+   SELECT @customer,'TMP-'+CONVERT(VARCHAR(36),NEWID()),CASE WHEN @status='COMPLETED' THEN 'COMPLETED' WHEN @status='CANCELLED' THEN 'CANCELLED' WHEN @status='PENDING' THEN 'PENDING' WHEN @status='CONFIRMED' THEN 'CONFIRMED' ELSE 'PROCESSING' END,
+    CASE WHEN @refunded=1 THEN 'REFUNDED' WHEN @paid=1 THEN 'PAID' ELSE 'UNPAID' END,@subtotal,@discount,@shipping,@total,@placed,CASE WHEN @status='COMPLETED' THEN DATEADD(HOUR,3,@placed) END,o.cancelled_at
+   FROM @orderPlan o WHERE o.n=@n;
   SET @order=SCOPE_IDENTITY();
-UPDATE dbo.orders SET order_code='ORD-'+CASE WHEN LEN(CONVERT(VARCHAR(20),@order))<6 THEN REPLICATE('0',6-LEN(CONVERT(VARCHAR(20),@order))) ELSE '' END+CONVERT(VARCHAR(20),@order) WHERE order_id=@order;
+UPDATE dbo.orders SET order_code='VFH-'+CASE WHEN LEN(CONVERT(VARCHAR(20),@order))<6 THEN REPLICATE('0',6-LEN(CONVERT(VARCHAR(20),@order))) ELSE '' END+CONVERT(VARCHAR(20),@order) WHERE order_id=@order;
 INSERT dbo.order_addresses(order_id,recipient_name,phone,province,ward,address_line,formatted_address,latitude,longitude)
 SELECT @order,recipient_name,phone,province,ward,address_line,formatted_address,latitude,longitude FROM dbo.addresses WHERE user_id=@customer AND is_default=1;
 -- Insert lines while PENDING so preparation snapshot triggers run normally.
@@ -1051,19 +1103,25 @@ SELECT @line,@owner,DATEADD(MINUTE,45,@placed),N'Đã kiểm tra và đóng gói
 FETCH NEXT FROM order_lines INTO @ln,@vn,@quantity,@price;
 END; CLOSE order_lines; DEALLOCATE order_lines;
   INSERT dbo.order_status_history(shop_order_id,status,changed_by,note,created_at) VALUES(@so,'PENDING',@customer,N'Khách đặt hàng',@placed);
-  IF @status<>'PENDING'
-   INSERT dbo.order_status_history(shop_order_id,status,changed_by,note,created_at) VALUES(@so,'CONFIRMED',@owner,N'Shop xác nhận và giữ hàng',DATEADD(MINUTE,15,@placed));
+  INSERT dbo.order_status_history(shop_order_id,status,changed_by,note,created_at)
+  SELECT @so,'CONFIRMED',@owner,CASE WHEN n=36 THEN N'Cửa hàng chuyển lượng giữ sang lô cùng quy cách còn hạn và xác nhận đơn' ELSE N'Cửa hàng xác nhận đơn' END,confirmed_at
+  FROM @orderPlan WHERE n=@n AND confirmed_at IS NOT NULL;
   IF @status IN('PREPARING','READY_FOR_DELIVERY','OUT_FOR_DELIVERY','COMPLETED')
    INSERT dbo.order_status_history(shop_order_id,status,changed_by,note,created_at) VALUES(@so,'PREPARING',@owner,N'Đang kiểm tra và đóng gói',DATEADD(MINUTE,30,@placed));
   IF @status IN('READY_FOR_DELIVERY','OUT_FOR_DELIVERY','COMPLETED')
    INSERT dbo.order_status_history(shop_order_id,status,changed_by,note,created_at) VALUES(@so,'READY_FOR_DELIVERY',@owner,N'Đã sẵn sàng bàn giao',DATEADD(MINUTE,60,@placed));
   IF @status IN('OUT_FOR_DELIVERY','COMPLETED')
    INSERT dbo.order_status_history(shop_order_id,status,changed_by,note,created_at) VALUES(@so,'OUT_FOR_DELIVERY',@owner,N'Đã xuất kho, bàn giao người giao hàng',DATEADD(MINUTE,90,@placed));
-  IF @status IN('COMPLETED','CANCELLED')
-   INSERT dbo.order_status_history(shop_order_id,status,changed_by,note,created_at) VALUES(@so,@status,CASE WHEN @status='CANCELLED' THEN @customer ELSE @owner END,CASE WHEN @status='CANCELLED' THEN N'Khách hủy, trả toàn bộ hàng đã giữ' ELSE N'Giao hàng thành công' END,DATEADD(HOUR,CASE WHEN @status='CANCELLED' THEN 2 ELSE 3 END,@placed));
-UPDATE dbo.shop_orders SET status=@status,confirmed_at=CASE WHEN @status<>'PENDING' THEN DATEADD(MINUTE,15,@placed) END,
-                           ready_at=CASE WHEN @status IN('READY_FOR_DELIVERY','OUT_FOR_DELIVERY','COMPLETED') THEN DATEADD(MINUTE,60,@placed) END,
-                           completed_at=CASE WHEN @status='COMPLETED' THEN DATEADD(HOUR,3,@placed) END,cancelled_at=CASE WHEN @status='CANCELLED' THEN DATEADD(HOUR,2,@placed) END WHERE shop_order_id=@so;
+  IF @status='COMPLETED'
+   INSERT dbo.order_status_history(shop_order_id,status,changed_by,note,created_at) VALUES(@so,'COMPLETED',@owner,N'Giao hàng thành công',DATEADD(HOUR,3,@placed));
+  IF @status='CANCELLED'
+   INSERT dbo.order_status_history(shop_order_id,status,changed_by,note,created_at)
+   SELECT @so,'CANCELLED',CASE WHEN seller_cancel_reason IS NULL THEN @customer ELSE @owner END,
+    COALESCE(seller_cancel_reason,N'Khách hủy, trả toàn bộ hàng đã giữ'),cancelled_at FROM @orderPlan WHERE n=@n;
+UPDATE s SET status=@status,confirmed_at=o.confirmed_at,
+             ready_at=CASE WHEN @status IN('READY_FOR_DELIVERY','OUT_FOR_DELIVERY','COMPLETED') THEN DATEADD(MINUTE,60,@placed) END,
+             completed_at=CASE WHEN @status='COMPLETED' THEN DATEADD(HOUR,3,@placed) END,cancelled_at=o.cancelled_at
+FROM dbo.shop_orders s JOIN @orderPlan o ON o.shop_order_id=s.shop_order_id WHERE o.n=@n;
 INSERT dbo.payments(order_id,payment_method_id,amount,status,provider,transaction_reference,created_at,paid_at)
 SELECT @order,payment_method_id,@total,CASE WHEN @refunded=1 THEN 'REFUNDED' WHEN @paid=1 THEN 'PAID' WHEN @status='CANCELLED' THEN 'CANCELLED' ELSE 'PENDING' END,CASE WHEN @method='COD' THEN N'COD' ELSE N'BANK_TRANSFER' END,N'PAY-'+CONVERT(NVARCHAR(20),@order),@placed,
        CASE WHEN @paid=1 OR @refunded=1 THEN DATEADD(MINUTE,CASE WHEN @method='COD' THEN 180 ELSE 5 END,@placed) END FROM dbo.payment_methods WHERE method_code=@method;
@@ -1107,12 +1165,18 @@ END;
  INSERT dbo.stock_allocations(order_item_id,batch_id,quantity,status)
 SELECT l.id,b.id,a.quantity,a.status FROM @allocationPlan a JOIN @linePlan l ON l.n=a.line_n JOIN @batchPlan b ON b.n=a.batch_n;
 INSERT dbo.inventory_transactions(variant_id,batch_id,transaction_type,quantity,reference_type,reference_id,note,created_by,created_at)
-SELECT v.id,b.id,'RESERVE',a.quantity,'ORDER_ITEM',l.id,N'Giữ hàng cho đơn '+o.order_code,u.id,DATEADD(MINUTE,10,op.placed)
-FROM @allocationPlan a JOIN @linePlan l ON l.n=a.line_n JOIN @orderPlan op ON op.n=l.order_n JOIN dbo.orders o ON o.order_id=op.id JOIN @batchPlan b ON b.n=a.batch_n JOIN @variantPlan v ON v.n=l.variant_n JOIN @shopPlan s ON s.n=op.shop_n JOIN @userPlan u ON u.n=s.owner_n;
+SELECT v.id,b.id,'RESERVE',a.quantity,'ORDER_ITEM',l.id,
+       CASE WHEN a.batch_n=193 THEN N'Giữ từ lô thay thế cho đơn ' ELSE N'Giữ hàng cho đơn ' END+o.order_code,
+       CASE WHEN a.batch_n=193 THEN u.id ELSE c.id END,a.reserved_at
+FROM @allocationPlan a JOIN @linePlan l ON l.n=a.line_n JOIN @orderPlan op ON op.n=l.order_n JOIN dbo.orders o ON o.order_id=op.id JOIN @batchPlan b ON b.n=a.batch_n JOIN @variantPlan v ON v.n=l.variant_n JOIN @shopPlan s ON s.n=op.shop_n JOIN @userPlan u ON u.n=s.owner_n JOIN @userPlan c ON c.n=op.customer_n;
 INSERT dbo.inventory_transactions(variant_id,batch_id,transaction_type,quantity,reference_type,reference_id,note,created_by,created_at)
 SELECT v.id,b.id,CASE a.status WHEN 'SOLD' THEN 'SALE' ELSE 'RELEASE' END,-a.quantity,'ORDER_ITEM',l.id,
-       CASE a.status WHEN 'SOLD' THEN N'Xuất bán cho đơn ' ELSE N'Hủy đơn, trả giữ cho ' END+o.order_code,u.id,DATEADD(MINUTE,CASE WHEN a.status='SOLD' THEN 90 ELSE 120 END,op.placed)
-FROM @allocationPlan a JOIN @linePlan l ON l.n=a.line_n JOIN @orderPlan op ON op.n=l.order_n JOIN dbo.orders o ON o.order_id=op.id JOIN @batchPlan b ON b.n=a.batch_n JOIN @variantPlan v ON v.n=l.variant_n JOIN @shopPlan s ON s.n=op.shop_n JOIN @userPlan u ON u.n=s.owner_n WHERE a.status IN('SOLD','RELEASED');
+       CASE WHEN a.status='SOLD' THEN N'Xuất bán cho đơn '
+            WHEN op.n=36 THEN N'Giải phóng lô hết hạn để đổi lô cho đơn '
+            WHEN op.seller_cancel_reason IS NOT NULL THEN N'Cửa hàng hủy đơn, giải phóng hàng giữ cho '
+            ELSE N'Khách hủy đơn, giải phóng hàng giữ cho ' END+o.order_code,
+       CASE WHEN a.status='RELEASED' AND op.cancelled_at IS NOT NULL AND op.seller_cancel_reason IS NULL THEN c.id ELSE u.id END,a.resolved_at
+FROM @allocationPlan a JOIN @linePlan l ON l.n=a.line_n JOIN @orderPlan op ON op.n=l.order_n JOIN dbo.orders o ON o.order_id=op.id JOIN @batchPlan b ON b.n=a.batch_n JOIN @variantPlan v ON v.n=l.variant_n JOIN @shopPlan s ON s.n=op.shop_n JOIN @userPlan u ON u.n=s.owner_n JOIN @userPlan c ON c.n=op.customer_n WHERE a.status IN('SOLD','RELEASED');
 INSERT dbo.inventory_transactions(variant_id,batch_id,transaction_type,quantity,reference_type,reference_id,note,created_by,created_at)
 SELECT v.id,b.id,'EXPIRED',-b.dispose_qty,'BATCH',b.id,N'Hủy một phần lô hết hạn, còn phần đang chờ xử lý',u.id,DATEADD(HOUR,-1,@now)
 FROM @batchPlan b JOIN @variantPlan v ON v.n=b.variant_n JOIN @productPlan p ON p.n=v.product_n JOIN @shopPlan s ON s.n=p.shop_n JOIN @userPlan u ON u.n=s.owner_n WHERE b.dispose_qty>0;
@@ -1124,7 +1188,8 @@ SELECT created_by,CASE transaction_type WHEN 'EXPIRED' THEN 'DISPOSE' ELSE trans
 UPDATE p SET status=m.status,
              seller_hidden=CASE WHEN m.scenario='hidden' THEN 1 ELSE 0 END,moderation_blocked=CASE WHEN m.scenario='violation' THEN 1 ELSE 0 END,
              moderation_reason=CASE WHEN m.scenario='violation' THEN N'Chưa bổ sung chứng từ nguồn gốc sau hậu kiểm, ngừng nhận đơn mới.' END,
-             approval_status=m.approval,updated_at=@now
+             approval_status=m.approval,approved_at=CASE WHEN m.scenario<>'pending' THEN p.approved_at END,
+             approved_by=CASE WHEN m.scenario<>'pending' THEN p.approved_by END,updated_at=@now
     FROM dbo.products p JOIN @productPlan m ON m.id=p.product_id;
 UPDATE v SET status=m.status,updated_at=@now
     FROM dbo.product_variants v JOIN @variantPlan m ON m.id=v.variant_id JOIN @productPlan p ON p.n=m.product_n;
@@ -1136,7 +1201,7 @@ FROM @productPlan p JOIN @shopPlan s ON s.n=p.shop_n JOIN @userPlan u ON u.n=s.o
 INSERT dbo.audit_events(actor_id,action,entity_type,entity_id,reason,created_at)
 SELECT u.id,'BLOCK','BATCH',b.id,N'Khóa lô để chờ kiểm tra chất lượng',@now FROM @batchPlan b JOIN @variantPlan v ON v.n=b.variant_n JOIN @productPlan p ON p.n=v.product_n JOIN @shopPlan s ON s.n=p.shop_n JOIN @userPlan u ON u.n=s.owner_n WHERE b.status='BLOCKED';
 INSERT dbo.batch_markdowns(batch_id,price,start_date,end_date,status,note,created_by,created_at)
-SELECT b.id,v.price-p.markdown,DATEADD(DAY,-3,@today),DATEADD(DAY,b.expiry_days,@today),'ACTIVE',N'Ưu đãi đợt hàng dùng sớm, áp dụng riêng lô này',u.id,DATEADD(DAY,-3,@now)
+SELECT b.id,v.price-p.markdown,DATEADD(DAY,b.expiry_days-3,@today),DATEADD(DAY,b.expiry_days,@today),'ACTIVE',N'Ưu đãi đợt hàng dùng sớm, áp dụng riêng lô này',u.id,DATEADD(DAY,b.expiry_days-3,@businessDayStart)
 FROM @batchPlan b JOIN @variantPlan v ON v.n=b.variant_n JOIN @productPlan p ON p.n=v.product_n JOIN @shopPlan s ON s.n=p.shop_n JOIN @userPlan u ON u.n=s.owner_n WHERE p.markdown>0 AND b.lot=2;
 INSERT dbo.audit_events(actor_id,action,entity_type,entity_id,reason,created_at) SELECT created_by,'MARKDOWN','BATCH',batch_id,note,created_at FROM dbo.batch_markdowns;
 -- Supporting customer data is intentionally small. Newly approved shop has no business activity.
@@ -1202,6 +1267,31 @@ INSERT dbo.messages(conversation_id,sender_user_id,content,message_type,created_
 SELECT c.conversation_id,m.user_id,N'Cửa hàng đã nhận yêu cầu, sẽ kiểm tra độ chín khi đóng gói và liên hệ trước khi giao.','TEXT',DATEADD(MINUTE,8,c.created_at),CASE WHEN c.conversation_id%3<>0 THEN DATEADD(MINUTE,12,c.created_at) END FROM dbo.conversations c JOIN dbo.shop_members m ON m.shop_id=c.shop_id AND m.status='ACTIVE';
 
 IF (SELECT COUNT(*) FROM dbo.products)<>20 OR (SELECT COUNT(*) FROM dbo.orders)<>100 THROW 58010,N'Sai so luong demo.',1;
+ IF EXISTS(SELECT 1 FROM dbo.inventory_batches b
+  WHERE b.expiry_date<CONVERT(DATE,DATEADD(HOUR,7,b.received_at))
+     OR (b.expiry_date<@today AND b.reserved_quantity<>0))
+  THROW 58021,N'Lo demo sai han su dung hoac da het han van con giu hang.',1;
+ IF EXISTS(
+  SELECT 1 FROM @allocationPlan a
+  JOIN @linePlan l ON l.n=a.line_n JOIN @orderPlan o ON o.n=l.order_n
+  JOIN @batchPlan p ON p.n=a.batch_n JOIN dbo.inventory_batches b ON b.batch_id=p.id
+  WHERE a.reserved_at IS NULL OR a.reserved_at<o.placed OR a.reserved_at<b.received_at
+     OR b.expiry_date<CONVERT(DATE,DATEADD(HOUR,7,a.reserved_at))
+     OR (a.status<>'RESERVED' AND (a.resolved_at IS NULL OR a.resolved_at<a.reserved_at))
+     OR (a.status='RESERVED' AND (b.status<>'ACTIVE' OR b.expiry_date<@today))
+     OR (a.status='SOLD' AND b.expiry_date<CONVERT(DATE,DATEADD(HOUR,7,
+        CASE o.status WHEN 'COMPLETED' THEN DATEADD(HOUR,3,o.placed) ELSE @now END)))
+ ) THROW 58022,N'Phan bo demo sai thoi diem nhap, giu, xuat hoac han su dung.',1;
+ IF EXISTS(
+  SELECT 1 FROM dbo.order_items i JOIN dbo.shop_orders s ON s.shop_order_id=i.shop_order_id
+  OUTER APPLY(
+   SELECT SUM(CASE WHEN a.status='RESERVED' THEN a.quantity ELSE 0 END) held,
+          SUM(CASE WHEN a.status='SOLD' THEN a.quantity ELSE 0 END) sold
+   FROM dbo.stock_allocations a WHERE a.order_item_id=i.order_item_id
+  ) a
+  WHERE COALESCE(a.held,0)<>CASE WHEN s.status IN('PENDING','CONFIRMED','PREPARING') THEN i.quantity ELSE 0 END
+     OR COALESCE(a.sold,0)<>CASE WHEN s.status IN('READY_FOR_DELIVERY','OUT_FOR_DELIVERY','COMPLETED') THEN i.quantity ELSE 0 END
+ ) THROW 58023,N'So luong giu va xuat kho khong khop trang thai don.',1;
 IF EXISTS(SELECT 1 FROM @batchPlan p JOIN dbo.inventory_batches b ON b.batch_id=p.id WHERE b.quantity_on_hand<>p.physical_qty OR b.reserved_quantity<>p.reserved_qty) THROW 58011,N'Ton kho khong khop ke hoach.',1;
  IF EXISTS(SELECT 1 FROM dbo.inventory_batches b OUTER APPLY(SELECT SUM(quantity) qty FROM dbo.stock_allocations WHERE batch_id=b.batch_id AND status='RESERVED') a WHERE b.reserved_quantity<>COALESCE(a.qty,0)) THROW 58012,N'So giu khong khop don.',1;
  IF EXISTS(SELECT 1 FROM dbo.inventory_batches b OUTER APPLY(SELECT SUM(quantity) qty FROM dbo.inventory_transactions WHERE batch_id=b.batch_id AND transaction_type IN('RESTOCK','SALE','RETURN','ADJUSTMENT','EXPIRED','DAMAGED')) t WHERE b.quantity_on_hand<>COALESCE(t.qty,0)) THROW 58013,N'Ton thuc khong khop so kho.',1;
@@ -1218,6 +1308,22 @@ IF EXISTS(SELECT 1 FROM @batchPlan p JOIN dbo.inventory_batches b ON b.batch_id=
  IF EXISTS(SELECT 1 FROM dbo.shop_locations WHERE province NOT IN(N'Hà Nội',N'TP Hồ Chí Minh') OR NULLIF(LTRIM(RTRIM(formatted_address)),N'') IS NULL)
   OR EXISTS(SELECT 1 FROM dbo.addresses WHERE province NOT IN(N'Hà Nội',N'TP Hồ Chí Minh') OR NULLIF(LTRIM(RTRIM(formatted_address)),N'') IS NULL)
   THROW 58020,N'Dia chi mau phai day du va thuoc Ha Noi hoac TP Ho Chi Minh.',1;
+
+-- All checks above use the UTC demo timeline. Store the explicitly seeded times in UTC+07:00.
+-- shop_locations uses the local defaults from the schema.
+UPDATE dbo.categories SET created_at=DATEADD(HOUR,7,created_at),updated_at=DATEADD(HOUR,7,updated_at);
+UPDATE dbo.products SET created_at=DATEADD(HOUR,7,created_at),updated_at=DATEADD(HOUR,7,updated_at),
+                       approved_at=DATEADD(HOUR,7,approved_at);
+UPDATE dbo.product_variants SET created_at=DATEADD(HOUR,7,created_at),updated_at=DATEADD(HOUR,7,updated_at);
+UPDATE dbo.product_images SET created_at=DATEADD(HOUR,7,created_at);
+UPDATE dbo.price_history SET effective_from=DATEADD(HOUR,7,effective_from),effective_to=DATEADD(HOUR,7,effective_to);
+UPDATE dbo.inventory_batches SET received_at=DATEADD(HOUR,7,received_at),created_at=DATEADD(HOUR,7,created_at),
+                                updated_at=DATEADD(HOUR,7,updated_at);
+UPDATE dbo.inventory_transactions SET created_at=DATEADD(HOUR,7,created_at);
+UPDATE dbo.batch_markdowns SET created_at=DATEADD(HOUR,7,created_at);
+UPDATE dbo.audit_events SET created_at=DATEADD(HOUR,7,created_at);
+UPDATE dbo.shops SET created_at=DATEADD(HOUR,7,created_at),updated_at=DATEADD(HOUR,7,updated_at);
+UPDATE dbo.favorite_shops SET created_at=DATEADD(HOUR,7,created_at);
 COMMIT TRANSACTION;
 SELECT N'DEMO_CREATED' result,@today business_date,(SELECT COUNT(*) FROM dbo.users) users,(SELECT COUNT(*) FROM dbo.products) products,(SELECT COUNT(*) FROM dbo.product_variants) skus,(SELECT COUNT(*) FROM dbo.inventory_batches) batches,(SELECT COUNT(*) FROM dbo.orders) orders,(SELECT COUNT(*) FROM dbo.order_items) lines,(SELECT COUNT(*) FROM dbo.stock_allocations) allocations;
 END TRY

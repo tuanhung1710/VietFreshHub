@@ -13,7 +13,6 @@ import java.util.List;
 @AllArgsConstructor
 public class AllocationResponse {
     private Long allocationId;
-    private Long orderItemId;
     private String orderCode;
     private Integer quantity;
     private String unit;

@@ -26,8 +26,8 @@
                             </header>
                             <p class="vfn-content" th:text="${notification.content}"></p>
                             <div class="vfn-notification-meta">
-                                <p>Ngày nhận: <time th:text="${#temporals.format(notification.createdAt, 'dd/MM/yyyy HH:mm:ss')}"></time></p>
-                                <p th:unless="${notification.readAt == null}" th:text="|Đã đọc lúc ${#temporals.format(notification.readAt, 'dd/MM/yyyy HH:mm:ss')}|"></p>
+                                <p>Ngày nhận: <time th:text="${#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(notification.createdAt), 'dd/MM/yyyy HH:mm:ss')}"></time></p>
+                                <p th:unless="${notification.readAt == null}" th:text="|Đã đọc lúc ${#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(notification.readAt), 'dd/MM/yyyy HH:mm:ss')}|"></p>
                                 <p th:if="${notification.entityId != null}" th:switch="${notification.entityType}"><span th:case="'DELIVERY_ASSIGNMENT'" th:text="|Phân công giao hàng #${notification.entityId}|"></span><span th:case="'DELIVERY'" th:text="|Giao hàng #${notification.entityId}|"></span></p>
                             </div>
                             <div class="vfn-notification-actions">

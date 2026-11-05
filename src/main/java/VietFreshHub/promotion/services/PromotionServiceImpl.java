@@ -5,6 +5,7 @@ import VietFreshHub.promotion.dto.PromotionResponse;
 import VietFreshHub.promotion.entity.Promotion;
 import VietFreshHub.promotion.entity.PromotionStatus;
 import VietFreshHub.promotion.repository.PromotionRepository;
+import VietFreshHub.order.service.OrderLabels;
 
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 
@@ -22,8 +22,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class PromotionServiceImpl implements PromotionService {
-
-    private static final ZoneId INPUT_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     private final PromotionRepository promotionRepository;
     private final Validator validator;
@@ -181,8 +179,6 @@ public class PromotionServiceImpl implements PromotionService {
     }
 
     private LocalDateTime toUtc(LocalDateTime localTime) {
-        return localTime.atZone(INPUT_ZONE)
-                .withZoneSameInstant(ZoneOffset.UTC)
-                .toLocalDateTime();
+        return OrderLabels.utc(localTime);
     }
 }

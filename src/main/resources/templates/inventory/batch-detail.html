@@ -18,10 +18,11 @@
                 <a class="text-success text-decoration-none" th:href="@{${inventoryReturnUrl}}">
                     ← Quay lại
                 </a>
-                <button class="btn btn-success" type="button" onclick="window.print()">
+                <button class="btn btn-success" type="button" id="printBatchLabel">
                     In thông tin lô
                 </button>
             </div>
+            <div th:replace="~{fragments/product-inventory :: messages}"></div>
 
             <section class="card p-4 batch-summary mb-4">
                 <div class="vf-batch-summary-heading">
@@ -30,11 +31,11 @@
                         <h1 class="h4" th:text="${row.productName}"></h1>
                         <div class="d-flex flex-wrap align-items-center gap-1">
                             <h2 class="h5 mb-0" th:text="${'Lô hàng ' + row.batch.batchCode}"></h2>
-                            <button type="button" class="vf-copy-sku no-print"
-                                    th:attr="data-vf-copy-code=${row.batch.batchCode},aria-label=${'Sao chép mã lô '+row.batch.batchCode}">Sao chép</button>
+                            <button type="button" class="vf-copy-sku no-print" id="copyBatchCode" aria-live="polite"
+                                    th:attr="data-code=${row.batch.batchCode},aria-label=${'Sao chép mã lô '+row.batch.batchCode}">Sao chép</button>
                         </div>
                     </div>
-                    <a class="btn btn-outline-success vf-batch-edit-link no-print" th:if="${row.canEdit}" data-vf-inventory-link
+                    <a class="btn btn-outline-success vf-batch-edit-link no-print"
                        th:href="@{/seller/inventory/batches/{id}/edit(id=${row.batch.batchId},returnTo=${inventoryCurrentUrl})}">
                         <svg class="vf-icon" aria-hidden="true"><use href="#vf-edit"/></svg>
                         <span>Chỉnh sửa lô</span>
@@ -49,7 +50,7 @@
                     <dd class="col-7" th:text="${row.sku}">
                     </dd>
                     <dt class="col-5">Ngày nhập kho</dt>
-                    <dd class="col-7" th:text="${row.batch.receivedAt==null?'—':#temporals.format(row.batch.receivedAt.plusHours(7),'dd/MM/yyyy')}"></dd>
+                    <dd class="col-7" th:text="${row.batch.receivedAt==null?'—':#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(row.batch.receivedAt),'dd/MM/yyyy')}"></dd>
                     <dt class="col-5">
                         Hạn sử dụng
                     </dt>
@@ -78,7 +79,7 @@
                     <dd class="col-7" th:text="${row.available + ' ' + row.unit}">
                     </dd>
                     <dt class="col-5">Giá vốn mỗi đơn vị</dt>
-                    <dd class="col-7" th:text="${row.batch.costPrice==null?'Chưa khai báo':#numbers.formatDecimal(row.batch.costPrice,0,'POINT',0,'COMMA')+' đ'}"></dd>
+                    <dd class="col-7" th:text="${row.batch.costPrice==null?'Chưa khai báo':@vndAmounts.format(row.batch.costPrice)+' đ'}"></dd>
                     <dt class="col-5">
                         Trạng thái lô
                     </dt>
@@ -86,8 +87,8 @@
                         <span class="badge" th:classappend="${row.stateTone}" th:text="${row.stateLabel}"></span>
                     </dd>
                 </dl>
-                <div class="vf-batch-detail-actions no-print">
-                    <div th:replace="~{fragments/inventory-actions :: batchActions(${row}, ${row.canMarkdown}, true)}"></div>
+                <div class="no-print">
+                    <div th:replace="~{fragments/inventory-actions :: batchActions(${row})}"></div>
                 </div>
             </section>
 
@@ -119,41 +120,30 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <th:block th:each="allocation : ${row.allocationDetails}">
-                                <tr>
+                                <tr th:each="allocation : ${row.allocationDetails}">
                                     <td data-label="Mã đơn hàng"><span class="vf-allocation-order-code" th:text="${allocation.orderCode}"></span></td>
                                     <td data-label="Số lượng" class="vf-table-number"><span th:text="${allocation.quantity == null ? '—' : allocation.quantity}"></span></td>
                                     <td data-label="Đơn vị tính"><span th:text="${#strings.isEmpty(allocation.unit) ? '—' : allocation.unit}"></span></td>
                                     <td data-label="Trạng thái"><span class="badge" th:classappend="${allocation.statusTone}" th:text="${allocation.statusLabel}"></span></td>
                                     <td data-label="Cập nhật lần cuối" class="vf-allocation-updated-cell">
-                                        <span class="vf-allocation-updated" th:text="${allocation.updatedAt == null ? 'Chưa có dữ liệu' : #temporals.format(allocation.updatedAt.plusHours(7), 'dd/MM/yyyy · HH:mm')}"></span>
+                                        <span class="vf-allocation-updated" th:text="${allocation.updatedAt == null ? 'Chưa có dữ liệu' : #temporals.format(T(VietFreshHub.order.service.OrderLabels).local(allocation.updatedAt), 'dd/MM/yyyy · HH:mm')}"></span>
                                     </td>
                                     <td data-label="Thao tác" class="vf-table-actions">
-                                        <button type="button" class="vf-allocation-toggle vf-collapse-toggle collapsed" data-vf-allocation-toggle aria-expanded="false"
-                                                th:attr="aria-controls=${'allocation-history-'+allocation.allocationId},aria-label=${'Xem chi tiết '+allocation.orderCode},data-vf-order-code=${allocation.orderCode}">
-                                            <span data-vf-allocation-toggle-label>Xem chi tiết</span>
-                                            <svg class="vf-icon" aria-hidden="true"><use href="#vf-chevron"/></svg>
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr class="vf-collapse-row vf-allocation-history-row" data-vf-allocation-history th:id="${'allocation-history-'+allocation.allocationId}" hidden>
-                                    <td colspan="6">
-                                        <section class="vf-allocation-history" th:attr="aria-label=${'Lịch sử xử lý đơn hàng '+allocation.orderCode}">
-                                            <h3 class="h6 mb-3">Lịch sử xử lý đơn hàng</h3>
+                                        <details th:id="${'allocation-history-'+allocation.allocationId}">
+                                            <summary>Lịch sử xử lý đơn hàng</summary>
                                             <p class="text-body-secondary mb-0" th:if="${allocation.history.empty}">Chưa có lịch sử xử lý đơn hàng.</p>
                                             <ol class="vf-allocation-timeline" th:if="${!allocation.history.empty}">
                                                 <li th:each="event : ${allocation.history}">
-                                                    <span class="vf-allocation-event-time" th:text="${event.occurredAt == null ? 'Chưa rõ thời gian' : #temporals.format(event.occurredAt.plusHours(7), 'dd/MM/yyyy · HH:mm')}"></span>
+                                                    <span class="vf-allocation-event-time" th:text="${event.occurredAt == null ? 'Chưa rõ thời gian' : #temporals.format(T(VietFreshHub.order.service.OrderLabels).local(event.occurredAt), 'dd/MM/yyyy · HH:mm')}"></span>
                                                     <div>
                                                         <strong th:text="${event.description}"></strong>
                                                         <p class="vf-allocation-event-note" th:if="${event.note != null}" th:text="${event.note}"></p>
                                                     </div>
                                                 </li>
                                             </ol>
-                                        </section>
+                                        </details>
                                     </td>
                                 </tr>
-                            </th:block>
                         </tbody>
                     </table>
                 </div>
@@ -164,8 +154,7 @@
 
 
         </div>
-        <div th:replace="~{fragments/inventory-actions :: actionModal}"></div>
-        <script defer th:src="@{/js/inventory/inventory.js}"></script>
+        <script defer th:src="@{/js/inventory/batch-label.js}"></script>
     <div class="vfr-product-footer"><footer th:replace="~{fragments/seller-orders :: footer}"></footer></div>
 </body>
 </html>

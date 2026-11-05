@@ -39,15 +39,13 @@
                 <div th:replace="~{fragments/product-inventory :: errors}">
                 </div>
                 <div class="row g-3 batch-dates" th:if="${action=='edit'}">
-                    <input type="hidden" name="quantity" value="1">
                     <label class="col-12 form-label" for="costPrice">
                         Giá vốn mỗi đơn vị (₫)
                         <input
                             class="form-control mt-1"
                             id="costPrice"
-                            type="number"
-                            min="0"
-                            step="0.01"
+                            type="text"
+                            inputmode="decimal"
                             data-vf-money
                             th:field="*{costPrice}"
                         >
@@ -76,27 +74,37 @@
                             id="expiryDate"
                             type="date"
                             th:field="*{expiryDate}"
+                            th:readonly="${row.expired}"
+                            th:min="${row.expired ? null : today}"
                             required
                         >
                     </label>
-                    <p class="col-12 small text-body-secondary mb-0">
-                        Chỉnh sửa thông tin lô không làm thay đổi số lượng tồn kho. Không thể đổi hạn sử dụng của lô đã hết hạn.
+                    <p class="col-12 small text-body-secondary mb-0" th:if="${row.expired}">
+                        Lô đã hết hạn. Hạn sử dụng được khóa.
+                    </p>
+                    <p class="col-12 small text-warning-emphasis mb-0" th:if="${!row.expired && row.batch.reservedQuantity > 0}"
+                       th:text="${'Lô đang giữ '+row.batch.reservedQuantity+' '+row.unit+' cho đơn. Kiểm tra các đơn liên quan trước khi đổi hạn sử dụng.'}">
                     </p>
                 </div>
-                <label class="form-label" th:if="${action=='adjust'}" for="quantity">
-                    Số lượng điều chỉnh (+ tăng / − giảm)
+                <input type="hidden" th:if="${action=='adjust'}" name="expectedQuantity" th:value="${row.batch.quantityOnHand}">
+                <label class="form-label" th:if="${action=='adjust'}" for="countedQuantity">
+                    Tồn thực tế sau kiểm đếm
                     <span class="text-danger">
                         *
                     </span>
                     <input
                         class="form-control mt-1"
-                        id="quantity"
+                        id="countedQuantity"
                         type="number"
+                        th:min="${row.batch.reservedQuantity}"
                         step="1"
-                        th:field="*{quantity}"
+                        th:field="*{countedQuantity}"
                         required
                     >
                 </label>
+                <p class="alert alert-info small mb-0" th:if="${action=='adjust' && previewQuantity != null}"
+                   th:text="${'Tồn thực tế: '+row.batch.quantityOnHand+' → '+previewQuantity+' · Chênh lệch: '+previewDelta+' · Khả dụng sau lưu: '+previewAvailable}">
+                </p>
                 <div th:if="${action=='dispose'}">
                     <p class="mb-2">Số lượng hủy tự động: <strong th:text="${row.disposableQuantity+' '+row.unit}"></strong></p>
                     <p class="small text-body-secondary mb-0" th:text="${'Lý do được ghi tự động: '+disposalReason}"></p>
@@ -113,9 +121,9 @@
                         <input
                             class="form-control mt-1"
                             id="price"
-                            type="number"
-                            min="1"
-                            step="1"
+                            type="text"
+                            inputmode="numeric"
+                            data-vf-money
                             th:field="*{price}"
                             required
                         >
@@ -153,6 +161,8 @@
                     >
                 </label>
                 <div class="d-flex flex-wrap gap-2 mt-3 vf-inventory-form-actions">
+                    <button type="submit" class="btn btn-outline-success" name="preview" value="true"
+                            th:if="${action=='adjust'}">Xem trước</button>
                     <button type="submit" class="btn" th:classappend="${action=='dispose'?'btn-danger':'btn-success'}"
                             th:disabled="${action=='dispose'&&!row.canDispose}"
                             th:text="${action=='edit'?'Lưu thay đổi':action=='adjust'?'Xác nhận điều chỉnh':action=='dispose'?'Hủy hàng hết hạn':'Lưu giá giảm'}"></button>
@@ -167,7 +177,6 @@
 
         </div>
 
-        <script defer th:src="@{/js/inventory/inventory.js}"></script>
     <div class="vfr-product-footer"><footer th:replace="~{fragments/seller-orders :: footer}"></footer></div>
 </body>
 </html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+    <head th:replace="~{fragments/customer-shop :: head(${catalogTitle})}">
+    </head>
+    <body class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
+        <header th:replace="~{fragments/customer-shop :: header}">
+        </header>
+        <main class="container vfr-page" id="catalog">
+            <div class="bread">
+                <a th:href="@{/home}">
+                    Trang chủ
+                </a>
+                /
+                <span th:text="${catalogTitle}">
+                </span>
+            </div>
+            <h1 id="catTitle" th:text="${catalogTitle}">
+            </h1>
+            <p class="muted item-title">
+                Danh sách trái cây từ nhiều nhà bán hàng
+            </p>
+            <div th:replace="~{fragments/customer-shop :: messages}">
+            </div>
+            <div class="twocol">
+                <!-- Form bộ lọc gửi GET, giữ từ khóa và số sản phẩm mỗi trang. -->
+                <details class="filter-disclosure" open>
+                    <summary>
+                        Bộ lọc tìm kiếm
+                    </summary>
+                    <aside class="sidebar" id="sidebar">
+                        <form id="catalogFilters" th:action="@{/products}" method="get">
+                            <input type="hidden" name="q" th:value="${q}">
+                            <input type="hidden" name="category" th:value="${category}">
+                            <input type="hidden" name="size" th:value="${rows.size}">
+                            <div class="filtergroup">
+                                <h3>
+                                    Theo danh mục
+                                </h3>
+                                <div id="filterCategories">
+                                    <a class="filtercategory" th:classappend="${category == null ? 'active' : ''}"
+                                       th:href="@{/products(q=${q},shopIds=${filters.shopIds},places=${filters.places},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},minRating=${filters.minRating},sort=${filters.sort},size=${rows.size})}">
+                                        Tất cả danh mục
+                                    </a>
+                                    <a class="filtercategory" th:each="c : ${categories}"
+                                       th:classappend="${c.categoryId == category ? 'active' : ''}"
+                                       th:href="@{/products(q=${q},category=${c.categoryId},shopIds=${filters.shopIds},places=${filters.places},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},minRating=${filters.minRating},sort=${filters.sort},size=${rows.size})}"
+                                       th:text="${c.name}">
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="filtergroup">
+                                <h3>
+                                    Nơi gửi hàng
+                                </h3>
+                                <div id="locations">
+                                    <label th:each="place : ${shippingPlaces}">
+                                        <input type="checkbox" name="places" th:value="${place}"
+                                               th:checked="${#lists.contains(filters.places,place)}">
+                                        <span th:text="${place}">
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="filtergroup">
+                                <h3>
+                                    Nhà bán hàng
+                                </h3>
+                                <div id="filterShops">
+                                    <label th:each="shop : ${shops}">
+                                        <input type="checkbox" name="shopIds" th:value="${shop.id}"
+                                               th:checked="${#lists.contains(filters.shopIds,shop.id)}">
+                                        <span th:text="${shop.name}">
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="filtergroup">
+                                <h3>
+                                    Khoảng giá (VNĐ)
+                                </h3>
+                                <div class="tinyinput">
+                                    <input type="number" name="minPrice" th:value="${filters.minPrice}"
+                                           placeholder="TỪ" min="0" aria-label="Giá tối thiểu">
+                                    <input type="number" name="maxPrice" th:value="${filters.maxPrice}"
+                                           placeholder="ĐẾN" min="0" aria-label="Giá tối đa">
+                                </div>
+                            </div>
+                            <div class="filtergroup">
+                                <h3>
+                                    Đánh giá
+                                </h3>
+                                <div id="ratings">
+                                    <label>
+                                        <input type="radio" name="minRating" value="0" th:checked="${filters.minRating == 0}">
+                                        Tất cả đánh giá
+                                    </label>
+                                    <label th:each="stars : ${#numbers.sequence(5,1,-1)}">
+                                        <input type="radio" name="minRating" th:value="${stars}" th:checked="${filters.minRating == stars}">
+                                        <span th:text="${#strings.repeat('★',stars) + #strings.repeat('☆',5-stars) + ' (' + stars + ' sao trở lên)'}">
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+                            <button class="filter-apply" type="submit">
+                                Áp dụng bộ lọc
+                            </button>
+                            <a class="button filter-reset" th:href="@{/products}">
+                                Xóa tất cả bộ lọc
+                            </a>
+                        </form>
+                    </aside>
+                </details>
+                <div>
+                    <!-- Sắp xếp giữ các điều kiện lọc hiện tại. -->
+                    <div class="toolbar">
+                        <div class="sort-actions" aria-label="Sắp xếp sản phẩm">
+                            <span>
+                                Sắp xếp theo:
+                            </span>
+                            <a class="button" th:classappend="${filters.sort == 'popular' ? 'active' : ''}" th:href="@{/products(q=${q},category=${category},shopIds=${filters.shopIds},places=${filters.places},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},minRating=${filters.minRating},sort='popular',size=${rows.size})}">
+                                Phổ biến
+                            </a>
+                            <a class="button" th:classappend="${filters.sort == 'latest' ? 'active' : ''}" th:href="@{/products(q=${q},category=${category},shopIds=${filters.shopIds},places=${filters.places},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},minRating=${filters.minRating},sort='latest',size=${rows.size})}">
+                                Mới nhất
+                            </a>
+                            <a class="button" th:classappend="${filters.sort == 'sales' ? 'active' : ''}" th:href="@{/products(q=${q},category=${category},shopIds=${filters.shopIds},places=${filters.places},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},minRating=${filters.minRating},sort='sales',size=${rows.size})}">
+                                Bán chạy
+                            </a>
+                            <select name="sort" form="catalogFilters" aria-label="Sắp xếp theo giá">
+                                <option value="popular" th:selected="${filters.sort == 'popular'}">
+                                    Giá
+                                </option>
+                                <option value="latest" th:if="${filters.sort == 'latest'}" selected>
+                                    Mới nhất
+                                </option>
+                                <option value="sales" th:if="${filters.sort == 'sales'}" selected>
+                                    Bán chạy
+                                </option>
+                                <option value="rating" th:if="${filters.sort == 'rating'}" selected>
+                                    Đánh giá
+                                </option>
+                                <option value="asc" th:selected="${filters.sort == 'asc'}">
+                                    Giá: Thấp đến cao
+                                </option>
+                                <option value="desc" th:selected="${filters.sort == 'desc'}">
+                                    Giá: Cao đến thấp
+                                </option>
+                            </select>
+                            <button type="submit" form="catalogFilters">
+                                Áp dụng
+                            </button>
+                        </div>
+                        <span class="countline">
+                            Tìm thấy
+                            <strong th:text="${rows.totalElements}">
+                            </strong>
+                            sản phẩm
+                        </span>
+                    </div>
+                    <div class="chips">
+                        <span class="chip" th:if="${!#strings.isEmpty(q)}" th:text="${'Tìm: ' + q}">
+                        </span>
+                        <span class="chip" th:if="${category != null}" th:text="${catalogTitle}">
+                        </span>
+                        <span class="chip" th:each="place : ${filters.places}" th:text="${place}">
+                        </span>
+                        <th:block th:each="shop : ${shops}">
+                            <span class="chip" th:if="${#lists.contains(filters.shopIds,shop.id)}" th:text="${shop.name}">
+                            </span>
+                        </th:block>
+                        <span class="chip" th:if="${filters.minRating > 0}" th:text="${'Từ ' + filters.minRating + ' sao'}">
+                        </span>
+                        <span class="chip" th:if="${filters.minPrice != null or filters.maxPrice != null}">
+                            Đã lọc giá
+                        </span>
+                    </div>
+                    <!-- Danh sách kết quả. -->
+                    <div class="products" id="results">
+                        <th:block th:each="product : ${rows.content}">
+                            <a th:replace="~{fragments/storefront-catalog :: productCard(${product})}">
+                            </a>
+                        </th:block>
+                        <p class="empty-products" th:if="${rows.empty}">
+                            Không tìm thấy sản phẩm phù hợp.
+                        </p>
+                    </div>
+                    <nav class="customer-pagination-panel" id="pagination" aria-label="Phân trang sản phẩm">
+                        <div th:replace="~{fragments/storefront-catalog :: pagination(${rows},@{/products(q=${q},category=${category},shopIds=${filters.shopIds},places=${filters.places},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},minRating=${filters.minRating},sort=${filters.sort},page=${rows.number},size=${rows.size})},@{/products(q=${q},category=${category},shopIds=${filters.shopIds},places=${filters.places},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},minRating=${filters.minRating},sort=${filters.sort},page=${rows.number + 2},size=${rows.size})})}">
+                        </div>
+                        <form class="customer-page-size" th:action="@{/products}" method="get">
+                            <th:block th:replace="~{fragments/storefront-catalog :: filters}">
+                            </th:block>
+                            <th:block th:replace="~{fragments/storefront-catalog :: pageSize(${rows},'productPageSize')}">
+                            </th:block>
+                        </form>
+                    </nav>
+                </div>
+            </div>
+        </main>
+        <footer th:replace="~{fragments/footer :: footer}"></footer>
+    </body>
+</html>

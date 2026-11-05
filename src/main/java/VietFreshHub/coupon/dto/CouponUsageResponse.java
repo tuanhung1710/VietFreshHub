@@ -12,6 +12,7 @@ public record CouponUsageResponse(
         Long orderId,
         String orderCode,
         BigDecimal discountAmount,
-        LocalDateTime usedAt
+        LocalDateTime usedAt,
+        boolean orderCancelled
 ) {
 }

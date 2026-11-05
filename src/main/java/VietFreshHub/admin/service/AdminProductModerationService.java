@@ -231,10 +231,8 @@ public class AdminProductModerationService {
             case "LAST_30_DAYS" -> 30;
             default -> throw new IllegalArgumentException("Khoảng ngày lọc không hợp lệ.");
         };
-        LocalDateTime fromUtc = today.minusDays(inclusiveDays - 1L).atStartOfDay(BUSINESS_TIME_ZONE)
-                .withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
-        LocalDateTime untilUtc = LocalDateTime.now(ZoneOffset.UTC);
-        return new DateWindow(fromUtc, untilUtc);
+        return new DateWindow(today.minusDays(inclusiveDays - 1L).atStartOfDay(),
+                LocalDateTime.now(BUSINESS_TIME_ZONE));
     }
 
     private record DateWindow(LocalDateTime from, LocalDateTime until) {}

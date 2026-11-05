@@ -3,6 +3,7 @@ package VietFreshHub.inventory.service;
 import VietFreshHub.auth.entity.User;
 import VietFreshHub.auth.repository.UserRepository;
 import VietFreshHub.common.BusinessCodes;
+import VietFreshHub.common.Pagination;
 import VietFreshHub.inventory.dto.ActivityHistoryFilter;
 import VietFreshHub.inventory.dto.AuditResponse;
 import VietFreshHub.inventory.entity.AuditEvent;
@@ -14,17 +15,19 @@ import VietFreshHub.product.entity.Product;
 import VietFreshHub.product.entity.ProductVariant;
 import VietFreshHub.product.repository.ProductRepository;
 import VietFreshHub.product.repository.ProductVariantRepository;
-import VietFreshHub.product.util.CatalogPagination;
 import VietFreshHub.shop.entity.ShopMember;
 import VietFreshHub.shop.repository.ShopMemberRepository;
 import VietFreshHub.shop.service.ShopService;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,7 +48,8 @@ public class InventoryActivityHistoryService {
     private final ShopMemberRepository shopMemberRepository;
     private final ShopService shopService;
 
-    public Page<AuditResponse> search(Authentication authentication, ActivityHistoryFilter filters, int page, int size) {
+    public Page<AuditResponse> search(
+            Authentication authentication, ActivityHistoryFilter filters, int page, int size) {
         Long shopId = shopService.getManagedShopId(authentication);
         filters.normalize();
         HistoryQuery query = prepareQuery(shopId, filters);
@@ -57,14 +61,31 @@ public class InventoryActivityHistoryService {
     private HistoryQuery prepareQuery(Long shopId, ActivityHistoryFilter filters) {
         String text = filters.getQ();
         // LIKE phải tìm các ký tự !, %, _ như văn bản do người dùng nhập.
-        String pattern = "%" + text.toLowerCase(Locale.ROOT)
-                .replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
-        LocalDateTime from = filters.getFrom() == null
-                ? LocalDateTime.of(1900, 1, 1, 0, 0) : InventoryRules.startOfDayUtc(filters.getFrom());
-        LocalDateTime until = filters.getTo() == null
-                ? LocalDateTime.of(9998, 1, 1, 0, 0) : InventoryRules.startOfDayUtc(filters.getTo().plusDays(1));
-        return new HistoryQuery(shopId, filters.getAction(), filters.getEntity(), text.isEmpty(), pattern,
-                BusinessCodes.parse("PRD", text), BusinessCodes.parse("LOT", text), from, until);
+        String pattern =
+                "%"
+                        + text.toLowerCase(Locale.ROOT)
+                                .replace("!", "!!")
+                                .replace("%", "!%")
+                                .replace("_", "!_")
+                        + "%";
+        LocalDateTime from =
+                filters.getFrom() == null
+                        ? LocalDateTime.of(1900, 1, 1, 0, 0)
+                        : InventoryRules.startOfDayUtc(filters.getFrom());
+        LocalDateTime until =
+                filters.getTo() == null
+                        ? LocalDateTime.of(9998, 1, 1, 0, 0)
+                        : InventoryRules.startOfDayUtc(filters.getTo().plusDays(1));
+        return new HistoryQuery(
+                shopId,
+                filters.getAction(),
+                filters.getEntity(),
+                text.isEmpty(),
+                pattern,
+                BusinessCodes.parse("PRD", text),
+                BusinessCodes.parse("LOT", text),
+                from,
+                until);
     }
 
     private Page<AuditEvent> findEvents(HistoryQuery query, PageRequest pageRequest) {
@@ -78,9 +99,17 @@ public class InventoryActivityHistoryService {
     }
 
     private Page<AuditEvent> searchPage(HistoryQuery query, PageRequest pageRequest) {
-        return auditEventRepository.searchHistory(query.shopId(), query.action(), query.entity(),
-                query.emptyText(), query.pattern(), query.productCode(), query.batchCode(),
-                query.from(), query.until(), pageRequest);
+        return auditEventRepository.searchHistory(
+                query.shopId(),
+                query.action(),
+                query.entity(),
+                query.emptyText(),
+                query.pattern(),
+                query.productCode(),
+                query.batchCode(),
+                query.from(),
+                query.until(),
+                pageRequest);
     }
 
     private HistoryDetails loadDetails(Long shopId, Page<AuditEvent> events) {
@@ -163,7 +192,8 @@ public class InventoryActivityHistoryService {
         Set<Long> actorsWithoutNames = new HashSet<>(actorIds);
         actorsWithoutNames.removeAll(labels.keySet());
         if (!actorsWithoutNames.isEmpty()) {
-            for (ShopMember member : shopMemberRepository.findByShopIdAndUserIdIn(shopId, actorsWithoutNames)) {
+            for (ShopMember member :
+                    shopMemberRepository.findByShopIdAndUserIdIn(shopId, actorsWithoutNames)) {
                 String roleLabel = shopRoleLabel(member.getMemberRole());
                 if (roleLabel != null) {
                     labels.putIfAbsent(member.getUserId(), roleLabel);
@@ -174,10 +204,15 @@ public class InventoryActivityHistoryService {
     }
 
     private AuditResponse toResponse(AuditEvent event, HistoryDetails details) {
-        String actorLabel = event.getActorId() == null
-                ? null : details.actorLabels().getOrDefault(event.getActorId(), "Người dùng");
-        return new AuditResponse(event, auditActionLabel(event),
-                auditEntityLabel(event, details.products(), details.variants(), details.batches()), actorLabel);
+        String actorLabel =
+                event.getActorId() == null
+                        ? null
+                        : details.actorLabels().getOrDefault(event.getActorId(), "Người dùng");
+        return new AuditResponse(
+                event,
+                auditActionLabel(event),
+                auditEntityLabel(event, details.products(), details.variants(), details.batches()),
+                actorLabel);
     }
 
     /**
@@ -211,7 +246,10 @@ public class InventoryActivityHistoryService {
             // Vẫn giữ mã LOT để nhận biết sự kiện khi không còn tải được thông tin SKU liên quan.
             InventoryBatch batch = batches.get(event.getEntityId());
             ProductVariant variant = batch == null ? null : variants.get(batch.getVariantId());
-            String label = variant == null ? "Lô hàng" : auditProductName(products.get(variant.getProductId()));
+            String label =
+                    variant == null
+                            ? "Lô hàng"
+                            : auditProductName(products.get(variant.getProductId()));
             if (event.getEntityId() != null) {
                 label += " · Lô " + BusinessCodes.format("LOT", event.getEntityId());
             }
@@ -225,7 +263,9 @@ public class InventoryActivityHistoryService {
 
     /** Lấy tên sản phẩm đã bỏ khoảng trắng thừa hoặc dùng nhãn chung khi không có tên. */
     private String auditProductName(Product product) {
-        return product != null && hasText(product.getName()) ? product.getName().trim() : "Sản phẩm";
+        return product != null && hasText(product.getName())
+                ? product.getName().trim()
+                : "Sản phẩm";
     }
 
     /** Đổi vai trò chủ shop hoặc quản lý sang nhãn hiển thị khi chưa có tên người thao tác. */
@@ -252,37 +292,71 @@ public class InventoryActivityHistoryService {
         }
         // UPDATE và STATUS dùng chung mã cho sản phẩm/SKU nên cần xét thêm entityType khi đặt nhãn.
         switch (action) {
-            case "CREATE": return "Tạo sản phẩm";
-            case "UPDATE": return "VARIANT".equals(event.getEntityType()) ? "Chỉnh sửa phân loại" : "Chỉnh sửa sản phẩm";
-            case "PRICE": return "Thay đổi giá";
-            case "REMINDER": return "Thay đổi mốc nhắc hạn sử dụng";
-            case "STATUS": return "VARIANT".equals(event.getEntityType()) ? "Thay đổi trạng thái phân loại" : "Thay đổi trạng thái sản phẩm";
-            case "ADD_SKU": return "Thêm phân loại";
-            case "RESTOCK": return "Nhập kho";
-            case "EDIT": return "Chỉnh sửa lô";
-            case "ADJUSTMENT": return "Điều chỉnh tồn kho";
-            case "DISPOSE": return "Ghi nhận hủy hàng hết hạn";
-            case "BLOCK": return "Khóa lô";
-            case "UNBLOCK": return "Mở khóa lô";
-            case "MARKDOWN": return "Thiết lập giảm giá lô";
-            case "CANCEL_MARKDOWN": return "Dừng giảm giá lô";
-            case "RESERVE": return "Giữ hàng cho đơn";
-            case "RELEASE": return "Giải phóng hàng giữ";
-            case "SALE": return "Xuất bán";
-            default: return "Hoạt động khác";
+            case "CREATE":
+                return "Tạo sản phẩm";
+            case "UPDATE":
+                return "VARIANT".equals(event.getEntityType())
+                        ? "Chỉnh sửa phân loại"
+                        : "Chỉnh sửa sản phẩm";
+            case "PRICE":
+                return "Thay đổi giá";
+            case "REMINDER":
+                return "Thay đổi mốc nhắc hạn sử dụng";
+            case "STATUS":
+                return "VARIANT".equals(event.getEntityType())
+                        ? "Thay đổi trạng thái phân loại"
+                        : "Thay đổi trạng thái sản phẩm";
+            case "ADD_SKU":
+                return "Thêm phân loại";
+            case "RESTOCK":
+                return "Nhập kho";
+            case "EDIT":
+                return "Chỉnh sửa lô";
+            case "ADJUSTMENT":
+                return "Điều chỉnh tồn kho";
+            case "DISPOSE":
+                return "Ghi nhận hủy hàng hết hạn";
+            case "BLOCK":
+                return "Khóa lô";
+            case "UNBLOCK":
+                return "Mở khóa lô";
+            case "MARKDOWN":
+                return "Thiết lập giảm giá lô";
+            case "CANCEL_MARKDOWN":
+                return "Dừng giảm giá lô";
+            case "RESERVE":
+                return "Giữ hàng cho đơn";
+            case "RELEASE":
+                return "Giải phóng hàng giữ";
+            case "SALE":
+                return "Xuất bán";
+            default:
+                return "Hoạt động khác";
         }
     }
 
     private PageRequest pageRequest(int page, int size, String idProperty) {
-        return CatalogPagination.request(page, size)
+        return Pagination.request(page, size)
                 .withSort(Sort.by(Sort.Direction.DESC, "createdAt", idProperty));
     }
 
-    private record HistoryQuery(Long shopId, String action, String entity, boolean emptyText,
-            String pattern, Long productCode, Long batchCode, LocalDateTime from, LocalDateTime until) {}
+    private record HistoryQuery(
+            Long shopId,
+            String action,
+            String entity,
+            boolean emptyText,
+            String pattern,
+            Long productCode,
+            Long batchCode,
+            LocalDateTime from,
+            LocalDateTime until) {}
 
-    private record RelatedIds(Set<Long> productIds, Set<Long> variantIds, Set<Long> batchIds, Set<Long> actorIds) {}
+    private record RelatedIds(
+            Set<Long> productIds, Set<Long> variantIds, Set<Long> batchIds, Set<Long> actorIds) {}
 
-    private record HistoryDetails(Map<Long, Product> products, Map<Long, ProductVariant> variants,
-            Map<Long, InventoryBatch> batches, Map<Long, String> actorLabels) {}
+    private record HistoryDetails(
+            Map<Long, Product> products,
+            Map<Long, ProductVariant> variants,
+            Map<Long, InventoryBatch> batches,
+            Map<Long, String> actorLabels) {}
 }

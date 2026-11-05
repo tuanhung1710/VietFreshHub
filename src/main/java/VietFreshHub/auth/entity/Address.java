@@ -4,12 +4,11 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Nationalized;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Getter
 @Setter
@@ -72,12 +71,20 @@ public class Address {
 
     @Column(name = "is_default", nullable = false)
     private Boolean isDefault = false;
-
-    @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @PrePersist
+    void setUtcTimestamps() {
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
+        if (createdAt == null) createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    void updateUtcTimestamp() {
+        updatedAt = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
+    }
 }

@@ -1,114 +1,365 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
-    
-  
-  <title th:text="${product.name} + ' | VietFresh Hub'">Chi tiết sản phẩm | VietFresh Hub</title>
-  <link rel="stylesheet" th:href="@{/css/product-detail.css}">
-  <link rel="stylesheet" th:href="@{/css/discount-pricing.css}">
-  
-  <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
-  <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
-  <script type="module" th:src="@{/js/storefront/product-detail.js}"></script>
-    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
-</head>
-<body th:with="mainUrl=${#strings.isEmpty(product.imageUrl) ? '/images/product/product-placeholder.svg' : product.imageUrl}"
-      th:attr="data-customer=${#authorization.expression('hasRole(''CUSTOMER'')')}" class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
-<header class="vfc-header"><div class="wrap">
-  <div class="headrow vfc-header-main"><a class="brand" th:href="@{/home}">VietFresh Hub</a><div class="vfo-topbar-actions vfc-header-actions"><th:block th:replace="~{fragments/customer-shop :: accountLinks}"></th:block></div></div>
-  <div class="vfc-header-tools">
-    <form class="searchbar" th:action="@{/shops/{id}(id=${shop.shopId})}" method="get" role="search"><input type="hidden" name="tab" value="all"><input type="search" name="keyword" maxlength="100" placeholder="Tìm trái cây trong gian hàng..." aria-label="Tìm sản phẩm trong shop" class="form-control"><button type="submit" class="btn btn-success">TÌM</button></form>
-    <a class="cart-button" th:href="@{/cart}">Giỏ hàng (<span id="cartCount" aria-live="polite">0</span>)</a>
-  </div>
-</div></header>
-<main class="wrap vfr-page">
-  <p th:if="${successMessage}" class="purchase-message" role="status" th:text="${successMessage}"></p>
-  <p th:if="${errorMessage}" class="purchase-message error" role="alert" th:text="${errorMessage}"></p>
-  <section class="detail">
-    <div class="gallery">
-      <div class="mainphoto"><img id="mainPhoto" th:src="${mainUrl}" th:alt="${product.name}"></div>
-      <div class="thumbs" aria-label="Ảnh sản phẩm">
-        <button class="thumb active" type="button" th:attr="data-photo=${mainUrl}" aria-label="Ảnh chính"><img th:src="${mainUrl}" th:alt="${product.name}"></button>
-        <th:block th:each="image,iter : ${details.images}"><button th:if="${image != mainUrl}" class="thumb" type="button" th:attr="data-photo=${image},aria-label=${'Ảnh sản phẩm '+(iter.index+2)}"><img th:src="${image}" alt="Ảnh sản phẩm" loading="lazy"></button></th:block>
-      </div>
-      <p class="photo-caption">Ảnh sản phẩm</p>
-    </div>
-    <div class="info">
-      <h1 th:text="${product.name}"></h1>
-      <div class="ratingline"><span>★ <strong th:text="${product.rating == null ? '0.0' : #numbers.formatDecimal(product.rating,1,1)}"></strong> / 5</span><span><strong th:text="${details.reviewCount}"></strong> đánh giá</span><span>Đã bán <strong th:text="${product.sales}"></strong></span></div>
-      <p><a th:href="@{/reviews/product/{id}(id=${product.productId})}">Xem đánh giá và xếp hạng</a> · <a th:href="@{/reviews/shop/{id}(id=${shop.shopId})}">Xem đánh giá cửa hàng</a></p>
-      <div class="pricebox" aria-live="polite">
-        <div class="price-line">
-          <div class="price" id="currentPrice" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'POINT')} + ' VND'"></div>
-          <span class="discount-pricing">
-            <del class="compare-price" id="compareAtPrice" aria-label="Giá trước giảm"
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
+        <title th:text="${product.name} + ' | VietFresh Hub'">
+            Chi tiết sản phẩm | VietFresh Hub
+        </title>
+        <link rel="stylesheet" th:href="@{/css/product-detail.css}">
+        <link rel="stylesheet" th:href="@{/css/discount-pricing.css}">
+        <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
+        <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
+        <script type="module" th:src="@{/js/storefront/product-detail.js}">
+        </script>
+        <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+    </head>
+    <body th:with="mainUrl=${#strings.isEmpty(product.imageUrl) ? '/images/product/product-placeholder.svg' : product.imageUrl}"
+          class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account"
+          th:attr="data-customer=${#authorization.expression('hasRole(''CUSTOMER'')')}">
+        <header class="vfc-header">
+            <div class="wrap">
+                <div class="vfc-header-main">
+                    <a class="brand" th:href="@{/home}">
+                        VietFresh Hub
+                    </a>
+                    <div class="vfo-topbar-actions vfc-header-actions">
+                        <th:block th:replace="~{fragments/customer-shop :: accountLinks}"></th:block>
+                    </div>
+                </div>
+                <div class="headrow vfc-header-tools">
+                    <form class="searchbar" th:action="@{/shops/{id}/products(id=${shop.shopId})}" method="get" role="search">
+                        <input class="form-control" type="search" name="q" maxlength="100" placeholder="Tìm trái cây trong gian hàng..." aria-label="Tìm sản phẩm trong shop">
+                        <button class="btn btn-success" type="submit">
+                            TÌM
+                        </button>
+                    </form>
+                    <a class="cart-button" th:href="@{/cart}">
+                        Giỏ hàng (
+                        <span id="cartCount" aria-live="polite" th:text="${storefrontCartCount}">
+                            0
+                        </span>
+                        )
+                    </a>
+                </div>
+            </div>
+        </header>
+        <main class="wrap vfr-page">
+            <div class="crumb">
+                <a th:href="@{/shops/{id}(id=${shop.shopId})}">
+                    Gian hàng
+                </a>
+                /
+                <a th:href="@{/shops/{id}/products(id=${shop.shopId},category=${product.categoryId})}" th:text="${product.categoryName}">
+                </a>
+                /
+                <span th:text="${product.name}">
+                </span>
+            </div>
+            <p th:if="${successMessage}" class="purchase-message" role="status" th:text="${successMessage}">
+            </p>
+            <p th:if="${errorMessage}" class="purchase-message error" role="alert" th:text="${errorMessage}">
+            </p>
+            <section class="detail">
+                <div class="gallery">
+                    <div class="mainphoto">
+                        <img id="mainPhoto" th:src="${mainUrl}" th:alt="${product.name}">
+                    </div>
+                    <div class="thumbs" aria-label="Ảnh sản phẩm">
+                        <button class="thumb active" type="button" th:attr="data-photo=${mainUrl}" aria-label="Ảnh chính">
+                            <img th:src="${mainUrl}" th:alt="${product.name}">
+                        </button>
+                        <th:block th:each="image,iter : ${details.images}">
+                            <button th:if="${image != mainUrl}" class="thumb" type="button" th:attr="data-photo=${image},aria-label=${'Ảnh sản phẩm '+(iter.index+2)}">
+                                <img th:src="${image}" alt="Ảnh sản phẩm" loading="lazy">
+                            </button>
+                        </th:block>
+                    </div>
+                    <p class="photo-caption">
+                        Ảnh sản phẩm
+                    </p>
+                </div>
+                <div class="info">
+                    <h1 th:text="${product.name}">
+                    </h1>
+                    <div class="ratingline">
+                        <span>
+                            ★
+                            <strong th:text="${product.rating == null ? '0.0' : #numbers.formatDecimal(product.rating,1,1)}">
+                            </strong>
+                            / 5
+                        </span>
+                        <span>
+                            <strong th:text="${details.reviewCount}">
+                            </strong>
+                            đánh giá
+                        </span>
+                        <span>
+                            Đã bán
+                            <strong th:text="${product.sales}">
+                            </strong>
+                        </span>
+                    </div>
+                    <p><a th:href="@{/reviews/product/{id}(id=${product.productId})}">Xem đánh giá và xếp hạng</a> · <a th:href="@{/reviews/shop/{id}(id=${shop.shopId})}">Xem đánh giá cửa hàng</a></p>
+                    <div class="pricebox" aria-live="polite">
+                        <div class="price-line">
+                            <div class="price" id="currentPrice" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'COMMA')} + ' VND'">
+                            </div>
+                            <span class="discount-pricing">
+                                <del class="compare-price" id="compareAtPrice" aria-label="Giá trước giảm"
                  th:hidden="${product.selectedVariant.discountPercent == null}"
-                 th:text="${product.selectedVariant.discountPercent != null ? #numbers.formatInteger(product.selectedVariant.compareAtPrice,0,'POINT') + ' VND' : ''}"></del>
-            <span class="discount-badge" id="discountPercent" th:hidden="${product.selectedVariant.discountPercent == null}"
-                  th:text="${product.selectedVariant.discountPercent == null ? '' : (product.selectedVariant.discountPercent == 0 ? 'Giảm dưới 1%' : '-' + product.selectedVariant.discountPercent + '%')}"></span>
-          </span>
+                 th:text="${product.selectedVariant.discountPercent != null ? #numbers.formatInteger(product.selectedVariant.compareAtPrice,0,'COMMA') + ' VND' : ''}">
+                                </del>
+                                <span class="discount-badge" id="discountPercent" th:hidden="${product.selectedVariant.discountPercent == null}"
+                  th:text="${product.selectedVariant.discountPercent == null ? '' : (product.selectedVariant.discountPercent == 0 ? 'Giảm dưới 1%' : '-' + product.selectedVariant.discountPercent + '%')}">
+                                </span>
+                            </span>
+                        </div>
+                        <div class="muted" style="font-size:12px;margin-top:5px">
+                            Giá theo quy cách đã chọn
+                        </div>
+                    </div>
+                    <form id="productPurchase" th:action="@{/cart/add}" method="post">
+                        <div class="rowline">
+                            <div class="fieldname" id="variantLabel">
+                                Quy cách
+                            </div>
+                            <div>
+                                <div class="optionrow" role="radiogroup" aria-labelledby="variantLabel">
+                                    <label th:each="variant : ${product.variants}" class="variant" th:classappend="${variant.variantId == product.selectedVariant.variantId ? 'selected' : ''}">
+                                        <input type="radio" name="variantId" class="form-check-input" th:value="${variant.variantId}" th:checked="${variant.variantId == product.selectedVariant.variantId}"
+                     th:attr="data-price=${variant.price},data-compare-at-price=${variant.compareAtPrice},data-discount-percent=${variant.discountPercent},data-stock=${variant.availableStock},data-name=${variant.variantName},data-image=${variant.imageUrl}">
+                                        <span th:text="${variant.variantName}">
+                                        </span>
+                                    </label>
+                                </div>
+                                <div id="variantNote" class="muted" style="font-size:12px;margin-top:10px" aria-live="polite">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rowline">
+                            <label class="fieldname" for="quantity">
+                                Số lượng
+                            </label>
+                            <div class="qtyrow">
+                                <button id="minus" class="btn btn-success" type="button" aria-label="Giảm số lượng" disabled>
+                                    −
+                                </button>
+                                <input id="quantity" class="form-control" name="quantity" type="number" min="1" step="1" required th:max="${product.selectedVariant.availableStock}" th:value="${requestedQuantity != null ? requestedQuantity : 1}" aria-label="Số lượng mua">
+                                <button id="plus" class="btn btn-success" type="button" aria-label="Tăng số lượng">
+                                    +
+                                </button>
+                                <span class="stock" id="stock" th:text="${product.selectedVariant.availableStock} + ' phần có sẵn'">
+                                </span>
+                            </div>
+                        </div>
+                        <div class="rowline">
+                            <div class="fieldname">
+                                Giao hàng từ
+                            </div>
+                            <div class="shipping-place" th:text="${formattedAddress}">
+                            </div>
+                        </div>
+                        <div class="cta" th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}">
+                            <button type="submit" name="redirect" value="detail" id="addCart" class="btn btn-success">
+                                + Thêm vào giỏ hàng
+                            </button>
+                            <button type="submit" name="redirect" value="checkout" class="solid" id="buyNow">
+                                Mua ngay
+                            </button>
+                        </div>
+                        <div class="cta" th:unless="${#authorization.expression('hasRole(''CUSTOMER'')')}">
+                            <a class="cta-button" data-customer-login th:href="@{/login(returnTo=${'/product-detail/'+product.selectedVariant.variantId})}">
+                                + Thêm vào giỏ hàng
+                            </a>
+                            <a class="cta-button solid" data-customer-login th:href="@{/login(returnTo=${'/product-detail/'+product.selectedVariant.variantId})}">
+                                Mua ngay
+                            </a>
+                        </div>
+                    </form>
+                    <p class="summarysmall">
+                        Giá và tổng tiền cập nhật theo quy cách, số lượng đã chọn. Sản phẩm đã có trong giỏ được cộng dồn số lượng. Giá và tồn kho được kiểm tra lại khi thêm vào giỏ và đặt hàng.
+                    </p>
+                </div>
+            </section>
+            <section class="section">
+                <div class="sectionhead">
+                    THÔNG TIN GIAN HÀNG
+                </div>
+                <div class="sectionbody storeblock">
+                    <img th:if="${!#strings.isEmpty(shop.bannerUrl)}" class="store-background" th:src="${shop.bannerUrl}" alt="" aria-hidden="true" data-shop-background>
+                    <div class="storeleft">
+                        <div class="storeavatar">
+                            <img id="storeLogo" th:if="${!#strings.isEmpty(shop.logoUrl)}" th:src="${shop.logoUrl}" th:alt="'Logo ' + ${shop.shopName}">
+                            <span id="storeInitial" th:hidden="${!#strings.isEmpty(shop.logoUrl)}" th:text="${#strings.substring(shop.shopName,0,1)}">
+                            </span>
+                        </div>
+                        <div>
+                            <h3 class="storetitle" th:text="${shop.shopName}">
+                            </h3>
+                            <div class="muted" th:text="${shop.description}">
+                            </div>
+                            <div class="shop-actions">
+                                <a class="visit-shop" th:href="@{/shops/{id}(id=${shop.shopId})}">
+                                    Xem gian hàng
+                                </a>
+                                <a class="visit-shop" th:href="@{/customer/chat}">
+                                    Chat
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="storemeta">
+                        <div>
+                            <b>
+                                Sản phẩm
+                            </b>
+                            <span th:text="${shopProductCount} + ' sản phẩm'">
+                            </span>
+                        </div>
+                        <div>
+                            <b>
+                                Địa chỉ
+                            </b>
+                            <span th:text="${formattedAddress}">
+                            </span>
+                        </div>
+                        <div>
+                            <b>
+                                Tham gia
+                            </b>
+                            <span th:text="${joinedDate != null ? #temporals.format(joinedDate,'dd/MM/yyyy') : 'Chưa cập nhật'}">
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <section class="section">
+                <div class="sectionhead">
+                    CHI TIẾT SẢN PHẨM
+                </div>
+                <div class="sectionbody">
+                    <table class="desctable">
+                        <tbody>
+                            <tr>
+                                <th>
+                                    Danh mục
+                                </th>
+                                <td th:text="${product.categoryName}">
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>
+                                    Tên sản phẩm
+                                </th>
+                                <td th:text="${product.name}">
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>
+                                    Quy cách
+                                </th>
+                                <td>
+                                    <th:block th:each="variant,iter : ${product.variants}">
+                                        <span th:text="${variant.variantName}">
+                                        </span>
+                                        <span th:unless="${iter.last}">
+                                            ·
+                                        </span>
+                                    </th:block>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>
+                                    Xuất xứ
+                                </th>
+                                <td th:text="${#strings.isEmpty(product.origin) ? 'Chưa cập nhật' : product.origin}">
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>
+                                    Nhà bán hàng
+                                </th>
+                                <td th:text="${shop.shopName}">
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="desc">
+                        <h3 style="margin-top:26px">
+                            Mô tả sản phẩm
+                        </h3>
+                        <p th:text="${#strings.isEmpty(product.description) ? 'Nhà bán hàng chưa cập nhật mô tả.' : product.description}">
+                        </p>
+                    </div>
+                </div>
+            </section>
+            <section class="section">
+                <div class="sectionhead">
+                    ĐÁNH GIÁ SẢN PHẨM
+                </div>
+                <div class="sectionbody">
+                    <div class="reviewshead">
+                        <div style="font-size:28px">
+                            <b th:text="${product.rating == null ? '0.0' : #numbers.formatDecimal(product.rating,1,1)}">
+                            </b>
+                            <span style="font-size:15px">
+                                / 5
+                            </span>
+                        </div>
+                        <span class="reviewsnote" th:text="${details.reviewCount} + ' đánh giá đã được duyệt'">
+                        </span>
+                    </div>
+                    <p th:if="${#lists.isEmpty(details.reviews)}" class="muted">
+                        Chưa có đánh giá được duyệt cho sản phẩm.
+                    </p>
+                    <article th:each="review : ${details.reviews}" class="review">
+                        <strong th:text="${review.reviewer}">
+                        </strong>
+                        <div class="stars" th:text="${#strings.repeat('★',review.rating)+#strings.repeat('☆',5-review.rating)}">
+                        </div>
+                        <div class="date" th:text="${#temporals.format(review.createdAt,'dd/MM/yyyy')}">
+                        </div>
+                        <p th:text="${review.content}">
+                        </p>
+                    </article>
+                    <p th:if="${details.reviewCount > #lists.size(details.reviews)}" class="reviewsnote">
+                        Hiển thị 5 đánh giá mới nhất.
+                    </p>
+                </div>
+            </section>
+            <section class="section" style="margin-bottom:20px">
+                <div class="sectionhead">
+                    SẢN PHẨM KHÁC CỦA SHOP
+                </div>
+                <p th:if="${#lists.isEmpty(related)}" class="sectionbody muted">
+                    Shop chưa có sản phẩm khác đang được bán.
+                </p>
+                <div class="related">
+                    <a th:each="item : ${related}" class="productcard" th:href="@{/product-detail(productId=${item.productId})}">
+                        <div class="productphoto">
+                            <img th:src="${item.imageUrl}" th:alt="${item.name}" loading="lazy">
+                            <span class="discount-badge discount-badge--image" th:if="${item.selectedVariant.discountPercent != null}"
+              th:text="${item.selectedVariant.discountPercent == 0 ? 'Giảm dưới 1%' : '-' + item.selectedVariant.discountPercent + '%'}">
+                            </span>
+                        </div>
+                        <div class="productbody">
+                            <div class="name" th:text="${item.name}">
+                            </div>
+                            <div class="price2" th:text="${#numbers.formatInteger(item.selectedVariant.price,0,'COMMA')} + ' VND'">
+                            </div>
+                            <div class="minor" th:text="'★ ' + ${item.rating == null ? '0.0' : #numbers.formatDecimal(item.rating,1,1)} + '/5 · Đã bán ' + ${item.sales}">
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </section>
+        </main>
+        <footer th:replace="~{fragments/footer :: footer}"></footer>
+        <div id="notice" class="toast hide" role="status" aria-live="polite">
         </div>
-        <div class="muted" style="font-size:12px;margin-top:5px">Giá theo quy cách đã chọn</div>
-      </div>
-      <form id="productPurchase" th:action="@{/cart/add}" method="post">
-        <div class="rowline"><div class="fieldname" id="variantLabel">Quy cách</div><div>
-          <div class="optionrow" role="radiogroup" aria-labelledby="variantLabel">
-            <label th:each="variant : ${product.variants}" class="variant" th:classappend="${variant.variantId == product.selectedVariant.variantId ? 'selected' : ''}">
-              <input type="radio" name="variantId" th:value="${variant.variantId}" th:checked="${variant.variantId == product.selectedVariant.variantId}"
-                     th:attr="data-price=${variant.price},data-compare-at-price=${variant.compareAtPrice},data-discount-percent=${variant.discountPercent},data-stock=${variant.availableStock},data-name=${variant.variantName},data-image=${variant.imageUrl}" class="form-check-input">
-              <span th:text="${variant.variantName}"></span>
-            </label>
-          </div><div id="variantNote" class="muted" style="font-size:12px;margin-top:10px" aria-live="polite"></div>
-        </div></div>
-        <div class="rowline"><label class="fieldname" for="quantity">Số lượng</label><div class="qtyrow">
-          <button id="minus" type="button" aria-label="Giảm số lượng" disabled class="btn btn-success">−</button>
-          <input id="quantity" name="quantity" type="number" min="1" step="1" required th:max="${product.selectedVariant.availableStock}" th:value="${requestedQuantity != null ? requestedQuantity : 1}" aria-label="Số lượng mua" class="form-control">
-          <button id="plus" type="button" aria-label="Tăng số lượng" class="btn btn-success">+</button><span class="stock" id="stock" th:text="${product.selectedVariant.availableStock} + ' phần có sẵn'"></span>
-        </div></div>
-        <div class="rowline"><div class="fieldname">Giao hàng từ</div><div class="shipping-place" th:text="${formattedAddress}"></div></div>
-        <div class="cta" th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}"><button type="submit" name="redirect" value="detail" id="addCart" class="btn btn-success">+ Thêm vào giỏ hàng</button><button type="submit" name="redirect" value="checkout" class="solid" id="buyNow">Mua ngay</button></div>
-        <div class="cta" th:unless="${#authorization.expression('hasRole(''CUSTOMER'')')}"><a class="cta-button" data-customer-login th:href="@{/login(returnTo=${'/product-detail/'+product.selectedVariant.variantId})}">+ Thêm vào giỏ hàng</a><a class="cta-button solid" data-customer-login th:href="@{/login(returnTo=${'/product-detail/'+product.selectedVariant.variantId})}">Mua ngay</a></div>
-      </form>
-      <p class="summarysmall">Giá và tổng tiền cập nhật theo quy cách, số lượng đã chọn. Sản phẩm đã có trong giỏ được cộng dồn số lượng. Giá và tồn kho được kiểm tra lại khi thêm vào giỏ và đặt hàng.</p>
-    </div>
-  </section>
-  <section class="section"><div class="sectionhead">THÔNG TIN GIAN HÀNG</div><div class="sectionbody storeblock">
-    <img th:if="${!#strings.isEmpty(shop.bannerUrl)}" class="store-background" th:src="${shop.bannerUrl}" alt="" aria-hidden="true" data-shop-background>
-    <div class="storeleft"><div class="storeavatar"><img id="storeLogo" th:if="${!#strings.isEmpty(shop.logoUrl)}" th:src="${shop.logoUrl}" th:alt="'Logo ' + ${shop.shopName}"><span id="storeInitial" th:hidden="${!#strings.isEmpty(shop.logoUrl)}" th:text="${#strings.substring(shop.shopName,0,1)}"></span></div><div><h3 class="storetitle" th:text="${shop.shopName}"></h3><div class="muted" th:text="${shop.description}"></div>
-      <div class="shop-actions">
-        <a class="visit-shop" th:href="@{/shops/{id}(id=${shop.shopId})}">Xem gian hàng</a>
-        <a class="visit-shop" th:href="@{/customer/chat}">Chat</a>
-      </div>
-    </div></div>
-    <div class="storemeta"><div><b>Sản phẩm</b><span th:text="${shopProductCount} + ' sản phẩm'"></span></div><div><b>Địa chỉ</b><span th:text="${formattedAddress}"></span></div><div><b>Tham gia</b><span th:text="${joinedDate != null ? #temporals.format(joinedDate,'dd/MM/yyyy') : 'Chưa cập nhật'}"></span></div></div>
-  </div></section>
-  <section class="section"><div class="sectionhead">CHI TIẾT SẢN PHẨM</div><div class="sectionbody">
-    <table class="desctable"><tbody>
-      <tr><th>Danh mục</th><td th:text="${product.categoryName}"></td></tr><tr><th>Tên sản phẩm</th><td th:text="${product.name}"></td></tr>
-      <tr><th>Quy cách</th><td><th:block th:each="variant,iter : ${product.variants}"><span th:text="${variant.variantName}"></span><span th:unless="${iter.last}"> · </span></th:block></td></tr>
-      <tr><th>Xuất xứ</th><td th:text="${#strings.isEmpty(product.origin) ? 'Chưa cập nhật' : product.origin}"></td></tr><tr><th>Nhà bán hàng</th><td th:text="${shop.shopName}"></td></tr>
-    </tbody></table>
-    <div class="desc"><h3 style="margin-top:26px">Mô tả sản phẩm</h3><p th:text="${#strings.isEmpty(product.description) ? 'Nhà bán hàng chưa cập nhật mô tả.' : product.description}"></p></div>
-  </div></section>
-  <section class="section"><div class="sectionhead">ĐÁNH GIÁ SẢN PHẨM</div><div class="sectionbody">
-    <div class="reviewshead"><div style="font-size:28px"><b th:text="${product.rating == null ? '0.0' : #numbers.formatDecimal(product.rating,1,1)}"></b><span style="font-size:15px"> / 5</span></div><span class="reviewsnote" th:text="${details.reviewCount} + ' đánh giá đã được duyệt'"></span></div>
-    <p th:if="${#lists.isEmpty(details.reviews)}" class="muted">Chưa có đánh giá được duyệt cho sản phẩm.</p>
-    <article th:each="review : ${details.reviews}" class="review"><strong th:text="${review.reviewer}"></strong><div class="stars" th:text="${#strings.repeat('★',review.rating)+#strings.repeat('☆',5-review.rating)}"></div><div class="date" th:text="${#temporals.format(review.createdAt,'dd/MM/yyyy')}"></div><p th:text="${review.content}"></p></article>
-    <p th:if="${details.reviewCount > #lists.size(details.reviews)}" class="reviewsnote">Hiển thị 5 đánh giá mới nhất.</p>
-  </div></section>
-  <section class="section" style="margin-bottom:20px"><div class="sectionhead">SẢN PHẨM KHÁC CỦA SHOP</div>
-    <p th:if="${#lists.isEmpty(related)}" class="sectionbody muted">Shop chưa có sản phẩm khác đang được bán.</p>
-    <div class="related"><a th:each="item : ${related}" class="productcard" th:href="@{/product-detail(productId=${item.productId})}"><div class="productphoto"><img th:src="${item.imageUrl}" th:alt="${item.name}" loading="lazy">
-        <span class="discount-badge discount-badge--image" th:if="${item.selectedVariant.discountPercent != null}"
-              th:text="${item.selectedVariant.discountPercent == 0 ? 'Giảm dưới 1%' : '-' + item.selectedVariant.discountPercent + '%'}"></span>
-      </div>
-      <div class="productbody"><div class="name" th:text="${item.name}"></div><div class="price2" th:text="${#numbers.formatInteger(item.selectedVariant.price,0,'POINT')} + ' VND'"></div>
-      <div class="minor" th:text="'★ ' + ${item.rating == null ? '0.0' : #numbers.formatDecimal(item.rating,1,1)} + '/5 · Đã bán ' + ${item.sales}"></div></div></a></div>
-  </section>
-</main>
-<footer th:replace="~{fragments/footer :: footer}"></footer>
-<div id="notice" class="toast hide" role="status" aria-live="polite"></div><div id="modal"></div>
-</body></html>
+        <div id="modal">
+        </div>
+    </body>
+</html>

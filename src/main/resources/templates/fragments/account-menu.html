@@ -52,6 +52,10 @@
                         <a th:href="@{/customer/loyalty}"><svg th:replace="~{fragments/account-menu :: icon('award')}"></svg><span>Tiền thưởng &amp; điểm tích lũy</span></a>
                         <a th:href="@{/cart}"><svg th:replace="~{fragments/account-menu :: icon('cart')}"></svg><span>Giỏ hàng</span></a>
                     </div>
+                    <div class="header-account-group">
+                        <p class="header-account-section-label">Bán hàng</p>
+                        <a th:href="@{/customer/seller-applications}"><svg th:replace="~{fragments/account-menu :: icon('shop')}"></svg><span>Đăng ký bán hàng / Hồ sơ của tôi</span></a>
+                    </div>
                 </th:block>
                 <div class="header-account-group">
                     <p class="header-account-section-label" th:if="${#authorization.expression('hasRole(''CUSTOMER'')')}">Kết nối</p>

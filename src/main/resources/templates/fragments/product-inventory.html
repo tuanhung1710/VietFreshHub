@@ -20,7 +20,8 @@
         <link rel="stylesheet" th:href="@{'/css/'+${feature}+'/'+${feature}+'.css'}">
         <link th:if="${feature == 'product'}" rel="stylesheet" th:href="@{/css/product/catalog.css}">
         
-        <script defer th:src="@{/js/product/module.js}"></script>
+        <script defer th:src="@{/js/product/money-fields.js}"></script>
+        <script th:if="${feature == 'product'}" defer th:src="@{/js/product/module.js}"></script>
         <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
 
@@ -59,6 +60,9 @@
                 <symbol id="vf-eye" viewBox="0 0 24 24">
                     <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
                     <circle cx="12" cy="12" r="3"/>
+                </symbol>
+                <symbol id="vf-eye-off" viewBox="0 0 24 24">
+                    <path d="M3 3l18 18M10 5.2a11 11 0 0 1 2-.2c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.1 6.1A19 19 0 0 0 2 12s3.5 7 10 7a10.7 10.7 0 0 0 5.2-1.4M10 10a2.8 2.8 0 0 0 4 4"/>
                 </symbol>
                 <symbol id="vf-more" viewBox="0 0 24 24">
                     <circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>
@@ -105,9 +109,9 @@
 </div>
         <!-- Trình bày thời gian trong nhật ký hoạt động. -->
         <time th:fragment="historyTime(timestamp)" class="vf-history-time-content"
-              th:datetime="${timestamp.plusHours(7)} + '+07:00'">
-            <span th:text="${#temporals.format(timestamp.plusHours(7),'dd/MM/yyyy')}"></span>
-            <small class="text-body-secondary" th:text="${#temporals.format(timestamp.plusHours(7),'HH:mm:ss')}"></small>
+              th:datetime="${T(VietFreshHub.order.service.OrderLabels).local(timestamp)} + '+07:00'">
+            <span th:text="${#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(timestamp),'dd/MM/yyyy')}"></span>
+            <small class="text-body-secondary" th:text="${#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(timestamp),'HH:mm:ss')}"></small>
         </time>
 
         <!-- Cụm chuyển trang gọn; hai nút giữ vị trí khi bị vô hiệu hóa. -->
@@ -158,7 +162,7 @@
                         th:text="${pageSize}">
                 </option>
             </select>
-            <button class="btn btn-sm btn-light" type="submit" data-vf-filter-submit>Áp dụng</button>
+            <button class="btn btn-sm btn-light" type="submit">Áp dụng</button>
         </th:block>
 
         <div th:fragment="messages" aria-live="polite">
@@ -184,7 +188,7 @@
                             <input type="hidden" name="size" th:value="${rows.size}">
                         </th:block>
                         <div class="modal-header">
-                            <h2 class="modal-title fs-5" id="variantActionTitle">Cấu hình phân loại</h2>
+                            <h2 class="modal-title fs-5" id="variantActionTitle">Trạng thái SKU</h2>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
                         </div>
                         <div class="modal-body">
@@ -243,12 +247,5 @@
                   th:text="${row.managementState.label}"
                   th:title="${row.managementState.code=='archived'?'Sản phẩm đã xóa; tồn kho và lịch sử được lưu trong Kho hàng.':row.managementState.reason}"></span>
         </th:block>
-        <span
-            th:fragment="approval(status)"
-            class="badge"
-            th:classappend="${status.name()=='APPROVED'?'vf-badge-blue':(status.name()=='REJECTED'?'vf-badge-red':'vf-badge-yellow')}"
-            th:text="${status.name()=='APPROVED'?'Đã kiểm tra':(status.name()=='REJECTED'?'Cần cập nhật':'Chờ kiểm tra')}"
-        >
-        </span>
     </body>
 </html>

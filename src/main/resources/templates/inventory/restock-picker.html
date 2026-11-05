@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/product-inventory :: head('Nhập lô hàng mới','inventory')}"></head>
+<body class="vfo-app vfr-app vfr-product vfr-seller" data-vfr-section="inventory">
+<header th:replace="~{fragments/product-inventory :: nav('inventory')}"></header>
+<div class="vf-workspace" id="order-content" tabindex="-1">
+<main class="container vf-main narrow vf-inventory-main vfr-page">
+    <a class="d-inline-block mb-3 text-success text-decoration-none" th:href="@{${inventoryReturnUrl}}">← Quay lại</a>
+    <h1>Nhập lô hàng mới</h1>
+    <div th:replace="~{fragments/product-inventory :: messages}"></div>
+    <section class="card p-4">
+        <form method="get" th:action="@{/seller/inventory/restock}" data-inventory-picker
+              th:attr="data-options-url=@{/seller/inventory/restock/options}">
+            <input type="hidden" name="returnTo" th:value="${inventoryReturnUrl}">
+            <label class="form-label" for="inventorySkuQuery">Sản phẩm / SKU / lô</label>
+            <div class="d-flex gap-2">
+                <input class="form-control" id="inventorySkuQuery" name="q" type="search" th:value="${q}"
+                       maxlength="200" autocomplete="off" placeholder="Tìm theo tên, SKU hoặc mã LOT"
+                       aria-controls="inventorySkuChoices" aria-describedby="inventorySkuHelp">
+                <button class="btn btn-outline-success" type="submit">Tìm</button>
+            </div>
+            <p class="small text-body-secondary mt-2 mb-2" id="inventorySkuHelp">
+                Chọn sản phẩm hoặc SKU từ một lô đã có. Mỗi lần nhập tạo một lô mới.
+            </p>
+            <div id="inventorySkuChoices" class="list-group" aria-live="polite" aria-label="Kết quả tìm trong kho">
+                <th:block th:fragment="options">
+                    <p class="small text-body-secondary py-2 mb-0" th:if="${choices.empty}">Không tìm thấy sản phẩm, SKU hoặc lô phù hợp.</p>
+                    <a class="list-group-item list-group-item-action" th:each="choice : ${choices}"
+                       th:href="@{/seller/inventory/products/{p}/variants/{v}/restock(p=${choice.productId},v=${choice.variantId},returnTo=${inventoryReturnUrl})}">
+                        <strong th:text="${choice.productName}"></strong>
+                        <span class="d-block small text-body-secondary">
+                            <span th:text="${choice.sku+' · '+choice.variantName+' · '+choice.unit}"></span>
+                            <span th:if="${choice.batchId != null}" th:text="${' · '+choice.batchCode()}"></span>
+                            <span th:if="${choice.expiryDate != null}" th:text="${' · HSD '+#temporals.format(choice.expiryDate,'dd/MM/yyyy')}"></span>
+                        </span>
+                    </a>
+                </th:block>
+            </div>
+        </form>
+    </section>
+</main>
+</div>
+<script defer th:src="@{/js/inventory/restock-picker.js}"></script>
+<div class="vfr-product-footer"><footer th:replace="~{fragments/seller-orders :: footer}"></footer></div>
+</body>
+</html>

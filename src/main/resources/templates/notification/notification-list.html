@@ -9,7 +9,7 @@
     
     <title>Thông báo</title>
     <style>
-        body { margin: 0; background: #f5f7f6; color: #24342b; font-family: Arial, sans-serif; }
+        body { margin: 0; background: #f5f7f6; color: #24342b; font-family: var(--vf-font-family); }
         main { max-width: 850px; margin: 40px auto; padding: 0 20px; }
         article { margin-bottom: 16px; padding: 20px; background: white; border: 1px solid #dce5df; border-radius: 12px; }
         article.unread { border-left: 5px solid #198754; }
@@ -32,8 +32,8 @@
         <h2 th:text="${item.title}"></h2>
         <p class="content" th:text="${item.content}"></p>
         <p class="muted">
-            <time th:text="${#temporals.format(item.createdAt, 'dd/MM/yyyy HH:mm')}"></time>
-            <span> UTC · </span>
+            <time th:text="${#temporals.format(T(VietFreshHub.order.service.OrderLabels).local(item.createdAt), 'dd/MM/yyyy HH:mm')}"></time>
+            <span>Giờ Việt Nam · </span>
             <span th:text="${item.readAt == null ? 'Chưa đọc' : 'Đã đọc'}"></span>
         </p>
         <form th:if="${item.readAt == null}"

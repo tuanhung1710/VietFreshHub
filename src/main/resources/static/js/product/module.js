@@ -3,18 +3,6 @@
 // Đưa thông báo lỗi vào vùng nhìn thấy khi quay lại sau thao tác bị từ chối.
 document.querySelector("[data-vf-error]")?.focus();
 
-// Đồng bộ dấu hiệu đang lọc cho cả kho và sản phẩm, kể cả ô chọn xem dữ liệu đã xóa.
-document.querySelectorAll("#productAdvancedFilters, #inventoryAdvancedFilters").forEach(panel => {
-    const toggle = document.querySelector('[data-bs-target="#' + panel.id + '"]');
-    function updateAdvancedIndicator() {
-        const active = Array.from(panel.querySelectorAll("input, select")).some(field =>
-            !field.disabled && (field.type === "checkbox" ? field.checked : Boolean(field.value)));
-        toggle?.classList.toggle("vf-filter-used", active);
-    }
-    panel.addEventListener("input", updateAdvancedIndicator);
-    panel.addEventListener("change", updateAdvancedIndicator);
-    updateAdvancedIndicator();
-});
 // Dùng ảnh thay thế nội bộ nếu ảnh sản phẩm tải lỗi; xóa cờ fallback để tránh lặp vô hạn.
 document.addEventListener("error", event => {
   const image = event.target;
@@ -98,7 +86,7 @@ document.querySelector("#productActionModal")?.addEventListener("shown.bs.modal"
   document.querySelector("#productActionReason").focus();
 });
 
-// Đổi cấu hình phân loại bằng cùng các thao tác Mở bán/Tạm ẩn của sản phẩm.
+// Mở bán hoặc tạm ẩn SKU.
 document.querySelector("#variantActionModal")?.addEventListener("show.bs.modal", event => {
     const button = event.relatedTarget;
     const status = button?.dataset.status;
@@ -110,7 +98,7 @@ document.querySelector("#variantActionModal")?.addEventListener("show.bs.modal",
     form.reset();
     form.action = button.dataset.actionUrl;
     document.querySelector("#variantActionStatus").value = status;
-    document.querySelector("#variantActionTitle").textContent = button.dataset.label;
+    document.querySelector("#variantActionTitle").textContent = button.dataset.label + " SKU";
     document.querySelector("#variantActionName").textContent = button.dataset.name;
     document.querySelector("#variantActionSubmit").textContent = button.dataset.label;
     document.querySelector("#variantActionDescription").textContent = status === "ACTIVE"
@@ -142,31 +130,3 @@ document.querySelectorAll(".vf-page-size").forEach(form => {
     form.querySelector('select[name="size"]')?.addEventListener("change", () => form.requestSubmit());
 });
 document.querySelector("[data-vf-sort]")?.addEventListener("change", event => event.target.form.requestSubmit());
-
-// Thu gọn bộ lọc khi màn hình nhỏ và giữ trạng thái mở do người dùng lựa chọn.
-const listPage = document.querySelector(".vf-list-page");
-if (listPage?.querySelector("[data-vf-filter-toggle]")) {
-    const controls = listPage.querySelector(".vf-list-controls");
-    const panel = controls.querySelector(".vf-filter-panel");
-    const filterToggle = controls.querySelector("[data-vf-filter-toggle]");
-    const compactFilters = window.matchMedia("(max-width: 767px), (max-height: 650px)");
-    let filtersOpen = false;
-    /** Đồng bộ vùng lọc và aria-expanded theo kích thước màn hình, giữ tiêu điểm ở vùng nhìn thấy. */
-    function updateFilterVisibility() {
-        // Màn hình rộng luôn hiện bộ lọc; màn hình nhỏ chỉ hiện khi người dùng chủ động mở.
-        const collapsed = compactFilters.matches && !filtersOpen;
-        controls.classList.toggle("vf-compact-filters", compactFilters.matches);
-        panel.hidden = collapsed;
-        filterToggle.setAttribute("aria-expanded", String(!collapsed));
-        if (collapsed && panel.contains(document.activeElement)) filterToggle.focus();
-    }
-    filterToggle.addEventListener("click", () => {
-        filtersOpen = !filtersOpen;
-        updateFilterVisibility();
-    });
-    compactFilters.addEventListener("change", () => {
-        filtersOpen = false;
-        updateFilterVisibility();
-    });
-    updateFilterVisibility();
-}

@@ -1,6 +1,6 @@
 :root {
     color-scheme: light;
-    font-family: Inter, "Segoe UI", Arial, sans-serif;
+    font-family: var(--vf-font-family);
     color: #20332b;
     background: #f4f7f5;
     font-synthesis: none;
@@ -36,7 +36,7 @@ button, input, select { font: inherit; }
 .shop-picker button:hover, .message-form button:hover { background: #24683c; }
 .conversation-heading { padding: 16px 20px 8px; color: #86928a; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .conversation-list { min-height: 0; flex: 1; overflow-y: auto; }
-.conversation-item { display: flex; width: 100%; align-items: center; gap: 12px; padding: 13px 18px; border: 0; border-left: 3px solid transparent; background: white; color: inherit; text-align: left; cursor: pointer; }
+.conversation-item { display: flex; width: 100%; align-items: center; gap: 12px; padding: 15px; border: 0; border-left: 3px solid transparent; background: white; color: inherit; text-align: left; cursor: pointer; }
 .conversation-item:hover { background: #f6f9f7; }
 .conversation-item.selected { border-left-color: #32814e; background: #eff7f1; }
 .conversation-avatar { display: grid; width: 42px; height: 42px; flex: 0 0 42px; place-items: center; border-radius: 50%; background: #e2f0e5; color: #34764a; font-size: 16px; font-weight: 700; }
