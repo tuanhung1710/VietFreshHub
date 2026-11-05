@@ -21,7 +21,7 @@
         <p class="mt-3 text-slate-600">Tạo thông tin đăng nhập, xác minh email rồi gửi hồ sơ shop để admin xét duyệt.</p>
 
         <div th:if="${errorMessage}" class="mt-5 rounded-lg bg-rose-50 p-3 text-sm text-rose-800" th:text="${errorMessage}"></div>
-        <form class="mt-6 space-y-4" th:action="@{/seller-onboarding/register}" th:object="${registerRequest}" method="post">
+        <form id="sellerOnboardingRegisterForm" class="mt-6 space-y-4" th:action="@{/seller-onboarding/register}" th:object="${registerRequest}" method="post">
             <div th:if="${#fields.hasGlobalErrors()}" class="rounded-lg bg-rose-50 p-3 text-sm text-rose-800">
                 <p th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
             </div>

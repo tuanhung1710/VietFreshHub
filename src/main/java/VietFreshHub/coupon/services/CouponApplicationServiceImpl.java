@@ -397,7 +397,8 @@ public class CouponApplicationServiceImpl
                         usage.getOrder().getOrderId(),
                         usage.getOrder().getOrderCode(),
                         usage.getDiscountAmount(),
-                        usage.getUsedAt()
+                        usage.getUsedAt(),
+                        usage.getOrder().getStatus() == Order.Status.CANCELLED
                 ));
     }
 
@@ -428,15 +429,16 @@ public class CouponApplicationServiceImpl
         }
 
         if (coupon.getUsageLimit() != null
-                && usageRepository.countByCoupon_CouponId(
-                coupon.getCouponId()) >= coupon.getUsageLimit()) {
+                && usageRepository.countActiveByCouponId(
+                coupon.getCouponId(), Order.Status.CANCELLED) >= coupon.getUsageLimit()) {
             throw invalid("Coupon đã hết lượt sử dụng");
         }
 
         if (coupon.getPerUserLimit() != null
-                && usageRepository.countByCoupon_CouponIdAndUser_UserId(
+                && usageRepository.countActiveByCouponIdAndUserId(
                 coupon.getCouponId(),
-                customerId
+                customerId,
+                Order.Status.CANCELLED
         ) >= coupon.getPerUserLimit()) {
             throw invalid("Bạn đã dùng hết lượt của coupon này");
         }
