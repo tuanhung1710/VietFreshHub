@@ -28,6 +28,10 @@ public interface ShopSubscriptionService {
             SubscriptionPaymentForm form
     );
 
+    String startVnpayPayment(Long shopId, Long paymentId, String remoteAddress, String returnUrl);
+
+    String handleVnpayCallback(java.util.Map<String, String> fields);
+
     // Shop xem chi tiết yêu cầu thanh toán của mình.
     SubscriptionPaymentResponse getPayment(
             Long shopId,
@@ -53,13 +57,6 @@ public interface ShopSubscriptionService {
     // Admin xem yêu cầu thanh toán theo trạng thái.
     List<SubscriptionPaymentResponse> getPaymentsByStatus(
             SubscriptionPaymentStatus status
-    );
-
-    // Admin xác nhận đã nhận tiền và kích hoạt gói.
-    ShopSubscriptionResponse approvePayment(
-            Long paymentId,
-            Long adminUserId,
-            String transactionReference
     );
 
     // Admin đánh dấu yêu cầu thanh toán thất bại.

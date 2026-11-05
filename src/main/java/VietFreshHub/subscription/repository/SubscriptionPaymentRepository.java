@@ -17,7 +17,11 @@ public interface SubscriptionPaymentRepository extends JpaRepository<Subscriptio
 
     Optional<SubscriptionPayment> findBySubscriptionPaymentIdAndShop_ShopId(Long paymentId, Long shopId);
 
+    Optional<SubscriptionPayment> findByTransactionReference(String transactionReference);
+
     boolean existsByShop_ShopIdAndStatus(Long shopId, SubscriptionPaymentStatus status);
+
+    List<SubscriptionPayment> findByShop_ShopIdAndStatus(Long shopId, SubscriptionPaymentStatus status);
 
     List<SubscriptionPayment> findByStatusOrderByCreatedAtAscSubscriptionPaymentIdAsc(SubscriptionPaymentStatus status);
 

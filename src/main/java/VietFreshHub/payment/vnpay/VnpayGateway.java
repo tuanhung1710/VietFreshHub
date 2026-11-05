@@ -31,19 +31,34 @@ public class VnpayGateway {
                 || payment.getTransactionReference().isBlank() || payment.getAmount() == null) {
             throw new IllegalArgumentException("Thông tin lượt thanh toán VNPAY chưa đầy đủ.");
         }
-        LocalDateTime createdAt = payment.getCreatedAt() == null
-                ? LocalDateTime.now(ZoneOffset.UTC).withNano(0) : payment.getCreatedAt();
+        return createPaymentUrl(payment.getAmount(), payment.getTransactionReference(), payment.getCreatedAt(),
+                remoteAddress, properties.getReturnUrl(), "Thanh toan don hang VietFresh Hub");
+    }
+
+    public String createPaymentUrl(BigDecimal amount, String reference, LocalDateTime createdAt,
+                                   String remoteAddress, String returnUrl, String orderInfo) {
+        if (!properties.isReady()) throw new IllegalStateException("VNPAY chua duoc cau hinh.");
+        if (amount == null || amount.signum() <= 0)
+            throw new IllegalArgumentException("So tien VNPAY phai lon hon 0.");
+        if (reference == null || reference.isBlank() || returnUrl == null || returnUrl.isBlank()
+                || orderInfo == null || orderInfo.isBlank())
+            throw new IllegalArgumentException("Thong tin giao dich VNPAY chua day du.");
+        if (createdAt == null) createdAt = LocalDateTime.now(ZoneOffset.UTC).withNano(0);
         Map<String, String> fields = new TreeMap<>();
         fields.put("vnp_Version", "2.1.0");
         fields.put("vnp_Command", "pay");
         fields.put("vnp_TmnCode", properties.getTmnCode());
-        fields.put("vnp_Amount", amountInSubunits(payment.getAmount()));
+        try {
+            fields.put("vnp_Amount", amountInSubunits(amount));
+        } catch (ArithmeticException exception) {
+            throw new IllegalArgumentException("So tien VNPAY khong the chuyen doi sang don vi thanh toan.", exception);
+        }
         fields.put("vnp_CurrCode", "VND");
-        fields.put("vnp_TxnRef", payment.getTransactionReference());
-        fields.put("vnp_OrderInfo", "Thanh toán lượt đặt hàng VietFresh Hub");
+        fields.put("vnp_TxnRef", reference);
+        fields.put("vnp_OrderInfo", orderInfo);
         fields.put("vnp_OrderType", "other");
         fields.put("vnp_Locale", "vn");
-        fields.put("vnp_ReturnUrl", properties.getReturnUrl());
+        fields.put("vnp_ReturnUrl", returnUrl);
         fields.put("vnp_IpAddr", normalizeIp(remoteAddress));
         fields.put("vnp_CreateDate", VNPAY_DATE.format(createdAt.atZone(ZoneOffset.UTC).withZoneSameInstant(VIETNAM)));
         fields.put("vnp_ExpireDate", VNPAY_DATE.format(createdAt.plusMinutes(properties.getExpiryMinutes())

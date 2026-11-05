@@ -1,6 +1,8 @@
 package VietFreshHub.subscription.services;
 
 import VietFreshHub.shop.entity.Shop;
+import VietFreshHub.payment.vnpay.VnpayGateway;
+import VietFreshHub.payment.vnpay.VnpayProperties;
 import VietFreshHub.notification.services.NotificationService;
 import VietFreshHub.shop.repository.ShopMemberRepository;
 import VietFreshHub.subscription.dto.ShopSubscriptionResponse;
@@ -39,6 +41,8 @@ public class ShopSubscriptionServiceImpl
     private final Validator validator;
     private final NotificationService notificationService;
     private final ShopMemberRepository shopMemberRepository;
+    private final VnpayGateway vnpayGateway;
+    private final VnpayProperties vnpayProperties;
 
     @Override
     public Optional<ShopSubscriptionResponse> getCurrentSubscription(
@@ -77,6 +81,7 @@ public class ShopSubscriptionServiceImpl
             SubscriptionPaymentForm form
     ) {
         validateForm(form);
+        if (!vnpayProperties.isReady()) throw new IllegalArgumentException("VNPAY is not configured");
 
         Shop shop = lockShop(shopId);
         LocalDateTime now = utcNow();
@@ -84,10 +89,14 @@ public class ShopSubscriptionServiceImpl
         ShopSubscription current =
                 expireAndFindCurrent(shopId, now);
 
-        if (paymentRepository.existsByShop_ShopIdAndStatus(
-                shopId,
-                SubscriptionPaymentStatus.PENDING
-        )) {
+        for (SubscriptionPayment pending : paymentRepository.findByShop_ShopIdAndStatus(shopId, SubscriptionPaymentStatus.PENDING)) {
+            if (pending.getCreatedAt() != null && !now.isBefore(pending.getCreatedAt().plusMinutes(vnpayProperties.getExpiryMinutes()))) {
+                pending.setStatus(SubscriptionPaymentStatus.FAILED);
+                pending.setNote("VNPay payment attempt expired");
+                pending.setReviewedAt(now);
+            }
+        }
+        if (paymentRepository.existsByShop_ShopIdAndStatus(shopId, SubscriptionPaymentStatus.PENDING)) {
             throw new IllegalArgumentException(
                     "Shop đang có yêu cầu thanh toán chờ xử lý"
             );
@@ -106,7 +115,70 @@ public class ShopSubscriptionServiceImpl
                 .status(SubscriptionPaymentStatus.PENDING)
                 .build();
 
-        return toPaymentResponse(paymentRepository.save(payment));
+        SubscriptionPayment saved = paymentRepository.saveAndFlush(payment);
+        saved.setTransactionReference("VFS" + saved.getSubscriptionPaymentId());
+        return toPaymentResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public String startVnpayPayment(Long shopId, Long paymentId, String remoteAddress, String returnUrl) {
+        SubscriptionPayment payment = paymentRepository.findBySubscriptionPaymentIdAndShop_ShopId(paymentId, shopId)
+                .orElseThrow(() -> new IllegalArgumentException("Khong tim thay yeu cau thanh toan"));
+        requirePending(payment);
+        if (!vnpayProperties.isReady()) throw new IllegalStateException("VNPAY chua duoc cau hinh");
+        if (payment.getCreatedAt() != null && !utcNow().isBefore(payment.getCreatedAt().plusMinutes(vnpayProperties.getExpiryMinutes()))) {
+            throw new IllegalArgumentException("Yêu cầu thanh toán đã hết hạn. Vui lòng tạo yêu cầu mới.");
+        }
+        return vnpayGateway.createPaymentUrl(payment.getAmount(), payment.getTransactionReference(), payment.getCreatedAt(),
+                remoteAddress, returnUrl, "Subscription VietFresh Hub");
+    }
+
+    @Override
+    @Transactional
+    public String handleVnpayCallback(java.util.Map<String, String> fields) {
+        if (!vnpayGateway.verifySignature(fields)
+                || !java.security.MessageDigest.isEqual(vnpayProperties.getTmnCode().getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                java.util.Objects.toString(fields.get("vnp_TmnCode"), "").getBytes(java.nio.charset.StandardCharsets.UTF_8))) return "97|Invalid signature";
+        String reference = fields.get("vnp_TxnRef");
+        if (reference == null || reference.isBlank()) return "01|Unknown transaction";
+        SubscriptionPayment snapshot = paymentRepository.findByTransactionReference(reference).orElse(null);
+        if (snapshot == null) return "01|Unknown transaction";
+        lockShop(snapshot.getShop().getShopId());
+        SubscriptionPayment payment = paymentRepository.findByIdForUpdate(snapshot.getSubscriptionPaymentId()).orElseThrow();
+        boolean amountMatches;
+        try { amountMatches = payment.getAmount().movePointRight(2).longValueExact() == Long.parseLong(fields.get("vnp_Amount")); }
+        catch (RuntimeException ex) { amountMatches = false; }
+        if (!reference.equals(payment.getTransactionReference()) || !amountMatches || !"VND".equals(fields.get("vnp_CurrCode"))) return "04|Invalid amount or reference";
+        if (payment.getStatus() == SubscriptionPaymentStatus.PAID) return "00|Confirmed";
+        if (payment.getStatus() != SubscriptionPaymentStatus.PENDING) return "02|Already processed";
+        // Phan biet ket qua VNPay truoc khi ap dung trang thai het han, de khong
+        // nham giao dich VNPay da thu tien (ResponseCode=00) voi giao dich that bai.
+        boolean success = "00".equals(fields.get("vnp_ResponseCode"))
+                && "00".equals(fields.get("vnp_TransactionStatus"));
+        if (payment.getCreatedAt() != null && !utcNow().isBefore(payment.getCreatedAt().plusMinutes(vnpayProperties.getExpiryMinutes()))) {
+            // Callback muon: khong kich hoat subscription tu dong vi khong the xac minh
+            // day du trang thai subscription va cac giao dich lien quan. Giao dich
+            // thanh cong muon co the VNPay da thu tien -> danh dau FAILED de doi soat thu cong.
+            payment.setStatus(SubscriptionPaymentStatus.FAILED);
+            String transactionNo = fields.get("vnp_TransactionNo");
+            payment.setNote(success
+                    ? "Late successful VNPay transaction " + transactionNo
+                            + ": money may have been collected, requires manual reconciliation"
+                    : "VNPay transaction " + transactionNo + " failed after expiry: response "
+                            + fields.get("vnp_ResponseCode"));
+            payment.setReviewedAt(utcNow());
+            return success ? "00|Expired transaction" : "00|Recorded failure";
+        }
+        if (!success) {
+            payment.setStatus(SubscriptionPaymentStatus.FAILED);
+            payment.setNote("VNPAY response " + fields.get("vnp_ResponseCode"));
+            payment.setReviewedAt(utcNow());
+            return "00|Recorded failure";
+        }
+        activatePaidPayment(payment.getSubscriptionPaymentId(), reference);
+        payment.setNote("VNPay transaction: " + fields.get("vnp_TransactionNo"));
+        return "00|Confirmed";
     }
 
     @Override
@@ -223,16 +295,11 @@ public class ShopSubscriptionServiceImpl
                 .toList();
     }
 
-    @Override
-    @Transactional
-    @PreAuthorize("hasRole('ADMIN')")
-    public ShopSubscriptionResponse approvePayment(
+    private ShopSubscriptionResponse activatePaidPayment(
             Long paymentId,
-            Long adminUserId,
             String transactionReference
     ) {
         requireId(paymentId);
-        requireId(adminUserId);
 
         String reference = requireText(
                 transactionReference,
@@ -297,7 +364,6 @@ public class ShopSubscriptionServiceImpl
         payment.setStatus(SubscriptionPaymentStatus.PAID);
         payment.setSubscription(saved);
         payment.setTransactionReference(reference);
-        payment.setReviewedBy(adminUserId);
         payment.setReviewedAt(now);
 
         String actionText = switch (payment.getAction()) {

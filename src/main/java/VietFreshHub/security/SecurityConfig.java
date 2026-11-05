@@ -75,6 +75,7 @@ public class SecurityConfig {
             authorize.requestMatchers(
                     "/", "/login", "/register", "/verify-email", "/verify-email/resend", "/error",
                     "/reviews/product/**", "/reviews/shop/**", "/payment/vnpay/return",
+                    "/payment/vnpay/subscription/return", "/payment/vnpay/subscription/ipn",
                     "/seller-onboarding/register", "/seller-onboarding/verify-email",
                     "/seller-onboarding/verify-email/resend", "/forgot-password", "/reset-password",
                     "/css/**", "/js/**", "/images/**","/oauth2/**", "/login/oauth2/**"

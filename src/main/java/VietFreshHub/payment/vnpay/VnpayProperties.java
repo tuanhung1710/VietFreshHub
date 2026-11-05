@@ -2,8 +2,12 @@ package VietFreshHub.payment.vnpay;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
+
+import jakarta.validation.constraints.AssertTrue;
 
 @Component
+@Validated
 @ConfigurationProperties(prefix = "app.vnpay")
 public class VnpayProperties {
     private boolean enabled = true;
@@ -22,6 +26,11 @@ public class VnpayProperties {
 
     public boolean isQueryReady() {
         return isReady() && hasText(queryUrl) && hasText(queryIpAddress);
+    }
+
+    @AssertTrue(message = "app.vnpay.hash-secret must be configured when VNPay is enabled")
+    public boolean isHashSecretConfiguredWhenEnabled() {
+        return !enabled || hasText(hashSecret);
     }
 
     private boolean hasText(String value) {
