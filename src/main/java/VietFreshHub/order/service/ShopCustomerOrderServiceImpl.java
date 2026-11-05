@@ -17,6 +17,7 @@ import VietFreshHub.order.service.OrderInventoryReleaseService;
 import VietFreshHub.order.repository.*;
 import VietFreshHub.order.service.ShopCustomerOrderService;
 import VietFreshHub.order.service.OrderLabels;
+import VietFreshHub.shop.service.ShopPurchasePolicy;
 import VietFreshHub.payment.entity.Payment;
 import VietFreshHub.payment.repository.PaymentRepository;
 import VietFreshHub.payment.service.PaymentService;
@@ -46,6 +47,7 @@ public class ShopCustomerOrderServiceImpl implements ShopCustomerOrderService {
     private final CartItemRepository cartItems;
     private final CatalogVariantRepository variants;
     private final CatalogService catalog;
+    private final ShopPurchasePolicy shopPurchasePolicy;
     private final CheckoutInventoryBatchRepository stock;
     private final OrderInventoryReleaseService inventory;
     private final OrderService orderService;
@@ -173,6 +175,7 @@ public class ShopCustomerOrderServiceImpl implements ShopCustomerOrderService {
         var shop=shopOrders.findByShopOrderIdAndOrderCustomerUserId(shopOrderId,customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng của bạn."));
         if (!"CANCELLED".equals(shop.getStatus())) throw new CustomerOrderException("Chỉ có thể mua lại đơn hàng đã hủy.");
+        var ownedShopIds=shopPurchasePolicy.ownedShopIds(customerId);
         var lines=shop.getItems();
         Map<Long,Long> quantities=new TreeMap<>(); Map<Long,OrderItem> original=new HashMap<>();
         lines.forEach(line -> { Long id=line.getVariant().getVariantId(); quantities.merge(id,line.getQuantity().longValue(),Long::sum); original.putIfAbsent(id,line); });
@@ -183,6 +186,7 @@ public class ShopCustomerOrderServiceImpl implements ShopCustomerOrderService {
             String rejection=null; CartItem existing=cart==null ? null : cartItems.findByCartCartIdAndVariantVariantId(cart.getCartId(),entry.getKey()).orElse(null);
             long desired=entry.getValue()+(existing==null ? 0L : existing.getQuantity());
             if(variant==null || !catalog.isPurchasable(variant)) rejection="Sản phẩm hoặc cửa hàng hiện không nhận đơn.";
+            else if(ownedShopIds.contains(variant.getProduct().getShop().getShopId())) rejection=ShopPurchasePolicy.OWN_SHOP_MESSAGE;
             else if(entry.getValue()<1 || desired>Integer.MAX_VALUE || desired>stock.getAvailableStockByVariantId(entry.getKey())) rejection="Không đủ hàng cho số lượng mua lại và số lượng đang có trong giỏ.";
             if(rejection!=null) { skipped.add(new ReorderResult.SkippedItem(past.getProductNameSnapshot(),past.getVariantNameSnapshot(),rejection)); continue; }
             if(cart==null) { cart=new Cart(); cart.setUser(buyer); carts.save(cart); }
@@ -218,7 +222,7 @@ public class ShopCustomerOrderServiceImpl implements ShopCustomerOrderService {
                     .forEach(h -> timeline.add(new OrderTrackingResponse.Event(OrderLabels.local(h.getCreatedAt()),OrderLabels.customerStatus(h.getStatus()),h.getNote(),"ORDER")));
             if(delivery!=null) {
                 for(var event:deliveryEvents) {
-                    if("ACCEPTED".equals(event.getStatus()) || "PICKED_UP".equals(event.getStatus())) continue;
+                    if(Set.of("UNASSIGNED","ACCEPTED","PICKED_UP").contains(event.getStatus())) continue;
                     String staffName=event.getChangedBy()==null ? null : trackingStaffName(staff,delivery.getDeliveryId(),event.getChangedBy());
                     boolean goodsReturned="FAILED".equals(event.getStatus()) && event.getChangedBy()!=null
                             && event.getNote()!=null && event.getNote().startsWith(DeliveryStatusHistoryWriter.GOODS_RETURN_NOTE_PREFIX);

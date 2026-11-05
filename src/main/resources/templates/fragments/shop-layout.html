@@ -14,34 +14,9 @@
         <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
     </head>
     <body>
-        <header th:fragment="header" class="header vfc-header">
-            <div class="wrap">
-                <div class="vfc-header-main">
-                    <a class="logo" th:href="@{/home}">
-                        VietFresh Hub
-                    </a>
-                    <div class="vfo-topbar-actions vfc-header-actions">
-                        <th:block th:replace="~{fragments/customer-shop :: accountLinks}"></th:block>
-                    </div>
-                </div>
-                <div class="headrow vfc-header-tools">
-                    <form class="search" th:action="@{/shops/{id}/products(id=${shop.shopId})}" method="get" role="search">
-                        <input class="form-control" name="q" th:value="${q}" type="search" maxlength="100"
-                               placeholder="Tìm sản phẩm trong gian hàng..." aria-label="Tìm sản phẩm trong shop">
-                        <button class="btn btn-success" type="submit">
-                            TÌM
-                        </button>
-                    </form>
-                    <a class="basket" th:href="@{/cart}">
-                        Giỏ hàng (
-                        <span id="cartCount" aria-live="polite" th:text="${storefrontCartCount}">
-                            0
-                        </span>
-                        )
-                    </a>
-                </div>
-            </div>
-        </header>
+        <th:block th:fragment="header">
+            <th:block th:replace="~{fragments/customer-navigation :: workspace('shops')}"></th:block>
+        </th:block>
         <!-- Hồ sơ cửa hàng dùng chung cho trang chủ và danh sách sản phẩm của shop. -->
         <th:block th:fragment="shopInformation">
             <div class="crumb">

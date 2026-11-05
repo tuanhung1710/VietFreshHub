@@ -18,6 +18,13 @@
 .header-account-customer .header-customer-links svg { width: 18px; height: 18px; }
 @media(max-width:640px){.utility .header-account-label{display:flex;max-width:140px}.utility>.header-account{margin-left:auto}}
 
+.header-account-channel { margin: 10px 0; padding: 10px 0; border-top: 1px solid #e3e9db; border-bottom: 1px solid #e3e9db; }
+.header-account.header-account-workspace .header-workspace-links:has(+ .header-account-channel) { margin-bottom: 0; padding-bottom: 0; border-bottom: 0; }
+.header-account .header-account-channel + .header-account-logout { margin-top: 0; padding-top: 0; border-top: 0; }
+.header-account .header-account-channel a { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 10px 12px; border: 1px solid #dbe5d2; border-radius: 9px; background: #edf3e5; color: #30634e; font-size: 12px; font-weight: 600; text-decoration: none; }
+.header-account .header-account-channel a:hover { background: #e3edd9; }
+.header-account .header-account-channel svg { width: 18px; height: 18px; }
+
 /* Compact account card for seller, delivery and admin. */
 .header-account.header-account-workspace .header-account-trigger {
     gap: 10px;
@@ -44,7 +51,7 @@
     border-radius: 16px;
     box-shadow: 0 16px 40px #243d2b1f, 0 3px 8px #243d2b08;
 }
-.header-account.header-account-workspace .header-account-heading {
+.header-account .header-account-heading {
     flex-direction: row;
     align-items: center;
     gap: 12px;
@@ -54,7 +61,7 @@
     border-radius: 10px;
     background: #f3f7ed;
 }
-.header-account.header-account-workspace .header-account-profile-icon {
+.header-account .header-account-profile-icon {
     display: grid;
     place-items: center;
     width: 44px;
@@ -65,14 +72,14 @@
     background: #e7efdd;
     color: #30634e;
 }
-.header-account.header-account-workspace .header-account-identity { min-width: 0; }
-.header-account.header-account-workspace .header-account-identity strong {
+.header-account .header-account-identity { min-width: 0; }
+.header-account .header-account-identity strong {
     display: block;
     color: #294335;
     font-size: 14px;
     line-height: 1.5;
 }
-.header-account.header-account-workspace .header-account-role {
+.header-account .header-account-role {
     display: block;
     margin-top: 3px;
     color: #75836a;

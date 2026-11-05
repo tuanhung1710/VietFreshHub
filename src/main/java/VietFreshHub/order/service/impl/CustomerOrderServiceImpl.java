@@ -38,6 +38,7 @@ import VietFreshHub.payment.entity.Payment;
 import VietFreshHub.payment.repository.PaymentRepository;
 import VietFreshHub.catalog.repository.CatalogVariantRepository;
 import VietFreshHub.catalog.service.CatalogService;
+import VietFreshHub.shop.service.ShopPurchasePolicy;
 import VietFreshHub.exception.ResourceNotFoundException;
 import VietFreshHub.catalog.entity.CatalogVariant;
 import jakarta.persistence.EntityManager;
@@ -77,6 +78,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
     private final CartItemRepository cartItems;
     private final CatalogVariantRepository variants;
     private final CatalogService catalog;
+    private final ShopPurchasePolicy shopPurchasePolicy;
     private final CheckoutInventoryBatchRepository stock;
     private final OrderInventoryReleaseService inventory;
     private final LoyaltyService loyaltyService;
@@ -400,6 +402,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
     @Transactional
     public ReorderResult reorder(Long customerId, Long orderId) {
         User buyer = lockCustomer(customerId);
+        var ownedShopIds = shopPurchasePolicy.ownedShopIds(customerId);
         owned(customerId, orderId);
         List<ShopOrder> children = shopOrders.findByOrderOrderIdOrderByShopOrderIdAsc(orderId);
         if (children.isEmpty() || children.stream().anyMatch(shop -> !"CANCELLED".equals(shop.getStatus()))) {
@@ -436,6 +439,8 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
             String rejection = null;
             if (variant == null || !catalog.isPurchasable(variant)) {
                 rejection = "Sản phẩm hoặc cửa hàng hiện không nhận đơn.";
+            } else if (ownedShopIds.contains(variant.getProduct().getShop().getShopId())) {
+                rejection = ShopPurchasePolicy.OWN_SHOP_MESSAGE;
             } else if (requestedQuantity < 1 || desiredQuantity > Integer.MAX_VALUE
                     || desiredQuantity > stock.getAvailableStockByVariantId(variantId)) {
                 rejection = "Không đủ hàng cho số lượng mua lại và số lượng đang có trong giỏ.";
@@ -484,7 +489,7 @@ public class CustomerOrderServiceImpl implements CustomerOrderService {
                     .forEach(h -> timeline.add(new OrderTrackingResponse.Event(OrderLabels.local(h.getCreatedAt()),trackingShopLabel(h.getStatus()),h.getNote(),"ORDER")));
             if(delivery!=null) {
                 for(var event:deliveryEvents) {
-                    if("ACCEPTED".equals(event.getStatus()) || "PICKED_UP".equals(event.getStatus())) continue;
+                    if(Set.of("UNASSIGNED","ACCEPTED","PICKED_UP").contains(event.getStatus())) continue;
                     String staffName=event.getChangedBy()==null ? null : trackingStaffName(staff,delivery.getDeliveryId(),event.getChangedBy());
                     String eventLabel=trackingDeliveryLabel(event.getStatus(),staffName);
                     if(eventLabel!=null) timeline.add(new OrderTrackingResponse.Event(OrderLabels.local(event.getCreatedAt()),eventLabel,null,"DELIVERY"));

@@ -27,7 +27,7 @@
 
     window.vietFreshNotifications = {updateFrom};
     const bell = document.querySelector('[data-notification-bell]');
-    if (!bell || document.getElementById('delivery-dashboard')) {
+    if ((!bell && !document.getElementById('notification-inbox')) || document.getElementById('delivery-dashboard')) {
         return;
     }
 

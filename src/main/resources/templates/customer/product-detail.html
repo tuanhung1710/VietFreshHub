@@ -16,36 +16,11 @@
         <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
     </head>
     <body th:with="mainUrl=${#strings.isEmpty(product.imageUrl) ? '/images/product/product-placeholder.svg' : product.imageUrl}"
-          class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account"
+          class="vfo-app vfr-app vfr-retail vfr-customer vfc-workspace-page" data-vfr-section="account"
           th:attr="data-customer=${#authorization.expression('hasRole(''CUSTOMER'')')}">
-        <header class="vfc-header">
-            <div class="wrap">
-                <div class="vfc-header-main">
-                    <a class="brand" th:href="@{/home}">
-                        VietFresh Hub
-                    </a>
-                    <div class="vfo-topbar-actions vfc-header-actions">
-                        <th:block th:replace="~{fragments/customer-shop :: accountLinks}"></th:block>
-                    </div>
-                </div>
-                <div class="headrow vfc-header-tools">
-                    <form class="searchbar" th:action="@{/shops/{id}/products(id=${shop.shopId})}" method="get" role="search">
-                        <input class="form-control" type="search" name="q" maxlength="100" placeholder="Tìm trái cây trong gian hàng..." aria-label="Tìm sản phẩm trong shop">
-                        <button class="btn btn-success" type="submit">
-                            TÌM
-                        </button>
-                    </form>
-                    <a class="cart-button" th:href="@{/cart}">
-                        Giỏ hàng (
-                        <span id="cartCount" aria-live="polite" th:text="${storefrontCartCount}">
-                            0
-                        </span>
-                        )
-                    </a>
-                </div>
-            </div>
-        </header>
-        <main class="wrap vfr-page">
+        <th:block th:replace="~{fragments/customer-navigation :: workspace('products')}"></th:block>
+<div class="vfo-workspace" id="workspace-content" tabindex="-1">
+        <main id="customer-content" class="wrap vfr-page">
             <div class="crumb">
                 <a th:href="@{/shops/{id}(id=${shop.shopId})}">
                     Gian hàng
@@ -361,5 +336,6 @@
         </div>
         <div id="modal">
         </div>
-    </body>
+    </div>
+</body>
 </html>

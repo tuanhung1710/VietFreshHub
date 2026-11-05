@@ -10,13 +10,15 @@
     <link rel="stylesheet" th:href="@{/css/storefront.css}">
     <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body class="vfo-app vfr-app vfc-app vfr-customer" data-vfr-section="account">
+<body class="vfo-app vfr-app vfc-app vfr-customer vfc-workspace-page" data-vfr-section="account">
 <th:block th:replace="~{fragments/interface-layout :: navigation('customer','account')}"></th:block>
+<div class="vfo-workspace" id="workspace-content" tabindex="-1">
 <main class="container page vfr-page" id="customer-content" tabindex="-1"><section class="panel empty">
     <p class="eyebrow">VietFresh Hub</p><h1>Vui lòng kiểm tra lại thông tin</h1>
     <p class="muted" th:text="${message}"></p>
     <a class="button" th:href="@{/cart}">Về giỏ hàng</a>
     <a class="button" th:href="@{/home}">Khám phá sản phẩm</a>
 </section></main><footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</div>
 </body>
 </html>

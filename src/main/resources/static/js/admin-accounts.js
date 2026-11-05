@@ -87,7 +87,7 @@
     }
 
     function openDetails(account) {
-        const statusText = account.status === 'ACTIVE' ? 'Active' : 'Inactive';
+        const statusText = account.status === 'ACTIVE' ? 'Đang hoạt động' : 'Ngừng hoạt động';
         const isAdmin = account.roleNames.split(', ').includes('ROLE_ADMIN');
         const content = `
             <div class="detail-hero"><span class="account-avatar">${escapeHtml(account.name.trim().split(/\s+/).slice(-2).map(part => part[0] || '').join('').toUpperCase())}</span>
@@ -162,8 +162,8 @@
 
     function openStatus(account) {
         const statuses = [
-            ['ACTIVE', 'Active', 'Có thể đăng nhập và sử dụng hệ thống.'],
-            ['INACTIVE', 'Inactive', 'Tạm ngưng hoạt động.']
+            ['ACTIVE', 'Đang hoạt động', 'Có thể đăng nhập và sử dụng hệ thống.'],
+            ['INACTIVE', 'Ngừng hoạt động', 'Tạm ngưng hoạt động.']
         ];
         const choices = statuses.map(([value, label, description]) => `
             <label class="status-choice"><input type="radio" name="status" value="${value}" ${account.status === value ? 'checked' : ''}>

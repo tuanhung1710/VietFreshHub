@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
     <title>Đặt hàng | VietFresh Hub</title><link rel="stylesheet" th:href="@{/css/storefront.css}"><link rel="stylesheet" th:href="@{/css/customer-shell.css}"><link rel="stylesheet" th:href="@{/css/checkout-page.css(v=1)}"><script defer th:src="@{/js/cart.js}"></script>    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
-</head><body class="vfo-app vfr-app vfr-utility vfc-app vfr-customer" data-vfr-section="cart">
-<th:block th:replace="~{fragments/interface-layout :: navigation('customer','cart')}"></th:block>
+</head><body class="vfo-app vfr-app vfr-utility vfc-app vfr-customer vfc-workspace-page" data-vfr-section="cart">
+<th:block th:replace="~{fragments/interface-layout :: customerHeader('cart')}"></th:block>
+<div class="vfo-workspace" id="workspace-content" tabindex="-1">
 
 
 <main class="container page checkout-page vfr-page" id="customer-content" tabindex="-1">
@@ -140,4 +141,5 @@
 </main>
 <script defer th:src="@{/js/checkout.js}"></script>
 <footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</div>
 </body></html>
