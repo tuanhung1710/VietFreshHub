@@ -1,5 +1,6 @@
 package VietFreshHub.review.controller;
 
+import VietFreshHub.auth.service.AuthService;
 import VietFreshHub.review.dto.ReviewForm;
 import VietFreshHub.review.dto.ReviewReportForm;
 import VietFreshHub.review.service.ReviewService;
@@ -20,13 +21,25 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class ReviewController {
     private final ReviewService reviewService;
+    private final AuthService authService;
 
     @GetMapping("/reviews/product/{productId}")
     public String productReviews(@PathVariable Long productId, @RequestParam(defaultValue = "0") int page,
+                                 @RequestParam(required = false) Byte rating,
+                                 @RequestParam(required = false) Long orderItemId,
+                                 @RequestParam(defaultValue = "newest") String sort,
                                  Authentication authentication, Model model) {
+        if (rating != null && (rating < 1 || rating > 5)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Điểm lọc phải từ 1 đến 5.");
+        }
         model.addAttribute("targetType", "product");
         model.addAttribute("targetId", productId);
-        model.addAttribute("reviews", reviewService.productReviews(productId, page));
+        boolean oldestFirst = "oldest".equals(sort);
+        model.addAttribute("reviews", reviewService.productReviews(productId, page, rating, oldestFirst));
+        model.addAttribute("selectedRating", rating);
+        model.addAttribute("selectedOrderItemId", orderItemId);
+        model.addAttribute("selectedSort", oldestFirst ? "oldest" : "newest");
         model.addAttribute("rating", reviewService.productRating(productId));
         addCustomerForm(authentication, productId, null, model);
         return "review/list";
@@ -39,13 +52,26 @@ public class ReviewController {
         model.addAttribute("targetId", shopId);
         model.addAttribute("reviews", reviewService.shopReviews(shopId, page));
         model.addAttribute("rating", reviewService.shopRating(shopId));
+        model.addAttribute("shopName", reviewService.shopName(shopId));
         addCustomerForm(authentication, null, shopId, model);
         return "review/list";
     }
 
     @GetMapping("/reviews/mine")
-    public String myReviews(Authentication authentication, @RequestParam(defaultValue = "0") int page, Model model) {
-        model.addAttribute("reviews", reviewService.myReviews(authentication, page));
+    public String myReviews(Authentication authentication, @RequestParam(defaultValue = "0") int page,
+                            @RequestParam(required = false) Byte rating,
+                            @RequestParam(required = false) Long productId,
+                            @RequestParam(defaultValue = "newest") String sort, Model model) {
+        if (rating != null && (rating < 1 || rating > 5)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Điểm lọc phải từ 1 đến 5.");
+        }
+        boolean oldestFirst = "oldest".equals(sort);
+        model.addAttribute("reviews", reviewService.myReviews(authentication, page, rating, productId, oldestFirst));
+        model.addAttribute("reviewProducts", reviewService.reviewedProducts(authentication));
+        model.addAttribute("selectedRating", rating);
+        model.addAttribute("selectedProductId", productId);
+        model.addAttribute("selectedSort", oldestFirst ? "oldest" : "newest");
         model.addAttribute("reviewForm", new ReviewForm(null, null));
         return "review/mine";
     }
@@ -57,19 +83,19 @@ public class ReviewController {
         if (errors.hasErrors()) flash.addFlashAttribute("errorMessage", "Điểm đánh giá phải từ 1 đến 5.");
         else {
             reviewService.createProductReview(authentication, productId, orderItemId, form);
-            flash.addFlashAttribute("successMessage", "Đánh giá đã gửi và đang chờ duyệt.");
+            flash.addFlashAttribute("successMessage", "Đánh giá đã được đăng.");
         }
         return "redirect:/reviews/product/" + productId;
     }
 
     @PostMapping("/reviews/shop/{shopId}")
-    public String createShopReview(@PathVariable Long shopId, @RequestParam Long shopOrderId,
+    public String createShopReview(@PathVariable Long shopId,
                                    @Valid @ModelAttribute("reviewForm") ReviewForm form,
                                    BindingResult errors, Authentication authentication, RedirectAttributes flash) {
         if (errors.hasErrors()) flash.addFlashAttribute("errorMessage", "Điểm đánh giá phải từ 1 đến 5.");
         else {
-            reviewService.createShopReview(authentication, shopId, shopOrderId, form);
-            flash.addFlashAttribute("successMessage", "Đánh giá đã gửi và đang chờ duyệt.");
+            reviewService.createShopReview(authentication, shopId, form);
+            flash.addFlashAttribute("successMessage", "Đánh giá đã được đăng.");
         }
         return "redirect:/reviews/shop/" + shopId;
     }
@@ -80,7 +106,7 @@ public class ReviewController {
         if (errors.hasErrors()) flash.addFlashAttribute("errorMessage", "Nội dung đánh giá không hợp lệ.");
         else {
             reviewService.edit(authentication, reviewId, form);
-            flash.addFlashAttribute("successMessage", "Đã cập nhật đánh giá đang chờ duyệt.");
+            flash.addFlashAttribute("successMessage", "Đã cập nhật đánh giá.");
         }
         return "redirect:/reviews/mine";
     }
@@ -113,11 +139,15 @@ public class ReviewController {
                 ? productId != null ? reviewService.eligibleOrderItems(authentication, productId)
                 : reviewService.eligibleShopOrders(authentication, shopId)
                 : java.util.List.of());
+        model.addAttribute("hasPurchasedShop", customer && shopId != null
+                && reviewService.hasCompletedShopOrder(authentication, shopId));
         model.addAttribute("canReview", customer);
+        model.addAttribute("currentUserId", customer ? authService.getCurrentUserId(authentication) : null);
     }
 
     private String safeReturn(String path) {
-        return path != null && (path.startsWith("/reviews/product/") || path.startsWith("/reviews/shop/"))
+        return path != null && (path.startsWith("/reviews/product/") || path.startsWith("/reviews/shop/")
+                || path.matches("/product-detail(?:/\\d+)?"))
                 ? path : "/home";
     }
 }

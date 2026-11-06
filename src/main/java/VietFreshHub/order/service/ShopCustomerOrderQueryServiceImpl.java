@@ -34,7 +34,8 @@ public class ShopCustomerOrderQueryServiceImpl implements ShopCustomerOrderQuery
         for(var row:reads.findItems(customerId,orderId)) {
             String image=row.getImageUrl()==null || row.getImageUrl().isBlank() ? null : row.getImageUrl();
             items.computeIfAbsent(row.getShopOrderId(),key -> new ArrayList<>()).add(new OrderDetailsResponse.Item(
-                    row.getProductName(),row.getVariantName(),row.getSku(),image,row.getQuantity(),row.getUnitPrice(),row.getTotalAmount(),row.getDiscountAmount()));
+                    row.getProductName(),row.getVariantName(),row.getSku(),image,row.getQuantity(),row.getUnitPrice(),row.getTotalAmount(),row.getDiscountAmount(),
+                    row.getOrderItemId(),row.getProductId()));
         }
         Map<Long,String> statuses=new HashMap<>();
         orders.findCustomerShopStatuses(customerId,List.of(orderId)).forEach(status -> statuses.put(status.shopOrderId(),status.statusLabel()));
@@ -62,7 +63,8 @@ public class ShopCustomerOrderQueryServiceImpl implements ShopCustomerOrderQuery
         var items=reads.findShopItems(customerId,shopOrderId).stream().map(row -> {
             String image=row.getImageUrl()==null || row.getImageUrl().isBlank() ? null : row.getImageUrl();
             return new OrderDetailsResponse.Item(row.getProductName(),row.getVariantName(),row.getSku(),image,
-                    row.getQuantity(),row.getUnitPrice(),row.getTotalAmount(),row.getDiscountAmount());
+                    row.getQuantity(),row.getUnitPrice(),row.getTotalAmount(),row.getDiscountAmount(),
+                    row.getOrderItemId(),row.getProductId());
         }).toList();
         boolean cod=paymentService.isCodOrder(order.getOrderId());
         String paymentLabel=OrderLabels.customerPayment(shop.getStatus(),shop.getPaymentStatus(),cod);

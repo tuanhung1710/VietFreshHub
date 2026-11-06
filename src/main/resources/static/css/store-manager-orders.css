@@ -103,6 +103,12 @@
 .vfo-app .vfo-btn-primary:hover, .vfo-app .order-search-button:hover, .vfo-app .order-filter-apply:hover { border-color: var(--vfo-green-dark); background: var(--vfo-green-dark); color: #fff; box-shadow: 0 3px 9px #234c3b16; }
 .vfo-app .vfo-btn-secondary, .vfo-app .order-filter-button, .vfo-app .order-filter-clear { border: 1px solid #cfd6c7; background: #fff; color: var(--vfo-green); }
 .vfo-app .vfo-btn-secondary:hover, .vfo-app .order-filter-button:hover, .vfo-app .order-filter-clear:hover { border-color: #93aa8a; background: #edf2e7; color: var(--vfo-green-dark); }
+.seller-review-action { max-width: 100%; }
+.seller-review-action[open] { flex-basis: 100%; }
+.seller-review-action summary { cursor: pointer; list-style: none; }
+.seller-review-action summary::-webkit-details-marker { display: none; }
+.seller-review-action form { width: min(28rem, 100%); max-width: calc(100vw - 3rem); margin-top: 12px; padding: 14px; border: 1px solid var(--vfo-border); border-radius: 10px; background: #fff; }
+.seller-review-action form label { display: block; }
 .vfo-page-heading > .btn { flex-shrink: 0; }
 .vfo-app .card { border: 1px solid var(--vfo-border); border-radius: 13px; background: #fff; box-shadow: 0 3px 12px #263b2a03; }
 .vfo-order-tabs { flex-wrap: nowrap; gap: 5px; margin-bottom: 18px; padding: 8px; border: 1px solid var(--vfo-border); border-radius: 12px; background: #fff; overflow-x: auto; scrollbar-width: thin; }

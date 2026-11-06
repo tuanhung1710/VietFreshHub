@@ -50,10 +50,15 @@ public record OrderDetailsResponse(Long orderId,String orderCode,String statusLa
         }
     }
     public record Item(String productName,String variantName,String sku,String imageUrl,int quantity,
-                       BigDecimal unitPrice,BigDecimal totalAmount,BigDecimal discountAmount) {
+                       BigDecimal unitPrice,BigDecimal totalAmount,BigDecimal discountAmount,
+                       Long orderItemId,Long productId) {
+        public Item(String productName,String variantName,String sku,String imageUrl,int quantity,
+                    BigDecimal unitPrice,BigDecimal totalAmount,BigDecimal discountAmount) {
+            this(productName,variantName,sku,imageUrl,quantity,unitPrice,totalAmount,discountAmount,null,null);
+        }
         public Item(String productName,String variantName,String sku,String imageUrl,int quantity,
                     BigDecimal unitPrice,BigDecimal totalAmount) {
-            this(productName,variantName,sku,imageUrl,quantity,unitPrice,totalAmount,BigDecimal.ZERO);
+            this(productName,variantName,sku,imageUrl,quantity,unitPrice,totalAmount,BigDecimal.ZERO,null,null);
         }
     }
     public record DeliveryInfo(String status,String statusLabel,LocalDateTime assignedAt,LocalDateTime pickedUpAt,

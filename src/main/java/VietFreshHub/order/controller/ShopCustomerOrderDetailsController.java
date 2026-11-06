@@ -1,5 +1,6 @@
 package VietFreshHub.order.controller;
 import VietFreshHub.auth.service.CurrentCustomerService;
+import VietFreshHub.review.service.ReviewService;
 import VietFreshHub.order.service.ShopCustomerOrderQueryService;
 import VietFreshHub.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ public class ShopCustomerOrderDetailsController {
     private final VietFreshHub.order.service.ShopCustomerOrderService lifecycle;
     private final VnpayPaymentService vnpayPayments;
     private final VietFreshHub.refund.service.RefundRequestService refunds;
+    private final ReviewService reviews;
     @GetMapping(value="/{shopOrderId}",params="!shopOrderId")
     public String detail(@PathVariable Long shopOrderId,
                          Authentication authentication,Model model) {
@@ -33,6 +35,7 @@ public class ShopCustomerOrderDetailsController {
         model.addAttribute("actions",lifecycle.shopActions(customerId,shopOrderId));
         model.addAttribute("refund",refunds.getCustomerShopState(shopOrderId,authentication));
         model.addAttribute("receiptRefund",refunds.getCustomerState(order.orderId(),authentication));
+        model.addAttribute("reviewedOrderItemIds",reviews.reviewedOrderItemIds(authentication,shopOrderId));
         return "customer/shop-order-detail";
     }
     @GetMapping(value="/{orderId}",params="shopOrderId")

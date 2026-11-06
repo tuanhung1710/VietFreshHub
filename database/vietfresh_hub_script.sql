@@ -1185,7 +1185,10 @@ CREATE TABLE dbo.reviews (
     shop_order_id       BIGINT NULL,
     rating              TINYINT NOT NULL,
     content             NVARCHAR(3000) NULL,
-    status              VARCHAR(30) NOT NULL CONSTRAINT DF_reviews_status DEFAULT (''PENDING''),
+    shop_reply          NVARCHAR(3000) NULL,
+    shop_replied_by     BIGINT NULL,
+    shop_replied_at     DATETIME2(0) NULL,
+    status              VARCHAR(30) NOT NULL CONSTRAINT DF_reviews_status DEFAULT (''APPROVED''),
     moderated_by        BIGINT NULL,
     moderated_at        DATETIME2(0) NULL,
     created_at          DATETIME2(0) NOT NULL CONSTRAINT DF_reviews_created_at DEFAULT (SYSUTCDATETIME()),
@@ -1202,6 +1205,8 @@ CREATE TABLE dbo.reviews (
     CONSTRAINT FK_reviews_shop_order FOREIGN KEY (shop_order_id)
         REFERENCES dbo.shop_orders(shop_order_id),
     CONSTRAINT FK_reviews_moderated_by FOREIGN KEY (moderated_by)
+        REFERENCES dbo.users(user_id),
+    CONSTRAINT FK_reviews_shop_replied_by FOREIGN KEY (shop_replied_by)
         REFERENCES dbo.users(user_id),
     CONSTRAINT CK_reviews_rating CHECK (rating BETWEEN 1 AND 5),
     CONSTRAINT CK_reviews_status CHECK (status IN (''PENDING'', ''APPROVED'', ''REJECTED'', ''REMOVED'')),
@@ -1235,7 +1240,8 @@ CREATE TABLE dbo.review_reports (
         REFERENCES dbo.users(user_id),
     CONSTRAINT FK_review_reports_reviewer FOREIGN KEY (reviewed_by)
         REFERENCES dbo.users(user_id),
-    CONSTRAINT CK_review_reports_status CHECK (status IN (''PENDING'', ''REVIEWED'', ''DISMISSED'', ''ACTION_TAKEN''))
+    CONSTRAINT CK_review_reports_status CHECK (status IN (''PENDING'', ''REVIEWED'', ''DISMISSED'', ''ACTION_TAKEN'')),
+    CONSTRAINT UQ_review_reports_review_reporter UNIQUE (review_id, reporter_user_id)
 );';
 
 EXEC sys.sp_executesql N'-- 49. notifications

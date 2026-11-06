@@ -1,0 +1,12 @@
+<th:block xmlns:th="http://www.thymeleaf.org" th:fragment="fields(reviewId)">
+    <label th:for="${'reason-' + reviewId}" class="form-label">Lý do báo cáo</label>
+    <select th:id="${'reason-' + reviewId}" name="reason" required class="form-select" data-review-report-reason>
+        <option value="">Chọn lý do</option>
+        <option th:each="reason : ${T(VietFreshHub.review.dto.ReviewReportReason).values()}"
+                th:value="${reason.name()}" th:text="${reason.label}"></option>
+    </select>
+    <div data-review-report-description hidden>
+        <label th:for="${'description-' + reviewId}" class="form-label mt-2">Mô tả thêm</label>
+        <textarea th:id="${'description-' + reviewId}" name="description" maxlength="1000" class="form-control"></textarea>
+    </div>
+</th:block>
