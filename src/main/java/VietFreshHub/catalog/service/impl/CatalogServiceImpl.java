@@ -227,7 +227,6 @@ public class CatalogServiceImpl implements CatalogService {
                 .sku(variant.getSku())
                 .imageUrl(variant.getDisplayImageUrl())
                 .price(offer == null ? variant.getPrice() : offer.price())
-                .basePrice(offer == null ? variant.getPrice() : offer.basePrice())
                 .status(variant.getStatus())
                 .compareAtPrice(variant.getCompareAtPrice())
                 .availableStock(offer == null ? 0 : offer.availableStock())

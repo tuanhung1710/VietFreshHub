@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/interface-layout :: head('Địa chỉ giao hàng | VietFresh Hub')}"></head>
-<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col vfo-app vfr-app vfr-utility vfc-app vfr-customer" data-vfr-section="account">
-<th:block th:replace="~{fragments/interface-layout :: navigation('customer','account')}"></th:block>
+<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col vfo-app vfr-app vfr-utility vfc-app vfr-customer vfc-workspace-page" data-vfr-section="account">
+<th:block th:replace="~{fragments/interface-layout :: navigation('customer','addresses')}"></th:block>
+<div class="vfo-workspace" id="workspace-content" tabindex="-1">
 
 
 
@@ -53,5 +54,6 @@
 
 
 <footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</div>
 </body>
 </html>

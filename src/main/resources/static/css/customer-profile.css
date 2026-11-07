@@ -1,0 +1,70 @@
+.customer-profile-heading {
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+.customer-profile-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.customer-profile-form { overflow: hidden; }
+.customer-profile-body { padding: 28px; }
+.customer-profile-avatar-row {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 28px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--vfo-border);
+}
+.customer-profile-avatar {
+    display: grid;
+    place-items: center;
+    flex: 0 0 88px;
+    width: 88px;
+    height: 88px;
+    border: 1px solid var(--vfo-border);
+    border-radius: 50%;
+    background: #edf3e5;
+    color: var(--vfo-green);
+    object-fit: cover;
+    font-size: 32px;
+    font-weight: 600;
+}
+.customer-profile-upload { flex: 1; min-width: 0; }
+.customer-profile-page .customer-profile-upload .form-control { max-width: 480px; }
+.customer-profile-page .form-text { margin: 8px 0 0; line-height: 1.6; }
+.customer-profile-page .form-label { margin-bottom: 8px; color: #53664b; font-size: 13px; font-weight: 600; }
+.customer-profile-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+}
+.customer-profile-field { min-width: 0; }
+.customer-profile-email { grid-column: 1 / -1; }
+.customer-profile-page .customer-profile-field .form-control {
+    width: 100%;
+    min-height: 46px;
+    padding: 11px 14px;
+}
+.customer-profile-page .form-control[readonly] { background: #f5f7ef; color: #74816a; }
+.customer-profile-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 20px 28px;
+    border-top: 1px solid var(--vfo-border);
+    background: #fcfdf9;
+}
+.customer-profile-actions .btn { min-width: 120px; }
+
+@media (max-width: 640px) {
+    .customer-profile-links { width: 100%; }
+    .customer-profile-links .btn { flex: 1; }
+    .customer-profile-body { padding: 20px; }
+    .customer-profile-avatar-row { align-items: flex-start; flex-direction: column; gap: 16px; margin-bottom: 24px; padding-bottom: 24px; }
+    .customer-profile-upload { width: 100%; }
+    .customer-profile-fields { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+    .customer-profile-actions { padding: 16px 20px; }
+    .customer-profile-actions .btn { flex: 1; min-width: 0; }
+}

@@ -34,8 +34,6 @@ public class ActivityHistoryFilter {
         actions.put("DISPOSE", "Hủy hàng hết hạn");
         actions.put("BLOCK", "Khóa lô");
         actions.put("UNBLOCK", "Mở khóa lô");
-        actions.put("MARKDOWN", "Thiết lập giảm giá lô");
-        actions.put("CANCEL_MARKDOWN", "Dừng giảm giá lô");
         actions.put("RESERVE", "Giữ hàng cho đơn");
         actions.put("RELEASE", "Giải phóng hàng giữ");
         actions.put("SALE", "Xuất bán");

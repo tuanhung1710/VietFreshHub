@@ -8,8 +8,9 @@
     <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
     <link rel="stylesheet" th:href="@{/css/review.css}">
 </head>
-<body class="vfo-app vfr-app vfc-app vfr-customer" data-vfr-section="account">
-<th:block th:replace="~{fragments/interface-layout :: navigation('customer','account')}"></th:block>
+<body class="vfo-app vfr-app vfc-app vfr-customer vfc-workspace-page" data-vfr-section="reviews">
+<th:block th:replace="~{fragments/customer-navigation :: workspace('reviews')}"></th:block>
+<div class="vfo-workspace" id="workspace-content" tabindex="-1">
 <main class="vfr-page" id="customer-content" tabindex="-1">
     <h1>Đánh giá của tôi</h1>
     <form method="get" th:action="@{/reviews/mine}" class="row g-2 mb-3 align-items-end">
@@ -48,4 +49,5 @@
     </nav>
     <form action="/" method="get"><button class="btn btn-success" type="submit">Về trang chủ</button></form>
 </main><footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</div>
 </body></html>

@@ -320,10 +320,6 @@ public class InventoryActivityHistoryService {
                 return "Khóa lô";
             case "UNBLOCK":
                 return "Mở khóa lô";
-            case "MARKDOWN":
-                return "Thiết lập giảm giá lô";
-            case "CANCEL_MARKDOWN":
-                return "Dừng giảm giá lô";
             case "RESERVE":
                 return "Giữ hàng cho đơn";
             case "RELEASE":

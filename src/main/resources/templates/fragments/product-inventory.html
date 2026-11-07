@@ -6,20 +6,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
-    
-        
-        
+
+
+
         <title th:text="${title + ' · VietFresh Hub'}">
             VietFresh Hub
         </title>
         <meta name="csrf-token" th:content="${_csrf.token}">
         <meta name="csrf-header" th:content="${_csrf.headerName}">
         <meta name="image-upload-url" th:content="@{/seller/products/images}">
-        
+
         <link rel="stylesheet" th:href="@{/css/product/module.css}">
         <link rel="stylesheet" th:href="@{'/css/'+${feature}+'/'+${feature}+'.css'}">
         <link th:if="${feature == 'product'}" rel="stylesheet" th:href="@{/css/product/catalog.css}">
-        
+
         <script defer th:src="@{/js/product/money-fields.js}"></script>
         <script th:if="${feature == 'product'}" defer th:src="@{/js/product/module.js}"></script>
         <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
@@ -175,37 +175,6 @@
             <p class="mb-1" th:each="err : ${#fields.allErrors()}" th:text="${err}">
             </p>
         </div>
-        <div th:fragment="variantActionModal(returnToList)" class="modal fade" id="variantActionModal" tabindex="-1"
-             aria-labelledby="variantActionTitle" aria-describedby="variantActionDescription" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <form id="variantActionForm" th:action="@{/seller/products}" method="post" data-vf-catalog-action>
-                        <input type="hidden" name="returnToList" th:value="${returnToList}">
-                        <input type="hidden" name="status" id="variantActionStatus">
-                        <th:block th:if="${returnToList}">
-                            <th:block th:replace="~{fragments/product-catalog :: filters}"></th:block>
-                            <input type="hidden" name="page" th:value="${rows.number + 1}">
-                            <input type="hidden" name="size" th:value="${rows.size}">
-                        </th:block>
-                        <div class="modal-header">
-                            <h2 class="modal-title fs-5" id="variantActionTitle">Trạng thái SKU</h2>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
-                        </div>
-                        <div class="modal-body">
-                            <p class="fw-semibold text-break" id="variantActionName"></p>
-                            <p class="small text-secondary" id="variantActionDescription"></p>
-                            <label class="form-label" for="variantActionReason">Lý do thay đổi *</label>
-                            <textarea class="form-control" id="variantActionReason" name="reason" rows="3"
-                                      maxlength="900" required></textarea>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-                            <button type="submit" class="btn btn-success" id="variantActionSubmit">Xác nhận</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
         <div th:fragment="variantDeleteModal(returnToList)" class="modal fade" id="variantDeleteModal" tabindex="-1"
              aria-labelledby="variantDeleteTitle" aria-describedby="variantDeleteDescription" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
@@ -245,7 +214,7 @@
             <span class="badge"
                   th:classappend="${row.managementState.code=='active'?'vf-badge-green':(row.managementState.code=='violation'?'vf-badge-red':'vf-badge-gray')}"
                   th:text="${row.managementState.label}"
-                  th:title="${row.managementState.code=='archived'?'Sản phẩm đã xóa; tồn kho và lịch sử được lưu trong Kho hàng.':row.managementState.reason}"></span>
+                  th:title="${row.managementState.reason}"></span>
         </th:block>
     </body>
 </html>

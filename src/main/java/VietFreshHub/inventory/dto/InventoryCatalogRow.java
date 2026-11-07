@@ -26,9 +26,13 @@ public record InventoryCatalogRow(
         boolean expired,
         boolean nearExpiry,
         boolean blocked,
-        boolean archived,
         boolean lowStock) {
     public String batchCode() {
         return BusinessCodes.format("LOT", batchId);
+    }
+
+    /** Hết hàng theo tồn thực tế của lô, độc lập với hạn dùng và lượng có thể bán. */
+    public boolean isEmptyStock() {
+        return batchId != null && physical == 0;
     }
 }

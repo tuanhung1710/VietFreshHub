@@ -2,10 +2,11 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
     <head th:replace="~{fragments/shop-layout :: head(${shop.shopName})}">
     </head>
-    <body class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
+    <body class="vfo-app vfr-app vfr-retail vfr-customer vfc-workspace-page" data-vfr-section="account">
         <header th:replace="~{fragments/shop-layout :: header}">
         </header>
-        <main class="wrap vfr-page">
+<div class="vfo-workspace" id="workspace-content" tabindex="-1">
+        <main id="customer-content" class="wrap vfr-page">
             <th:block th:replace="~{fragments/shop-layout :: shopInformation}">
             </th:block>
             <div th:replace="~{fragments/customer-shop :: messages}">
@@ -53,5 +54,6 @@
             </div>
         </main>
         <footer th:replace="~{fragments/footer :: footer}"></footer>
-    </body>
+    </div>
+</body>
 </html>

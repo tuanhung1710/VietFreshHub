@@ -131,7 +131,8 @@
               >
                 Tạm ẩn
               </option>
-              <option value="DELETED">
+
+            <option value="DELETED">
                 Xóa sản phẩm
               </option>
             </select>
@@ -159,7 +160,7 @@
         <p class="small text-body-secondary mt-3 mb-0" id="product-status-help">
           Sản phẩm đủ điều kiện có thể bán ngay. Sản phẩm bị khóa sẽ hiển thị
           trong mục Vi phạm; chủ shop không thể tự mở khóa. Khi xóa sản phẩm,
-          tồn kho và lịch sử vẫn được lưu trong Kho hàng.
+          tồn kho và lịch sử vẫn được lưu để đối soát.
         </p>
         <p
           class="alert alert-warning small mt-3 mb-0"
@@ -173,10 +174,7 @@
       <p class="alert alert-info" th:if="${#lists.isEmpty(row.visibleVariants)}">
         Sản phẩm chưa có phân loại còn kinh doanh.
       </p>
-      <p class="small text-body-secondary" th:if="${row.variants!=null&&row.visibleVariants!=null&&#lists.size(row.variants)>#lists.size(row.visibleVariants)}">
-        Phân loại đã xóa được lưu cùng lịch sử và tồn kho.
-        <a class="text-success" th:href="@{/seller/inventory(q=${row.product.productCode},archived=true)}">Xem trong kho hàng</a>.
-      </p>
+
 
       <section class="card p-4 mb-4" th:each="v : ${row.visibleVariants}" th:id="${'variant-'+v.variant.variantId}">
         <div
@@ -226,6 +224,7 @@
               </svg>
               Xem tồn kho
             </a>
+
             <button
               class="btn btn-outline-danger btn-sm vf-product-icon-action"
               type="button"
@@ -237,7 +236,7 @@
             >
               <svg class="vf-icon" aria-hidden="true"><use href="#vf-trash" /></svg>
             </button>
-            <div class="dropdown">
+            <div class="dropdown" th:if="${row.product.status.name()!='DELETED'&&v.variant.status.name()!='DELETED'}">
               <button
                 type="button"
                 class="btn btn-sm btn-light vf-product-more"
@@ -282,17 +281,6 @@
                     Nhập kho
                   </a>
                 </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    th:href="@{/seller/products/{p}/variants/{v}/prices(p=${row.product.productId},v=${v.variant.variantId})}"
-                  >
-                    <svg class="vf-icon" aria-hidden="true">
-                      <use href="#vf-history" />
-                    </svg>
-                    Lịch sử giá bán
-                  </a>
-                </li>
               </ul>
             </div>
           </div>
@@ -315,11 +303,6 @@
             Sắp hết hàng
           </span>
         </div>
-        <p
-          th:if="${v.offerPrice!=null}"
-          class="alert alert-success small"
-          th:text="${'Giá bán cận hạn: '+@vndAmounts.format(v.offerPrice)+' ₫ · Áp dụng cho '+v.offerQuantity+' '+v.variant.unit}"
-        ></p>
         <div class="row g-3 mb-3 vf-variant-metrics">
           <div class="col-6 col-xl-3">
             <div class="border rounded-3 p-3 bg-body-tertiary">
@@ -392,7 +375,8 @@
               >
                 Tạm ẩn
               </option>
-              <option value="DELETED">Xóa phân loại</option>
+
+            <option value="DELETED">Xóa phân loại</option>
             </select>
           </div>
           <div class="col-md-6">

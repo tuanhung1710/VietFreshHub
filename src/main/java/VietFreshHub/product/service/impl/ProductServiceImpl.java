@@ -7,8 +7,6 @@ import static VietFreshHub.inventory.rule.InventoryRules.today;
 
 import VietFreshHub.auth.service.AuthService;
 import VietFreshHub.common.BusinessCodes;
-import VietFreshHub.common.PageSizes;
-import VietFreshHub.common.Pagination;
 import VietFreshHub.inventory.dto.InventoryAttentionSummary;
 import VietFreshHub.inventory.entity.InventoryBatch;
 import VietFreshHub.inventory.enums.BatchStatus;
@@ -28,7 +26,6 @@ import VietFreshHub.product.dto.VariantActionRequest;
 import VietFreshHub.product.dto.VariantRequest;
 import VietFreshHub.product.dto.VariantResponse;
 import VietFreshHub.product.entity.Category;
-import VietFreshHub.product.entity.PriceHistory;
 import VietFreshHub.product.entity.Product;
 import VietFreshHub.product.entity.ProductCategory;
 import VietFreshHub.product.entity.ProductImage;
@@ -38,7 +35,6 @@ import VietFreshHub.product.enums.ProductStatus;
 import VietFreshHub.product.enums.VariantStatus;
 import VietFreshHub.product.exception.DuplicateProductNameException;
 import VietFreshHub.product.repository.CategoryRepository;
-import VietFreshHub.product.repository.PriceHistoryRepository;
 import VietFreshHub.product.repository.ProductCategoryRepository;
 import VietFreshHub.product.repository.ProductImageRepository;
 import VietFreshHub.product.repository.ProductRepository;
@@ -58,7 +54,6 @@ import VietFreshHub.subscription.services.SubscriptionPlanService;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -69,7 +64,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -92,7 +86,6 @@ public class ProductServiceImpl implements ProductService {
     private final CategoryRepository categoryRepository;
     private final ProductCategoryRepository productCategoryRepository;
     private final ProductImageRepository productImageRepository;
-    private final PriceHistoryRepository priceHistoryRepository;
     private final InventoryBatchRepository inventoryBatchRepository;
     private final InventoryTransactionRepository inventoryTransactionRepository;
     private final InventoryJournalService inventoryJournalService;
@@ -119,7 +112,6 @@ public class ProductServiceImpl implements ProductService {
     private void prepareManagementFilters(ProductCatalogFilter filters) {
         filters.setQ(normalizeFilter(filters.getQ()));
         filters.setTab(normalizeFilter(filters.getTab()));
-        filters.setStock(normalizeFilter(filters.getStock()));
         filters.setSort(normalizeFilter(filters.getSort()));
         if (filters.getSort().isEmpty()) {
             filters.setSort("updated_desc");
@@ -128,9 +120,6 @@ public class ProductServiceImpl implements ProductService {
                 List.of("", "active", "out-of-stock", "violation", "hidden")
                         .contains(filters.getTab()),
                 "Tab sản phẩm không hợp lệ.");
-        require(
-                List.of("", "available", "empty", "low", "expiry").contains(filters.getStock()),
-                "Bộ lọc tồn kho không hợp lệ.");
         require(
                 List.of("updated_desc", "updated_asc").contains(filters.getSort()),
                 "Cách sắp xếp không hợp lệ.");
@@ -373,31 +362,6 @@ public class ProductServiceImpl implements ProductService {
     }
 
     /**
-     * Đóng khoảng hiệu lực của giá cũ và ghi giá mới.
-     * Thời điểm bắt đầu giá mới luôn sau thời điểm bắt đầu giá cũ, kể cả khi đổi giá trong cùng giây.
-     */
-    private void recordPriceChange(ProductVariant variant, Long actorId) {
-        LocalDateTime effectiveAt = now();
-        // Đóng các khoảng giá đang mở trước khi ghi mức giá mới.
-        for (PriceHistory history :
-                priceHistoryRepository.findByVariantIdAndEffectiveToIsNull(
-                        variant.getVariantId())) {
-            if (!effectiveAt.isAfter(history.getEffectiveFrom())) {
-                // Hai lần đổi giá trong cùng giây vẫn phải có khoảng hiệu lực dài hơn 0.
-                effectiveAt = history.getEffectiveFrom().plusSeconds(1);
-            }
-            history.setEffectiveTo(effectiveAt);
-            priceHistoryRepository.save(history);
-        }
-        PriceHistory history = new PriceHistory();
-        history.setVariantId(variant.getVariantId());
-        history.setPrice(variant.getPrice());
-        history.setEffectiveFrom(effectiveAt);
-        history.setChangedBy(actorId);
-        priceHistoryRepository.save(history);
-    }
-
-    /**
      * Tạo sản phẩm cùng danh mục, ảnh và các phân loại.
      * Chỉ chuyển sang trạng thái mở bán sau khi đã lưu đủ dữ liệu liên quan.
      *
@@ -514,7 +478,6 @@ public class ProductServiceImpl implements ProductService {
         productVariantRepository.saveAndFlush(variant);
         form.setSku(sku);
         savePrimaryImage(product.getProductId(), variant.getVariantId(), form.getThumbnailUrl());
-        recordPriceChange(variant, actorId);
         // Chỉ tạo lô và biến động kho khi người bán thực sự nhập số lượng ban đầu.
         if (quantity > 0) {
             createInitialBatch(variant, form, quantity, actorId);
@@ -771,7 +734,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     /**
-     * Thêm phân loại trong giới hạn 20 phân loại còn kinh doanh và yêu cầu hậu kiểm thông tin mới.
+     * Thêm phân loại trong giới hạn 20 phân loại và yêu cầu hậu kiểm thông tin mới.
      */
     @Override
     @Transactional
@@ -779,10 +742,9 @@ public class ProductServiceImpl implements ProductService {
         Product product = getOwnedProductForUpdate(authentication, productId);
         requireWritableProduct(product);
         require(
-                productVariantRepository.countByProductIdAndStatusNot(
-                                productId, VariantStatus.DELETED)
+                productVariantRepository.countByProductIdAndStatusNot(productId, VariantStatus.DELETED)
                         < 20,
-                "Mỗi sản phẩm có tối đa 20 phân loại. Xóa phân loại cũ trước khi thêm mới.");
+                "Mỗi sản phẩm có tối đa 20 phân loại.");
         form.setSku(null);
         productFormValidator.validateVariantFields(form, null);
         productFormValidator.initialQuantity(form);
@@ -810,7 +772,7 @@ public class ProductServiceImpl implements ProductService {
         Product product = getOwnedProductForUpdate(authentication, productId);
         requireWritableProduct(product);
         ProductVariant variant = getVariantForUpdate(productId, variantId);
-        require(variant.getStatus() != VariantStatus.DELETED, "Phân loại đã ngừng kinh doanh.");
+        require(variant.getStatus() != VariantStatus.DELETED, "Phân loại đã xóa.");
         // SKU không được sửa; luôn dùng mã đang lưu thay cho giá trị gửi từ trình duyệt.
         form.setSku(variant.getSku());
         productFormValidator.validateVariantFields(form, variant);
@@ -839,11 +801,6 @@ public class ProductServiceImpl implements ProductService {
         productVariantRepository.save(variant);
         savePrimaryImage(productId, variantId, form.getThumbnailUrl());
         Long actorId = authService.getCurrentUserId(authentication);
-        if (priceChanged) {
-            // Lịch sử hiệu lực giá chỉ ghi khi giá bán thực sự đổi; giá gạch ngang được ghi trong
-            // audit.
-            recordPriceChange(variant, actorId);
-        }
         if (priceChanged || compareAtPriceChanged || otherFieldsChanged) {
             String auditReason = changeReason;
             if (priceChanged) {
@@ -1051,39 +1008,6 @@ public class ProductServiceImpl implements ProductService {
             form.setCategoryId(links.getFirst().getId().getCategoryId());
         }
         return form;
-    }
-
-    /**
-     * Lấy lịch sử giá của phân loại thuộc sản phẩm trong cửa hàng, mới nhất trước và có phân trang.
-     */
-    @Override
-    public Page<PriceHistory> priceHistory(
-            Authentication authentication, Long productId, Long variantId, int page) {
-        // Kiểm tra cả quyền trên sản phẩm và quan hệ SKU, tránh xem lịch sử qua ID ngoài phạm vi.
-        getOwnedProductForRead(authentication, productId);
-        ProductVariant variant =
-                productVariantRepository
-                        .findById(variantId)
-                        .orElseThrow(
-                                () ->
-                                        new AccessDeniedException(
-                                                "Phân loại không thuộc sản phẩm này."));
-        if (!variant.getProductId().equals(productId)) {
-            throw new AccessDeniedException("Phân loại không thuộc sản phẩm này.");
-        }
-        PageRequest pageable = Pagination.request(page, PageSizes.DEFAULT);
-        Page<PriceHistory> result =
-                priceHistoryRepository.findByVariantIdOrderByEffectiveFromDescPriceHistoryIdDesc(
-                        variantId, pageable);
-        if (result.getNumber() >= Math.max(1, result.getTotalPages())) {
-            // Đưa về trang cuối hợp lệ nếu URL còn giữ số trang lớn hơn tổng số trang hiện có.
-            pageable = pageable.withPage(Math.max(0, result.getTotalPages() - 1));
-            result =
-                    priceHistoryRepository
-                            .findByVariantIdOrderByEffectiveFromDescPriceHistoryIdDesc(
-                                    variantId, pageable);
-        }
-        return result;
     }
 
     /** Tạo biểu mẫu sửa phân loại từ dữ liệu hiện tại, không nhập lại tồn kho ban đầu. */

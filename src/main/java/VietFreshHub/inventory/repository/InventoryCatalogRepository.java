@@ -5,6 +5,7 @@ import VietFreshHub.common.Pagination;
 import VietFreshHub.inventory.dto.InventoryCatalogFilter;
 import VietFreshHub.inventory.dto.InventoryCatalogRow;
 import VietFreshHub.inventory.dto.InventoryCatalogSummary;
+import VietFreshHub.inventory.dto.RestockChoice;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,7 +26,7 @@ import java.util.Locale;
 
 /**
  * Truy vấn màn kho theo lô hoặc theo SKU. Tổng tồn được gom theo SKU trước khi nối với sản phẩm;
- * bộ lọc ngày nhập và hạn dùng chỉ áp dụng ở chế độ lô để không làm sai tổng tồn SKU.
+ * bộ lọc ngày nhập và trạng thái lô chỉ áp dụng ở chế độ lô để không làm sai tổng tồn SKU.
  */
 @Repository
 @RequiredArgsConstructor
@@ -46,7 +47,6 @@ public class InventoryCatalogRepository {
     private static final String SELECT =
             """
             SELECT p.product_id,p.name,v.variant_id,v.variant_name,v.sku,v.unit,v.batches_in_stock,
-                CASE WHEN p.status='DELETED' OR v.status='DELETED' THEN 1 ELSE 0 END AS archived,
                 CASE WHEN v.available>0 AND v.available<=COALESCE(v.low_stock_threshold,0) THEN 1 ELSE 0 END AS low_stock,
             """;
     private static final String SKU_COLUMNS =
@@ -57,8 +57,8 @@ public class InventoryCatalogRepository {
             CASE WHEN b.status='ACTIVE' AND (b.expiry_date IS NULL OR b.expiry_date>=:today)
                 AND b.quantity_on_hand>b.reserved_quantity THEN b.quantity_on_hand-b.reserved_quantity ELSE 0 END AS available,
             CASE WHEN b.status='BLOCKED' THEN 1 ELSE 0 END AS blocked,
-            CASE WHEN b.expiry_date<:today THEN 1 ELSE 0 END AS expired,
-            CASE WHEN %s THEN 1 ELSE 0 END AS near_expiry
+            CASE WHEN b.quantity_on_hand>0 AND b.expiry_date<:today THEN 1 ELSE 0 END AS expired,
+            CASE WHEN b.quantity_on_hand>0 AND %s THEN 1 ELSE 0 END AS near_expiry
             """
                     .formatted(NEAR);
     private final NamedParameterJdbcTemplate jdbc;
@@ -76,25 +76,51 @@ public class InventoryCatalogRepository {
                 total);
     }
 
-    /** Trả số dòng giới hạn cho bộ chọn nhập tiếp; không cần truy vấn đếm như màn danh sách. */
-    public List<InventoryCatalogRow> suggestions(
-            Long shop, InventoryCatalogFilter filters, LocalDate today, int limit) {
-        var parameters = parameters(shop, today);
-        return rows(filters, scope(filters, parameters), parameters, 0, limit);
+    /** Mỗi SKU một lựa chọn nhập mới; không nối lô hoặc yêu cầu đã có tồn kho. */
+    public List<RestockChoice> restockChoices(Long shop, String query, int limit) {
+        var parameters = new MapSqlParameterSource("shop", shop).addValue("limit", limit);
+        var sql = new StringBuilder(
+                """
+                SELECT p.product_id,p.name,v.variant_id,v.variant_name,v.sku,v.unit
+                FROM dbo.product_variants v JOIN dbo.products p ON p.product_id=v.product_id
+                WHERE p.shop_id=:shop
+                """).append(ACTIVE);
+        if (!query.isEmpty()) {
+            Long productId = BusinessCodes.parse("PRD", query);
+            if (productId != null) {
+                sql.append(" AND p.product_id=:productCode");
+                parameters.addValue("productCode", productId);
+            } else {
+                sql.append(
+                        " AND (LOWER(p.name) LIKE :text ESCAPE '!' OR LOWER(p.slug) LIKE :text ESCAPE '!'"
+                                + " OR LOWER(v.sku) LIKE :text ESCAPE '!' OR LOWER(v.variant_name) LIKE :text ESCAPE '!')");
+                parameters.addValue("text", searchPattern(query));
+            }
+        }
+        sql.append(" ORDER BY p.product_id DESC,v.variant_id DESC OFFSET 0 ROWS FETCH NEXT :limit ROWS ONLY");
+        return jdbc.query(
+                sql.toString(),
+                parameters,
+                (row, index) -> new RestockChoice(
+                        row.getLong("product_id"),
+                        row.getLong("variant_id"),
+                        row.getString("name"),
+                        row.getString("variant_name"),
+                        row.getString("sku"),
+                        row.getString("unit")));
     }
 
-    /** Tổng quan toàn cửa hàng theo phạm vi lưu trữ, độc lập từ khóa và trang đang xem. */
-    public InventoryCatalogSummary summary(Long shop, LocalDate today, boolean archived) {
-        String variants = VARIANTS + " WHERE p.shop_id=:shop" + (archived ? "" : ACTIVE);
-        String batches = VARIANTS + BATCHES + " WHERE p.shop_id=:shop" + (archived ? "" : ACTIVE);
+    /** Tổng quan toàn cửa hàng, độc lập từ khóa và trang đang xem. */
+    public InventoryCatalogSummary summary(Long shop, LocalDate today) {
+        String variants = VARIANTS + " WHERE p.shop_id=:shop" + ACTIVE;
+        String batches = VARIANTS + BATCHES + " WHERE p.shop_id=:shop" + ACTIVE;
         return jdbc.queryForObject(
                 STOCK
                         + """
                 SELECT (SELECT COUNT(*) %s) AS skus, COUNT(*) AS total_batches,
                     COUNT(CASE WHEN b.quantity_on_hand>0 THEN 1 END) AS batches_in_stock,
                     COUNT(CASE WHEN b.quantity_on_hand>0 AND %s THEN 1 END) AS near_batches,
-                    COUNT(CASE WHEN b.quantity_on_hand>0 AND b.expiry_date<:today THEN 1 END) AS expired_batches,
-                    COUNT(CASE WHEN b.expiry_date<:today THEN 1 END) AS total_expired_batches
+                    COUNT(CASE WHEN b.quantity_on_hand>0 AND b.expiry_date<:today THEN 1 END) AS expired_batches
                 %s
                 """
                                 .formatted(variants, NEAR, batches),
@@ -105,8 +131,7 @@ public class InventoryCatalogRepository {
                                 row.getLong("total_batches"),
                                 row.getLong("batches_in_stock"),
                                 row.getLong("near_batches"),
-                                row.getLong("expired_batches"),
-                                row.getLong("total_expired_batches")));
+                                row.getLong("expired_batches")));
     }
 
     /** Kiểm tra SKU thuộc cửa hàng trước khi cho lọc trực tiếp bằng variantId từ URL. */
@@ -165,7 +190,6 @@ public class InventoryCatalogRepository {
                 !sku && row.getBoolean("expired"),
                 !sku && row.getBoolean("near_expiry"),
                 !sku && row.getBoolean("blocked"),
-                row.getBoolean("archived"),
                 row.getBoolean("low_stock"));
     }
 
@@ -175,25 +199,25 @@ public class InventoryCatalogRepository {
                 new StringBuilder(VARIANTS)
                         .append(sku ? "" : BATCHES)
                         .append(" WHERE p.shop_id=:shop");
-        if (!filters.isArchived() && filters.getVariantId() == null) {
+        if (filters.getVariantId() == null) {
             sql.append(ACTIVE);
         }
         if (filters.getVariantId() != null) {
             sql.append(" AND v.variant_id=:variant");
             parameters.addValue("variant", filters.getVariantId());
         }
-        sql.append(
-                switch (filters.getStock()) {
-                    case "available" -> " AND v.available>0";
-                    case "enough" ->
-                            " AND v.available>COALESCE(v.low_stock_threshold,0) AND v.available>0";
-                    case "low" ->
-                            " AND v.available>0 AND v.available<=COALESCE(v.low_stock_threshold,0)";
-                    case "empty" -> " AND v.available=0";
-                    default -> "";
-                });
         appendSearch(filters.getQ(), sku, parameters, sql);
-        if (!sku) {
+        if (sku) {
+            sql.append(
+                    switch (filters.getStock()) {
+                        case "enough" ->
+                                " AND v.available>COALESCE(v.low_stock_threshold,0) AND v.available>0";
+                        case "low" ->
+                                " AND v.available>0 AND v.available<=COALESCE(v.low_stock_threshold,0)";
+                        case "empty" -> " AND v.available=0";
+                        default -> "";
+                    });
+        } else {
             appendBatchFilters(filters, parameters, sql);
         }
         return sql.toString();
@@ -230,27 +254,31 @@ public class InventoryCatalogRepository {
                                         + ")"
                                 : matchLot)
                 .append(")");
-        parameters.addValue(
-                "text",
-                "%"
-                        + text.toLowerCase(Locale.ROOT)
-                                .replace("!", "!!")
-                                .replace("%", "!%")
-                                .replace("_", "!_")
-                                .replace("[", "![")
-                        + "%");
+        parameters.addValue("text", searchPattern(text));
+    }
+
+    private String searchPattern(String text) {
+        return "%"
+                + text.toLowerCase(Locale.ROOT)
+                        .replace("!", "!!")
+                        .replace("%", "!%")
+                        .replace("_", "!_")
+                        .replace("[", "![")
+                + "%";
     }
 
     private void appendBatchFilters(
             InventoryCatalogFilter filters, MapSqlParameterSource parameters, StringBuilder sql) {
-        if (!filters.getExpiry().isEmpty()) {
+        if ("empty".equals(filters.getExpiry())) {
+            sql.append(" AND b.quantity_on_hand=0");
+        } else if (!filters.getExpiry().isEmpty()) {
             sql.append(" AND b.quantity_on_hand>0 AND (")
                     .append(
                             switch (filters.getExpiry()) {
                                 case "near" -> NEAR;
                                 case "expired" -> "b.expiry_date<:today";
                                 case "valid" ->
-                                        "b.expiry_date IS NULL OR (b.expiry_date>=:today AND DATEDIFF(DAY,:today,b.expiry_date)>COALESCE(p.expiry_warning_days,3))";
+                                        "b.expiry_date>=:today AND DATEDIFF(DAY,:today,b.expiry_date)>COALESCE(p.expiry_warning_days,3)";
                                 default -> "b.expiry_date<:today OR (" + NEAR + ")";
                             })
                     .append(")");

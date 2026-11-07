@@ -12,7 +12,7 @@
 <div id="workspace-content" class="vfo-workspace" tabindex="-1">
 <main id="order-content" class="vfo-main vfn-main">
     <header class="vfo-page-heading"><div><h1>Thông báo hệ thống</h1></div></header>
-    <nav class="nav nav-pills vfo-order-tabs" aria-label="Nhóm thông báo"><a class="nav-link" th:href="@{/notifications}">Tất cả thông báo</a><a class="nav-link active" aria-current="page" th:href="@{/seller/announcements}">Thông báo hệ thống</a></nav>
+    <nav class="nav nav-pills vfo-order-tabs" aria-label="Nhóm thông báo"><a class="nav-link" th:href="@{/notifications(channel='seller')}">Tất cả thông báo</a><a class="nav-link active" aria-current="page" th:href="@{/seller/announcements}">Thông báo hệ thống</a></nav>
     <section class="card vfo-list-card vfn-inbox-card" aria-labelledby="announcements-heading">
         <div class="vfo-list-heading"><div><span class="vfo-section-marker" aria-hidden="true"></span><h2 id="announcements-heading">Thông báo từ hệ thống và quản trị viên</h2><span class="vfo-count" th:text="${announcementsPage.totalElements}"></span></div></div>
         <div class="vfo-empty-state" th:if="${announcementsPage.empty}"><span class="vfo-empty-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-promotion"/></svg></span><h3>Chưa có cập nhật mới</h3><p>Chưa có thông báo.</p></div>
@@ -24,7 +24,7 @@
                         <header class="vfn-notification-heading"><h2 th:text="${notice.title}"></h2><span class="vfn-unread-label" th:if="${notice.readAt == null}">Chưa đọc</span></header>
                         <p class="vfn-content" th:text="${notice.content}"></p>
                         <div class="vfn-notification-meta"><time th:text="${#temporals.format(notice.createdAt,'dd/MM/yyyy HH:mm')}"></time></div>
-                        <div class="vfn-notification-actions"><form th:if="${notice.readAt == null}" method="post" th:action="@{/notifications/{id}/read(id=${notice.notificationId})}"><button class="btn vfn-read-button" type="submit">Đánh dấu đã đọc</button></form></div>
+                        <div class="vfn-notification-actions"><form th:if="${notice.readAt == null}" method="post" th:action="@{/notifications/{id}/read(id=${notice.notificationId})}"><input type="hidden" name="channel" value="seller"><button class="btn vfn-read-button" type="submit">Đánh dấu đã đọc</button></form></div>
                     </div>
                 </article>
             </li>

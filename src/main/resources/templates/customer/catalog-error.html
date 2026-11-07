@@ -2,10 +2,11 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
     <head th:replace="~{fragments/customer-shop :: head(${errorTitle != null ? errorTitle : 'Sản phẩm không còn được bán'})}">
     </head>
-    <body class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
-        <header th:replace="~{fragments/customer-shop :: header}">
+    <body class="vfo-app vfr-app vfr-retail vfr-customer vfc-workspace-page" data-vfr-section="account">
+        <header th:replace="~{fragments/customer-shop :: header(shoppingActive='products')}">
         </header>
-        <main class="container vfr-page">
+<div class="vfo-workspace" id="workspace-content" tabindex="-1">
+        <main id="customer-content" class="container vfr-page">
             <section class="notice">
                 <h1 th:text="${errorTitle != null ? errorTitle : 'Sản phẩm không còn được bán'}">
                     Sản phẩm không còn được bán
@@ -18,5 +19,6 @@
             </section>
         </main>
         <footer th:replace="~{fragments/footer :: footer}"></footer>
-    </body>
+    </div>
+</body>
 </html>

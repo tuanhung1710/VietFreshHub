@@ -1,6 +1,5 @@
 package VietFreshHub.inventory.dto;
 
-import VietFreshHub.inventory.entity.BatchMarkdown;
 import VietFreshHub.inventory.entity.InventoryBatch;
 import VietFreshHub.inventory.enums.BatchStatus;
 import VietFreshHub.inventory.rule.InventoryRules;
@@ -18,48 +17,37 @@ public class BatchResponse {
     private int available;
     private boolean expired;
     private boolean nearExpiry;
-    private BatchMarkdown markdown;
     private String productName;
     private String sku;
     private String unit;
-    private boolean markdownEligible;
     private Long daysUntilExpiry;
-    private boolean markdownAllowed;
     @Setter private String variantName;
     @Setter private List<AllocationResponse> allocationDetails = List.of();
 
-    /** Tạo dữ liệu hiển thị lô với tồn, hạn sử dụng và điều kiện cho phép giảm giá. */
+    /** Tạo dữ liệu hiển thị lô với tồn và hạn sử dụng. */
     @Builder
     public BatchResponse(
             InventoryBatch batch,
             int available,
             boolean expired,
             boolean nearExpiry,
-            BatchMarkdown markdown,
             String productName,
             String sku,
             String unit,
-            boolean markdownEligible,
-            Long daysUntilExpiry,
-            boolean markdownAllowed) {
+            Long daysUntilExpiry) {
         this.batch = batch;
         this.available = available;
         this.expired = expired;
         this.nearExpiry = nearExpiry;
-        this.markdown = markdown;
         this.productName = productName;
         this.sku = sku;
         this.unit = unit;
-        this.markdownEligible = markdownEligible;
         this.daysUntilExpiry = daysUntilExpiry;
-        this.markdownAllowed = markdownAllowed;
     }
 
-    /** Xác định lô đã hết hàng khi cả tồn thực tế, lượng giữ và lượng khả dụng đều bằng 0. */
+    /** Xác định lô hết hàng theo tồn thực tế, độc lập với hạn sử dụng. */
     public boolean isEmptyStock() {
-        return Integer.valueOf(0).equals(batch.getQuantityOnHand())
-                && Integer.valueOf(0).equals(batch.getReservedQuantity())
-                && available == 0;
+        return Integer.valueOf(0).equals(batch.getQuantityOnHand());
     }
 
     /** Xác định lô đang hoạt động, còn hạn và toàn bộ tồn thực tế đã được giữ cho đơn. */
@@ -77,7 +65,7 @@ public class BatchResponse {
     public String getStateLabel() {
         // Các trạng thái có thể cùng đúng; nhánh đứng trước quyết định nhãn ưu tiên trên giao diện.
         if (isEmptyStock()) {
-            return "Đã hết hàng";
+            return "Hết hàng";
         }
         if (expired) {
             return "Hết hạn sử dụng";
@@ -136,15 +124,5 @@ public class BatchResponse {
         return !expired && batch.getStatus() == BatchStatus.BLOCKED;
     }
 
-    /**
-     * Cho hiện thao tác giảm giá khi lô và điều kiện kinh doanh đều hợp lệ, còn hàng chưa phân bổ.
-     */
-    public boolean isCanMarkdown() {
-        return markdownEligible
-                && markdownAllowed
-                && !isEmptyStock()
-                && !isFullyAllocated()
-                && batch.getQuantityOnHand() != null
-                && batch.getQuantityOnHand() > 0;
-    }
+
 }

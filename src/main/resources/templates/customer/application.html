@@ -84,8 +84,9 @@
   </style>
     <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body class="bg-surface font-body-md text-body-md text-on-surface antialiased vfo-app vfr-app vfr-utility vfc-app vfr-customer" data-vfr-section="account">
-<th:block th:replace="~{fragments/interface-layout :: navigation('customer','account')}"></th:block>
+<body class="bg-surface font-body-md text-body-md text-on-surface antialiased vfo-app vfr-app vfr-utility vfc-app vfr-customer vfc-workspace-page" data-vfr-section="account">
+<th:block th:replace="~{fragments/interface-layout :: customerHeader('applications')}"></th:block>
+<div class="vfo-workspace" id="workspace-content" tabindex="-1">
 
 
 <main class="w-full pt-[70px] min-h-screen bg-surface vfr-page" id="customer-content" tabindex="-1"><div class="flex flex-col w-full">
@@ -982,5 +983,6 @@ if (firstInvalidInput) {
 
 
 <footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</div>
 </body>
 </html>

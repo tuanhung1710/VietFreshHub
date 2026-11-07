@@ -32,6 +32,7 @@ import VietFreshHub.payment.entity.Payment;
 import VietFreshHub.payment.repository.PaymentMethodRepository;
 import VietFreshHub.sellerapplication.entity.SellerApplication;
 import VietFreshHub.shop.entity.Shop;
+import VietFreshHub.shop.service.ShopPurchasePolicy;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 
@@ -71,6 +72,7 @@ public class CheckoutServiceImpl implements CheckoutService {
     private final PaymentMethodRepository paymentMethodRepository;
     private final OrderRepository orderRepository;
     private final CatalogService catalogService;
+    private final ShopPurchasePolicy shopPurchasePolicy;
     private final InventoryReservationService inventoryReservationService;
     private final CheckoutShippingQuoteService shippingQuoteService;
     private final CheckoutOrderService checkoutOrderService;
@@ -113,6 +115,9 @@ public class CheckoutServiceImpl implements CheckoutService {
     @Transactional(readOnly = true)
     public CheckoutPreview previewBuyNow(Long customerId, Long variantId, Integer quantity) {
         CartItem item = buyNowItem(variantId, quantity);
+        if (shopPurchasePolicy.ownsShop(customerId, item.getVariant().getProduct().getShop().getShopId())) {
+            throw new CheckoutException(ShopPurchasePolicy.OWN_SHOP_MESSAGE);
+        }
         return previewForSelection(customerId, buyNowCart(customerId, item));
     }
 
@@ -296,7 +301,11 @@ public class CheckoutServiceImpl implements CheckoutService {
 
     private void validateCurrentItems(Long customerId, CheckoutDraft draft, List<CartItem> selectedItems) {
         lockCatalog(selectedItems);
+        var ownedShopIds = shopPurchasePolicy.ownedShopIds(customerId);
         for (CartItem item : selectedItems) {
+            if (ownedShopIds.contains(item.getVariant().getProduct().getShop().getShopId())) {
+                throw new CheckoutException(ShopPurchasePolicy.OWN_SHOP_MESSAGE);
+            }
             if (item.getQuantity() == null || item.getQuantity() < 1 || !catalogService.isPurchasable(item.getVariant())) {
                 throw new CheckoutException(item.getVariant().getProduct().getName() + " — "
                         + item.getVariant().getVariantName()

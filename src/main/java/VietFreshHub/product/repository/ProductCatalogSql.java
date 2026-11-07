@@ -23,8 +23,6 @@ final class ProductCatalogSql {
             MAX(CASE WHEN status IN ('ACTIVE','OUT_OF_STOCK') AND price>=10000 AND price=FLOOR(price) THEN 1 ELSE 0 END) AS has_variant,
             MAX(CASE WHEN status IN ('ACTIVE','OUT_OF_STOCK') AND price>=10000 AND price=FLOOR(price) AND available>0 THEN 1 ELSE 0 END) AS has_stock,
             MAX(CASE WHEN status='ACTIVE' AND price>=10000 AND price=FLOOR(price) AND available>0 THEN 1 ELSE 0 END) AS can_purchase,
-            MAX(CASE WHEN status<>'DELETED' AND available>0 THEN 1 ELSE 0 END) AS has_available,
-            MAX(CASE WHEN status<>'DELETED' AND available>0 AND available<=COALESCE(low_stock_threshold,0) THEN 1 ELSE 0 END) AS has_low,
             MAX(CASE WHEN status IN ('ACTIVE','OUT_OF_STOCK') THEN 1 ELSE 0 END) AS has_open_variant
           FROM variant_stock GROUP BY product_id
         ), product_signals AS (
@@ -34,7 +32,6 @@ final class ProductCatalogSql {
               WHERE pc.product_id=p.product_id AND pc.category_id IN (:categories)) THEN 1 ELSE 0 END AS has_category,
             COALESCE(v.has_variant,0) AS has_variant,COALESCE(v.has_stock,0) AS has_stock,
             COALESCE(v.can_purchase,0) AS can_purchase,
-            COALESCE(v.has_available,0) AS has_available,COALESCE(v.has_low,0) AS has_low,
             COALESCE(v.has_open_variant,0) AS has_open_variant
           FROM dbo.products p LEFT JOIN dbo.shops s ON s.shop_id=p.shop_id
           LEFT JOIN variant_signals v ON v.product_id=p.product_id
@@ -63,7 +60,6 @@ final class ProductCatalogSql {
     static String managementWhere(
             ProductCatalogFilter filters, LocalDateTime from, LocalDateTime to) {
         return managementBaseWhere(filters, from, to)
-                + managementStockCriteria(filters)
                 + managementPriceCriteria(filters)
                 + managementSearchCriteria(filters.getQ());
     }
@@ -73,7 +69,7 @@ final class ProductCatalogSql {
         Long category = filters.getCategory();
         String tab = filters.getTab();
         String where =
-                " FROM dbo.products p JOIN classified c ON c.product_id=p.product_id JOIN product_signals ps ON ps.product_id=p.product_id WHERE 1=1";
+                " FROM dbo.products p JOIN classified c ON c.product_id=p.product_id WHERE 1=1";
         if (!tab.isEmpty()) {
             where += " AND c.management_state=:tab";
         }
@@ -89,22 +85,6 @@ final class ProductCatalogSql {
         }
 
         return where;
-    }
-
-    private static String managementStockCriteria(ProductCatalogFilter filters) {
-        return switch (filters.getStock()) {
-            case "available" -> " AND ps.has_available=1";
-            case "empty" -> " AND ps.has_available=0";
-            case "low" -> " AND ps.has_low=1";
-            case "expiry" ->
-                    " "
-                            + """
-                AND EXISTS (SELECT 1 FROM dbo.product_variants ev JOIN dbo.inventory_batches eb ON eb.variant_id=ev.variant_id
-                  WHERE ev.product_id=p.product_id AND ev.status<>'DELETED' AND eb.quantity_on_hand>0
-                    AND eb.expiry_date<=DATEADD(day,COALESCE(p.expiry_warning_days,3),CAST(:today AS DATE)))
-                """;
-            default -> "";
-        };
     }
 
     /** Hai mốc giá phải khớp cùng một SKU. */

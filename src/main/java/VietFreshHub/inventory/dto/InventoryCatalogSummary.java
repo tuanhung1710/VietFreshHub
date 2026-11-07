@@ -5,5 +5,4 @@ public record InventoryCatalogSummary(
         long totalBatches,
         long batchesInStock,
         long nearBatches,
-        long expiredBatches,
-        long totalExpiredBatches) {}
+        long expiredBatches) {}

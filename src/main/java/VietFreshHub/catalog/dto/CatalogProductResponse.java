@@ -26,7 +26,6 @@ public class CatalogProductResponse {
         private Long variantId;
         private String variantName, sku, status, imageUrl;
         private BigDecimal price;
-        private BigDecimal basePrice;
         private BigDecimal compareAtPrice;
         private String availabilityMessage;
         private int availableStock;

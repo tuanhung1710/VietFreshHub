@@ -16,40 +16,9 @@
         <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
     </head>
     <body>
-        <header th:fragment="header" class="vfc-header">
-            <div class="container">
-                <div class="vfc-header-main">
-                    <a class="brand" th:href="@{/home}">
-                        VietFresh Hub
-                    </a>
-                    <div class="vfo-topbar-actions vfc-header-actions">
-                        <th:block th:replace="~{fragments/customer-shop :: accountLinks}"></th:block>
-                    </div>
-                </div>
-                <div class="headmain vfc-header-tools">
-                    <form class="search" th:action="@{/products}" method="get" role="search">
-                        <input id="search" class="form-control" type="search" name="q" maxlength="100" th:value="${q}" placeholder="Tìm trái cây trên toàn sàn..." aria-label="Tìm sản phẩm">
-                        <button id="searchGo" class="btn btn-success" type="submit">
-                            TÌM
-                        </button>
-                    </form>
-                    <a id="cart" th:href="@{/cart}" class="cart-link">
-                        Giỏ hàng (
-                        <span id="cartCount" aria-live="polite" th:text="${storefrontCartCount}">
-                            0
-                        </span>
-                        )
-                    </a>
-                </div>
-                <nav class="headcats" id="headcats">
-                    <a th:href="@{/products}">
-                        Tất cả sản phẩm
-                    </a>
-                    <a th:each="category : ${headerCategories}" th:href="@{/products(category=${category.categoryId})}" th:text="${category.name}">
-                    </a>
-                </nav>
-            </div>
-        </header>
+        <th:block th:fragment="header">
+            <th:block th:replace="~{fragments/customer-navigation :: workspace(${shoppingActive != null ? shoppingActive : 'products'})}"></th:block>
+        </th:block>
         <div th:fragment="messages" aria-live="polite">
             <p th:if="${successMessage}" class="notice" th:text="${successMessage}">
             </p>

@@ -26,8 +26,6 @@
                 <p class="vfo-eyebrow">Cửa hàng</p>
                 <h2 th:text="${shop.shopName}"></h2>
                 <p class="vfc-shop-order-status" th:unless="${shopView}">Mã đơn hàng: <a th:href="@{/customer/orders/{id}(id=${shop.shopOrderId})}" th:text="${shop.orderCode()}"></a></p>
-                <div class="vfc-shop-delivery"><span>Trạng thái giao hàng</span><strong class="vfo-status vfc-delivery-state" th:attr="data-status=${shop.deliveryStatusCode}" th:text="${shop.deliveryStatus}"></strong></div>
-                <p class="vfc-shop-order-status" th:if="${shopView}">Trạng thái đơn hàng: <strong th:text="${shop.orderStatus}"></strong></p>
             </div>
             <div class="vfc-tracking-history">
                 <div class="vfc-history-heading"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-history"/></svg><h3>Nhật ký đơn hàng</h3></div>
@@ -37,7 +35,7 @@
                     <li th:each="event : ${shop.events}" th:attr="data-recorded=${event.verified and event.occurredAt != null}">
                         <div class="vfc-event-time"><time th:if="${event.occurredAt != null}" th:text="${#temporals.format(event.occurredAt,'HH:mm dd/MM/yyyy')}"></time><span th:if="${event.occurredAt == null}">Chưa ghi nhận thời gian</span></div>
                         <span class="vfc-timeline-dot" aria-hidden="true"></span>
-                        <div class="vfc-event-content"><strong th:text="${event.label}"></strong><p th:if="${event.note != null}" th:text="${event.note}"></p></div>
+                        <div class="vfc-event-content"><strong th:text="${event.label}"></strong><p th:if="${event.note != null and event.note != 'Khách hàng đặt đơn COD.'}" th:text="${event.note}"></p></div>
                     </li>
                 </ol>
             </div>

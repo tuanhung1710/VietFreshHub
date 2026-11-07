@@ -2,25 +2,35 @@
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
     <head th:replace="~{fragments/customer-shop :: head('Trang chủ')}">
     </head>
-    <body class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account">
-        <header th:replace="~{fragments/customer-shop :: header}">
+    <body class="vfo-app vfr-app vfr-retail vfr-customer vfc-workspace-page" data-vfr-section="account">
+        <header th:replace="~{fragments/customer-shop :: header(shoppingActive='home')}">
         </header>
-        <main class="container vfr-page">
+<div class="vfo-workspace" id="workspace-content" tabindex="-1">
+        <main id="customer-content" class="container vfr-page">
             <div th:replace="~{fragments/customer-shop :: messages}">
             </div>
             <div id="home">
                 <!-- Banner trang chủ. -->
                 <section class="bannergrid home-banner">
                     <div class="hero">
-                        <h1>
-                            Trái cây tươi mỗi ngày
-                        </h1>
-                        <p>
-                            Khám phá các loại trái cây nội địa và nhập khẩu từ nhiều gian hàng trên VietFresh Hub.
-                        </p>
-                        <a class="button" th:href="@{/products}">
-                            Xem tất cả sản phẩm
-                        </a>
+                        <div class="hero-copy">
+                            <h1>
+                                Trái cây tươi mỗi ngày
+                            </h1>
+                            <p>
+                                Khám phá các loại trái cây nội địa và nhập khẩu từ nhiều gian hàng trên VietFresh Hub.
+                            </p>
+                            <a class="button" th:href="@{/products}">
+                                Xem tất cả sản phẩm
+                            </a>
+                        </div>
+                        <div class="hero-visual">
+                            <img class="hero-image"
+                                 th:src="${#strings.isEmpty(heroImageUrl) ? '/images/storefront/fruit-gift.png' : heroImageUrl}"
+                                 data-fallback-image="/images/storefront/fruit-gift.png"
+                                 alt="Trái cây tươi tại VietFresh Hub"
+                                 width="1254" height="1254" fetchpriority="high">
+                        </div>
                     </div>
                     <div class="sidebanners">
                         <div class="sidebanner">
@@ -140,5 +150,6 @@
             </div>
         </main>
         <footer th:replace="~{fragments/footer :: footer}"></footer>
-    </body>
+    </div>
+</body>
 </html>

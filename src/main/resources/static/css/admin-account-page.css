@@ -1,0 +1,71 @@
+/* Keep account-specific layout changes separate from the shared shop styles. */
+.admin-accounts-page .summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    margin-bottom: 26px;
+}
+.admin-accounts-page .summary-card {
+    min-width: 0;
+    min-height: 112px;
+    gap: 16px;
+    padding: 22px;
+}
+.admin-accounts-page .summary-icon { flex-basis: 46px; height: 46px; border-radius: 13px; }
+.admin-accounts-page .summary-icon .vfo-icon { width: 23px; height: 23px; }
+.admin-accounts-page .summary-copy span { font-size: 12px; }
+.admin-accounts-page .summary-copy strong { color: var(--vfo-green); font-size: 30px; line-height: 1.3; }
+.admin-accounts-page .summary-card.selected { border-color: #8ca87e; background: #f7faf2; }
+.admin-accounts-page .summary-card.selected .summary-icon { background: #e5eedb; }
+
+.admin-accounts-page .accounts-filters {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(130px, auto)) auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 22px;
+    border-top: 1px solid var(--vfo-border);
+    background: #fcfdf8;
+}
+.admin-accounts-page .accounts-filters > label { min-width: 0; margin: 0; }
+.admin-accounts-page .accounts-filters .search-box {
+    position: relative;
+    display: block;
+    height: auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+.admin-accounts-page .search-box .search-icon {
+    position: absolute;
+    top: 50%;
+    left: 13px;
+    width: 18px;
+    height: 18px;
+    color: #8e9d81;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+.admin-accounts-page .search-box input.form-control { min-height: 43px; padding-left: 40px; border: 1px solid #dce3d3; }
+.admin-accounts-page .select-filter select { width: 100%; max-width: none; height: 43px; }
+.admin-accounts-page .reset-button { display: inline-flex; align-items: center; min-height: 43px; height: auto; }
+.admin-accounts-page .table-wrap { border-radius: 0; }
+.admin-accounts-page .account-name { font-size: 13px; }
+.admin-accounts-page .account-email { font-size: 11px; overflow-wrap: anywhere; }
+.admin-accounts-page .row-actions { flex-wrap: wrap; min-width: 180px; gap: 7px; }
+.admin-accounts-page .table-action { min-height: 34px; padding: 7px 10px; font-size: 11px; }
+.admin-accounts-page .table-footer { flex-wrap: wrap; gap: 12px; padding: 16px 22px; font-size: 12px; }
+.admin-accounts-page .demo-disclaimer { font-size: 12px; }
+.admin-accounts-page #toast { z-index: 1090; }
+
+@media (max-width: 1200px) {
+    .admin-accounts-page .accounts-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .admin-accounts-page .accounts-filters .search-box { grid-column: 1 / -1; }
+}
+@media (max-width: 640px) {
+    .admin-accounts-page .summary-grid { grid-template-columns: 1fr; gap: 12px; }
+    .admin-accounts-page .summary-card { min-height: 92px; padding: 18px; }
+    .admin-accounts-page .accounts-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 16px; }
+    .admin-accounts-page .accounts-filters .reset-button { margin: 0; }
+    .admin-accounts-page .table-footer { align-items: flex-start; padding: 16px; }
+}

@@ -15,14 +15,10 @@ import VietFreshHub.inventory.dto.BatchMetadataRequest;
 import VietFreshHub.inventory.dto.BatchRequest;
 import VietFreshHub.inventory.dto.BatchResponse;
 import VietFreshHub.inventory.dto.DisposalResult;
-import VietFreshHub.inventory.dto.MarkdownRequest;
 import VietFreshHub.inventory.dto.StockChangeRequest;
-import VietFreshHub.inventory.entity.BatchMarkdown;
 import VietFreshHub.inventory.entity.InventoryBatch;
 import VietFreshHub.inventory.enums.BatchStatus;
-import VietFreshHub.inventory.enums.MarkdownStatus;
 import VietFreshHub.inventory.enums.StockTransactionType;
-import VietFreshHub.inventory.repository.BatchMarkdownRepository;
 import VietFreshHub.inventory.repository.InventoryBatchRepository;
 import VietFreshHub.inventory.repository.StockAllocationRepository;
 import VietFreshHub.inventory.rule.InventoryRules;
@@ -37,7 +33,6 @@ import VietFreshHub.product.enums.ProductStatus;
 import VietFreshHub.product.enums.VariantStatus;
 import VietFreshHub.product.repository.ProductRepository;
 import VietFreshHub.product.repository.ProductVariantRepository;
-import VietFreshHub.product.service.ProductAvailabilityService;
 import VietFreshHub.shop.service.ShopService;
 
 import lombok.RequiredArgsConstructor;
@@ -63,12 +58,10 @@ import java.util.Objects;
 public class InventoryServiceImpl implements InventoryService {
 
     private final InventoryActivityHistoryService activityHistoryService;
-    private final ProductAvailabilityService productAvailabilityService;
 
     private final InventoryBatchRepository inventoryBatchRepository;
     private final ProductVariantRepository productVariantRepository;
     private final ProductRepository productRepository;
-    private final BatchMarkdownRepository batchMarkdownRepository;
     private final StockAllocationRepository stockAllocationRepository;
     private final ShopService shopService;
     private final AuthService authService;
@@ -87,9 +80,8 @@ public class InventoryServiceImpl implements InventoryService {
         ProductVariant variant = getOwnedVariantForUpdate(authentication, variantId);
         Product product = productRepository.findById(variant.getProductId()).orElseThrow();
         require(
-                product.getStatus() != ProductStatus.DELETED
-                        && variant.getStatus() != VariantStatus.DELETED,
-                "Không thể nhập kho cho sản phẩm hoặc phân loại đã ngừng kinh doanh.");
+                product.getStatus() != ProductStatus.DELETED && variant.getStatus() != VariantStatus.DELETED,
+                "Không thể nhập kho cho sản phẩm hoặc phân loại đã xóa.");
 
         InventoryRules.dates(form.getReceivedDate(), form.getExpiryDate(), today());
         require(
@@ -403,78 +395,6 @@ public class InventoryServiceImpl implements InventoryService {
                         + batch.getReservedQuantity());
     }
 
-    /**
-     * Thiết lập giá giảm cho lô đủ điều kiện và hủy các đợt giảm giá đang bật trước đó.
-     * Kiểm tra giá, hạn áp dụng và quyền quản lý lô trước khi lưu.
-     */
-    @Override
-    @Transactional
-    public void markdown(Authentication authentication, Long batchId, MarkdownRequest form) {
-
-        InventoryBatch batch = getOwnedBatchForUpdate(authentication, batchId);
-        ProductVariant variant =
-                productVariantRepository.findById(batch.getVariantId()).orElseThrow();
-        Product product = productRepository.findById(variant.getProductId()).orElseThrow();
-        require(
-                markdownAllowed(product, variant),
-                "Chỉ áp dụng giảm giá cho phân loại đang bán, có giá hợp lệ, không bị Admin khóa và shop đang nhận đơn.");
-
-        LocalDate date = today();
-        InventoryRules.markdown(
-                batch, variant.getPrice(), form.getPrice(), form.getEndDate(), date);
-        String changeReason = reason(form.getReason());
-        Long actorId = authService.getCurrentUserId(authentication);
-
-        cancelActiveMarkdowns(batchId);
-        BatchMarkdown markdown = new BatchMarkdown();
-        markdown.setBatchId(batchId);
-        markdown.setPrice(form.getPrice());
-        markdown.setStartDate(date);
-        markdown.setEndDate(form.getEndDate());
-        markdown.setStatus(MarkdownStatus.ACTIVE);
-        markdown.setNote(changeReason);
-        markdown.setCreatedBy(actorId);
-        markdown.setCreatedAt(now());
-        batchMarkdownRepository.save(markdown);
-        inventoryJournalService.audit(
-                actorId,
-                "MARKDOWN",
-                "BATCH",
-                batchId,
-                changeReason
-                        + "; giá bán phân loại: "
-                        + variant.getPrice()
-                        + "; giá giảm của lô: "
-                        + form.getPrice()
-                        + "; kết thúc: "
-                        + form.getEndDate());
-    }
-
-    /** Dừng giảm giá của lô thuộc cửa hàng và ghi lý do vào lịch sử thao tác. */
-    @Override
-    @Transactional
-    public void cancelMarkdown(Authentication authentication, Long batchId, String value) {
-        getOwnedBatchForUpdate(authentication, batchId);
-        String changeReason = reason(value);
-        cancelActiveMarkdowns(batchId);
-        inventoryJournalService.audit(
-                authService.getCurrentUserId(authentication),
-                "CANCEL_MARKDOWN",
-                "BATCH",
-                batchId,
-                changeReason);
-    }
-
-    /** Chuyển tất cả đợt giảm giá đang bật của lô sang trạng thái đã hủy. */
-    private void cancelActiveMarkdowns(Long batchId) {
-        List<BatchMarkdown> markdowns =
-                batchMarkdownRepository.findByBatchIdAndStatus(batchId, MarkdownStatus.ACTIVE);
-        for (BatchMarkdown markdown : markdowns) {
-            markdown.setStatus(MarkdownStatus.CANCELLED);
-            batchMarkdownRepository.save(markdown);
-        }
-    }
-
     /** Đọc lịch sử hoạt động theo bộ lọc, gồm nhãn đối tượng và người thao tác. */
     @Override
     public Page<AuditResponse> activityHistory(
@@ -482,12 +402,11 @@ public class InventoryServiceImpl implements InventoryService {
         return activityHistoryService.search(authentication, filters, page, size);
     }
 
-    /** Lấy chi tiết lô thuộc cửa hàng, gồm tồn kho, hạn, giảm giá, phân bổ và mã đơn liên quan. */
+    /** Lấy chi tiết lô thuộc cửa hàng, gồm tồn kho, hạn, phân bổ và mã đơn liên quan. */
     @Override
     public BatchResponse batch(Authentication authentication, Long batchId) {
         InventoryBatch batch = getOwnedBatchForRead(authentication, batchId);
         LocalDate date = today();
-        BatchMarkdown markdown = findCurrentMarkdown(batchId, date);
         ProductVariant variant =
                 productVariantRepository.findById(batch.getVariantId()).orElseThrow();
         Product product = productRepository.findById(variant.getProductId()).orElseThrow();
@@ -497,13 +416,10 @@ public class InventoryServiceImpl implements InventoryService {
                         .available(available(batch, date))
                         .expired(expired(batch, date))
                         .nearExpiry(nearExpiry(batch, date, product.getExpiryWarningDays()))
-                        .markdown(markdown)
                         .productName(product.getName())
                         .sku(variant.getSku())
                         .unit(variant.getUnit())
-                        .markdownEligible(InventoryRules.markdownEligible(batch, date))
                         .daysUntilExpiry(InventoryRules.daysUntilExpiry(batch, date))
-                        .markdownAllowed(markdownAllowed(product, variant))
                         .build();
         response.setVariantName(variant.getVariantName());
         response.setAllocationDetails(
@@ -514,24 +430,6 @@ public class InventoryServiceImpl implements InventoryService {
                         variant.getUnit(),
                         stockAllocationRepository.findByBatchIdOrderByAllocationIdDesc(batchId)));
         return response;
-    }
-
-    private boolean markdownAllowed(Product product, ProductVariant variant) {
-        return productAvailabilityService.canSellVariant(product.getShopId(), variant);
-    }
-
-    /**
-     * Tìm đợt giảm giá đang bật có khoảng ngày bao gồm ngày tra cứu.
-     * Hàm này chỉ xét trạng thái và ngày của đợt giảm, không kiểm tra điều kiện của lô.
-     */
-    private BatchMarkdown findCurrentMarkdown(Long batchId, LocalDate date) {
-        for (BatchMarkdown markdown :
-                batchMarkdownRepository.findByBatchIdAndStatus(batchId, MarkdownStatus.ACTIVE)) {
-            if (!markdown.getEndDate().isBefore(date) && !markdown.getStartDate().isAfter(date)) {
-                return markdown;
-            }
-        }
-        return null;
     }
 
     private ProductVariant findVariantSnapshot(Long variantId) {

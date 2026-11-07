@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -44,9 +45,9 @@ public class NotificationController {
 
     @PostMapping("/{notificationId}/read")
     public String markRead(@PathVariable Long notificationId, @RequestParam(defaultValue = "0") int page,
-                           Authentication authentication) {
+                           Authentication authentication, @ModelAttribute("activeChannel") String channel) {
         notificationService.markRead(notificationId, authentication);
-        return "redirect:/notifications?page=" + Math.max(0, page);
+        return "redirect:/notifications?page=" + Math.max(0, page) + "&channel=" + channel;
     }
 
     @GetMapping("/{notificationId}/open")

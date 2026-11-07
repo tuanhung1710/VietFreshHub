@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="vi" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/interface-layout :: customerHead('Lịch sử thanh toán')}"></head>
-<body class="purchase-page vfo-app vfr-app vfc-app vfr-customer" data-vfr-section="orders">
-<th:block th:replace="~{fragments/interface-layout :: navigation('customer','orders')}"></th:block>
+<body class="purchase-page vfo-app vfr-app vfc-app vfr-customer vfc-workspace-page" data-vfr-section="payments">
+<th:block th:replace="~{fragments/customer-navigation :: workspace('payments')}"></th:block>
+<div class="vfo-workspace" id="workspace-content" tabindex="-1">
 
 <main class="container page purchase-layout vfr-page" id="customer-content" tabindex="-1">
 <div class="purchase-content order-history-page payment-history-page payment-template">
@@ -71,4 +72,5 @@
 </div></main>
 
 <footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</div>
 </body></html>

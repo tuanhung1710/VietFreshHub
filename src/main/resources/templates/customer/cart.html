@@ -6,8 +6,9 @@
     <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
     <title>Giỏ hàng | VietFresh Hub</title><link rel="stylesheet" th:href="@{/css/storefront.css}"><link rel="stylesheet" th:href="@{/css/customer-shell.css}"><link rel="stylesheet" th:href="@{/css/cart.css}"><script defer th:src="@{/js/cart.js}"></script>    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
 </head>
-<body class="vfo-app vfr-app vfr-utility vfc-app vfr-customer" data-vfr-section="cart">
+<body class="vfo-app vfr-app vfr-utility vfc-app vfr-customer vfc-workspace-page" data-vfr-section="cart">
 <th:block th:replace="~{fragments/interface-layout :: navigation('customer','cart')}"></th:block>
+<div class="vfo-workspace" id="workspace-content" tabindex="-1">
 
 
 <main class="container page cart-page vfr-page" th:attr="data-cart-id=${cart.cartId}" id="customer-content" tabindex="-1">
@@ -97,4 +98,5 @@
 <section class="cart-recommendations" th:if="${cartSuggestions != null and !#lists.isEmpty(cartSuggestions)}"><div class="cart-recommendations-heading"><h2>♧ Có thể bạn cũng thích</h2><a th:href="@{/home}">Xem thêm ›</a></div><div class="cart-suggestion-grid"><article class="cart-suggestion" th:each="product : ${cartSuggestions}"><a th:href="@{/product-detail/{id}(id=${product.selectedVariant.variantId})}"><img th:src="${product.imageUrl}" th:alt="${product.name}" width="100" height="100"></a><div><a th:href="@{/product-detail/{id}(id=${product.selectedVariant.variantId})}" th:text="${product.name}"></a><p class="muted" th:text="${product.selectedVariant.variantName}"></p><strong class="price" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'POINT')} + ' ₫'"></strong></div></article></div></section></main>
 
 <footer th:replace="~{fragments/customer-service :: footer}"></footer>
+</div>
 </body></html>

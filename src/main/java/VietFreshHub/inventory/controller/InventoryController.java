@@ -5,7 +5,6 @@ import VietFreshHub.inventory.dto.BatchMetadataRequest;
 import VietFreshHub.inventory.dto.BatchRequest;
 import VietFreshHub.inventory.dto.BatchResponse;
 import VietFreshHub.inventory.dto.InventoryCatalogFilter;
-import VietFreshHub.inventory.dto.MarkdownRequest;
 import VietFreshHub.inventory.dto.StockChangeRequest;
 import VietFreshHub.inventory.rule.InventoryRules;
 import VietFreshHub.inventory.service.InventoryCatalogService;
@@ -99,7 +98,7 @@ public class InventoryController {
         return "inventory/list";
     }
 
-    /** Tìm SKU hoặc lô đã nhập để chọn phân loại cho lần nhập tiếp theo. */
+    /** Tìm sản phẩm/SKU để chọn phân loại cho lô hàng mới. */
     @GetMapping("/restock")
     public String restockPicker(
             Authentication authentication, @RequestParam(defaultValue = "") String q, Model model) {
@@ -176,7 +175,7 @@ public class InventoryController {
     }
 
     /**
-     * Mở đúng biểu mẫu sửa, điều chỉnh, hủy hoặc giảm giá cho lô; từ chối tên thao tác không hỗ trợ.
+     * Mở đúng biểu mẫu sửa, điều chỉnh hoặc hủy cho lô; từ chối tên thao tác không hỗ trợ.
      */
     @GetMapping("/batches/{id}/{action}")
     public String batchForm(
@@ -184,25 +183,20 @@ public class InventoryController {
             @PathVariable Long id,
             @PathVariable String action,
             Model model) {
-        if (!List.of("edit", "adjust", "dispose", "markdown").contains(action)) {
+        if (!List.of("edit", "adjust", "dispose").contains(action)) {
             throw new CatalogException("Thao tác không hợp lệ.");
         }
         BatchResponse batch = inventoryService.batch(authentication, id);
-        Object form = createBatchActionForm(authentication, id, action, batch);
+        Object form = createBatchActionForm(authentication, id, action);
         model.addAttribute("form", form);
         addBatchAttributes(batch, id, action, model);
         return "inventory/batch-form";
     }
 
     private Object createBatchActionForm(
-            Authentication authentication, Long batchId, String action, BatchResponse batch) {
+            Authentication authentication, Long batchId, String action) {
         return switch (action) {
             case "edit" -> inventoryService.batchForm(authentication, batchId);
-            case "markdown" -> {
-                MarkdownRequest form = new MarkdownRequest();
-                form.setEndDate(batch.getBatch().getExpiryDate());
-                yield form;
-            }
             default -> new StockChangeRequest();
         };
     }
@@ -306,29 +300,6 @@ public class InventoryController {
         return "redirect:" + returnUrl;
     }
 
-    /** Thiết lập giảm giá cho lô hợp lệ; hiển thị lỗi dữ liệu hoặc nghiệp vụ ngay trên biểu mẫu. */
-    @PostMapping("/batches/{id}/markdown")
-    public String markdown(
-            Authentication authentication,
-            @PathVariable Long id,
-            @Valid @ModelAttribute("form") MarkdownRequest form,
-            BindingResult errors,
-            @ModelAttribute("inventoryReturnUrl") String returnUrl,
-            Model model,
-            RedirectAttributes flash) {
-        if (errors.hasErrors()) {
-            return showBatchForm(authentication, id, "markdown", model);
-        }
-        try {
-            inventoryService.markdown(authentication, id, form);
-            flash.addFlashAttribute("success", "Đã thiết lập giảm giá cho lô cận hạn.");
-            return "redirect:" + returnUrl;
-        } catch (CatalogException exception) {
-            errors.reject("business", exception.getMessage());
-            return showBatchForm(authentication, id, "markdown", model);
-        }
-    }
-
     /** Gửi yêu cầu khóa hoặc mở khóa lô với lý do và hiển thị kết quả trên màn nguồn. */
     @PostMapping("/batches/{id}/block")
     public String block(
@@ -341,23 +312,6 @@ public class InventoryController {
         try {
             inventoryService.block(authentication, id, blocked, reason);
             flash.addFlashAttribute("success", blocked ? "Đã khóa lô." : "Đã mở khóa lô.");
-        } catch (CatalogException exception) {
-            flash.addFlashAttribute("error", exception.getMessage());
-        }
-        return "redirect:" + returnUrl;
-    }
-
-    /** Dừng giảm giá của lô với lý do được nhập, sau đó chuyển về màn nguồn. */
-    @PostMapping("/batches/{id}/cancel-markdown")
-    public String cancel(
-            Authentication authentication,
-            @PathVariable Long id,
-            @RequestParam String reason,
-            @ModelAttribute("inventoryReturnUrl") String returnUrl,
-            RedirectAttributes flash) {
-        try {
-            inventoryService.cancelMarkdown(authentication, id, reason);
-            flash.addFlashAttribute("success", "Đã dừng giảm giá cho lô.");
         } catch (CatalogException exception) {
             flash.addFlashAttribute("error", exception.getMessage());
         }

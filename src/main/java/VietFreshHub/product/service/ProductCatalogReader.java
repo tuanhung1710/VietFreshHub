@@ -3,11 +3,8 @@ package VietFreshHub.product.service;
 import static VietFreshHub.inventory.rule.InventoryRules.available;
 import static VietFreshHub.inventory.rule.InventoryRules.today;
 
-import VietFreshHub.inventory.entity.BatchMarkdown;
 import VietFreshHub.inventory.entity.InventoryBatch;
 import VietFreshHub.inventory.repository.InventoryBatchRepository;
-import VietFreshHub.inventory.rule.InventoryRules;
-import VietFreshHub.inventory.service.BatchMarkdownLookup;
 import VietFreshHub.product.dto.ProductManagementState;
 import VietFreshHub.product.dto.ProductResponse;
 import VietFreshHub.product.dto.VariantResponse;
@@ -39,7 +36,6 @@ import java.util.Map;
 public class ProductCatalogReader {
     private final ProductVariantRepository productVariantRepository;
     private final InventoryBatchRepository inventoryBatchRepository;
-    private final BatchMarkdownLookup batchMarkdownLookup;
     private final ProductAvailabilityService productAvailabilityService;
     private final CategoryRepository categoryRepository;
     private final ProductCategoryRepository productCategoryRepository;
@@ -114,20 +110,10 @@ public class ProductCatalogReader {
             List<ProductVariant> variants,
             List<InventoryBatch> batches,
             ProductManagementState state) {
-        // Chỉ hiển thị giá giảm khi cả sản phẩm và phân loại đang đủ điều kiện bán.
         LocalDate date = today();
-        boolean sellable = state != null && "active".equals(state.code());
-        List<BatchMarkdown> markdowns =
-                sellable ? batchMarkdownLookup.findActive(batches) : List.of();
         List<VariantResponse> variantRows = new ArrayList<>();
         for (ProductVariant variant : variants) {
-            variantRows.add(
-                    buildVariantResponse(
-                            product,
-                            variant,
-                            batches,
-                            variant.getStatus() == VariantStatus.ACTIVE ? markdowns : List.of(),
-                            date));
+            variantRows.add(buildVariantResponse(product, variant, batches, date));
         }
 
         ProductResponse response = new ProductResponse();
@@ -146,20 +132,16 @@ public class ProductCatalogReader {
     }
 
     /**
-     * Tổng hợp tồn thực tế, hàng giữ cho đơn, hàng khả dụng và giá giảm từ các lô của phân loại.
-     * Chỉ hiển thị giá giảm khi phân loại đủ điều kiện bán.
+     * Tổng hợp tồn thực tế, hàng giữ cho đơn và hàng khả dụng từ các lô của phân loại.
      */
     private VariantResponse buildVariantResponse(
             Product product,
             ProductVariant variant,
             List<InventoryBatch> batches,
-            List<BatchMarkdown> markdowns,
             LocalDate date) {
         long physicalQuantity = 0;
         long reservedQuantity = 0;
         long availableQuantity = 0;
-        BigDecimal offerPrice = null;
-        long offerQuantity = 0;
 
         // Danh sách lô được tải chung cho nhiều SKU, nên chỉ cộng lô thuộc phân loại hiện tại.
         for (InventoryBatch batch : batches) {
@@ -172,21 +154,6 @@ public class ProductCatalogReader {
             physicalQuantity += batch.getQuantityOnHand();
             reservedQuantity += batch.getReservedQuantity();
             availableQuantity += batchAvailable;
-            // Lấy đợt giảm hợp lệ mới nhất của lô và chỉ cộng lượng tại giá thấp nhất.
-            for (BatchMarkdown markdown : markdowns) {
-                if (!InventoryRules.isApplicableMarkdown(
-                        batch, markdown, variant.getPrice(), date)) {
-                    continue;
-                }
-                BigDecimal price = markdown.getPrice();
-                if (offerPrice == null || price.compareTo(offerPrice) < 0) {
-                    offerPrice = price;
-                    offerQuantity = batchAvailable;
-                } else if (price.compareTo(offerPrice) == 0) {
-                    offerQuantity += batchAvailable;
-                }
-                break;
-            }
         }
 
         int lowStockThreshold = 0;
@@ -201,8 +168,6 @@ public class ProductCatalogReader {
         response.setAvailable(availableQuantity);
         // Phần còn lại là hàng chưa giữ cho đơn nhưng không thể bán do tình trạng lô.
         response.setUnavailable(physicalQuantity - reservedQuantity - availableQuantity);
-        response.setOfferPrice(offerPrice);
-        response.setOfferQuantity(offerQuantity);
         response.setLowStock(availableQuantity > 0 && availableQuantity <= lowStockThreshold);
         return response;
     }

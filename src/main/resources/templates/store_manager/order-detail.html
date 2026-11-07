@@ -13,7 +13,6 @@
 <main id="order-content" class="vfo-main">
     <header class="vfo-page-heading">
         <div><h1>Chi tiết đơn hàng</h1></div>
-        <a class="btn vfo-btn-secondary" th:href="@{/seller/orders}"><span aria-hidden="true">←</span> Tất cả đơn hàng</a>
     </header>
     <div class="vfo-status-banner"><span class="vfo-banner-icon"><svg class="vfo-icon" aria-hidden="true"><use href="#vfo-order"/></svg></span><div><span class="vfo-meta-label">Trạng thái đơn hàng</span><strong class="vfo-status" th:attr="data-status=${orderDetail.orderStatus}" th:text="${orderDetail.orderStatusLabel}"></strong></div><svg class="vfo-icon vfo-banner-leaf" aria-hidden="true"><use href="#vfo-leaf"/></svg></div>
 
