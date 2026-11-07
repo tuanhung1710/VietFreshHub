@@ -98,7 +98,7 @@ public class InventoryController {
         return "inventory/list";
     }
 
-    /** Tìm SKU hoặc lô đã nhập để chọn phân loại cho lần nhập tiếp theo. */
+    /** Tìm sản phẩm/SKU để chọn phân loại cho lô hàng mới. */
     @GetMapping("/restock")
     public String restockPicker(
             Authentication authentication, @RequestParam(defaultValue = "") String q, Model model) {

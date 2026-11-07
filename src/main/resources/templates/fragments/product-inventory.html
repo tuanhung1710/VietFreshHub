@@ -175,37 +175,6 @@
             <p class="mb-1" th:each="err : ${#fields.allErrors()}" th:text="${err}">
             </p>
         </div>
-        <div th:fragment="variantActionModal(returnToList)" class="modal fade" id="variantActionModal" tabindex="-1"
-             aria-labelledby="variantActionTitle" aria-describedby="variantActionDescription" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <form id="variantActionForm" th:action="@{/seller/products}" method="post" data-vf-catalog-action>
-                        <input type="hidden" name="returnToList" th:value="${returnToList}">
-                        <input type="hidden" name="status" id="variantActionStatus">
-                        <th:block th:if="${returnToList}">
-                            <th:block th:replace="~{fragments/product-catalog :: filters}"></th:block>
-                            <input type="hidden" name="page" th:value="${rows.number + 1}">
-                            <input type="hidden" name="size" th:value="${rows.size}">
-                        </th:block>
-                        <div class="modal-header">
-                            <h2 class="modal-title fs-5" id="variantActionTitle">Trạng thái SKU</h2>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
-                        </div>
-                        <div class="modal-body">
-                            <p class="fw-semibold text-break" id="variantActionName"></p>
-                            <p class="small text-secondary" id="variantActionDescription"></p>
-                            <label class="form-label" for="variantActionReason">Lý do thay đổi *</label>
-                            <textarea class="form-control" id="variantActionReason" name="reason" rows="3"
-                                      maxlength="900" required></textarea>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
-                            <button type="submit" class="btn btn-success" id="variantActionSubmit">Xác nhận</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
         <div th:fragment="variantDeleteModal(returnToList)" class="modal fade" id="variantDeleteModal" tabindex="-1"
              aria-labelledby="variantDeleteTitle" aria-describedby="variantDeleteDescription" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">

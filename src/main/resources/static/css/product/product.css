@@ -35,14 +35,6 @@
     max-width: 320px;
 }
 
-.vf-price-history-table th {
-    vertical-align: bottom;
-    color: #64748b;
-    overflow-wrap: normal !important;
-    word-break: normal;
-    line-height: 1.5;
-}
-
 .vf-product-row-actions {
     display: flex;
     align-items: center;
@@ -98,16 +90,6 @@
         min-height: 44px;
     }
 }
-
-.vf-price-history-table {
-    width: 100%;
-    table-layout: fixed;
-}
-
-.vf-price-history-table col:nth-child(1) { width: 20%; }
-.vf-price-history-table col:nth-child(2) { width: 30%; }
-.vf-price-history-table col:nth-child(3) { width: 30%; }
-.vf-price-history-table col:nth-child(4) { width: 20%; }
 
 .vf-product-detail-cover {
     display: block;
@@ -238,52 +220,4 @@
         bottom: 8px;
     }
 
-    .vf-price-history-table,
-    .vf-price-history-table tbody {
-        display: block;
-        width: 100%;
-    }
-
-    .vf-price-history-table colgroup {
-        display: none;
-    }
-
-    .vf-price-history-table thead {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        white-space: nowrap;
-    }
-
-    .vf-price-history-table tbody > tr {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-        padding: 16px;
-        border-bottom: 1px solid var(--vf-border);
-    }
-
-    .vf-price-history-table td {
-        display: block;
-        padding: 0;
-        min-width: 0;
-        border: 0;
-    }
-
-    .vf-price-history-table td[data-label]::before {
-        content: attr(data-label);
-        display: block;
-        margin-bottom: 4px;
-        color: var(--vf-muted);
-        font-size: 11px;
-        font-weight: 600;
-    }
-
-    .vf-price-history-table td[colspan] {
-        grid-column: 1 / -1;
-    }
 }

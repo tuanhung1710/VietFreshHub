@@ -6,6 +6,7 @@ import static VietFreshHub.inventory.rule.InventoryRules.today;
 import VietFreshHub.inventory.dto.InventoryCatalogFilter;
 import VietFreshHub.inventory.dto.InventoryCatalogRow;
 import VietFreshHub.inventory.dto.InventoryCatalogSummary;
+import VietFreshHub.inventory.dto.RestockChoice;
 import VietFreshHub.inventory.repository.InventoryCatalogRepository;
 import VietFreshHub.shop.service.ShopService;
 
@@ -18,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 /** Đọc danh sách lô/tổng tồn SKU và gợi ý nhập tiếp trong phạm vi cửa hàng đang quản lý. */
@@ -49,36 +49,10 @@ public class InventoryCatalogService {
                 date);
     }
 
-    /** Ưu tiên lô khớp từ khóa, sau đó bổ sung SKU chưa có trong kết quả, tối đa 10 lựa chọn. */
-    public List<InventoryCatalogRow> restockChoices(Authentication authentication, String query) {
+    /** Tìm sản phẩm/SKU để nhập lô mới, gồm cả SKU chưa từng nhập kho. */
+    public List<RestockChoice> restockChoices(Authentication authentication, String query) {
         Long shopId = shopService.getManagedShopId(authentication);
-        LocalDate date = today();
-        var filters = new InventoryCatalogFilter();
-        filters.setQ(text(query));
-        var choices = new ArrayList<InventoryCatalogRow>();
-        if (!filters.getQ().isEmpty()) {
-            choices.addAll(repository.suggestions(shopId, filters, date, SUGGESTION_LIMIT));
-        }
-        if (choices.size() < SUGGESTION_LIMIT) {
-            filters.setView("sku");
-            appendDistinctSkus(
-                    choices, repository.suggestions(shopId, filters, date, SUGGESTION_LIMIT));
-        }
-        return choices;
-    }
-
-    private void appendDistinctSkus(
-            List<InventoryCatalogRow> choices, List<InventoryCatalogRow> skus) {
-        for (InventoryCatalogRow sku : skus) {
-            boolean alreadySuggested =
-                    choices.stream().anyMatch(choice -> choice.variantId().equals(sku.variantId()));
-            if (!alreadySuggested) {
-                choices.add(sku);
-                if (choices.size() == SUGGESTION_LIMIT) {
-                    break;
-                }
-            }
-        }
+        return repository.restockChoices(shopId, text(query), SUGGESTION_LIMIT);
     }
 
     private void normalize(InventoryCatalogFilter filters) {

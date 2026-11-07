@@ -86,30 +86,7 @@ document.querySelector("#productActionModal")?.addEventListener("shown.bs.modal"
   document.querySelector("#productActionReason").focus();
 });
 
-// Mở bán hoặc tạm ẩn SKU.
-document.querySelector("#variantActionModal")?.addEventListener("show.bs.modal", event => {
-    const button = event.relatedTarget;
-    const status = button?.dataset.status;
-    if (!button?.dataset.actionUrl || !["ACTIVE", "INACTIVE"].includes(status)) {
-        event.preventDefault();
-        return;
-    }
-    const form = document.querySelector("#variantActionForm");
-    form.reset();
-    form.action = button.dataset.actionUrl;
-    document.querySelector("#variantActionStatus").value = status;
-    document.querySelector("#variantActionTitle").textContent = button.dataset.label + " SKU";
-    document.querySelector("#variantActionName").textContent = button.dataset.name;
-    document.querySelector("#variantActionSubmit").textContent = button.dataset.label;
-    document.querySelector("#variantActionDescription").textContent = status === "ACTIVE"
-        ? "Phân loại sẽ được cấu hình mở bán. Khách chỉ có thể đặt mua khi sản phẩm đang mở bán, không bị khóa, shop đang nhận đơn và còn hàng khả dụng."
-        : "Phân loại sẽ được tạm ẩn khỏi cửa hàng. Tồn kho và lịch sử được giữ lại. Nếu đây là phân loại mở bán cuối cùng, cần tạm ẩn sản phẩm trước.";
-});
-document.querySelector("#variantActionModal")?.addEventListener("shown.bs.modal", () => {
-    document.querySelector("#variantActionReason").focus();
-});
-
-// Dùng chung xác nhận xóa phân loại từ bảng danh sách và trang chi tiết.
+// Xác nhận xóa phân loại từ trang chi tiết sản phẩm.
 document.querySelector("#variantDeleteModal")?.addEventListener("show.bs.modal", event => {
     const button = event.relatedTarget;
     if (!button || button.disabled || !button.dataset.actionUrl) {

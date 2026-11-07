@@ -12,26 +12,24 @@
         <form method="get" th:action="@{/seller/inventory/restock}" data-inventory-picker
               th:attr="data-options-url=@{/seller/inventory/restock/options}">
             <input type="hidden" name="returnTo" th:value="${inventoryReturnUrl}">
-            <label class="form-label" for="inventorySkuQuery">Sản phẩm / SKU / lô</label>
+            <label class="form-label" for="inventorySkuQuery">Sản phẩm / SKU</label>
             <div class="d-flex gap-2">
                 <input class="form-control" id="inventorySkuQuery" name="q" type="search" th:value="${q}"
-                       maxlength="200" autocomplete="off" placeholder="Tìm theo tên, SKU hoặc mã LOT"
+                       maxlength="200" autocomplete="off" placeholder="Tên sản phẩm, mã PRD, tên phân loại hoặc SKU"
                        aria-controls="inventorySkuChoices" aria-describedby="inventorySkuHelp">
                 <button class="btn btn-outline-success" type="submit">Tìm</button>
             </div>
             <p class="small text-body-secondary mt-2 mb-2" id="inventorySkuHelp">
-                Chọn sản phẩm hoặc SKU từ một lô đã có. Mỗi lần nhập tạo một lô mới.
+                Chọn SKU cần nhập hàng. Thông tin lô mới được nhập ở bước tiếp theo.
             </p>
-            <div id="inventorySkuChoices" class="list-group" aria-live="polite" aria-label="Kết quả tìm trong kho">
+            <div id="inventorySkuChoices" class="list-group" aria-live="polite" aria-label="Kết quả tìm sản phẩm và SKU">
                 <th:block th:fragment="options">
-                    <p class="small text-body-secondary py-2 mb-0" th:if="${choices.empty}">Không tìm thấy sản phẩm, SKU hoặc lô phù hợp.</p>
+                    <p class="small text-body-secondary py-2 mb-0" th:if="${choices.empty}">Không tìm thấy sản phẩm hoặc SKU phù hợp.</p>
                     <a class="list-group-item list-group-item-action" th:each="choice : ${choices}"
                        th:href="@{/seller/inventory/products/{p}/variants/{v}/restock(p=${choice.productId},v=${choice.variantId},returnTo=${inventoryReturnUrl})}">
                         <strong th:text="${choice.productName}"></strong>
                         <span class="d-block small text-body-secondary">
                             <span th:text="${choice.sku+' · '+choice.variantName+' · '+choice.unit}"></span>
-                            <span th:if="${choice.batchId != null}" th:text="${' · '+choice.batchCode()}"></span>
-                            <span th:if="${choice.expiryDate != null}" th:text="${' · HSD '+#temporals.format(choice.expiryDate,'dd/MM/yyyy')}"></span>
                         </span>
                     </a>
                 </th:block>

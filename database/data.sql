@@ -1006,9 +1006,6 @@ FROM @variantPlan v JOIN @productPlan p ON p.n=v.product_n WHERE v.product_n=@n 
 SET @vid=SCOPE_IDENTITY(); UPDATE @variantPlan SET id=@vid WHERE product_n=@n AND pack=@pack;
 UPDATE dbo.product_variants SET sku='SKU-'+RIGHT('000000'+CONVERT(VARCHAR(20),@vid),CASE WHEN LEN(CONVERT(VARCHAR(20),@vid))>6 THEN LEN(CONVERT(VARCHAR(20),@vid)) ELSE 6 END) WHERE variant_id=@vid;
 INSERT dbo.product_images(product_id,variant_id,image_url,is_primary,sort_order,created_at) SELECT @pid,@vid,image,1,0,@productCreated FROM @productPlan WHERE n=@n;
-SELECT @price=price FROM dbo.product_variants WHERE variant_id=@vid;
-INSERT dbo.price_history(variant_id,price,effective_from,effective_to,changed_by) VALUES
-    (@vid,@price-5000,@productCreated,DATEADD(DAY,-25,@now),@owner),(@vid,@price,DATEADD(DAY,-25,@now),NULL,@owner);
    INSERT dbo.audit_events(actor_id,action,entity_type,entity_id,reason,created_at) VALUES(@owner,'UPDATE','VARIANT',@vid,N'Cập nhật giá bán sau đợt nhập hàng mới',DATEADD(DAY,-25,@now));
    SET @pack+=1;
 END;
@@ -1312,7 +1309,6 @@ UPDATE dbo.products SET created_at=DATEADD(HOUR,7,created_at),updated_at=DATEADD
                        approved_at=DATEADD(HOUR,7,approved_at);
 UPDATE dbo.product_variants SET created_at=DATEADD(HOUR,7,created_at),updated_at=DATEADD(HOUR,7,updated_at);
 UPDATE dbo.product_images SET created_at=DATEADD(HOUR,7,created_at);
-UPDATE dbo.price_history SET effective_from=DATEADD(HOUR,7,effective_from),effective_to=DATEADD(HOUR,7,effective_to);
 UPDATE dbo.inventory_batches SET received_at=DATEADD(HOUR,7,received_at),created_at=DATEADD(HOUR,7,created_at),
                                 updated_at=DATEADD(HOUR,7,updated_at);
 UPDATE dbo.inventory_transactions SET created_at=DATEADD(HOUR,7,created_at);

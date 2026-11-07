@@ -11,7 +11,6 @@ import VietFreshHub.product.dto.VariantActionRequest;
 import VietFreshHub.product.dto.VariantRequest;
 import VietFreshHub.product.dto.VariantResponse;
 import VietFreshHub.product.entity.Category;
-import VietFreshHub.product.entity.PriceHistory;
 
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
@@ -78,7 +77,4 @@ public interface ProductService {
             Long variantId,
             VariantActionRequest form);
 
-    /** Lấy lịch sử giá có phân trang của phân loại thuộc quyền quản lý. */
-    Page<PriceHistory> priceHistory(
-            Authentication authentication, Long productId, Long variantId, int page);
 }
