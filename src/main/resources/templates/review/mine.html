@@ -4,34 +4,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
-    <title>Đánh giá của tôi · VietFresh Hub</title>    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+    <title>Đánh giá của tôi · VietFresh Hub</title>
+    <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/review.css}">
 </head>
 <body class="vfo-app vfr-app vfc-app vfr-customer vfc-workspace-page" data-vfr-section="reviews">
 <th:block th:replace="~{fragments/customer-navigation :: workspace('reviews')}"></th:block>
 <div class="vfo-workspace" id="workspace-content" tabindex="-1">
 <main class="vfr-page" id="customer-content" tabindex="-1">
     <h1>Đánh giá của tôi</h1>
+    <form method="get" th:action="@{/reviews/mine}" class="row g-2 mb-3 align-items-end">
+        <div class="col-12 col-md-auto"><label class="form-label small mb-1" for="mine-product">Sản phẩm</label><select class="form-select" id="mine-product" name="productId"><option value="">Tất cả</option><option th:each="product : ${reviewProducts}" th:value="${product.id}" th:text="${product.name}" th:selected="${product.id == selectedProductId}"></option></select></div>
+        <div class="col-12 col-md-auto"><label class="form-label small mb-1" for="mine-rating">Số sao</label><select class="form-select" id="mine-rating" name="rating"><option value="">Tất cả</option><option th:each="star : ${#numbers.sequence(1,5)}" th:value="${star}" th:text="${star + ' sao'}" th:selected="${selectedRating == star}"></option></select></div>
+        <div class="col-12 col-md-auto"><label class="form-label small mb-1" for="mine-sort">Sắp xếp</label><select class="form-select" id="mine-sort" name="sort"><option value="newest" th:selected="${selectedSort == 'newest'}">Mới nhất</option><option value="oldest" th:selected="${selectedSort == 'oldest'}">Cũ nhất</option></select></div>
+        <div class="col-12 col-md-auto d-flex gap-2"><button class="btn btn-success" type="submit">Lọc</button><a class="btn btn-outline-secondary" th:href="@{/reviews/mine}">Đặt lại</a></div>
+    </form>
     <p th:if="${#lists.isEmpty(reviews.content)}">Bạn chưa gửi đánh giá nào.</p>
-    <article th:each="review : ${reviews.content}">
-        <h2 th:text="${review.targetName}">Sản phẩm hoặc cửa hàng</h2>
-        <p th:text="${'Trạng thái: ' + review.status + ' · ' + review.rating + '/5'}"></p>
-        <form method="post" th:action="@{/reviews/{id}/edit(id=${review.reviewId})}"
-              th:if="${review.status == T(VietFreshHub.review.entity.ReviewStatus).PENDING}">
-            <label th:for="${'rating-' + review.reviewId}">Điểm từ 1 đến 5</label>
-            <input th:id="${'rating-' + review.reviewId}" type="number" min="1" max="5" name="rating" th:value="${review.rating}" required class="form-control">
-            <label th:for="${'content-' + review.reviewId}">Nội dung</label>
-            <textarea th:id="${'content-' + review.reviewId}" name="content" maxlength="3000" th:text="${review.content}" class="form-control"></textarea>
-            <button type="submit" class="btn btn-success">Cập nhật</button>
-        </form>
-        <p th:if="${review.status != T(VietFreshHub.review.entity.ReviewStatus).PENDING}">Chỉnh sửa sau khi kiểm duyệt: TBD.</p>
-        <form method="post" th:action="@{/reviews/{id}/delete(id=${review.reviewId})}"><button type="submit" class="btn btn-success">Xóa đánh giá</button></form>
+    <article class="vfr-review-entry" th:each="review : ${reviews.content}">
+        <div class="vfr-review-heading">
+            <h2 th:text="${review.targetName}">Sản phẩm hoặc cửa hàng</h2>
+            <details class="vfr-review-edit"
+                     th:if="${review.status == T(VietFreshHub.review.entity.ReviewStatus).PENDING or review.status == T(VietFreshHub.review.entity.ReviewStatus).APPROVED}">
+                <summary class="btn btn-outline-secondary">Chỉnh sửa</summary>
+                <form method="post" th:action="@{/reviews/{id}/edit(id=${review.reviewId})}">
+                    <fieldset class="vfr-rating-fieldset"><legend>Chọn số sao</legend><div class="vfr-rating-picker">
+                        <th:block th:each="star : ${#numbers.sequence(5, 1)}"><input class="visually-hidden" type="radio" th:id="${'rating-' + review.reviewId + '-' + star}" name="rating" th:value="${star}" th:checked="${review.rating == star}" required><label th:for="${'rating-' + review.reviewId + '-' + star}" th:aria-label="${star + ' sao'}" th:title="${star + ' sao'}">★</label></th:block>
+                    </div></fieldset>
+                    <label th:for="${'content-' + review.reviewId}">Nội dung</label>
+                    <textarea th:id="${'content-' + review.reviewId}" name="content" maxlength="3000" th:text="${review.content}" class="form-control"></textarea>
+                    <button type="submit" class="btn btn-success">Cập nhật</button>
+                </form>
+            </details>
+        </div>
+        <p th:text="${'Trạng thái: ' + review.status}"></p>
+        <div class="vfr-review-stars" role="img" th:aria-label="${review.rating + ' trên 5 sao'}"
+             th:text="${#strings.repeat('★', review.rating) + #strings.repeat('☆', 5 - review.rating)}">★★★★★</div>
+        <time class="vfr-review-date" th:text="${#temporals.format(review.createdAt, 'dd/MM/yyyy')}"></time>
+        <form method="post" th:action="@{/reviews/{id}/delete(id=${review.reviewId})}" th:if="${review.status != T(VietFreshHub.review.entity.ReviewStatus).REMOVED}"><button type="submit" class="btn btn-success">Xóa đánh giá</button></form>
     </article>
     <nav th:if="${reviews.totalPages > 1}" aria-label="Trang đánh giá của tôi">
-        <a th:if="${reviews.hasPrevious()}" th:href="@{/reviews/mine(page=${reviews.number - 1})}">Trước</a>
+        <a th:if="${reviews.hasPrevious()}" th:href="@{/reviews/mine(page=${reviews.number - 1},productId=${selectedProductId},rating=${selectedRating},sort=${selectedSort})}">Trước</a>
         <span th:text="${reviews.number + 1 + ' / ' + reviews.totalPages}"></span>
-        <a th:if="${reviews.hasNext()}" th:href="@{/reviews/mine(page=${reviews.number + 1})}">Sau</a>
+        <a th:if="${reviews.hasNext()}" th:href="@{/reviews/mine(page=${reviews.number + 1},productId=${selectedProductId},rating=${selectedRating},sort=${selectedSort})}">Sau</a>
     </nav>
-    <a th:href="@{/home}">Về trang chủ</a>
+    <form action="/" method="get"><button class="btn btn-success" type="submit">Về trang chủ</button></form>
 </main><footer th:replace="~{fragments/customer-service :: footer}"></footer>
 </div>
 </body></html>

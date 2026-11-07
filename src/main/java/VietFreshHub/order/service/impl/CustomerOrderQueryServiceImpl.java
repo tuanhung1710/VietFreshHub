@@ -118,7 +118,8 @@ public class CustomerOrderQueryServiceImpl implements CustomerOrderQueryService 
             }
             OrderDetailsResponse.Item item = new OrderDetailsResponse.Item(
                     row.getProductName(), row.getVariantName(), row.getSku(), image,
-                    row.getQuantity(), row.getUnitPrice(), row.getTotalAmount(), row.getDiscountAmount());
+                    row.getQuantity(), row.getUnitPrice(), row.getTotalAmount(), row.getDiscountAmount(),
+                    row.getOrderItemId(), row.getProductId());
             List<OrderDetailsResponse.Item> shopItems = itemsByShop.get(row.getShopOrderId());
             if (shopItems == null) {
                 shopItems = new ArrayList<>();

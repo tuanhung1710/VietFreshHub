@@ -8,6 +8,7 @@
             Chi tiết sản phẩm | VietFresh Hub
         </title>
         <link rel="stylesheet" th:href="@{/css/product-detail.css}">
+        <link rel="stylesheet" th:href="@{/css/review.css}">
         <link rel="stylesheet" th:href="@{/css/discount-pricing.css}">
         <meta name="_csrf" th:if="${_csrf != null}" th:content="${_csrf.token}">
         <meta name="_csrf_header" th:if="${_csrf != null}" th:content="${_csrf.headerName}">
@@ -19,7 +20,7 @@
           class="vfo-app vfr-app vfr-retail vfr-customer vfc-workspace-page" data-vfr-section="account"
           th:attr="data-customer=${#authorization.expression('hasRole(''CUSTOMER'')')}">
         <th:block th:replace="~{fragments/customer-navigation :: workspace('products')}"></th:block>
-<div class="vfo-workspace" id="workspace-content" tabindex="-1">
+        <div class="vfo-workspace" id="workspace-content" tabindex="-1">
         <main id="customer-content" class="wrap vfr-page">
             <div class="crumb">
                 <a th:href="@{/shops/{id}(id=${shop.shopId})}">
@@ -271,25 +272,27 @@
                 </div>
             </section>
             <section class="section">
-                <div class="sectionhead">
+                <div class="sectionhead reviews-sectionhead">
                     ĐÁNH GIÁ SẢN PHẨM
+                    <a class="btn btn-success" th:href="@{/reviews/product/{id}(id=${product.productId})} + '#review-form'">Viết đánh giá</a>
                 </div>
                 <div class="sectionbody">
                     <div class="reviewshead">
                         <div style="font-size:28px">
+                            ★
                             <b th:text="${product.rating == null ? '0.0' : #numbers.formatDecimal(product.rating,1,1)}">
                             </b>
                             <span style="font-size:15px">
                                 / 5
                             </span>
                         </div>
-                        <span class="reviewsnote" th:text="${details.reviewCount} + ' đánh giá đã được duyệt'">
+                        <span class="reviewsnote" th:text="${details.reviewCount} + ' đánh giá'">
                         </span>
                     </div>
                     <p th:if="${#lists.isEmpty(details.reviews)}" class="muted">
-                        Chưa có đánh giá được duyệt cho sản phẩm.
+                        Chưa có đánh giá cho sản phẩm.
                     </p>
-                    <article th:each="review : ${details.reviews}" class="review">
+                    <article th:each="review : ${details.reviews}" class="review vfr-review-entry">
                         <strong th:text="${review.reviewer}">
                         </strong>
                         <div class="stars" th:text="${#strings.repeat('★',review.rating)+#strings.repeat('☆',5-review.rating)}">
@@ -298,6 +301,16 @@
                         </div>
                         <p th:text="${review.content}">
                         </p>
+                        <div class="vfr-review-report" th:if="${canReportReview and review.reviewerId != currentUserId}">
+                            <details>
+                                <summary class="btn btn-outline-secondary">Báo cáo</summary>
+                                <form method="post" th:action="@{/reviews/{id}/report(id=${review.reviewId})}" th:object="${reportForm}">
+                                    <input type="hidden" name="returnTo" th:value="${'/product-detail/' + product.selectedVariant.variantId}">
+                                    <th:block th:replace="~{fragments/review-report-fields :: fields(${review.reviewId})}"></th:block>
+                                    <button type="submit" class="btn btn-success">Gửi báo cáo</button>
+                                </form>
+                            </details>
+                        </div>
                     </article>
                     <p th:if="${details.reviewCount > #lists.size(details.reviews)}" class="reviewsnote">
                         Hiển thị 5 đánh giá mới nhất.
@@ -336,6 +349,7 @@
         </div>
         <div id="modal">
         </div>
+        <script th:src="@{/js/review-report-form.js}" ></script>
     </div>
 </body>
 </html>

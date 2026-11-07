@@ -26,6 +26,8 @@ public interface CustomerOrderReadRepository extends Repository<Order, Long> {
     }
     interface ItemSnapshot {
         Long getShopOrderId();
+        Long getOrderItemId();
+        Long getProductId();
         String getProductName();
         String getVariantName();
         String getSku();
@@ -65,14 +67,16 @@ public interface CustomerOrderReadRepository extends Repository<Order, Long> {
             + "from ShopOrder s where s.order.orderId=:orderId and s.order.customer.userId=:customerId order by s.shopOrderId")
     List<ShopSummary> findShops(@Param("customerId") Long customerId, @Param("orderId") Long orderId);
 
-    @Query("select i.shopOrder.shopOrderId as shopOrderId, i.productNameSnapshot as productName, "
+    @Query("select i.shopOrder.shopOrderId as shopOrderId, i.orderItemId as orderItemId, "
+            + "i.variant.product.productId as productId, i.productNameSnapshot as productName, "
             + "i.variantNameSnapshot as variantName, i.skuSnapshot as sku, i.variant.thumbnailUrl as imageUrl, "
             + "i.quantity as quantity, i.unitPrice as unitPrice, i.discountAmount as discountAmount, i.totalAmount as totalAmount "
             + "from OrderItem i where i.shopOrder.order.orderId=:orderId and i.shopOrder.order.customer.userId=:customerId "
             + "order by i.shopOrder.shopOrderId, i.orderItemId")
     List<ItemSnapshot> findItems(@Param("customerId") Long customerId, @Param("orderId") Long orderId);
 
-    @Query("select i.shopOrder.shopOrderId as shopOrderId, i.productNameSnapshot as productName, "
+    @Query("select i.shopOrder.shopOrderId as shopOrderId, i.orderItemId as orderItemId, "
+            + "i.variant.product.productId as productId, i.productNameSnapshot as productName, "
             + "i.variantNameSnapshot as variantName, i.skuSnapshot as sku, i.variant.thumbnailUrl as imageUrl, "
             + "i.quantity as quantity, i.unitPrice as unitPrice, i.discountAmount as discountAmount, i.totalAmount as totalAmount "
             + "from OrderItem i where i.shopOrder.shopOrderId=:shopOrderId and i.shopOrder.order.customer.userId=:customerId "

@@ -50,9 +50,20 @@ public class Review {
     @Column(length = 3000)
     private String content;
 
+    @org.hibernate.annotations.Nationalized
+    @Column(name = "shop_reply", length = 3000)
+    private String shopReply;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shop_replied_by")
+    private User shopRepliedBy;
+
+    @Column(name = "shop_replied_at")
+    private LocalDateTime shopRepliedAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private ReviewStatus status = ReviewStatus.PENDING;
+    private ReviewStatus status = ReviewStatus.APPROVED;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "moderated_by")

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/seller-orders :: head('Đánh giá sản phẩm')}"></head>
+<body class="vfo-app vfs-app">
+<th:block th:replace="~{fragments/seller-orders :: navigation('reviews')}"></th:block>
+<div id="workspace-content" class="vfo-workspace" tabindex="-1">
+    <main id="order-content" class="vfo-main vfs-dashboard">
+        <header class="vfo-page-heading"><div><h1>Đánh giá sản phẩm</h1><p class="text-secondary mb-0">Đánh giá của khách hàng dành cho sản phẩm trong shop.</p></div></header>
+        <div th:if="${successMessage}" class="alert alert-success" role="status" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}"></div>
+        <section class="card border-0 shadow-sm p-3 p-md-4" aria-label="Đánh giá sản phẩm của shop">
+            <p th:if="${reviewsPage.empty}" class="text-secondary mb-0">Shop chưa có đánh giá sản phẩm.</p>
+            <article class="border-top py-3" th:each="review : ${reviewsPage.content}">
+                <div class="d-flex flex-wrap align-items-baseline gap-2">
+                    <strong th:text="${review.reviewerName}">Tên khách hàng</strong>
+                    <small class="text-secondary" th:text="${review.targetName}">Tên sản phẩm</small>
+                </div>
+                <div class="my-2" role="img" th:aria-label="${review.rating + ' trên 5 sao'}"
+                     th:text="${#strings.repeat('★', review.rating) + #strings.repeat('☆', 5 - review.rating)}">★★★★★</div>
+                <time class="d-block small text-secondary mb-1" th:text="${#temporals.format(review.createdAt, 'dd/MM/yyyy')}"></time>
+                <p class="mb-0" th:text="${review.content}"></p>
+                <section th:if="${review.shopReply != null}" class="mt-3 rounded border bg-light p-3" aria-label="Phản hồi của cửa hàng">
+                    <div class="d-flex flex-wrap justify-content-between gap-2">
+                        <strong th:text="${review.shopName}">Cửa hàng</strong>
+                        <time class="small text-secondary" th:text="${#temporals.format(review.shopRepliedAt, 'dd/MM/yyyy HH:mm')}"></time>
+                    </div>
+                    <p class="mb-0 mt-2" th:text="${review.shopReply}"></p>
+                </section>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                    <details th:if="${review.shopReply == null}" class="seller-review-action">
+                        <summary class="btn vfo-btn-primary">Phản hồi</summary>
+                        <form method="post" th:action="@{/seller/reviews/{id}/reply(id=${review.reviewId},page=${reviewsPage.number})}"
+                              onsubmit="const button=this.querySelector('button[type=submit]');button.disabled=true;button.textContent='Đang gửi…';">
+                            <label th:for="${'reply-' + review.reviewId}" class="form-label">Nội dung phản hồi</label>
+                            <textarea th:id="${'reply-' + review.reviewId}" name="content" maxlength="3000" required class="form-control"></textarea>
+                            <button type="submit" class="btn vfo-btn-primary mt-2">Gửi phản hồi</button>
+                        </form>
+                    </details>
+                    <details class="seller-review-action">
+                        <summary class="btn vfo-btn-secondary">Báo cáo</summary>
+                        <form method="post" th:action="@{/seller/reviews/{id}/report(id=${review.reviewId},page=${reviewsPage.number})}"
+                              onsubmit="const button=this.querySelector('button[type=submit]');button.disabled=true;button.textContent='Đang gửi…';">
+                            <th:block th:replace="~{fragments/review-report-fields :: fields(${review.reviewId})}"></th:block>
+                            <button type="submit" class="btn vfo-btn-secondary mt-2">Gửi báo cáo</button>
+                        </form>
+                    </details>
+                </div>
+            </article>
+            <nav class="d-flex justify-content-between align-items-center mt-3" th:if="${reviewsPage.totalPages > 1}" aria-label="Phân trang đánh giá">
+                <a class="btn vfo-btn-secondary" th:if="${reviewsPage.hasPrevious()}" th:href="@{/seller/reviews(page=${reviewsPage.number - 1})}">Trang trước</a>
+                <span th:text="${reviewsPage.number + 1 + ' / ' + reviewsPage.totalPages}"></span>
+                <a class="btn vfo-btn-secondary" th:if="${reviewsPage.hasNext()}" th:href="@{/seller/reviews(page=${reviewsPage.number + 1})}">Trang sau</a>
+            </nav>
+        </section>
+    </main>
+    <footer th:replace="~{fragments/seller-orders :: footer}"></footer>
+</div>
+<script th:src="@{/js/review-report-form.js}"></script>
+</body>
+</html>

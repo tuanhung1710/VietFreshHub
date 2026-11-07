@@ -1,7 +1,9 @@
 package VietFreshHub.catalog.controller;
 
+import VietFreshHub.auth.service.AuthService;
 import VietFreshHub.catalog.dto.StorefrontProductDetail;
 import VietFreshHub.catalog.service.StorefrontService;
+import VietFreshHub.review.dto.ReviewReportForm;
 
 import lombok.RequiredArgsConstructor;
 
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.security.core.Authentication;
 
 @Controller
 @RequiredArgsConstructor
@@ -18,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class StorefrontPageController {
 
     private final StorefrontService storefrontService;
+    private final AuthService authService;
 
     /** Hiển thị sản phẩm, các quy cách mua được và sản phẩm liên quan trong cùng cửa hàng. */
     @GetMapping({"", "/{variantId}"})
@@ -25,6 +29,7 @@ public class StorefrontPageController {
             @PathVariable(required = false) Long variantId,
             @RequestParam(required = false) Long productId,
             @RequestParam(required = false) String slug,
+            Authentication authentication,
             Model model) {
         StorefrontProductDetail detail =
                 storefrontService.productDetail(variantId, productId, slug);
@@ -35,6 +40,11 @@ public class StorefrontPageController {
         model.addAttribute("joinedDate", detail.joinedDate());
         model.addAttribute("shopProductCount", detail.shopProductCount());
         model.addAttribute("related", detail.related());
+        boolean customer = authentication != null && authentication.isAuthenticated()
+                && authentication.getAuthorities().stream().anyMatch(a -> "ROLE_CUSTOMER".equals(a.getAuthority()));
+        model.addAttribute("canReportReview", customer);
+        model.addAttribute("currentUserId", customer ? authService.getCurrentUserId(authentication) : null);
+        model.addAttribute("reportForm", new ReviewReportForm(null, null));
         return "customer/product-detail";
     }
 }

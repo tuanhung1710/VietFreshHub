@@ -10,7 +10,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
 @Entity
-@Table(schema = "dbo", name = "review_reports")
+@Table(schema = "dbo", name = "review_reports",
+        uniqueConstraints = @UniqueConstraint(name = "UQ_review_reports_review_reporter",
+                columnNames = {"review_id", "reporter_user_id"}))
 @Getter
 @Setter
 @NoArgsConstructor

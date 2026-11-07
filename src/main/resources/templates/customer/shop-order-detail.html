@@ -22,6 +22,11 @@
                         <span th:if="${item.imageUrl == null}" class="order-item-placeholder">Chưa có ảnh</span>
                         <div class="detail-item-info"><div class="receipt-product-name"><h4 th:text="${item.productName}"></h4><p class="muted" th:text="${item.variantName}"></p>
                             <span th:if="${item.sku != null and !#strings.isEmpty(item.sku)}" class="order-item-sku" th:text="'SKU: ' + ${item.sku}"></span>
+                                <a th:if="${shop.statusCode == 'COMPLETED' and !reviewedOrderItemIds.contains(item.orderItemId)}"
+                                   class="btn btn-outline-success btn-sm mt-2"
+                                   th:href="@{/reviews/product/{id}(id=${item.productId},orderItemId=${item.orderItemId})} + '#review-form'">Đánh giá sản phẩm</a>
+                                <span th:if="${shop.statusCode == 'COMPLETED' and reviewedOrderItemIds.contains(item.orderItemId)}"
+                                      class="badge text-bg-success mt-2">Đã đánh giá</span>
                             </div><p class="detail-item-quantity" th:text="'× ' + ${item.quantity}"></p>
                             <span class="muted receipt-unit-price" th:text="${#numbers.formatDecimal(item.unitPrice,1,'POINT',item.unitPrice.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></span>
                             <p th:if="${item.discountAmount.signum() > 0}" class="order-item-discount" th:text="'Giảm giá dòng hàng: ' + ${#numbers.formatDecimal(item.discountAmount,1,'POINT',item.discountAmount.stripTrailingZeros().scale() > 0 ? 2 : 0,'COMMA')} + ' ₫'"></p></div>

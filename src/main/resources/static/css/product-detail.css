@@ -58,3 +58,5 @@ header{border-bottom:2px solid #111;background:#fff}.headrow{display:flex;align-
 .hide,[hidden]{display:none!important}
 @media(max-width:570px){.cta .cta-button{flex:1;padding:13px 9px;text-align:center}.storemeta b{min-width:90px}.cart-button{padding:10px}}
 @media(max-width:570px){.storeavatar{width:80px;height:80px}}
+
+.reviews-sectionhead{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.reviews-sectionhead .btn{margin-left:auto}

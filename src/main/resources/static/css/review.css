@@ -1,0 +1,68 @@
+.vfr-review-entry {
+    border-top: 1px solid #dce3d3;
+    padding: 1rem 0;
+}
+
+.vfr-reviewer {
+    color: #293a30;
+    font-size: 14px;
+}
+
+.vfr-review-stars {
+    color: #293a30;
+    letter-spacing: .12em;
+    margin: .5rem 0;
+}
+
+.vfr-review-date {
+    color: #819073;
+    display: block;
+    font-size: 12px;
+    margin-bottom: .35rem;
+}
+
+.vfr-rating-fieldset {
+    border: 0;
+    margin: 0 0 1rem;
+    padding: 0;
+}
+
+.vfr-rating-fieldset legend {
+    color: #6e7f60;
+    float: none;
+    font-size: 12px;
+    margin-bottom: .35rem;
+    width: auto;
+}
+
+.vfr-rating-picker {
+    direction: rtl;
+    display: flex;
+    justify-content: flex-end;
+    width: fit-content;
+}
+
+.vfr-rating-picker label {
+    color: #819073;
+    cursor: pointer;
+    font-size: 1.8rem !important;
+    line-height: 1;
+    padding: 0 .12rem;
+}
+
+.vfr-rating-picker input:checked ~ label,
+.vfr-rating-picker label:hover,
+.vfr-rating-picker label:hover ~ label {
+    color: var(--bs-warning, #ffc107);
+}
+
+.vfr-rating-picker input:focus-visible + label {
+    outline: 2px solid #30634e;
+    outline-offset: 2px;
+}
+
+.vfr-review-entry{position:relative}.vfr-review-report{position:absolute;right:0;top:.75rem}.vfr-review-report summary{cursor:pointer;list-style:none}.vfr-review-report summary::-webkit-details-marker{display:none}.vfr-review-report form{background:var(--bs-body-bg,#fff);border:1px solid var(--bs-border-color,#dce3d3);border-radius:.5rem;box-shadow:0 .25rem .75rem #0002;margin-top:.5rem;padding:.75rem;position:absolute;right:0;width:min(18rem,calc(100vw - 3rem));z-index:1}.vfr-review-report form label{display:block;margin:.4rem 0 .2rem}.vfr-review-report form button{margin-top:.5rem}
+
+.vfr-write-review{margin:1rem 0}.vfr-write-review summary{cursor:pointer;list-style:none;width:max-content}.vfr-write-review summary::-webkit-details-marker{display:none}.vfr-write-review form{margin-top:1rem}
+
+.vfr-review-heading{align-items:flex-start;display:flex;flex-wrap:wrap;gap:1rem;justify-content:space-between}.vfr-review-heading h2{flex:1 1 12rem;margin:0}.vfr-review-edit{flex:0 1 auto;margin-left:auto;position:relative}.vfr-review-edit summary{cursor:pointer;list-style:none}.vfr-review-edit summary::-webkit-details-marker{display:none}.vfr-review-edit form{background:var(--bs-body-bg,#fff);border:1px solid var(--bs-border-color,#dce3d3);border-radius:.5rem;box-shadow:0 .25rem .75rem #0002;margin-top:0;padding:1rem;position:absolute;right:0;top:calc(100% + .5rem);width:min(24rem,calc(100vw - 3rem));z-index:2}.vfr-review-edit form label{display:block;margin:.4rem 0 .2rem}.vfr-review-edit form button{margin-top:.5rem}

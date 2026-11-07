@@ -22,12 +22,6 @@ public class ReviewModerationController {
         return "admin/review-reports";
     }
 
-    @GetMapping("/admin/reviews/pending")
-    public String pendingReviews(@RequestParam(defaultValue = "0") int page, Model model) {
-        model.addAttribute("reviews", reviewService.pendingReviews(page));
-        return "admin/reviews-pending";
-    }
-
     @PostMapping("/admin/review-reports/{reportId}/moderate")
     public String moderateReport(@PathVariable Long reportId, @RequestParam String action,
                                  Authentication authentication, RedirectAttributes flash) {
@@ -36,11 +30,4 @@ public class ReviewModerationController {
         return "redirect:/admin/review-reports";
     }
 
-    @PostMapping("/admin/reviews/{reviewId}/moderate")
-    public String moderateReview(@PathVariable Long reviewId, @RequestParam String action,
-                                 Authentication authentication, RedirectAttributes flash) {
-        reviewService.moderateReview(authentication, reviewId, action);
-        flash.addFlashAttribute("successMessage", "Đã cập nhật trạng thái đánh giá.");
-        return "redirect:/admin/reviews/pending";
-    }
 }
