@@ -17,36 +17,11 @@
         <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
     </head>
     <body th:with="mainUrl=${#strings.isEmpty(product.imageUrl) ? '/images/product/product-placeholder.svg' : product.imageUrl}"
-          class="vfo-app vfr-app vfr-retail vfr-customer" data-vfr-section="account"
+          class="vfo-app vfr-app vfr-retail vfr-customer vfc-workspace-page" data-vfr-section="account"
           th:attr="data-customer=${#authorization.expression('hasRole(''CUSTOMER'')')}">
-        <header class="vfc-header">
-            <div class="wrap">
-                <div class="vfc-header-main">
-                    <a class="brand" th:href="@{/home}">
-                        VietFresh Hub
-                    </a>
-                    <div class="vfo-topbar-actions vfc-header-actions">
-                        <th:block th:replace="~{fragments/customer-shop :: accountLinks}"></th:block>
-                    </div>
-                </div>
-                <div class="headrow vfc-header-tools">
-                    <form class="searchbar" th:action="@{/shops/{id}/products(id=${shop.shopId})}" method="get" role="search">
-                        <input class="form-control" type="search" name="q" maxlength="100" placeholder="Tìm trái cây trong gian hàng..." aria-label="Tìm sản phẩm trong shop">
-                        <button class="btn btn-success" type="submit">
-                            TÌM
-                        </button>
-                    </form>
-                    <a class="cart-button" th:href="@{/cart}">
-                        Giỏ hàng (
-                        <span id="cartCount" aria-live="polite" th:text="${storefrontCartCount}">
-                            0
-                        </span>
-                        )
-                    </a>
-                </div>
-            </div>
-        </header>
-        <main class="wrap vfr-page">
+        <th:block th:replace="~{fragments/customer-navigation :: workspace('products')}"></th:block>
+        <div class="vfo-workspace" id="workspace-content" tabindex="-1">
+        <main id="customer-content" class="wrap vfr-page">
             <div class="crumb">
                 <a th:href="@{/shops/{id}(id=${shop.shopId})}">
                     Gian hàng
@@ -102,7 +77,7 @@
                             </strong>
                         </span>
                     </div>
-                    <p><a th:href="@{/reviews/shop/{id}(id=${shop.shopId})}">Xem đánh giá cửa hàng</a></p>
+                    <p><a th:href="@{/reviews/product/{id}(id=${product.productId})}">Xem đánh giá và xếp hạng</a> · <a th:href="@{/reviews/shop/{id}(id=${shop.shopId})}">Xem đánh giá cửa hàng</a></p>
                     <div class="pricebox" aria-live="polite">
                         <div class="price-line">
                             <div class="price" id="currentPrice" th:text="${#numbers.formatInteger(product.selectedVariant.price,0,'COMMA')} + ' VND'">
@@ -374,6 +349,7 @@
         </div>
         <div id="modal">
         </div>
-    </body>
-    <script th:src="@{/js/review-report-form.js}" ></script>
+        <script th:src="@{/js/review-report-form.js}" ></script>
+    </div>
+</body>
 </html>
