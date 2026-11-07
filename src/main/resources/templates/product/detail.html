@@ -236,7 +236,7 @@
             >
               <svg class="vf-icon" aria-hidden="true"><use href="#vf-trash" /></svg>
             </button>
-            <div class="dropdown">
+            <div class="dropdown" th:if="${row.product.status.name()!='DELETED'&&v.variant.status.name()!='DELETED'}">
               <button
                 type="button"
                 class="btn btn-sm btn-light vf-product-more"
@@ -279,17 +279,6 @@
                       <use href="#vf-plus" />
                     </svg>
                     Nhập kho
-                  </a>
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    th:href="@{/seller/products/{p}/variants/{v}/prices(p=${row.product.productId},v=${v.variant.variantId})}"
-                  >
-                    <svg class="vf-icon" aria-hidden="true">
-                      <use href="#vf-history" />
-                    </svg>
-                    Lịch sử giá bán
                   </a>
                 </li>
               </ul>

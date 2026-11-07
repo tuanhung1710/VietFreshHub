@@ -5,6 +5,7 @@ import VietFreshHub.common.Pagination;
 import VietFreshHub.inventory.dto.InventoryCatalogFilter;
 import VietFreshHub.inventory.dto.InventoryCatalogRow;
 import VietFreshHub.inventory.dto.InventoryCatalogSummary;
+import VietFreshHub.inventory.dto.RestockChoice;
 
 import lombok.RequiredArgsConstructor;
 
@@ -75,11 +76,38 @@ public class InventoryCatalogRepository {
                 total);
     }
 
-    /** Trả số dòng giới hạn cho bộ chọn nhập tiếp; không cần truy vấn đếm như màn danh sách. */
-    public List<InventoryCatalogRow> suggestions(
-            Long shop, InventoryCatalogFilter filters, LocalDate today, int limit) {
-        var parameters = parameters(shop, today);
-        return rows(filters, scope(filters, parameters), parameters, 0, limit);
+    /** Mỗi SKU một lựa chọn nhập mới; không nối lô hoặc yêu cầu đã có tồn kho. */
+    public List<RestockChoice> restockChoices(Long shop, String query, int limit) {
+        var parameters = new MapSqlParameterSource("shop", shop).addValue("limit", limit);
+        var sql = new StringBuilder(
+                """
+                SELECT p.product_id,p.name,v.variant_id,v.variant_name,v.sku,v.unit
+                FROM dbo.product_variants v JOIN dbo.products p ON p.product_id=v.product_id
+                WHERE p.shop_id=:shop
+                """).append(ACTIVE);
+        if (!query.isEmpty()) {
+            Long productId = BusinessCodes.parse("PRD", query);
+            if (productId != null) {
+                sql.append(" AND p.product_id=:productCode");
+                parameters.addValue("productCode", productId);
+            } else {
+                sql.append(
+                        " AND (LOWER(p.name) LIKE :text ESCAPE '!' OR LOWER(p.slug) LIKE :text ESCAPE '!'"
+                                + " OR LOWER(v.sku) LIKE :text ESCAPE '!' OR LOWER(v.variant_name) LIKE :text ESCAPE '!')");
+                parameters.addValue("text", searchPattern(query));
+            }
+        }
+        sql.append(" ORDER BY p.product_id DESC,v.variant_id DESC OFFSET 0 ROWS FETCH NEXT :limit ROWS ONLY");
+        return jdbc.query(
+                sql.toString(),
+                parameters,
+                (row, index) -> new RestockChoice(
+                        row.getLong("product_id"),
+                        row.getLong("variant_id"),
+                        row.getString("name"),
+                        row.getString("variant_name"),
+                        row.getString("sku"),
+                        row.getString("unit")));
     }
 
     /** Tổng quan toàn cửa hàng, độc lập từ khóa và trang đang xem. */
@@ -226,15 +254,17 @@ public class InventoryCatalogRepository {
                                         + ")"
                                 : matchLot)
                 .append(")");
-        parameters.addValue(
-                "text",
-                "%"
-                        + text.toLowerCase(Locale.ROOT)
-                                .replace("!", "!!")
-                                .replace("%", "!%")
-                                .replace("_", "!_")
-                                .replace("[", "![")
-                        + "%");
+        parameters.addValue("text", searchPattern(text));
+    }
+
+    private String searchPattern(String text) {
+        return "%"
+                + text.toLowerCase(Locale.ROOT)
+                        .replace("!", "!!")
+                        .replace("%", "!%")
+                        .replace("_", "!_")
+                        .replace("[", "![")
+                + "%";
     }
 
     private void appendBatchFilters(

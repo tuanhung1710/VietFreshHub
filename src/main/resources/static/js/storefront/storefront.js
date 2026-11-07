@@ -4,9 +4,12 @@
     const getElement = id => document.getElementById(id);
     const placeholder = "/images/product/product-placeholder.svg";
 
-    /** Ẩn ảnh nền lỗi, thay ảnh sản phẩm hoặc hiển thị chữ cái đại diện của shop. */
+    /** Dùng ảnh dự phòng, ẩn ảnh nền lỗi hoặc hiển thị chữ cái đại diện của shop. */
     function fallbackImage(image) {
-        if (image.hasAttribute("data-shop-background") || image.hasAttribute("data-category-image")) {
+        if (image.hasAttribute("data-fallback-image")) {
+            const fallback = image.dataset.fallbackImage;
+            if (image.getAttribute("src") !== fallback) image.src = fallback;
+        } else if (image.hasAttribute("data-shop-background") || image.hasAttribute("data-category-image")) {
             image.hidden = true;
         } else if (image.id === "shopLogo") {
             image.hidden = true;

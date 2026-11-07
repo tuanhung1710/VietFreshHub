@@ -397,21 +397,6 @@ public class ProductController {
         return returnToList ? listRedirect(filters, page, size, flash) : productRedirect(id);
     }
 
-    /** Hiển thị lịch sử giá có phân trang của phân loại đã kiểm tra quyền truy cập. */
-    @GetMapping("/{id}/variants/{variant}/prices")
-    public String prices(
-            Authentication authentication,
-            @PathVariable Long id,
-            @PathVariable Long variant,
-            @RequestParam(defaultValue = "1") int page,
-            Model model) {
-        model.addAttribute(
-                "events", productService.priceHistory(authentication, id, variant, page));
-        model.addAttribute("productId", id);
-        model.addAttribute("variantId", variant);
-        return "product/price-history";
-    }
-
     /** Xung đột tên do hai request đồng thời cũng được trả về đúng trường trên biểu mẫu. */
     private void rejectDuplicateProductName(
             DataIntegrityViolationException exception, BindingResult errors) {

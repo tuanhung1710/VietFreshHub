@@ -13,15 +13,24 @@
                 <!-- Banner trang chủ. -->
                 <section class="bannergrid home-banner">
                     <div class="hero">
-                        <h1>
-                            Trái cây tươi mỗi ngày
-                        </h1>
-                        <p>
-                            Khám phá các loại trái cây nội địa và nhập khẩu từ nhiều gian hàng trên VietFresh Hub.
-                        </p>
-                        <a class="button" th:href="@{/products}">
-                            Xem tất cả sản phẩm
-                        </a>
+                        <div class="hero-copy">
+                            <h1>
+                                Trái cây tươi mỗi ngày
+                            </h1>
+                            <p>
+                                Khám phá các loại trái cây nội địa và nhập khẩu từ nhiều gian hàng trên VietFresh Hub.
+                            </p>
+                            <a class="button" th:href="@{/products}">
+                                Xem tất cả sản phẩm
+                            </a>
+                        </div>
+                        <div class="hero-visual">
+                            <img class="hero-image"
+                                 th:src="${#strings.isEmpty(heroImageUrl) ? '/images/storefront/fruit-gift.png' : heroImageUrl}"
+                                 data-fallback-image="/images/storefront/fruit-gift.png"
+                                 alt="Trái cây tươi tại VietFresh Hub"
+                                 width="1254" height="1254" fetchpriority="high">
+                        </div>
                     </div>
                     <div class="sidebanners">
                         <div class="sidebanner">

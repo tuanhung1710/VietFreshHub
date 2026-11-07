@@ -408,23 +408,6 @@ CREATE TABLE dbo.product_images (
     CONSTRAINT CK_product_images_sort_order CHECK (sort_order >= 0)
 );';
 
-EXEC sys.sp_executesql N'-- 19. price_history
-CREATE TABLE dbo.price_history (
-    price_history_id    BIGINT IDENTITY(1,1) PRIMARY KEY,
-    variant_id          BIGINT NOT NULL,
-    price               DECIMAL(18,2) NOT NULL,
-    effective_from      DATETIME2(0) NOT NULL,
-    effective_to        DATETIME2(0) NULL,
-    changed_by          BIGINT NULL,
-
-    CONSTRAINT FK_price_history_variant FOREIGN KEY (variant_id)
-        REFERENCES dbo.product_variants(variant_id),
-    CONSTRAINT FK_price_history_changed_by FOREIGN KEY (changed_by)
-        REFERENCES dbo.users(user_id),
-    CONSTRAINT CK_price_history_price CHECK (price >= 0),
-    CONSTRAINT CK_price_history_period CHECK (effective_to IS NULL OR effective_to > effective_from)
-);';
-
 EXEC sys.sp_executesql N'-- 20. inventory_batches
 CREATE TABLE dbo.inventory_batches (
     batch_id            BIGINT IDENTITY(1,1) PRIMARY KEY,
@@ -1500,8 +1483,6 @@ CREATE UNIQUE INDEX UX_product_images_one_primary_product
 ON dbo.product_images(product_id) WHERE variant_id IS NULL AND is_primary = 1;
 CREATE UNIQUE INDEX UX_product_images_one_primary_variant
 ON dbo.product_images(variant_id) WHERE variant_id IS NOT NULL AND is_primary = 1;
-CREATE INDEX IX_price_history_variant_period
-ON dbo.price_history(variant_id, effective_from DESC);
 CREATE INDEX IX_inventory_batches_expiry_date ON dbo.inventory_batches(expiry_date);
 CREATE INDEX IX_inventory_transactions_variant_id ON dbo.inventory_transactions(variant_id);
 CREATE INDEX IX_inventory_transactions_batch_id ON dbo.inventory_transactions(batch_id);
@@ -2311,7 +2292,7 @@ BEGIN
         (N'categories',N'created_at'),(N'categories',N'updated_at'),
         (N'products',N'created_at'),(N'products',N'updated_at'),(N'products',N'approved_at'),
         (N'product_variants',N'created_at'),(N'product_variants',N'updated_at'),
-        (N'product_images',N'created_at'),(N'price_history',N'effective_from'),(N'price_history',N'effective_to'),
+        (N'product_images',N'created_at'),
         (N'inventory_batches',N'received_at'),(N'inventory_batches',N'created_at'),(N'inventory_batches',N'updated_at'),
         (N'inventory_transactions',N'created_at'),(N'audit_events',N'created_at'),
         (N'shops',N'created_at'),(N'shops',N'updated_at'),

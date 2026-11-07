@@ -164,12 +164,6 @@
     document.querySelector("#productActionModal").addEventListener("show.bs.modal", () => {
         syncReturnFilters(document.querySelector("#productActionForm"));
     });
-    document.querySelector("#variantDeleteModal").addEventListener("show.bs.modal", () => {
-        syncReturnFilters(document.querySelector("#variantDeleteForm"));
-    });
-    document.querySelector("#variantActionModal").addEventListener("show.bs.modal", () => {
-        syncReturnFilters(document.querySelector("#variantActionForm"));
-    });
     const bulkModal = document.querySelector("#bulkProductActionModal");
     // Liệt kê toàn bộ sản phẩm đã chọn, kể cả ngoài trang, để người dùng kiểm tra trước khi gửi.
     bulkModal.addEventListener("show.bs.modal", event => {

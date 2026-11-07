@@ -96,13 +96,12 @@ body.vfc-workspace-page.vfr-app.vfr-customer .vfr-page { width: 100%; max-width:
     border: 0;
     text-decoration: none;
 }
-body.vfc-workspace-page.vfr-retail .vfr-page .products { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+body.vfc-workspace-page.vfr-retail .vfr-page .products { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 body.vfc-workspace-page.vfr-chat .chat-app { margin-top: 20px; }
 @media (min-width: 992px) and (max-width: 1350px) {
-    body.vfc-workspace-page.vfr-retail .vfr-page .products { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .vfc-workspace-page .bannergrid { grid-template-columns: minmax(0, 1fr); }
 }
-@media (min-width: 641px) and (max-width: 991px) {
+@media (min-width: 641px) and (max-width: 1199px) {
     body.vfc-workspace-page.vfr-retail .vfr-page .products { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 640px) {
