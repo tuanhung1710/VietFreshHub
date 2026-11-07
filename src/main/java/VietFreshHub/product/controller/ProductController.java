@@ -265,7 +265,6 @@ public class ProductController {
         flash.addAttribute("q", filters.getQ());
         flash.addAttribute("category", filters.getCategory());
         flash.addAttribute("tab", filters.getTab());
-        flash.addAttribute("stock", filters.getStock());
         flash.addAttribute("sort", filters.getSort());
         flash.addAttribute("createdFrom", filters.getCreatedFrom());
         flash.addAttribute("createdTo", filters.getCreatedTo());
@@ -436,6 +435,8 @@ public class ProductController {
         model.addAttribute("categories", productService.categories());
         model.addAttribute("units", productService.units());
         model.addAttribute("today", InventoryRules.today());
+
+        // render trong templates/product/form.html
         return "product/form";
     }
 

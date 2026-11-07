@@ -28,35 +28,35 @@
           class="nav-link"
           th:classappend="${tab == '' ? 'active' : ''}"
           th:attr="aria-current=${tab == '' ? 'page' : null}"
-          th:href="@{/seller/products(q=${q},category=${category},tab='',stock=${filters.stock},sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size})}"
+          th:href="@{/seller/products(q=${q},category=${category},tab='',sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size})}"
           th:text="${'Tất cả (' + tabSummary.all + ')'}"
         ></a>
         <a
           class="nav-link"
           th:classappend="${tab == 'active' ? 'active' : ''}"
           th:attr="aria-current=${tab == 'active' ? 'page' : null}"
-          th:href="@{/seller/products(q=${q},category=${category},tab='active',stock=${filters.stock},sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size})}"
+          th:href="@{/seller/products(q=${q},category=${category},tab='active',sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size})}"
           th:text="${'Đang bán (' + tabSummary.active + ')'}"
         ></a>
         <a
           class="nav-link"
           th:classappend="${tab == 'out-of-stock' ? 'active' : ''}"
           th:attr="aria-current=${tab == 'out-of-stock' ? 'page' : null}"
-          th:href="@{/seller/products(q=${q},category=${category},tab='out-of-stock',stock=${filters.stock},sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size})}"
+          th:href="@{/seller/products(q=${q},category=${category},tab='out-of-stock',sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size})}"
           th:text="${'Hết hàng (' + tabSummary.outOfStock + ')'}"
         ></a>
         <a
           class="nav-link"
           th:classappend="${tab == 'hidden' ? 'active' : ''}"
           th:attr="aria-current=${tab == 'hidden' ? 'page' : null}"
-          th:href="@{/seller/products(q=${q},category=${category},tab='hidden',stock=${filters.stock},sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size})}"
+          th:href="@{/seller/products(q=${q},category=${category},tab='hidden',sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size})}"
           th:text="${'Tạm ẩn (' + tabSummary.hidden + ')'}"
         ></a>
         <a
           class="nav-link"
           th:classappend="${tab == 'violation' ? 'active' : ''}"
           th:attr="aria-current=${tab == 'violation' ? 'page' : null}"
-          th:href="@{/seller/products(q=${q},category=${category},tab='violation',stock=${filters.stock},sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size})}"
+          th:href="@{/seller/products(q=${q},category=${category},tab='violation',sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size})}"
           th:text="${'Vi phạm (' + tabSummary.violation + ')'}"
         ></a>
       </div>
@@ -154,7 +154,8 @@
                   data-bs-target="#bulkProductActionModal"
                 >
                   Xóa sản phẩm</button
-                ><button
+                >
+                <button
                   class="btn btn-sm btn-light"
                   type="button"
                   data-vf-clear-selection
@@ -368,6 +369,7 @@
                           <use href="#vf-eye" />
                         </svg>
                       </a>
+
                       <button
                         class="btn btn-sm btn-outline-danger vf-catalog-icon-action"
                         type="button"
@@ -543,6 +545,7 @@
                                       <use href="#vf-eye" />
                                     </svg>
                                   </a>
+
                                   <button
                                     class="btn btn-sm btn-outline-danger vf-catalog-icon-action"
                                     type="button"
@@ -627,7 +630,7 @@
         </section>
         <div class="vf-pagination-panel vf-catalog-pagination">
           <div
-            th:replace="~{fragments/product-inventory :: pagination(${rows},@{/seller/products(q=${q},category=${category},tab=${tab},stock=${filters.stock},sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size},page=${rows.number})},@{/seller/products(q=${q},category=${category},tab=${tab},stock=${filters.stock},sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size},page=${rows.number + 2})},'Phân trang sản phẩm','sản phẩm')}"
+            th:replace="~{fragments/product-inventory :: pagination(${rows},@{/seller/products(q=${q},category=${category},tab=${tab},sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size},page=${rows.number})},@{/seller/products(q=${q},category=${category},tab=${tab},sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size},page=${rows.number + 2})},'Phân trang sản phẩm','sản phẩm')}"
           ></div>
           <form
             class="vf-page-size"

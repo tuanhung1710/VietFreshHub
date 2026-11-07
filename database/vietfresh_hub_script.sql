@@ -1408,20 +1408,6 @@ CREATE TABLE dbo.order_item_preparation_checks (
       note NVARCHAR(1000) NULL
     );';
 
-EXEC sys.sp_executesql N'-- 59. batch_markdowns
-CREATE TABLE dbo.batch_markdowns (
-        markdown_id BIGINT IDENTITY PRIMARY KEY,
-        batch_id BIGINT NOT NULL REFERENCES dbo.inventory_batches(batch_id),
-        price DECIMAL(18,2) NOT NULL CONSTRAINT CK_batch_markdowns_price CHECK(price>=1 AND price=FLOOR(price)),
-        start_date DATE NOT NULL,
-        end_date DATE NOT NULL,
-        status VARCHAR(20) NOT NULL CHECK(status IN (''ACTIVE'',''CANCELLED'')),
-        note NVARCHAR(1000) NOT NULL,
-        created_by BIGINT NOT NULL REFERENCES dbo.users(user_id),
-        created_at DATETIME2(0) NOT NULL,
-        CHECK(end_date>=start_date)
-    );';
-
 EXEC sys.sp_executesql N'-- 60. shop_locations
 CREATE TABLE dbo.shop_locations
 (
@@ -1587,7 +1573,6 @@ CREATE INDEX IX_stock_allocations_batch_status
     ON dbo.stock_allocations(batch_id, status) INCLUDE (order_item_id, quantity);
 CREATE INDEX IX_audit_events_entity_time
     ON dbo.audit_events(entity_type, entity_id, created_at DESC) INCLUDE (actor_id, action);
-CREATE INDEX IX_pi_markdown_batch ON dbo.batch_markdowns(batch_id,status,end_date);
 CREATE UNIQUE INDEX UX_shops_application_id ON dbo.shops(application_id) WHERE application_id IS NOT NULL;
 CREATE INDEX IX_password_reset_tokens_user_type_created ON dbo.password_reset_tokens(user_id, token_type, created_at DESC) INCLUDE (expires_at, used_at, attempt_count);
 CREATE INDEX IX_inventory_batches_fefo ON dbo.inventory_batches(variant_id, expiry_date, batch_id) INCLUDE (quantity_on_hand, reserved_quantity, status);
@@ -2201,6 +2186,20 @@ EXEC sys.sp_executesql N'IF EXISTS(SELECT 1 FROM sys.indexes WHERE object_id=OBJ
 
 EXEC sys.sp_executesql N'IF EXISTS(SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID(''dbo.seller_payouts'') AND name=''IX_seller_payouts_batch_eligibility'') DROP INDEX IX_seller_payouts_batch_eligibility ON dbo.seller_payouts; CREATE INDEX IX_seller_payouts_batch_eligibility ON dbo.seller_payouts(status,eligible_at,funds_confirmed_at,shop_id);';
 
+-- Restore deletion support without changing existing product, SKU or transaction data.
+EXEC sys.sp_executesql N'IF OBJECT_ID(N''dbo.CK_products_status'', N''C'') IS NOT NULL
+    ALTER TABLE dbo.products DROP CONSTRAINT CK_products_status;
+ALTER TABLE dbo.products WITH CHECK ADD CONSTRAINT CK_products_status
+    CHECK (status IN (''ACTIVE'', ''INACTIVE'', ''DELETED''));
+IF OBJECT_ID(N''dbo.CK_product_variants_status'', N''C'') IS NOT NULL
+    ALTER TABLE dbo.product_variants DROP CONSTRAINT CK_product_variants_status;
+ALTER TABLE dbo.product_variants WITH CHECK ADD CONSTRAINT CK_product_variants_status
+    CHECK (status IN (''ACTIVE'', ''INACTIVE'', ''OUT_OF_STOCK'', ''DELETED''));
+IF OBJECT_ID(N''dbo.CK_product_variants_min_selling_price'', N''C'') IS NOT NULL
+    ALTER TABLE dbo.product_variants DROP CONSTRAINT CK_product_variants_min_selling_price;
+ALTER TABLE dbo.product_variants WITH CHECK ADD CONSTRAINT CK_product_variants_min_selling_price
+    CHECK (status = ''DELETED'' OR (price >= 10000 AND price = FLOOR(price)));';
+
 -- END EXISTING DATABASE UPGRADE
 END;
 
@@ -2314,7 +2313,7 @@ BEGIN
         (N'product_variants',N'created_at'),(N'product_variants',N'updated_at'),
         (N'product_images',N'created_at'),(N'price_history',N'effective_from'),(N'price_history',N'effective_to'),
         (N'inventory_batches',N'received_at'),(N'inventory_batches',N'created_at'),(N'inventory_batches',N'updated_at'),
-        (N'inventory_transactions',N'created_at'),(N'batch_markdowns',N'created_at'),(N'audit_events',N'created_at'),
+        (N'inventory_transactions',N'created_at'),(N'audit_events',N'created_at'),
         (N'shops',N'created_at'),(N'shops',N'updated_at'),
         (N'shop_locations',N'created_at'),(N'shop_locations',N'updated_at'),(N'favorite_shops',N'created_at');
 
@@ -2579,7 +2578,7 @@ BEGIN
   BEGIN TRY
     BEGIN TRANSACTION;
     IF NOT EXISTS (SELECT 1 FROM dbo.products WITH (UPDLOCK, HOLDLOCK) WHERE product_id = @product_id AND status <> ''DELETED'')
-      THROW 51110, N''San pham khong ton tai hoac da ngung kinh doanh.'', 1;
+      THROW 51110, N''San pham khong ton tai.'', 1;
     DECLARE @reviewed_at DATETIME2(0)=DATEADD(HOUR,7,SYSUTCDATETIME());
     UPDATE dbo.products SET approval_status = @decision, approved_by = @admin_user_id, approved_at = @reviewed_at,
       updated_at = @reviewed_at
@@ -2762,7 +2761,7 @@ BEGIN
     BEGIN TRANSACTION;
     IF NOT EXISTS (SELECT 1 FROM dbo.products WITH (UPDLOCK,HOLDLOCK)
       WHERE product_id=@product_id AND status<>''DELETED'')
-      THROW 51122, N''San pham khong ton tai hoac da ngung kinh doanh.'', 1;
+      THROW 51122, N''San pham khong ton tai.'', 1;
     DECLARE @moderated_at DATETIME2(0)=DATEADD(HOUR,7,SYSUTCDATETIME());
     UPDATE dbo.products SET moderation_blocked=@blocked,
       moderation_reason=CASE WHEN @blocked=1 THEN LTRIM(RTRIM(@note)) ELSE NULL END,

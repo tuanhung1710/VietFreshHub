@@ -29,27 +29,26 @@
                 <dt>Tổng số lô</dt>
                 <dd th:text="${summary.totalBatches}"></dd>
                 <dd class="vf-inventory-metric-detail"
-                    th:text="${summary.batchesInStock + ' lô còn tồn · ' + (summary.totalBatches - summary.batchesInStock) + ' lô không còn tồn'}"></dd>
+                    th:text="${summary.batchesInStock + ' lô còn hàng · ' + (summary.totalBatches - summary.batchesInStock) + ' lô hết hàng'}"></dd>
             </div>
             <div>
                 <dt>Lô sắp hết hạn</dt>
                 <dd class="text-warning-emphasis" th:text="${summary.nearBatches}"></dd>
-                <dd class="vf-inventory-metric-detail">Chỉ tính lô còn tồn</dd>
+                <dd class="vf-inventory-metric-detail">Chỉ tính lô còn hàng</dd>
             </div>
             <div>
-                <dt>Lô đã hết hạn</dt>
-                <dd class="text-danger" th:text="${summary.totalExpiredBatches}"></dd>
-                <dd class="vf-inventory-metric-detail"
-                    th:text="${summary.expiredBatches + ' lô còn tồn · ' + (summary.totalExpiredBatches - summary.expiredBatches) + ' lô không còn tồn'}"></dd>
+                <dt>Lô hết hạn còn hàng</dt>
+                <dd class="text-danger" th:text="${summary.expiredBatches}"></dd>
+                <dd class="vf-inventory-metric-detail">Chỉ tính lô còn hàng</dd>
             </div>
         </dl>
-        <p class="small text-body-secondary mt-3 mb-0">Tổng hợp theo tùy chọn bao gồm hàng ngừng kinh doanh. Bảng bên dưới đếm kết quả theo bộ lọc.</p>
+        <p class="small text-body-secondary mt-3 mb-0">Bảng bên dưới đếm kết quả theo bộ lọc.</p>
     </section>
     <nav class="nav nav-pills vf-filter-tabs mb-3" aria-label="Cách xem tồn kho">
         <a class="nav-link" th:classappend="${!skuView?'active':null}" th:attr="aria-current=${!skuView?'page':null}"
-           th:href="@{/seller/inventory(size=${rows.size},q=${f.q},stock=${f.stock},variantId=${f.variantId},archived=${f.archived})}">Danh sách lô</a>
+           th:href="@{/seller/inventory(size=${rows.size},q=${f.q},variantId=${f.variantId})}">Danh sách lô</a>
         <a class="nav-link" th:classappend="${skuView?'active':null}" th:attr="aria-current=${skuView?'page':null}"
-           th:href="@{/seller/inventory(view='sku',size=${rows.size},q=${f.q},stock=${f.stock},variantId=${f.variantId},archived=${f.archived})}">Tổng tồn theo SKU</a>
+           th:href="@{/seller/inventory(view='sku',size=${rows.size},q=${f.q},stock=${f.stock},variantId=${f.variantId})}">Tổng tồn theo SKU</a>
     </nav>
     <form class="card p-3 mb-3" th:action="@{/seller/inventory}" th:object="${inventoryFilters}" method="get">
         <input type="hidden" th:field="*{view}">
@@ -60,23 +59,23 @@
                 <label class="form-label" for="q">Tìm kiếm</label>
                 <input class="form-control" type="search" th:field="*{q}" maxlength="200" placeholder="Tên sản phẩm, SKU hoặc mã LOT">
             </div>
-            <div class="col-6 col-lg-2">
-                <label class="form-label" for="stock">Tồn theo SKU</label>
+            <div class="col-12 col-lg-2" th:if="${skuView}">
+                <label class="form-label" for="stock">Trạng thái SKU</label>
                 <select class="form-select" th:field="*{stock}">
                     <option value="">Tất cả</option>
                     <option value="enough">Đủ hàng</option>
                     <option value="low">Tồn thấp</option>
                     <option value="empty">Hết hàng</option>
-                    <option value="available" th:if="${f.stock == 'available'}">Còn hàng</option>
                 </select>
             </div>
             <div class="col-6 col-lg-2" th:unless="${skuView}">
-                <label class="form-label" for="expiry">Hạn sử dụng</label>
+                <label class="form-label" for="expiry">Trạng thái lô</label>
                 <select class="form-select" th:field="*{expiry}">
                     <option value="">Tất cả</option>
                     <option value="valid">Còn hạn</option>
                     <option value="near">Sắp hết hạn</option>
                     <option value="expired">Đã hết hạn</option>
+                    <option value="empty">Hết hàng</option>
                     <option value="attention" th:if="${f.expiry == 'attention'}">Sắp hoặc đã hết hạn</option>
                 </select>
             </div>
@@ -89,15 +88,9 @@
                 <input class="form-control" type="date" th:field="*{receivedTo}">
             </div>
         </div>
-        <div class="d-flex flex-wrap align-items-end gap-3 mt-3">
-            <label class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" th:field="*{archived}">
-                <span class="form-check-label">Bao gồm sản phẩm và phân loại ngừng kinh doanh</span>
-            </label>
-            <div class="d-flex gap-2 ms-lg-auto">
-                <a class="btn btn-light" th:href="@{/seller/inventory(view=${f.view},size=${rows.size})}">Xóa bộ lọc</a>
-                <button class="btn btn-success" type="submit">Áp dụng</button>
-            </div>
+        <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mt-3">
+            <a class="btn btn-light" th:href="@{/seller/inventory(view=${f.view},size=${rows.size})}">Xóa bộ lọc</a>
+            <button class="btn btn-success" type="submit">Áp dụng</button>
         </div>
     </form>
     <p class="small text-body-secondary" th:if="${f.variantId != null}">
@@ -106,8 +99,8 @@
     <section class="card vf-inventory-list-card" aria-labelledby="inventory-results">
         <h2 class="h6 border-bottom px-3 py-2 mb-0" id="inventory-results"
             th:text="${rows.totalElements + (skuView ? ' SKU phù hợp' : ' lô phù hợp')}"></h2>
-        <p class="small text-body-secondary border-bottom px-3 py-2 mb-0" th:if="${!skuView && !#strings.isEmpty(f.expiry)}">
-            Bộ lọc hạn sử dụng chỉ tính lô còn tồn.
+        <p class="small text-body-secondary border-bottom px-3 py-2 mb-0" th:if="${!skuView && !#strings.isEmpty(f.expiry)}"
+           th:text="${f.expiry == 'empty' ? 'Chỉ hiển thị lô hết hàng, không phân biệt hạn sử dụng.' : 'Các trạng thái hạn sử dụng chỉ tính lô còn hàng.'}">
         </p>
         <p class="text-body-secondary mb-0 p-3" th:if="${rows.empty}">Không có kết quả phù hợp.</p>
         <div class="table-responsive" th:unless="${rows.empty}">
@@ -119,11 +112,11 @@
                     <th scope="col">Sản phẩm / SKU</th>
                     <th scope="col" th:unless="${skuView}">Ngày nhập</th>
                     <th scope="col" th:unless="${skuView}">Hạn sử dụng</th>
-                    <th scope="col" class="text-end" th:if="${skuView}">Số lô hàng</th>
-                    <th scope="col" class="text-end" th:text="${skuView ? 'Tồn kho' : 'Tồn thực tế'}"></th>
-                    <th scope="col" class="text-end" th:text="${skuView ? 'Khách đặt' : 'Đang giữ'}"></th>
-                    <th scope="col" class="text-end" th:text="${skuView ? 'Có thể bán' : 'Khả dụng'}"></th>
-                    <th scope="col" class="text-end" th:if="${skuView}">Hết hạn</th>
+                    <th scope="col" class="text-center" th:if="${skuView}">Số lô hàng</th>
+                    <th scope="col" class="text-center" th:text="${skuView ? 'Tồn kho' : 'Tồn thực tế'}"></th>
+                    <th scope="col" class="text-center" th:text="${skuView ? 'Khách đặt' : 'Đang giữ'}"></th>
+                    <th scope="col" class="text-center" th:text="${skuView ? 'Có thể bán' : 'Khả dụng'}"></th>
+                    <th scope="col" class="text-center" th:if="${skuView}">Hết hạn</th>
                     <th scope="col" th:text="${skuView?'Tình trạng':'Trạng thái lô'}"></th>
                     <th scope="col">Thao tác</th>
                 </tr>
@@ -139,33 +132,52 @@
                     <td data-label="Sản phẩm / SKU">
                         <strong th:text="${row.productName}"></strong>
                         <small class="d-block text-body-secondary" th:text="${row.sku+' · '+row.variantName}"></small>
-                        <small class="d-block text-body-secondary" th:if="${row.archived}">Đã ngừng kinh doanh</small>
                     </td>
                     <td data-label="Ngày nhập" th:unless="${skuView}" th:text="${row.receivedDate == null ? '—' : #temporals.format(row.receivedDate,'dd/MM/yyyy')}"></td>
                     <td data-label="Hạn sử dụng" th:unless="${skuView}" th:text="${row.expiryDate == null ? '—' : #temporals.format(row.expiryDate,'dd/MM/yyyy')}"></td>
-                    <td data-label="Số lô hàng" class="text-end" th:if="${skuView}" th:text="${row.batchesInStock}"></td>
-                    <td class="text-end" th:attr="data-label=${skuView ? 'Tồn kho' : 'Tồn thực tế'}" th:text="${row.physical}"></td>
-                    <td class="text-end" th:attr="data-label=${skuView ? 'Khách đặt' : 'Đang giữ'}" th:text="${row.reserved}"></td>
-                    <td class="text-end fw-semibold" th:attr="data-label=${skuView ? 'Có thể bán' : 'Khả dụng'}" th:text="${row.available}"></td>
-                    <td data-label="Hết hạn" class="text-end" th:if="${skuView}"
-                        th:classappend="${row.expiredQuantity > 0 ? 'text-danger fw-semibold' : null}"
-                        th:text="${row.expiredQuantity}"></td>
+                    <td data-label="Số lô hàng" class="text-center" th:if="${skuView}" th:text="${row.batchesInStock}"></td>
+                    <td class="text-center text-nowrap" th:attr="data-label=${skuView ? 'Tồn kho' : 'Tồn thực tế'}">
+                        <span class="vf-inventory-quantity">
+                            <span th:text="${row.physical}"></span>
+                            <small class="text-body-secondary fw-normal" th:text="${row.unit}"></small>
+                        </span>
+                    </td>
+                    <td class="text-center text-nowrap" th:attr="data-label=${skuView ? 'Khách đặt' : 'Đang giữ'}">
+                        <span class="vf-inventory-quantity">
+                            <span th:text="${row.reserved}"></span>
+                            <small class="text-body-secondary fw-normal" th:text="${row.unit}"></small>
+                        </span>
+                    </td>
+                    <td class="text-center text-nowrap fw-semibold" th:attr="data-label=${skuView ? 'Có thể bán' : 'Khả dụng'}">
+                        <span class="vf-inventory-quantity">
+                            <span th:text="${row.available}"></span>
+                            <small class="text-body-secondary fw-normal" th:text="${row.unit}"></small>
+                        </span>
+                    </td>
+                    <td data-label="Hết hạn" class="text-center text-nowrap" th:if="${skuView}"
+                        th:classappend="${row.expiredQuantity > 0 ? 'text-danger fw-semibold' : null}">
+                        <span class="vf-inventory-quantity">
+                            <span th:text="${row.expiredQuantity}"></span>
+                            <small class="text-body-secondary fw-normal" th:text="${row.unit}"></small>
+                        </span>
+                    </td>
                     <td data-label="Tình trạng" th:if="${skuView}">
                         <span class="badge" th:classappend="${row.available==0?'vf-badge-red':row.lowStock?'vf-badge-yellow':'vf-badge-green'}"
                               th:text="${row.available==0?'Hết hàng':row.lowStock?'Tồn thấp':'Đủ hàng'}"></span>
                     </td>
                     <td data-label="Trạng thái lô" th:unless="${skuView}">
                         <div class="d-flex flex-wrap gap-1">
-                            <span class="badge vf-badge-gray" th:if="${row.blocked}">Đã khóa</span>
+                            <span class="badge vf-badge-gray" th:if="${row.emptyStock}">Hết hàng</span>
                             <span class="badge vf-badge-red" th:if="${row.expired}">Đã hết hạn</span>
                             <span class="badge vf-badge-yellow" th:if="${row.nearExpiry}">Sắp hết hạn</span>
-                            <span class="badge vf-badge-green" th:if="${!row.blocked && !row.expired && !row.nearExpiry && row.expiryDate != null}">Còn hạn</span>
-                            <span class="badge vf-badge-gray" th:if="${!row.blocked && row.expiryDate == null}">Chưa khai báo hạn</span>
+                            <span class="badge vf-badge-green" th:if="${!row.emptyStock && !row.expired && !row.nearExpiry && row.expiryDate != null}">Còn hạn</span>
+                            <span class="badge vf-badge-gray" th:if="${!row.emptyStock && row.expiryDate == null}">Chưa khai báo hạn</span>
+                            <span class="badge vf-badge-gray" th:if="${!row.emptyStock && row.blocked}">Đã khóa</span>
                         </div>
                     </td>
                     <td data-label="Thao tác">
                         <a th:if="${skuView}" class="btn btn-sm btn-outline-secondary"
-                           th:href="@{/seller/inventory(variantId=${row.variantId},archived=${f.archived},size=${rows.size})}">Xem lô</a>
+                           th:href="@{/seller/inventory(variantId=${row.variantId},size=${rows.size})}">Xem lô</a>
                         <a th:unless="${skuView}" class="btn btn-sm btn-outline-success"
                            th:attr="aria-label=${'Sửa thông tin '+row.batchCode()}"
                            th:href="@{/seller/inventory/batches/{id}/edit(id=${row.batchId},returnTo=${inventoryCurrentUrl})}">Sửa</a>
@@ -175,17 +187,18 @@
             </table>
         </div>
     </section>
-    <div class="vf-pagination-panel">
-        <nav th:replace="~{fragments/product-inventory :: pagination(${rows}, @{/seller/inventory(page=${rows.number},size=${rows.size},view=${f.view},q=${f.q},stock=${f.stock},expiry=${f.expiry},receivedFrom=${f.receivedFrom},receivedTo=${f.receivedTo},variantId=${f.variantId},archived=${f.archived})}, @{/seller/inventory(page=${rows.number+2},size=${rows.size},view=${f.view},q=${f.q},stock=${f.stock},expiry=${f.expiry},receivedFrom=${f.receivedFrom},receivedTo=${f.receivedTo},variantId=${f.variantId},archived=${f.archived})}, 'Phân trang tồn kho', ${skuView?'SKU':'lô'})}"></nav>
+    <div class="vf-pagination-panel"
+         th:with="previousUrl=${skuView} ? @{/seller/inventory(view='sku',page=${rows.number},size=${rows.size},q=${f.q},stock=${f.stock},variantId=${f.variantId})} : @{/seller/inventory(page=${rows.number},size=${rows.size},view=${f.view},q=${f.q},expiry=${f.expiry},receivedFrom=${f.receivedFrom},receivedTo=${f.receivedTo},variantId=${f.variantId})},
+                  nextUrl=${skuView} ? @{/seller/inventory(view='sku',page=${rows.number+2},size=${rows.size},q=${f.q},stock=${f.stock},variantId=${f.variantId})} : @{/seller/inventory(page=${rows.number+2},size=${rows.size},view=${f.view},q=${f.q},expiry=${f.expiry},receivedFrom=${f.receivedFrom},receivedTo=${f.receivedTo},variantId=${f.variantId})}">
+        <nav th:replace="~{fragments/product-inventory :: pagination(${rows}, ${previousUrl}, ${nextUrl}, 'Phân trang tồn kho', ${skuView?'SKU':'lô'})}"></nav>
         <form class="vf-page-size" th:action="@{/seller/inventory}" method="get">
             <input type="hidden" name="view" th:value="${f.view}">
             <input type="hidden" name="q" th:value="${f.q}">
-            <input type="hidden" name="stock" th:value="${f.stock}">
+            <input type="hidden" name="stock" th:value="${f.stock}" th:if="${skuView}">
             <input type="hidden" name="expiry" th:value="${f.expiry}">
             <input type="hidden" name="receivedFrom" th:value="${f.receivedFrom}">
             <input type="hidden" name="receivedTo" th:value="${f.receivedTo}">
             <input type="hidden" name="variantId" th:value="${f.variantId}">
-            <input type="hidden" name="archived" th:value="${f.archived}">
             <th:block th:replace="~{fragments/product-inventory :: pageSize(${rows}, 'inventoryPageSize', 'Số dòng mỗi trang')}"></th:block>
         </form>
     </div>

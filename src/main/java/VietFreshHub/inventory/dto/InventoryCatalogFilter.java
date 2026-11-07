@@ -12,7 +12,9 @@ import java.time.LocalDate;
 @Setter
 public class InventoryCatalogFilter {
     private String q = "";
+    /** Chỉ lọc mức tồn trong chế độ tổng tồn theo SKU. */
     private String stock = "";
+    /** Trạng thái lô: còn hạn, sắp/đã hết hạn hoặc hết hàng. */
     private String expiry = "";
     private Long variantId;
     private String view = "lots";
@@ -22,9 +24,6 @@ public class InventoryCatalogFilter {
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate receivedTo;
-
-    /** Gồm cả sản phẩm, SKU đã xóa dù đã hết tồn; tắt thì chỉ hiện SKU đang kinh doanh. */
-    private boolean archived;
 
     public boolean isSkuView() {
         return "sku".equals(view);

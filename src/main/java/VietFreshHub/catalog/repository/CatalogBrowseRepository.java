@@ -59,7 +59,6 @@ public class CatalogBrowseRepository {
         var parameters =
                 new MapSqlParameterSource("categories", categoryIds)
                         .addValue("today", today)
-                        .addValue("nearDate", today.plusDays(3))
                         .addValue(
                                 "keyword",
                                 "%"

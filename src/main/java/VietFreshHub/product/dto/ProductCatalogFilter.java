@@ -22,7 +22,7 @@ public class ProductCatalogFilter {
     private Long category;
 
     private String tab = "";
-    private String stock = "";
+
     private String sort = "updated_desc";
     private BigDecimal minPrice;
     private BigDecimal maxPrice;

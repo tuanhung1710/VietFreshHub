@@ -45,7 +45,7 @@ public class InventoryCatalogService {
         LocalDate date = today();
         return new CatalogPage(
                 repository.search(shopId, filters, date, page, size),
-                repository.summary(shopId, date, filters.isArchived()),
+                repository.summary(shopId, date),
                 date);
     }
 
@@ -83,36 +83,20 @@ public class InventoryCatalogService {
 
     private void normalize(InventoryCatalogFilter filters) {
         filters.setQ(text(filters.getQ()));
-        filters.setStock(text(filters.getStock()));
         filters.setExpiry(text(filters.getExpiry()));
         filters.setView(text(filters.getView()));
-        normalizeLegacyStockFilter(filters);
-        validateStockAndExpiryFilters(filters);
+        filters.setStock(filters.isSkuView() ? text(filters.getStock()) : "");
+        validateFilters(filters);
         validateReceivedDateRange(filters.getReceivedFrom(), filters.getReceivedTo());
     }
 
-    /** Giữ các liên kết kho đã lưu trước đây khi bộ lọc mức tồn và hạn sử dụng còn dùng chung. */
-    private void normalizeLegacyStockFilter(InventoryCatalogFilter filters) {
-        switch (filters.getStock()) {
-            case "near", "expired", "expiry" -> {
-                filters.setExpiry(
-                        filters.getStock().equals("expiry") ? "attention" : filters.getStock());
-                filters.setStock("");
-            }
-            case "archived" -> {
-                filters.setArchived(true);
-                filters.setStock("");
-            }
-        }
-    }
-
-    private void validateStockAndExpiryFilters(InventoryCatalogFilter filters) {
+    private void validateFilters(InventoryCatalogFilter filters) {
         require(
-                List.of("", "available", "enough", "low", "empty").contains(filters.getStock()),
+                List.of("", "enough", "low", "empty").contains(filters.getStock()),
                 "Mức tồn kho không hợp lệ.");
         require(
-                List.of("", "valid", "near", "expired", "attention").contains(filters.getExpiry()),
-                "Hạn sử dụng không hợp lệ.");
+                List.of("", "valid", "near", "expired", "empty", "attention").contains(filters.getExpiry()),
+                "Trạng thái lô không hợp lệ.");
         require(List.of("lots", "sku").contains(filters.getView()), "Chế độ xem kho không hợp lệ.");
     }
 

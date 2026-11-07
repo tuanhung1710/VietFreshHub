@@ -9,7 +9,7 @@ VietFresh Hub is a multi-vendor marketplace for fresh food, bringing customers, 
 ## What It Delivers
 
 - **For customers:** Explore products and shops, filter listings, compare variants, save favourite shops, receive related-product suggestions, and manage a multi-shop cart. Checkout supports delivery quotations, coupons, loyalty rewards, cash on delivery (COD), and VNPay payments, followed by order tracking, reordering, reviews, and refund-information submission when eligible.
-- **For sellers:** Apply to open a shop, manage product listings and variants, track price history, and handle orders through preparation and handover. Batch-level inventory supports reservations, expiry alerts, stock adjustments, and near-expiry markdowns, alongside promotions, coupons, shop subscriptions, and sales reporting.
+- **For sellers:** Apply to open a shop, manage product listings and variants, track price history, and handle orders through preparation and handover. Batch-level inventory supports reservations, expiry alerts, and stock adjustments, alongside promotions, coupons, shop subscriptions, and sales reporting.
 - **For delivery staff:** Claim available deliveries, confirm pickups, update delivery outcomes, review delivery history, and view COD summaries.
 - **For administrators:** Oversee accounts, shops, seller applications, categories, product approvals, reported reviews, and refunds. Manage loyalty rules, subscription plans, and commission-based seller payouts, with scheduled settlement batches and Excel exports.
 - **Across the platform:** Role-based access control, email verification and password recovery, Google sign-in, customer–seller chat over WebSocket/STOMP, and in-app notifications.

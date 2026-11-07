@@ -18,8 +18,6 @@ public class VariantResponse {
     private long reserved;
     private long available;
     private long unavailable;
-    private BigDecimal offerPrice;
-    private long offerQuantity;
     private boolean lowStock;
 
     /** OUT_OF_STOCK vẫn là cấu hình mở bán; tồn kho được hiển thị riêng. */

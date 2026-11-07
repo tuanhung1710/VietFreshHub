@@ -119,7 +119,6 @@ public class ProductServiceImpl implements ProductService {
     private void prepareManagementFilters(ProductCatalogFilter filters) {
         filters.setQ(normalizeFilter(filters.getQ()));
         filters.setTab(normalizeFilter(filters.getTab()));
-        filters.setStock(normalizeFilter(filters.getStock()));
         filters.setSort(normalizeFilter(filters.getSort()));
         if (filters.getSort().isEmpty()) {
             filters.setSort("updated_desc");
@@ -128,9 +127,6 @@ public class ProductServiceImpl implements ProductService {
                 List.of("", "active", "out-of-stock", "violation", "hidden")
                         .contains(filters.getTab()),
                 "Tab sản phẩm không hợp lệ.");
-        require(
-                List.of("", "available", "empty", "low", "expiry").contains(filters.getStock()),
-                "Bộ lọc tồn kho không hợp lệ.");
         require(
                 List.of("updated_desc", "updated_asc").contains(filters.getSort()),
                 "Cách sắp xếp không hợp lệ.");
@@ -771,7 +767,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     /**
-     * Thêm phân loại trong giới hạn 20 phân loại còn kinh doanh và yêu cầu hậu kiểm thông tin mới.
+     * Thêm phân loại trong giới hạn 20 phân loại và yêu cầu hậu kiểm thông tin mới.
      */
     @Override
     @Transactional
@@ -779,10 +775,9 @@ public class ProductServiceImpl implements ProductService {
         Product product = getOwnedProductForUpdate(authentication, productId);
         requireWritableProduct(product);
         require(
-                productVariantRepository.countByProductIdAndStatusNot(
-                                productId, VariantStatus.DELETED)
+                productVariantRepository.countByProductIdAndStatusNot(productId, VariantStatus.DELETED)
                         < 20,
-                "Mỗi sản phẩm có tối đa 20 phân loại. Xóa phân loại cũ trước khi thêm mới.");
+                "Mỗi sản phẩm có tối đa 20 phân loại.");
         form.setSku(null);
         productFormValidator.validateVariantFields(form, null);
         productFormValidator.initialQuantity(form);
@@ -810,7 +805,7 @@ public class ProductServiceImpl implements ProductService {
         Product product = getOwnedProductForUpdate(authentication, productId);
         requireWritableProduct(product);
         ProductVariant variant = getVariantForUpdate(productId, variantId);
-        require(variant.getStatus() != VariantStatus.DELETED, "Phân loại đã ngừng kinh doanh.");
+        require(variant.getStatus() != VariantStatus.DELETED, "Phân loại đã xóa.");
         // SKU không được sửa; luôn dùng mã đang lưu thay cho giá trị gửi từ trình duyệt.
         form.setSku(variant.getSku());
         productFormValidator.validateVariantFields(form, variant);

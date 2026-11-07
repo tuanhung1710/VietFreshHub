@@ -32,6 +32,8 @@
                 class="form-stack"
             >
                 <button type="submit" class="visually-hidden" tabindex="-1">Lưu sản phẩm</button>
+
+                <!--Xuất lỗi-->
                 <div th:replace="~{fragments/product-inventory :: errors}">
                 </div>
 
@@ -184,7 +186,7 @@
                         <small class="field-error text-danger" th:errors="*{expiryWarningDays}"></small>
                     </label>
                     <p class="small text-body-secondary mb-0" id="expiryWarningDaysHelp">
-                        Cài đặt riêng cho sản phẩm, áp dụng cho mọi lô hàng của các phân loại. Mặc định 3 ngày; Mốc nhắc không thay đổi hạn sử dụng hoặc giá giảm của lô hàng.
+                        Cài đặt riêng cho sản phẩm, áp dụng cho mọi lô hàng của các phân loại. Mặc định 3 ngày; mốc nhắc không thay đổi hạn sử dụng của lô hàng.
                     </p>
                 </section>
 

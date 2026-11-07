@@ -41,8 +41,6 @@ public class InventoryNotificationDestination {
         return Optional.of(
                 batch
                         ? "/seller/inventory/batches/" + notification.entityId() + "/label"
-                        : "/seller/inventory?variantId="
-                                + notification.entityId()
-                                + "&archived=true");
+                        : "/seller/inventory?variantId=" + notification.entityId());
     }
 }

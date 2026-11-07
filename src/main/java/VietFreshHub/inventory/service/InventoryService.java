@@ -6,7 +6,6 @@ import VietFreshHub.inventory.dto.BatchMetadataRequest;
 import VietFreshHub.inventory.dto.BatchRequest;
 import VietFreshHub.inventory.dto.BatchResponse;
 import VietFreshHub.inventory.dto.DisposalResult;
-import VietFreshHub.inventory.dto.MarkdownRequest;
 import VietFreshHub.inventory.dto.StockChangeRequest;
 
 import org.springframework.data.domain.Page;
@@ -33,12 +32,6 @@ public interface InventoryService {
 
     /** Khóa hoặc mở khóa lô với lý do, giữ nguyên lượng đã giữ cho đơn. */
     void block(Authentication authentication, Long batchId, boolean blocked, String reason);
-
-    /** Thiết lập giá giảm cho lô đủ điều kiện và ghi lịch sử thay đổi. */
-    void markdown(Authentication authentication, Long batchId, MarkdownRequest form);
-
-    /** Dừng các đợt giảm giá đang bật của lô với lý do. */
-    void cancelMarkdown(Authentication authentication, Long batchId, String reason);
 
     /** Lọc lịch sử hoạt động và bổ sung tên đối tượng, người thao tác để hiển thị. */
     Page<AuditResponse> activityHistory(

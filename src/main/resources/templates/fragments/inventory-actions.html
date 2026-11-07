@@ -7,8 +7,6 @@
            th:href="@{/seller/inventory/batches/{id}/adjust(id=${id},returnTo=${inventoryCurrentUrl})}">Điều chỉnh tồn</a>
         <a class="btn btn-outline-danger" th:if="${row.canDispose}"
            th:href="@{/seller/inventory/batches/{id}/dispose(id=${id},returnTo=${inventoryCurrentUrl})}">Hủy hàng hết hạn</a>
-        <a class="btn btn-outline-secondary" th:if="${row.canMarkdown && row.markdown == null}"
-           th:href="@{/seller/inventory/batches/{id}/markdown(id=${id},returnTo=${inventoryCurrentUrl})}">Giảm giá lô cận hạn</a>
         <a class="btn btn-light"
            th:href="@{/seller/inventory/audit(q=${row.batch.batchCode},entity='BATCH',returnTo=${inventoryCurrentUrl})}">Lịch sử lô</a>
     </div>
@@ -22,15 +20,7 @@
             <button type="submit" class="btn btn-sm btn-success mt-2">Xác nhận</button>
         </form>
     </details>
-    <details class="mt-3" th:if="${row.markdown != null}">
-        <summary class="text-success fw-semibold">Dừng giảm giá lô</summary>
-        <form class="mt-2" method="post" th:action="@{/seller/inventory/batches/{id}/cancel-markdown(id=${id})}">
-            <input type="hidden" name="returnTo" th:value="${inventoryCurrentUrl}">
-            <label for="batchMarkdownReason" class="form-label">Lý do dừng giảm giá</label>
-            <textarea id="batchMarkdownReason" name="reason" class="form-control" rows="2" maxlength="900" required></textarea>
-            <button type="submit" class="btn btn-sm btn-success mt-2">Xác nhận</button>
-        </form>
-    </details>
+
 </div>
 </body>
 </html>

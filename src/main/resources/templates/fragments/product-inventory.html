@@ -6,20 +6,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <th:block th:replace="~{fragments/interface-layout :: foundation}"></th:block>
-    
-        
-        
+
+
+
         <title th:text="${title + ' · VietFresh Hub'}">
             VietFresh Hub
         </title>
         <meta name="csrf-token" th:content="${_csrf.token}">
         <meta name="csrf-header" th:content="${_csrf.headerName}">
         <meta name="image-upload-url" th:content="@{/seller/products/images}">
-        
+
         <link rel="stylesheet" th:href="@{/css/product/module.css}">
         <link rel="stylesheet" th:href="@{'/css/'+${feature}+'/'+${feature}+'.css'}">
         <link th:if="${feature == 'product'}" rel="stylesheet" th:href="@{/css/product/catalog.css}">
-        
+
         <script defer th:src="@{/js/product/money-fields.js}"></script>
         <script th:if="${feature == 'product'}" defer th:src="@{/js/product/module.js}"></script>
         <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
@@ -245,7 +245,7 @@
             <span class="badge"
                   th:classappend="${row.managementState.code=='active'?'vf-badge-green':(row.managementState.code=='violation'?'vf-badge-red':'vf-badge-gray')}"
                   th:text="${row.managementState.label}"
-                  th:title="${row.managementState.code=='archived'?'Sản phẩm đã xóa; tồn kho và lịch sử được lưu trong Kho hàng.':row.managementState.reason}"></span>
+                  th:title="${row.managementState.reason}"></span>
         </th:block>
     </body>
 </html>
