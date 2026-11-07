@@ -1,6 +1,5 @@
 package VietFreshHub.inventory.rule;
 
-import VietFreshHub.inventory.entity.BatchMarkdown;
 import VietFreshHub.inventory.entity.InventoryBatch;
 import VietFreshHub.inventory.enums.BatchStatus;
 import VietFreshHub.product.exception.CatalogException;
@@ -73,14 +72,6 @@ public final class InventoryRules {
     }
 
     /**
-     * Kiểm tra lô còn hàng khả dụng và cách hạn tối đa 3 ngày.
-     * Mốc áp dụng giá giảm này độc lập với số ngày nhắc hạn do người bán cấu hình.
-     */
-    public static boolean markdownEligible(InventoryBatch batch, LocalDate date) {
-        return available(batch, date) > 0 && nearExpiry(batch, date, 3);
-    }
-
-    /**
      * Tính số lượng còn có thể bán sau khi trừ phần đã giữ cho đơn hàng.
      * Lô không hoạt động hoặc đã hết hạn được xem là không còn hàng khả dụng.
      */
@@ -90,18 +81,6 @@ public final class InventoryRules {
             return 0;
         }
         return Math.max(0, batch.getQuantityOnHand() - batch.getReservedQuantity());
-    }
-
-    /**
-     * Kiểm tra giá giảm thuộc đúng lô, nằm trong khoảng ngày áp dụng, thấp hơn giá gốc và lô đủ điều kiện.
-     */
-    public static boolean isApplicableMarkdown(
-            InventoryBatch batch, BatchMarkdown markdown, BigDecimal basePrice, LocalDate date) {
-        return batch.getBatchId().equals(markdown.getBatchId())
-                && !markdown.getStartDate().isAfter(date)
-                && !markdown.getEndDate().isBefore(date)
-                && markdownEligible(batch, date)
-                && markdown.getPrice().compareTo(basePrice) < 0;
     }
 
     /** Yêu cầu giá bán là số nguyên đồng từ 10.000 đồng, trong giới hạn 16 chữ số. */
@@ -207,32 +186,5 @@ public final class InventoryRules {
         return batch.getQuantityOnHand() - quantity;
     }
 
-    /**
-     * Kiểm tra giá giảm nguyên đồng, thấp hơn giá gốc và lô còn lượng khả dụng.
-     * Cho thiết lập trong 7 ngày trước hạn; ngày kết thúc phải từ hôm nay đến hạn sử dụng.
-     */
-    public static void markdown(
-            InventoryBatch batch,
-            BigDecimal basePrice,
-            BigDecimal offerPrice,
-            LocalDate endDate,
-            LocalDate date) {
-        // Đây là điều kiện thiết lập trước giá giảm trong 7 ngày; điều kiện áp dụng thực tế là 3
-        // ngày.
-        require(
-                isWholeVndPrice(offerPrice) && offerPrice.compareTo(BigDecimal.ONE) >= 0,
-                "Giá giảm phải là số nguyên đồng và từ 1 đ.");
-        require(available(batch, date) > 0, "Lô phải còn số lượng khả dụng.");
-        require(
-                batch.getExpiryDate() != null && !batch.getExpiryDate().isAfter(date.plusDays(7)),
-                "Chỉ có thể thiết lập giá giảm trong 7 ngày trước hạn sử dụng.");
-        require(
-                offerPrice.compareTo(basePrice) < 0,
-                "Giá giảm phải thấp hơn giá bán của phân loại.");
-        require(
-                endDate != null
-                        && !endDate.isBefore(date)
-                        && !endDate.isAfter(batch.getExpiryDate()),
-                "Ngày kết thúc giảm giá phải từ hôm nay đến hạn sử dụng của lô.");
-    }
+
 }

@@ -26,12 +26,11 @@ public class CatalogOfferRepository {
         }
         var parameters =
                 new MapSqlParameterSource("today", today)
-                        .addValue("nearDate", today.plusDays(3))
                         .addValue("ids", variantIds);
         Map<Long, CatalogOffer> result = new LinkedHashMap<>();
         jdbc.query(
                 CatalogOfferSql.CTE
-                        + "SELECT variant_id,price,base_price,stock FROM variant_offers WHERE variant_id IN (:ids)",
+                        + "SELECT variant_id,price,stock FROM variant_offers WHERE variant_id IN (:ids)",
                 parameters,
                 (RowCallbackHandler)
                         row ->
@@ -39,7 +38,6 @@ public class CatalogOfferRepository {
                                         row.getLong("variant_id"),
                                         new CatalogOffer(
                                                 row.getBigDecimal("price"),
-                                                row.getBigDecimal("base_price"),
                                                 (int)
                                                         Math.min(
                                                                 Integer.MAX_VALUE,

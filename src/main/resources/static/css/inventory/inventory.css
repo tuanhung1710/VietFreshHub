@@ -26,7 +26,26 @@ body.vfr-product .vf-inventory-main .vf-inventory-list-card > .table-responsive 
 .vf-inventory-metrics .vf-inventory-metric-detail { color: var(--vf-muted); font-size: 12px; font-weight: 400; }
 .vf-inventory-main .table th { background: #f5f8fa; color: #475569; }
 .vf-inventory-main .table td { overflow-wrap: anywhere; }
-.vf-inventory-main .table .text-end { font-variant-numeric: tabular-nums; }
+.vf-inventory-main .table .text-end,
+.vf-inventory-list-table .text-center { font-variant-numeric: tabular-nums; }
+.vf-inventory-list-table .vf-inventory-quantity {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    white-space: nowrap;
+}
+.vf-inventory-list-table .vf-inventory-quantity > span {
+    font-size: 16px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    text-align: end;
+}
+.vf-inventory-list-table .vf-inventory-quantity > small {
+    display: inline;
+    margin: 0;
+    font-size: 12px;
+    text-align: start;
+}
 .vf-inventory-list-table td[data-label="Mã lô"] a,
 .vf-allocation-order-code { white-space: nowrap; }
 

@@ -18,7 +18,7 @@
                 ← Quay lại
             </a>
             <h1
-                th:text="${action=='edit'?'Chỉnh sửa lô':action=='adjust'?'Điều chỉnh tồn kho':action=='dispose'?'Hủy hàng hết hạn':'Giảm giá lô cận hạn'}"
+                th:text="${action=='edit'?'Chỉnh sửa lô':action=='adjust'?'Điều chỉnh tồn kho':'Hủy hàng hết hạn'}"
             >
             </h1>
             <p class="text-body-secondary mb-4">
@@ -112,41 +112,6 @@
                         Hàng đang giữ cho đơn cần được xử lý trong đơn hàng trước. Chỉ hủy phần chưa giữ cho đơn.
                     </p>
                 </div>
-                <div class="row g-3" th:if="${action=='markdown'}">
-                    <label class="col-md-6 form-label" for="price">
-                        Giá giảm (₫/đơn vị)
-                        <span class="text-danger">
-                            *
-                        </span>
-                        <input
-                            class="form-control mt-1"
-                            id="price"
-                            type="text"
-                            inputmode="numeric"
-                            data-vf-money
-                            th:field="*{price}"
-                            required
-                        >
-                    </label>
-                    <label class="col-md-6 form-label" for="endDate">
-                        Ngày kết thúc giảm giá
-                        <span class="text-danger">
-                            *
-                        </span>
-                        <input
-                            class="form-control mt-1"
-                            id="endDate"
-                            type="date"
-                            th:field="*{endDate}"
-                            th:min="${today}"
-                            th:max="${row.batch.expiryDate}"
-                            required
-                        >
-                    </label>
-                    <p class="col-12 small text-body-secondary mb-0">
-                        Giá giảm phải từ 1 ₫ và thấp hơn giá bán của phân loại. Có thể thiết lập trong 7 ngày trước hạn sử dụng; giá chỉ có hiệu lực khi lô còn khả dụng và sẽ hết hạn trong 3 ngày. Giá bán của phân loại không thay đổi.
-                    </p>
-                </div>
                 <label class="form-label mt-3" for="reason" th:if="${action!='dispose'}">
                     Lý do
                     <span class="text-danger">
@@ -165,7 +130,7 @@
                             th:if="${action=='adjust'}">Xem trước</button>
                     <button type="submit" class="btn" th:classappend="${action=='dispose'?'btn-danger':'btn-success'}"
                             th:disabled="${action=='dispose'&&!row.canDispose}"
-                            th:text="${action=='edit'?'Lưu thay đổi':action=='adjust'?'Xác nhận điều chỉnh':action=='dispose'?'Hủy hàng hết hạn':'Lưu giá giảm'}"></button>
+                            th:text="${action=='edit'?'Lưu thay đổi':action=='adjust'?'Xác nhận điều chỉnh':'Hủy hàng hết hạn'}"></button>
                     <a class="btn btn-outline-secondary" th:href="@{${inventoryReturnUrl}}">
                         Hủy
                     </a>

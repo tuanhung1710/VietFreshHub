@@ -7,7 +7,6 @@ import static VietFreshHub.inventory.rule.InventoryRules.require;
 import static VietFreshHub.inventory.rule.InventoryRules.today;
 
 import VietFreshHub.auth.service.AuthService;
-import VietFreshHub.inventory.entity.BatchMarkdown;
 import VietFreshHub.inventory.entity.InventoryBatch;
 import VietFreshHub.inventory.entity.InventoryOrderLine;
 import VietFreshHub.inventory.entity.StockAllocation;
@@ -17,8 +16,6 @@ import VietFreshHub.inventory.enums.StockTransactionType;
 import VietFreshHub.inventory.repository.InventoryBatchRepository;
 import VietFreshHub.inventory.repository.InventoryOrderLineRepository;
 import VietFreshHub.inventory.repository.StockAllocationRepository;
-import VietFreshHub.inventory.rule.InventoryRules;
-import VietFreshHub.inventory.service.BatchMarkdownLookup;
 import VietFreshHub.inventory.service.InventoryJournalService;
 import VietFreshHub.inventory.service.StockAllocationService;
 import VietFreshHub.inventory.util.InventoryLockHelper;
@@ -38,7 +35,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -59,7 +55,6 @@ public class StockAllocationServiceImpl implements StockAllocationService {
     private final ProductVariantRepository productVariantRepository;
     private final InventoryBatchRepository inventoryBatchRepository;
     private final StockAllocationRepository stockAllocationRepository;
-    private final BatchMarkdownLookup batchMarkdownLookup;
     private final ShopService shopService;
     private final AuthService authService;
     private final InventoryJournalService inventoryJournalService;
@@ -96,32 +91,20 @@ public class StockAllocationServiceImpl implements StockAllocationService {
                 "Số lượng sản phẩm trong đơn phải lớn hơn 0.");
         require(
                 totalAvailable(candidates, date) >= line.getQuantity(),
-                "Không đủ số lượng khả dụng ở mức giá đặt hàng.");
+                "Không đủ số lượng khả dụng.");
 
         // Chỉ bắt đầu ghi phân bổ sau khi đã chắc chắn toàn bộ số lượng có thể được đáp ứng.
         Long actorId = authService.getCurrentUserId(authentication);
         return allocateStock(line, candidates, actorId, date);
     }
 
-    /** Khóa lô, kiểm tra giá đặt hàng rồi chỉ giữ các lô áp dụng đúng mức giá đó. */
+    /** Khóa các lô khả dụng và kiểm tra giá đặt hàng với giá bán hiện tại của SKU. */
     private List<InventoryBatch> lockBatchesAtOrderPrice(
             InventoryOrderLine line, ProductVariant variant, LocalDate date) {
-        // Khóa lô trước khi đọc tồn, rồi tính lại giá hợp lệ từ chính các lô có thể cấp hàng.
         List<InventoryBatch> candidates = lockAvailableBatches(variant.getVariantId(), date);
-        List<BatchMarkdown> markdowns = batchMarkdownLookup.findActive(candidates);
-        BigDecimal minimumPrice =
-                lowestAvailablePrice(candidates, markdowns, variant.getPrice(), date);
         require(
-                line.getUnitPrice().compareTo(minimumPrice) == 0,
+                line.getUnitPrice() != null && line.getUnitPrice().compareTo(variant.getPrice()) == 0,
                 "Giá sản phẩm đã thay đổi. Vui lòng tải lại để cập nhật giá.");
-
-        if (minimumPrice.compareTo(variant.getPrice()) < 0) {
-            // Đơn mua theo giá giảm chỉ được nhận hàng từ lô có đúng mức giảm đó.
-            candidates =
-                    batchesAtMarkdownPrice(
-                            candidates, markdowns, variant.getPrice(), minimumPrice, date);
-        }
-
         return candidates;
     }
 
@@ -184,48 +167,6 @@ public class StockAllocationServiceImpl implements StockAllocationService {
                 Comparator.comparing(InventoryBatch::getExpiryDate, expiryOrder);
         candidates.sort(fefoOrder.thenComparing(InventoryBatch::getBatchId));
         return candidates;
-    }
-
-    /** Tìm mức giá thấp nhất giữa giá gốc và các giá giảm còn áp dụng được trên lô. */
-    private BigDecimal lowestAvailablePrice(
-            List<InventoryBatch> batches,
-            List<BatchMarkdown> markdowns,
-            BigDecimal basePrice,
-            LocalDate date) {
-        // Bắt đầu từ giá gốc, chỉ hạ giá khi có đợt giảm áp dụng được cho lô còn khả dụng.
-        BigDecimal minimumPrice = basePrice;
-        for (InventoryBatch batch : batches) {
-            for (BatchMarkdown markdown : markdowns) {
-                if (!InventoryRules.isApplicableMarkdown(batch, markdown, basePrice, date)) {
-                    continue;
-                }
-                if (markdown.getPrice().compareTo(minimumPrice) < 0) {
-                    minimumPrice = markdown.getPrice();
-                }
-            }
-        }
-        return minimumPrice;
-    }
-
-    /** Chỉ giữ các lô có giảm giá hợp lệ đúng mức giá đặt hàng để tránh cấp hàng sai giá. */
-    private List<InventoryBatch> batchesAtMarkdownPrice(
-            List<InventoryBatch> batches,
-            List<BatchMarkdown> markdowns,
-            BigDecimal basePrice,
-            BigDecimal price,
-            LocalDate date) {
-        // Một lô chỉ cần xuất hiện một lần, dù có nhiều bản ghi giảm giá cùng mức giá.
-        List<InventoryBatch> matchingBatches = new ArrayList<>();
-        for (InventoryBatch batch : batches) {
-            for (BatchMarkdown markdown : markdowns) {
-                if (markdown.getPrice().compareTo(price) == 0
-                        && InventoryRules.isApplicableMarkdown(batch, markdown, basePrice, date)) {
-                    matchingBatches.add(batch);
-                    break;
-                }
-            }
-        }
-        return matchingBatches;
     }
 
     /** Cộng lượng có thể bán từ các lô theo trạng thái, hạn sử dụng và hàng đang giữ. */

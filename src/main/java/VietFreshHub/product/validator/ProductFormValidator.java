@@ -24,7 +24,7 @@ import java.util.Objects;
 @Component
 @RequiredArgsConstructor
 public class ProductFormValidator {
-    private static final List<String> SALE_UNITS = List.of("kg", "hộp", "túi", "quả", "chùm");
+    private static final List<String> SALE_UNITS = List.of("kg", "g", "quả", "chùm", "nải", "buồng", "hộp", "túi", "khay", "thùng", "sọt", "others");
 
     private final CategoryValidator categoryValidator;
     private final ProductVariantRepository productVariantRepository;
