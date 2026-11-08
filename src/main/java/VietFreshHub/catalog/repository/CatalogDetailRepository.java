@@ -30,13 +30,15 @@ public class CatalogDetailRepository {
         var reviews =
                 jdbc.query(
                         """
-                SELECT TOP (5) u.full_name,r.rating,r.content,r.created_at
+                SELECT TOP (5) r.review_id,r.user_id,u.full_name,r.rating,r.content,r.created_at
                 FROM dbo.reviews r JOIN dbo.users u ON u.user_id=r.user_id
                 WHERE r.product_id=? AND r.status='APPROVED'
                 ORDER BY r.created_at DESC,r.review_id DESC
                 """,
                         (row, index) ->
                                 new Review(
+                                        row.getLong("review_id"),
+                                        row.getLong("user_id"),
                                         row.getString("full_name"),
                                         row.getInt("rating"),
                                         row.getString("content"),
