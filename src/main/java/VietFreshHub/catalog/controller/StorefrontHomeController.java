@@ -1,6 +1,5 @@
 package VietFreshHub.catalog.controller;
 
-import VietFreshHub.catalog.dto.CatalogProductResponse;
 import VietFreshHub.catalog.dto.StorefrontCatalogFilter;
 import VietFreshHub.catalog.service.StorefrontService;
 
@@ -26,16 +25,7 @@ public class StorefrontHomeController {
         model.addAttribute(
                 "rows",
                 storefrontService.searchProducts(new StorefrontCatalogFilter(), page, size));
-        var topProducts = storefrontService.topProducts(null);
-        model.addAttribute("topProducts", topProducts);
-        model.addAttribute(
-                "heroImageUrl",
-                topProducts.stream()
-                        .map(CatalogProductResponse::getImageUrl)
-                        .filter(url -> url != null && !url.isBlank())
-                        .filter(url -> !url.equals("/images/product/product-placeholder.svg"))
-                        .findFirst()
-                        .orElse(null));
+        model.addAttribute("topProducts", storefrontService.topProducts(null));
         model.addAttribute("shops", storefrontService.shops());
         return "customer/home";
     }

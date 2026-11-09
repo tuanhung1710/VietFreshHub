@@ -12,25 +12,58 @@
             <div id="home">
                 <!-- Banner trang chủ. -->
                 <section class="bannergrid home-banner">
-                    <div class="hero">
-                        <div class="hero-copy">
-                            <h1>
-                                Trái cây tươi mỗi ngày
-                            </h1>
-                            <p>
-                                Khám phá các loại trái cây nội địa và nhập khẩu từ nhiều gian hàng trên VietFresh Hub.
-                            </p>
-                            <a class="button" th:href="@{/products}">
-                                Xem tất cả sản phẩm
-                            </a>
+                    <div class="hero home-slider" data-home-slider role="region"
+                         aria-roledescription="trình chiếu" aria-label="Khám phá trái cây VietFresh Hub" tabindex="0">
+                        <div class="home-slide" data-home-slide role="group"
+                             aria-roledescription="trang chiếu" aria-label="1 / 3">
+                            <img class="home-slide-image" th:src="@{/images/storefront/home-fruit-tropical.jpg}"
+                                 alt="" width="2172" height="724" fetchpriority="high" decoding="async">
+                            <div class="hero-copy">
+                                <span class="home-slide-kicker">Tươi ngon mỗi ngày</span>
+                                <h1>Trái cây tươi mỗi ngày</h1>
+                                <p>Khám phá các loại trái cây nội địa và nhập khẩu từ nhiều gian hàng trên VietFresh Hub.</p>
+                                <a class="button home-slide-cta" th:href="@{/products}">Xem tất cả sản phẩm <span aria-hidden="true">&rarr;</span></a>
+                            </div>
                         </div>
-                        <div class="hero-visual">
-                            <img class="hero-image"
-                                 th:src="${#strings.isEmpty(heroImageUrl) ? '/images/storefront/fruit-gift.png' : heroImageUrl}"
-                                 data-fallback-image="/images/storefront/fruit-gift.png"
-                                 alt="Trái cây tươi tại VietFresh Hub"
-                                 width="1254" height="1254" fetchpriority="high">
+                        <div class="home-slide home-slide--citrus" data-home-slide role="group"
+                             aria-roledescription="trang chiếu" aria-label="2 / 3" hidden>
+                            <img class="home-slide-image" th:src="@{/images/storefront/home-fruit-citrus.jpg}"
+                                 alt="" width="2172" height="724" fetchpriority="low" decoding="async">
+                            <div class="hero-copy">
+                                <span class="home-slide-kicker">Một chút tươi mát</span>
+                                <h2>Thêm sắc vị cho ngày mới</h2>
+                                <p>Cam mọng nước, dứa thơm ngọt và nhiều hương vị trái cây đang chờ bạn khám phá.</p>
+                                <a class="button home-slide-cta" th:href="@{/products}">Khám phá trái cây <span aria-hidden="true">&rarr;</span></a>
+                            </div>
                         </div>
+                        <div class="home-slide home-slide--orchard" data-home-slide role="group"
+                             aria-roledescription="trang chiếu" aria-label="3 / 3" hidden>
+                            <img class="home-slide-image" th:src="@{/images/storefront/home-fruit-orchard.jpg}"
+                                 alt="" width="2172" height="724" fetchpriority="low" decoding="async">
+                            <div class="hero-copy">
+                                <span class="home-slide-kicker">Chia sẻ vị ngọt lành</span>
+                                <h2>Trọn vị ngon, thêm gắn kết</h2>
+                                <p>Chọn những loại trái cây yêu thích cho bữa ăn, buổi hẹn và những phút quây quần.</p>
+                                <a class="button home-slide-cta" th:href="@{/products}">Chọn trái cây ngay <span aria-hidden="true">&rarr;</span></a>
+                            </div>
+                        </div>
+                        <div class="home-slider-controls" data-home-slider-controls hidden>
+                            <div class="home-slider-dots" role="group" aria-label="Chọn banner">
+                                <button type="button" data-home-slider-dot aria-label="Banner 1: Trái cây tươi mỗi ngày" aria-current="true"></button>
+                                <button type="button" data-home-slider-dot aria-label="Banner 2: Thêm sắc vị cho ngày mới"></button>
+                                <button type="button" data-home-slider-dot aria-label="Banner 3: Trọn vị ngon, thêm gắn kết"></button>
+                            </div>
+                            <div class="home-slider-navigation">
+                                <button class="home-slider-toggle" type="button" data-home-slider-toggle>Tạm dừng</button>
+                                <button class="home-slider-arrow" type="button" data-home-slider-prev aria-label="Banner trước">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg>
+                                </button>
+                                <button class="home-slider-arrow" type="button" data-home-slider-next aria-label="Banner tiếp theo">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <span class="visually-hidden" data-home-slider-status aria-live="polite" aria-atomic="true"></span>
                     </div>
                     <div class="sidebanners">
                         <div class="sidebanner">
@@ -151,5 +184,6 @@
         </main>
         <footer th:replace="~{fragments/footer :: footer}"></footer>
     </div>
+    <script defer th:src="@{/js/storefront/home-banner.js}"></script>
 </body>
 </html>
