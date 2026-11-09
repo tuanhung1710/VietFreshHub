@@ -92,7 +92,7 @@ public class ShopCustomerOrderServiceImpl implements ShopCustomerOrderService {
             var shop = previews.get(row.shopOrderId());
             var lines = shop == null ? List.<OrderItem>of() : shop.getItems().stream()
                     .sorted(java.util.Comparator.comparing(OrderItem::getOrderItemId)).toList();
-            var products = lines.stream().limit(3).map(item -> new OrderHistorySummary.Product(
+            var products = lines.stream().limit(3).map(item -> new ShopOrderListRow.Product(
                     item.getProductNameSnapshot(), item.getVariantNameSnapshot(), item.getQuantity(),
                     item.getVariant() == null ? null : item.getVariant().getThumbnailUrl())).toList();
             return new ShopOrderListRow(row.shopOrderId(),row.orderId(),row.shopName(),row.status(),row.paymentStatus(),

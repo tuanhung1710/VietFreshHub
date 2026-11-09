@@ -9,9 +9,28 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
+    interface OrderCodeReference {
+        Long getNotificationId();
+        String getStoredCode();
+        Long getDisplayId();
+    }
+
+    @Query("""
+            select n.notificationId as notificationId, o.orderCode as storedCode,
+                   coalesce(s.shopOrderId, o.orderId) as displayId
+            from Notification n
+            left join DeliveryAssignment a on n.entityType = 'DELIVERY_ASSIGNMENT' and a.assignmentId = n.entityId
+            left join Delivery d on (n.entityType = 'DELIVERY' and d.deliveryId = n.entityId) or d = a.delivery
+            left join ShopOrder s on (n.entityType = 'SHOP_ORDER' and s.shopOrderId = n.entityId) or s = d.shopOrder
+            join Order o on (n.entityType in ('ORDER', 'CUSTOMER_ORDER') and o.orderId = n.entityId) or o = s.order
+            where n.notificationId in :notificationIds and o.orderCode like 'VF-%'
+            """)
+    List<OrderCodeReference> findLegacyOrderCodes(@Param("notificationIds") List<Long> notificationIds);
+
     @Query("""
             select n from Notification n where n.userId=:userId
               and n.type in ('SYSTEM_ANNOUNCEMENT','ADMIN_ANNOUNCEMENT')

@@ -1,11 +1,13 @@
 package VietFreshHub.notification.service;
 
 import VietFreshHub.auth.service.AuthService;
+import VietFreshHub.common.BusinessCodes;
 import VietFreshHub.notification.dto.NotificationRow;
 import VietFreshHub.notification.entity.Notification;
 import VietFreshHub.notification.entity.NotificationDelivery;
 import VietFreshHub.notification.repository.NotificationDeliveryRepository;
 import VietFreshHub.notification.repository.NotificationRepository;
+import VietFreshHub.notification.repository.NotificationRepository.OrderCodeReference;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,6 +22,10 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -73,7 +79,8 @@ public class NotificationService {
             notifications = notificationRepository.findInboxByUserId(
                     userId, PageRequest.of(notifications.getTotalPages() - 1, PAGE_SIZE, sort));
         }
-        return notifications.map(this::toRow);
+        Map<Long, OrderCodeReference> orderCodes = findLegacyOrderCodes(notifications.getContent());
+        return notifications.map(notification -> toRow(notification, orderCodes.get(notification.getNotificationId())));
     }
 
     @Transactional(readOnly = true)
@@ -85,7 +92,8 @@ public class NotificationService {
     public NotificationRow getOwnedNotification(Long notificationId, Authentication authentication) {
         Long userId = authService.getCurrentUserId(authentication);
         return notificationRepository.findInboxNotification(notificationId, userId)
-                .map(this::toRow)
+                .map(notification -> toRow(notification,
+                        findLegacyOrderCodes(List.of(notification)).get(notificationId)))
                 .orElseThrow(this::notFound);
     }
 
@@ -97,9 +105,35 @@ public class NotificationService {
         notification.markRead(LocalDateTime.now(ZoneOffset.UTC).withNano(0));
     }
 
-    private NotificationRow toRow(Notification notification) {
-        return new NotificationRow(notification.getNotificationId(), notification.getType(), notification.getTitle(),
-                notification.getContent(), notification.getEntityType(), notification.getEntityId(),
+    private Map<Long, OrderCodeReference> findLegacyOrderCodes(List<Notification> notifications) {
+        List<Long> notificationIds = notifications.stream()
+                .filter(notification -> hasLegacyOrderCode(notification.getTitle())
+                        || hasLegacyOrderCode(notification.getContent()))
+                .map(Notification::getNotificationId)
+                .toList();
+        if (notificationIds.isEmpty()) {
+            return Map.of();
+        }
+        return notificationRepository.findLegacyOrderCodes(notificationIds).stream()
+                .collect(Collectors.toMap(OrderCodeReference::getNotificationId, Function.identity()));
+    }
+
+    private boolean hasLegacyOrderCode(String text) {
+        return text != null && text.contains("VF-");
+    }
+
+    private NotificationRow toRow(Notification notification, OrderCodeReference orderCode) {
+        String title = notification.getTitle();
+        String content = notification.getContent();
+        if (orderCode != null) {
+            String displayCode = BusinessCodes.format("VFH", orderCode.getDisplayId());
+            title = title.replace(orderCode.getStoredCode(), displayCode);
+            if (content != null) {
+                content = content.replace(orderCode.getStoredCode(), displayCode);
+            }
+        }
+        return new NotificationRow(notification.getNotificationId(), notification.getType(), title,
+                content, notification.getEntityType(), notification.getEntityId(),
                 localTime(notification.getCreatedAt()), localTime(notification.getReadAt()));
     }
 
