@@ -57,9 +57,13 @@ public class InventoryCatalogService {
 
     private void normalize(InventoryCatalogFilter filters) {
         filters.setQ(text(filters.getQ()));
-        filters.setExpiry(text(filters.getExpiry()));
         filters.setView(text(filters.getView()));
         filters.setStock(filters.isSkuView() ? text(filters.getStock()) : "");
+        filters.setExpiry(filters.isSkuView() ? "" : text(filters.getExpiry()));
+        if (filters.isSkuView()) {
+            filters.setReceivedFrom(null);
+            filters.setReceivedTo(null);
+        }
         validateFilters(filters);
         validateReceivedDateRange(filters.getReceivedFrom(), filters.getReceivedTo());
     }
@@ -69,7 +73,7 @@ public class InventoryCatalogService {
                 List.of("", "enough", "low", "empty").contains(filters.getStock()),
                 "Mức tồn kho không hợp lệ.");
         require(
-                List.of("", "valid", "near", "expired", "empty", "attention").contains(filters.getExpiry()),
+                List.of("", "valid", "near", "expired", "empty").contains(filters.getExpiry()),
                 "Trạng thái lô không hợp lệ.");
         require(List.of("lots", "sku").contains(filters.getView()), "Chế độ xem kho không hợp lệ.");
     }

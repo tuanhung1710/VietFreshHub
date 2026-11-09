@@ -42,6 +42,11 @@ database/data.sql                  # Load configuration and demonstration data
 
 The application validates the existing schema (`hibernate.hbm2ddl.auto=validate`); it does not create the tables on startup.
 
+Demo inventory lots have an expiry date at least 15 days after their receipt date. For an existing
+database, run `database/adjust_inventory_shelf_life.sql` once to apply the same minimum without
+reloading data. It extends expiry dates for unexpired lots and backdates receipts for expired lots,
+including their matching restock records, to preserve the expiry and disposal scenarios.
+
 ### 2. Configure the application
 
 Review `src/main/resources/application.properties`. Set your local SQL Server connection and supply valid credentials for the integrations you plan to enable.

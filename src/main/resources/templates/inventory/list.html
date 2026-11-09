@@ -76,7 +76,6 @@
                     <option value="near">Sắp hết hạn</option>
                     <option value="expired">Đã hết hạn</option>
                     <option value="empty">Hết hàng</option>
-                    <option value="attention" th:if="${f.expiry == 'attention'}">Sắp hoặc đã hết hạn</option>
                 </select>
             </div>
             <div class="col-6 col-lg-2" th:unless="${skuView}">
@@ -195,9 +194,9 @@
             <input type="hidden" name="view" th:value="${f.view}">
             <input type="hidden" name="q" th:value="${f.q}">
             <input type="hidden" name="stock" th:value="${f.stock}" th:if="${skuView}">
-            <input type="hidden" name="expiry" th:value="${f.expiry}">
-            <input type="hidden" name="receivedFrom" th:value="${f.receivedFrom}">
-            <input type="hidden" name="receivedTo" th:value="${f.receivedTo}">
+            <input type="hidden" name="expiry" th:value="${f.expiry}" th:unless="${skuView}">
+            <input type="hidden" name="receivedFrom" th:value="${f.receivedFrom}" th:unless="${skuView}">
+            <input type="hidden" name="receivedTo" th:value="${f.receivedTo}" th:unless="${skuView}">
             <input type="hidden" name="variantId" th:value="${f.variantId}">
             <th:block th:replace="~{fragments/product-inventory :: pageSize(${rows}, 'inventoryPageSize', 'Số dòng mỗi trang')}"></th:block>
         </form>

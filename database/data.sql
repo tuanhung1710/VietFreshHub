@@ -56,6 +56,7 @@ END;
   THROW 58024,N'Chay vietfresh_hub_script.sql truoc khi nap du lieu mau.',1;
  DECLARE @now DATETIME2(0)=SYSUTCDATETIME();
  DECLARE @today DATE=CONVERT(DATE,DATEADD(HOUR,7,@now));
+ DECLARE @minimumShelfLifeDays INT=15;
  DECLARE @businessDayStart DATETIME2(0)=DATEADD(HOUR,-7,CONVERT(DATETIME2(0),@today));
  DECLARE @created DATETIME2(0)=DATEADD(DAY,-45,@now);
  DECLARE @password NVARCHAR(500)=N'$2a$10$jcSfgNwin1KVJzHUwja3weKxynN6BG0qynEEZjHu2N/vygDkyJtJO';
@@ -1019,13 +1020,23 @@ END;
   INSERT dbo.audit_events(actor_id,action,entity_type,entity_id,reason,created_at) VALUES(@owner,'CREATE','PRODUCT',@pid,N'Thêm sản phẩm, quy cách bán và thông tin bảo quản',@productCreated);
   SET @n+=1;
 END;
- -- Initial stock precedes reservations; physical changes are written from the same allocation plan.
+ -- Initial stock precedes reservations; every demo lot has at least 15 days of shelf life.
+ -- Keep expired-lot scenarios by moving their receipts earlier. Extend other lots' expiry dates.
  DECLARE @bn INT,@vn INT,@initial INT,@received DATETIME2(0),@expiry DATE;
  DECLARE batches CURSOR LOCAL FAST_FORWARD FOR
  SELECT n,variant_n,initial_qty,
-  CASE WHEN n IN(192,193) THEN DATEADD(HOUR,-12,@businessDayStart) ELSE DATEADD(DAY,received_days,@now) END,
-  DATEADD(DAY,expiry_days,@today)
- FROM @batchPlan ORDER BY n;
+  CASE WHEN expiry_days<0 AND DATEDIFF(DAY,dates.received_date,dates.expiry_date)<@minimumShelfLifeDays
+       THEN DATEADD(DAY,DATEDIFF(DAY,dates.received_date,dates.expiry_date)-@minimumShelfLifeDays,planned.received_at)
+       ELSE planned.received_at END,
+  CASE WHEN expiry_days>=0 AND DATEDIFF(DAY,dates.received_date,dates.expiry_date)<@minimumShelfLifeDays
+       THEN DATEADD(DAY,@minimumShelfLifeDays,dates.received_date)
+       ELSE dates.expiry_date END
+ FROM @batchPlan
+ CROSS APPLY(SELECT CASE WHEN n IN(192,193) THEN DATEADD(HOUR,-12,@businessDayStart)
+                        ELSE DATEADD(DAY,received_days,@now) END AS received_at) planned
+ CROSS APPLY(SELECT CONVERT(DATE,DATEADD(HOUR,7,planned.received_at)) AS received_date,
+                    DATEADD(DAY,expiry_days,@today) AS expiry_date) dates
+ ORDER BY n;
 OPEN batches; FETCH NEXT FROM batches INTO @bn,@vn,@initial,@received,@expiry;
 WHILE @@FETCH_STATUS=0
 BEGIN
@@ -1261,9 +1272,9 @@ SELECT c.conversation_id,m.user_id,N'Cửa hàng đã nhận yêu cầu, sẽ ki
 
 IF (SELECT COUNT(*) FROM dbo.products)<>20 OR (SELECT COUNT(*) FROM dbo.orders)<>100 THROW 58010,N'Sai so luong demo.',1;
  IF EXISTS(SELECT 1 FROM dbo.inventory_batches b
-  WHERE b.expiry_date<CONVERT(DATE,DATEADD(HOUR,7,b.received_at))
+  WHERE b.expiry_date<DATEADD(DAY,@minimumShelfLifeDays,CONVERT(DATE,DATEADD(HOUR,7,b.received_at)))
      OR (b.expiry_date<@today AND b.reserved_quantity<>0))
-  THROW 58021,N'Lo demo sai han su dung hoac da het han van con giu hang.',1;
+  THROW 58021,N'Lo demo co han su dung duoi 15 ngay ke tu ngay nhap hoac da het han van con giu hang.',1;
  IF EXISTS(
   SELECT 1 FROM @allocationPlan a
   JOIN @linePlan l ON l.n=a.line_n JOIN @orderPlan o ON o.n=l.order_n

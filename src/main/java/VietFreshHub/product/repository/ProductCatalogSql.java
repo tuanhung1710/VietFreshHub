@@ -4,9 +4,7 @@ import static VietFreshHub.inventory.repository.InventoryStockSql.VARIANT_STOCK;
 
 import VietFreshHub.product.dto.ProductCatalogFilter;
 
-import java.time.LocalDateTime;
-
-/** Các mảnh SQL dùng chung giữa truy vấn đếm, lấy trang và chọn SKU khớp bộ lọc. */
+/** Các mảnh SQL dùng chung giữa truy vấn đếm và lấy trang sản phẩm. */
 final class ProductCatalogSql {
     private ProductCatalogSql() {}
 
@@ -57,15 +55,13 @@ final class ProductCatalogSql {
         )
         """;
 
-    static String managementWhere(
-            ProductCatalogFilter filters, LocalDateTime from, LocalDateTime to) {
-        return managementBaseWhere(filters, from, to)
-                + managementPriceCriteria(filters)
-                + managementSearchCriteria(filters.getQ());
+    // Ham dung de ghep cac dieu kien loc,
+    static String managementWhere(ProductCatalogFilter filters) {
+        return managementBaseWhere(filters) + managementSearchCriteria(filters.getQ());
     }
 
-    private static String managementBaseWhere(
-            ProductCatalogFilter filters, LocalDateTime from, LocalDateTime to) {
+    // Tao phan truy van co ban
+    private static String managementBaseWhere(ProductCatalogFilter filters) {
         Long category = filters.getCategory();
         String tab = filters.getTab();
         String where =
@@ -77,34 +73,11 @@ final class ProductCatalogSql {
             where +=
                     " AND EXISTS (SELECT 1 FROM dbo.product_categories pc WHERE pc.product_id=p.product_id AND pc.category_id=:category)";
         }
-        if (from != null) {
-            where += " AND p.created_at>=:from";
-        }
-        if (to != null) {
-            where += " AND p.created_at<:to";
-        }
 
         return where;
     }
 
-    /** Hai mốc giá phải khớp cùng một SKU. */
-    private static String managementPriceCriteria(ProductCatalogFilter filters) {
-        String where = "";
-        if (filters.getMinPrice() != null || filters.getMaxPrice() != null) {
-            where +=
-                    " AND EXISTS (SELECT 1 FROM dbo.product_variants pv WHERE pv.product_id=p.product_id AND pv.status<>'DELETED'";
-            if (filters.getMinPrice() != null) {
-                where += " AND pv.price>=:minPrice";
-            }
-            if (filters.getMaxPrice() != null) {
-                where += " AND pv.price<=:maxPrice";
-            }
-            where += ")";
-        }
-
-        return where;
-    }
-
+    // Loc theo tu khoa hoac ma lo
     private static String managementSearchCriteria(String text) {
         if (text.isEmpty()) {
             return "";

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{fragments/product-inventory :: head('Xác nhận thao tác sản phẩm','product')}"></head>
+  <body class="vfo-app vfr-app vfr-product vfr-seller" data-vfr-section="product">
+    <div th:replace="~{fragments/product-inventory :: nav('product')}"></div>
+    <div class="vf-workspace" id="order-content" tabindex="-1">
+      <main class="container vf-main narrow vfr-page">
+        <header class="page-heading mb-3">
+          <h1 th:text="${'Xác nhận ' + #strings.toLowerCase(review.label)}">Xác nhận thao tác</h1>
+        </header>
+        <form class="card p-4 form-stack" method="post" th:object="${form}"
+          th:action="@{/seller/products/{id}/status(id=${review.row.product.productId})}">
+          <div th:replace="~{fragments/product-inventory :: errors}"></div>
+          <th:block th:replace="~{fragments/product-catalog :: filters}"></th:block>
+          <input type="hidden" name="page" th:value="${page}" />
+          <input type="hidden" name="size" th:value="${size}" />
+          <input type="hidden" name="returnToList" value="true" />
+          <input type="hidden" th:field="*{status}" />
+          <p class="fw-semibold">
+            <span th:text="${review.row.product.productCode + ' · ' + review.row.product.name}"></span>
+            <span class="text-secondary" th:text="${'(' + review.row.managementState.label + ')'}"></span>
+          </p>
+          <p class="text-secondary" th:text="${review.description}"></p>
+          <label class="form-label" for="reason">Lý do thay đổi *</label>
+          <textarea class="form-control" th:field="*{reason}" rows="3" maxlength="900" required autofocus></textarea>
+          <div class="field-error text-danger" th:errors="*{reason}"></div>
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <button type="submit" class="btn" th:classappend="${review.status.name() == 'DELETED' ? 'btn-danger' : 'btn-success'}"
+              th:text="${review.label}">Xác nhận</button>
+            <a class="btn btn-outline-secondary"
+              th:href="@{/seller/products(q=${filters.q},category=${filters.category},tab=${filters.tab},sort=${filters.sort},page=${page},size=${size})}">Hủy, quay lại danh sách</a>
+          </div>
+        </form>
+      </main>
+    </div>
+    <div class="vfr-product-footer"><footer th:replace="~{fragments/seller-orders :: footer}"></footer></div>
+  </body>
+</html>

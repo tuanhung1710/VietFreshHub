@@ -6,10 +6,6 @@
     <input type="hidden" name="category" th:value="${filters.category}">
     <input type="hidden" name="tab" th:value="${filters.tab}">
     <input type="hidden" name="sort" th:value="${filters.sort}">
-    <input type="hidden" name="createdFrom" th:value="${filters.createdFrom}">
-    <input type="hidden" name="createdTo" th:value="${filters.createdTo}">
-    <input type="hidden" name="minPrice" th:value="${filters.minPrice}">
-    <input type="hidden" name="maxPrice" th:value="${filters.maxPrice}">
 </th:block>
 <span th:fragment="money(value)" th:text="${@vndAmounts.format(value) + 'đ'}"></span>
 </body>

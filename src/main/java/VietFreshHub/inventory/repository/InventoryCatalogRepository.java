@@ -279,7 +279,7 @@ public class InventoryCatalogRepository {
                                 case "expired" -> "b.expiry_date<:today";
                                 case "valid" ->
                                         "b.expiry_date>=:today AND DATEDIFF(DAY,:today,b.expiry_date)>COALESCE(p.expiry_warning_days,3)";
-                                default -> "b.expiry_date<:today OR (" + NEAR + ")";
+                                default -> throw new IllegalArgumentException("Trạng thái lô không hợp lệ.");
                             })
                     .append(")");
         }

@@ -37,3 +37,12 @@ uploads/product/
 
 # Local document extraction, preview fixtures and review logs
 .document-analysis/
+
+# Local tests and generated outputs are not part of source releases.
+/src/test/
+/test/
+/tests/
+/outputs/
+
+# Keep the inventory date repair script even when local database files are excluded.
+!database/adjust_inventory_shelf_life.sql

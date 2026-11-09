@@ -8,7 +8,6 @@
     <div class="vf-workspace" id="order-content" tabindex="-1">
     <main
       class="container vf-main vf-product-catalog vfr-page"
-      th:attr="data-vf-selection-scope=${selectionScope},data-vf-completed-selection=${completedBulkProductIds != null ? #strings.listJoin(completedBulkProductIds, ',') : ''}"
     >
       <header class="page-heading">
         <div>
@@ -28,35 +27,35 @@
           class="nav-link"
           th:classappend="${tab == '' ? 'active' : ''}"
           th:attr="aria-current=${tab == '' ? 'page' : null}"
-          th:href="@{/seller/products(q=${q},category=${category},tab='',sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size})}"
+          th:href="@{/seller/products(q=${q},category=${category},tab='',sort=${filters.sort},size=${rows.size})}"
           th:text="${'Tất cả (' + tabSummary.all + ')'}"
         ></a>
         <a
           class="nav-link"
           th:classappend="${tab == 'active' ? 'active' : ''}"
           th:attr="aria-current=${tab == 'active' ? 'page' : null}"
-          th:href="@{/seller/products(q=${q},category=${category},tab='active',sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size})}"
+          th:href="@{/seller/products(q=${q},category=${category},tab='active',sort=${filters.sort},size=${rows.size})}"
           th:text="${'Đang bán (' + tabSummary.active + ')'}"
         ></a>
         <a
           class="nav-link"
           th:classappend="${tab == 'out-of-stock' ? 'active' : ''}"
           th:attr="aria-current=${tab == 'out-of-stock' ? 'page' : null}"
-          th:href="@{/seller/products(q=${q},category=${category},tab='out-of-stock',sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size})}"
+          th:href="@{/seller/products(q=${q},category=${category},tab='out-of-stock',sort=${filters.sort},size=${rows.size})}"
           th:text="${'Hết hàng (' + tabSummary.outOfStock + ')'}"
         ></a>
         <a
           class="nav-link"
           th:classappend="${tab == 'hidden' ? 'active' : ''}"
           th:attr="aria-current=${tab == 'hidden' ? 'page' : null}"
-          th:href="@{/seller/products(q=${q},category=${category},tab='hidden',sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size})}"
+          th:href="@{/seller/products(q=${q},category=${category},tab='hidden',sort=${filters.sort},size=${rows.size})}"
           th:text="${'Tạm ẩn (' + tabSummary.hidden + ')'}"
         ></a>
         <a
           class="nav-link"
           th:classappend="${tab == 'violation' ? 'active' : ''}"
           th:attr="aria-current=${tab == 'violation' ? 'page' : null}"
-          th:href="@{/seller/products(q=${q},category=${category},tab='violation',sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size})}"
+          th:href="@{/seller/products(q=${q},category=${category},tab='violation',sort=${filters.sort},size=${rows.size})}"
           th:text="${'Vi phạm (' + tabSummary.violation + ')'}"
         ></a>
       </div>
@@ -110,60 +109,11 @@
         </form>
       </div>
       <div data-vf-list-results>
-        <span
-          hidden
-          data-vf-current-page
-          th:attr="data-page=${rows.number + 1},data-size=${rows.size}"
-        ></span>
         <section
           class="card vf-catalog-table-card"
           aria-label="Danh sách sản phẩm"
         >
           <div class="vf-catalog-toolbar">
-            <button class="btn btn-sm btn-outline-secondary vf-catalog-selection-start" type="button"
-              data-vf-start-selection aria-pressed="false">Chọn sản phẩm</button>
-            <div class="vf-catalog-selection" data-vf-selection-panel hidden>
-              <span data-vf-selection-count role="status" aria-live="polite" hidden></span>
-              <span class="text-secondary" data-vf-selection-help hidden>Chọn từng sản phẩm hoặc chọn tất cả trên trang.</span>
-              <button class="btn btn-sm btn-light" type="button" data-vf-exit-selection hidden>Bỏ chọn</button>
-              <div class="vf-catalog-bulk" data-vf-bulk-toolbar hidden>
-                <button
-                  class="btn btn-sm btn-outline-secondary"
-                  type="button"
-                  data-vf-bulk-status="INACTIVE"
-                  disabled
-                  data-bs-toggle="modal"
-                  data-bs-target="#bulkProductActionModal"
-                >
-                  Tạm ẩn</button
-                ><button
-                  class="btn btn-sm btn-outline-success"
-                  type="button"
-                  data-vf-bulk-status="ACTIVE"
-                  disabled
-                  data-bs-toggle="modal"
-                  data-bs-target="#bulkProductActionModal"
-                >
-                  Mở bán</button
-                ><button
-                  class="btn btn-sm btn-outline-danger"
-                  type="button"
-                  data-vf-bulk-status="DELETED"
-                  disabled
-                  data-bs-toggle="modal"
-                  data-bs-target="#bulkProductActionModal"
-                >
-                  Xóa sản phẩm</button
-                >
-                <button
-                  class="btn btn-sm btn-light"
-                  type="button"
-                  data-vf-clear-selection
-                >
-                  Bỏ chọn tất cả
-                </button>
-              </div>
-            </div>
             <div class="vf-catalog-sort">
               <label for="productSort">Sắp xếp:</label
               ><select
@@ -188,7 +138,6 @@
               </select>
             </div>
           </div>
-          <p class="small text-danger px-3 mt-2 mb-2" data-vf-selection-error role="alert" hidden></p>
           <section class="vf-empty" th:if="${rows.empty}">
             <svg class="vf-icon vf-empty-icon" aria-hidden="true">
               <use href="#vf-product" />
@@ -215,7 +164,6 @@
                 Sản phẩm trong trang hiện tại. Xem chi tiết sản phẩm để xem phân loại và tồn kho.
               </caption>
               <colgroup>
-                <col class="vf-col-select" />
                 <col class="vf-col-index" />
                 <col class="vf-col-product" />
                 <col class="vf-col-price" />
@@ -226,14 +174,6 @@
               </colgroup>
               <thead>
                 <tr>
-                  <th scope="col">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      data-vf-select-all
-                      aria-label="Chọn tất cả sản phẩm trên trang"
-                    />
-                  </th>
                   <th scope="col" class="text-center">STT</th>
                   <th scope="col">Sản phẩm</th>
                   <th scope="col">Giá bán</th>
@@ -247,19 +187,7 @@
                 th:each="r, productStat : ${rows}"
                 th:with="p=${r.product}"
               >
-                <tr
-                  class="vf-catalog-product-row"
-                  th:attr="data-product-id=${p.productId}"
-                >
-                  <td>
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      data-vf-select-product
-                      th:value="${p.productId}"
-                      th:attr="aria-label=${'Chọn ' + p.name},data-can-hide=${r.managementState.canHide},data-can-open=${r.managementState.canOpen},data-product-name=${p.name},data-product-code=${p.productCode}"
-                    />
-                  </td>
+                <tr class="vf-catalog-product-row">
                   <td class="text-center text-body-secondary" data-label="STT"
                       th:text="${rows.number * rows.size + productStat.count}"></td>
                   <td>
@@ -360,14 +288,15 @@
                         </svg>
                       </a>
 
+                      <form class="vf-catalog-actions" method="post" th:action="@{/seller/products/{id}/status/review(id=${p.productId})}">
+                        <th:block th:replace="~{fragments/product-catalog :: filters}"></th:block>
+                        <input type="hidden" name="page" th:value="${rows.number + 1}" />
+                        <input type="hidden" name="size" th:value="${rows.size}" />
                       <button
                         class="btn btn-sm btn-outline-danger vf-catalog-icon-action"
-                        type="button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#productActionModal"
-                        data-status="DELETED"
-                        data-label="Xóa sản phẩm"
-                        th:attr="data-action-url=@{/seller/products/{id}/status(id=${p.productId})},data-name=${p.name},aria-label=${'Xóa sản phẩm ' + p.name}"
+                        type="submit"
+                        name="status" value="DELETED"
+                        th:attr="aria-label=${'Xóa sản phẩm ' + p.name}"
                         title="Xóa sản phẩm; tồn kho và lịch sử được giữ lại"
                       >
                         <svg class="vf-icon" aria-hidden="true">
@@ -376,19 +305,20 @@
                       </button>
                       <button
                         class="btn btn-sm vf-catalog-icon-action"
-                        type="button"
-                        data-bs-toggle="modal"
-                        data-bs-target="#productActionModal"
+                        type="submit"
+                        name="status"
+                        th:value="${r.managementState.canHide ? 'INACTIVE' : 'ACTIVE'}"
                         th:with="canHide=${r.managementState.canHide},canOpen=${r.managementState.canOpen},actionLabel=${canHide ? 'Tạm ẩn' : 'Mở bán'}"
                         th:classappend="${canOpen and !canHide ? 'btn-outline-success' : 'btn-outline-secondary'}"
                         th:disabled="${!canHide and !canOpen}"
                         th:title="${canHide or canOpen ? actionLabel + ' sản phẩm' : r.managementState.openBlockedReason}"
-                        th:attr="data-action-url=@{/seller/products/{id}/status(id=${p.productId})},data-status=${canHide ? 'INACTIVE' : 'ACTIVE'},data-name=${p.name},data-label=${actionLabel},aria-label=${actionLabel + ' sản phẩm ' + p.name}"
+                        th:attr="aria-label=${actionLabel + ' sản phẩm ' + p.name}"
                       >
                         <svg class="vf-icon" aria-hidden="true">
                           <use th:attr="href=${canHide ? '#vf-eye-off' : '#vf-eye'}" />
                         </svg>
                       </button>
+                      </form>
                     </div>
                   </td>
                 </tr>
@@ -398,7 +328,7 @@
         </section>
         <div class="vf-pagination-panel vf-catalog-pagination">
           <div
-            th:replace="~{fragments/product-inventory :: pagination(${rows},@{/seller/products(q=${q},category=${category},tab=${tab},sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size},page=${rows.number})},@{/seller/products(q=${q},category=${category},tab=${tab},sort=${filters.sort},createdFrom=${createdFrom},createdTo=${createdTo},minPrice=${filters.minPrice},maxPrice=${filters.maxPrice},size=${rows.size},page=${rows.number + 2})},'Phân trang sản phẩm','sản phẩm')}"
+            th:replace="~{fragments/product-inventory :: pagination(${rows},@{/seller/products(q=${q},category=${category},tab=${tab},sort=${filters.sort},size=${rows.size},page=${rows.number})},@{/seller/products(q=${q},category=${category},tab=${tab},sort=${filters.sort},size=${rows.size},page=${rows.number + 2})},'Phân trang sản phẩm','sản phẩm')}"
           ></div>
           <form
             class="vf-page-size"
@@ -413,154 +343,6 @@
     </main>
 
     </div>
-    <div
-      class="modal fade"
-      id="productActionModal"
-      tabindex="-1"
-      aria-labelledby="productActionTitle"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <form
-            th:action="@{/seller/products}"
-            method="post"
-            id="productActionForm"
-            data-vf-catalog-action
-          >
-            <th:block
-              th:replace="~{fragments/product-catalog :: filters}"
-            ></th:block
-            ><input type="hidden" name="returnToList" value="true" /><input
-              type="hidden"
-              name="page"
-              th:value="${rows.number + 1}"
-            /><input type="hidden" name="size" th:value="${rows.size}" />
-            <div class="modal-header">
-              <h2 class="modal-title fs-5" id="productActionTitle">
-                Xác nhận thay đổi trạng thái
-              </h2>
-              <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="modal"
-                aria-label="Đóng"
-              ></button>
-            </div>
-            <div class="modal-body">
-              <p class="fw-semibold" id="productActionName"></p>
-              <p class="small text-secondary" id="productActionDescription"></p>
-              <input
-                type="hidden"
-                name="status"
-                id="productActionStatus"
-              /><label class="form-label" for="productActionReason"
-                >Lý do thay đổi *</label
-              ><textarea
-                class="form-control"
-                name="reason"
-                id="productActionReason"
-                rows="3"
-                maxlength="900"
-                required
-              ></textarea>
-            </div>
-            <div class="modal-footer">
-              <button
-                type="button"
-                class="btn btn-outline-secondary"
-                data-bs-dismiss="modal"
-              >
-                Hủy</button
-              ><button
-                class="btn btn-success"
-                id="productActionSubmit"
-                type="submit"
-              >
-                Xác nhận
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-    <div
-      class="modal fade"
-      id="bulkProductActionModal"
-      tabindex="-1"
-      aria-labelledby="bulkProductActionTitle"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <form
-            th:action="@{/seller/products/bulk-status}"
-            method="post"
-            id="bulkProductActionForm"
-            data-vf-catalog-action
-          >
-            <th:block
-              th:replace="~{fragments/product-catalog :: filters}"
-            ></th:block
-            ><input
-              type="hidden"
-              name="page"
-              th:value="${rows.number + 1}"
-            /><input type="hidden" name="size" th:value="${rows.size}" /><input
-              type="hidden"
-              name="status"
-              id="bulkProductActionStatus"
-            />
-            <div class="modal-header">
-              <h2 class="modal-title fs-5" id="bulkProductActionTitle">
-                Thay đổi hàng loạt
-              </h2>
-              <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="modal"
-                aria-label="Đóng"
-              ></button>
-            </div>
-            <div class="modal-body">
-              <p id="bulkProductActionDescription"></p>
-              <ul class="vf-bulk-review-list" data-vf-bulk-review-list aria-label="Sản phẩm sẽ được thay đổi"></ul>
-              <div data-vf-bulk-selection-inputs></div>
-              <p class="small text-secondary">
-                Toàn bộ lựa chọn sẽ được kiểm tra lại trước khi lưu. Nếu một sản
-                phẩm không đủ điều kiện, cả lần thay đổi sẽ được hủy.
-              </p>
-              <label class="form-label" for="bulkProductActionReason"
-                >Lý do thay đổi *</label
-              ><textarea
-                class="form-control"
-                name="reason"
-                id="bulkProductActionReason"
-                rows="3"
-                maxlength="900"
-                required
-              ></textarea>
-            </div>
-            <div class="modal-footer">
-              <button
-                type="button"
-                class="btn btn-outline-secondary"
-                data-bs-dismiss="modal"
-              >
-                Hủy</button
-              ><button
-                class="btn btn-success"
-                type="submit"
-                id="bulkProductActionSubmit"
-              >
-                Xác nhận
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-    <script defer th:src="@{/js/product/catalog.js}"></script>
   <div class="vfr-product-footer"><footer th:replace="~{fragments/seller-orders :: footer}"></footer></div>
 </body>
 </html>
