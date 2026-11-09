@@ -61,17 +61,26 @@ public class ProductCatalogReader {
         for (Product product : products.getContent()) {
             productIds.add(product.getProductId());
         }
+
         List<ProductVariant> variants = List.of();
         if (!productIds.isEmpty()) {
             variants = productVariantRepository.findByProductIdInOrderByVariantId(productIds);
         }
+
+        // Java có quy tắc: biến cục bộ đã bị gán lại thì không được dùng trực tiếp trong lambda.
         List<ProductVariant> pageVariants = variants;
+
+        // lay cac lo tuong ung cua cac variant
         List<InventoryBatch> batches = findBatches(variants);
+
+        // lấy trạng thái quản lý của từng sản phẩm
         Map<Long, ProductManagementState> states =
                 products.isEmpty()
                         ? Map.of()
                         : productAvailabilityService.states(
                                 products.getContent().getFirst().getShopId(), productIds);
+
+        // ghép dữ liệu thành ProductResponse cho từng sản pham
         return products.map(
                 product ->
                         buildProductResponse(

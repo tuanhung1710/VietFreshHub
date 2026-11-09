@@ -89,7 +89,7 @@ public class InventoryController {
             Authentication authentication,
             @ModelAttribute("inventoryFilters") InventoryCatalogFilter filters,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(defaultValue = "10") int size,
             Model model) {
         var catalog = inventoryCatalog.list(authentication, filters, page, size);
         model.addAttribute("rows", catalog.rows());

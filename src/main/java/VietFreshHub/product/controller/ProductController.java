@@ -2,7 +2,7 @@ package VietFreshHub.product.controller;
 
 import VietFreshHub.inventory.rule.InventoryRules;
 import VietFreshHub.product.dto.ActionRequest;
-import VietFreshHub.product.dto.BulkProductActionRequest;
+import VietFreshHub.product.dto.ProductActionReview;
 import VietFreshHub.product.dto.ProductCatalogFilter;
 import VietFreshHub.product.dto.ProductRequest;
 import VietFreshHub.product.dto.VariantActionRequest;
@@ -73,9 +73,7 @@ public class ProductController {
         return showProductForm(model, null);
     }
 
-    /**
-     * Hiển thị danh sách sản phẩm, bộ lọc, thống kê và phạm vi lưu lựa chọn theo cửa hàng, tài khoản.
-     */
+    /** Nạp danh sách sản phẩm theo bộ lọc và phân trang để render Thymeleaf. */
     @GetMapping
     public String list(
             Authentication authentication,
@@ -88,19 +86,51 @@ public class ProductController {
         if (errors.hasErrors()) {
             throw new BindException(errors);
         }
-        model.addAttribute(
-                "rows", productService.searchManagement(authentication, filters, page, size));
+        var rows = productService.searchManagement(authentication, filters, page, size);
+        model.addAttribute("rows", rows);
         model.addAttribute("categories", productService.categories());
         model.addAttribute("tabSummary", productService.productTabSummary(authentication));
         model.addAttribute("q", filters.getQ());
         model.addAttribute("category", filters.getCategory());
         model.addAttribute("tab", filters.getTab());
-        model.addAttribute("createdFrom", filters.getCreatedFrom());
-        model.addAttribute("createdTo", filters.getCreatedTo());
-        model.addAttribute(
-                "selectionScope",
-                shopService.getManagedShopId(authentication) + ":" + authentication.getName());
         return "product/list";
+    }
+
+    /** Xem lại thao tác trên một sản phẩm trước khi nhập lý do và xác nhận. */
+    @PostMapping("/{id}/status/review")
+    public String reviewStatus(
+            Authentication authentication,
+            @PathVariable Long id,
+            @RequestParam ProductStatus status,
+            @ModelAttribute("filters") ProductCatalogFilter filters,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            Model model,
+            RedirectAttributes flash) {
+        try {
+            var row = productService.get(authentication, id);
+            if (row.getProduct().getStatus() == ProductStatus.DELETED) {
+                throw new CatalogException("Sản phẩm đã xóa.");
+            }
+            if (status == ProductStatus.ACTIVE && !row.getManagementState().isCanOpen()) {
+                throw new CatalogException(
+                        "Sản phẩm không đủ điều kiện mở bán. Tải lại danh sách để xem trạng thái mới.");
+            }
+            if (status == ProductStatus.INACTIVE && !row.getManagementState().isCanHide()) {
+                throw new CatalogException(
+                        "Sản phẩm không đủ điều kiện tạm ẩn. Tải lại danh sách để xem trạng thái mới.");
+            }
+            ActionRequest form = new ActionRequest();
+            form.setStatus(status);
+            model.addAttribute("form", form);
+            model.addAttribute("review", new ProductActionReview(status, row));
+            model.addAttribute("page", page);
+            model.addAttribute("size", size);
+            return "product/action-review";
+        } catch (CatalogException exception) {
+            flash.addFlashAttribute("error", exception.getMessage());
+            return listRedirect(filters, page, size, flash);
+        }
     }
 
     /** Mở biểu mẫu tạo sản phẩm với một dòng phân loại ban đầu. */
@@ -219,45 +249,6 @@ public class ProductController {
         return returnToList ? listRedirect(filters, page, size, flash) : productRedirect(id);
     }
 
-    /**
-     * Đổi trạng thái danh sách sản phẩm đã chọn và trả lại bộ lọc hiện tại.
-     * Khi thành công, gửi các ID đã xử lý để giao diện xóa đúng những lựa chọn đó.
-     */
-    @PostMapping("/bulk-status")
-    public String bulkStatus(
-            Authentication authentication,
-            @Valid @ModelAttribute BulkProductActionRequest form,
-            BindingResult errors,
-            @ModelAttribute("filters") ProductCatalogFilter filters,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size,
-            RedirectAttributes flash) {
-        if (errors.hasErrors()) {
-            flash.addFlashAttribute(
-                    "error",
-                    "Chọn từ 1 đến 50 sản phẩm, trạng thái hợp lệ và nhập lý do tối đa 900 ký tự.");
-            return listRedirect(filters, page, size, flash);
-        }
-        try {
-            productService.changeStatuses(authentication, form);
-            flash.addFlashAttribute(
-                    "success",
-                    form.getStatus() == ProductStatus.DELETED
-                            ? "Đã xóa "
-                                    + form.getProductIds().size()
-                                    + " sản phẩm. Tồn kho và lịch sử vẫn được lưu trong Kho hàng."
-                            : "Đã cập nhật trạng thái "
-                                    + form.getProductIds().size()
-                                    + " sản phẩm.");
-            // Trang trả về chỉ xóa các ID này khỏi lựa chọn đã lưu khi máy chủ xử lý thành công.
-            flash.addFlashAttribute("completedBulkProductIds", form.getProductIds());
-        } catch (CatalogException exception) {
-            flash.addFlashAttribute("error", exception.getMessage());
-        }
-
-        return listRedirect(filters, page, size, flash);
-    }
-
     /** Chuyển về danh sách sản phẩm, giữ nguyên bộ lọc, số trang và kích thước trang. */
     private String listRedirect(
             ProductCatalogFilter filters, int page, int size, RedirectAttributes flash) {
@@ -266,10 +257,6 @@ public class ProductController {
         flash.addAttribute("category", filters.getCategory());
         flash.addAttribute("tab", filters.getTab());
         flash.addAttribute("sort", filters.getSort());
-        flash.addAttribute("createdFrom", filters.getCreatedFrom());
-        flash.addAttribute("createdTo", filters.getCreatedTo());
-        flash.addAttribute("minPrice", filters.getMinPrice());
-        flash.addAttribute("maxPrice", filters.getMaxPrice());
         flash.addAttribute("page", page);
         flash.addAttribute("size", size);
         return "redirect:/seller/products";

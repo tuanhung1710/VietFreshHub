@@ -2,7 +2,6 @@ package VietFreshHub.product.service;
 
 import VietFreshHub.inventory.dto.InventoryAttentionSummary;
 import VietFreshHub.product.dto.ActionRequest;
-import VietFreshHub.product.dto.BulkProductActionRequest;
 import VietFreshHub.product.dto.ProductCatalogFilter;
 import VietFreshHub.product.dto.ProductRequest;
 import VietFreshHub.product.dto.ProductResponse;
@@ -22,9 +21,6 @@ public interface ProductService {
     /** Lấy danh sách quản lý sản phẩm theo bộ lọc, có phân trang. */
     Page<ProductResponse> searchManagement(
             Authentication authentication, ProductCatalogFilter filters, int page, int size);
-
-    /** Đổi trạng thái nhiều sản phẩm trong cùng giao dịch; một lỗi sẽ hoàn tác toàn bộ lựa chọn. */
-    void changeStatuses(Authentication authentication, BulkProductActionRequest form);
 
     /** Đếm sản phẩm theo các nhóm trạng thái quản lý trên toàn cửa hàng. */
     ProductTabSummary productTabSummary(Authentication authentication);

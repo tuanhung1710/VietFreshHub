@@ -10,15 +10,11 @@
 .vf-product-catalog .vf-filter-search-row .form-select {min-height:40px}
 .vf-catalog-table-card {overflow:visible}
 .vf-catalog-toolbar {position:relative;z-index:1012;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 12px;min-height:46px;border-bottom:1px solid #e2e8f0;background:#f8fbf9;border-radius:12px 12px 0 0}
-.vf-catalog-selection {display:flex;flex-wrap:wrap;align-items:center;gap:12px;font-size:12px;color:#64748b}
-.vf-catalog-bulk {display:flex;gap:6px}
-.vf-catalog-bulk[hidden] {display:none}
 .vf-catalog-sort {display:flex;align-items:center;gap:8px;flex-shrink:0;font-size:12px}
 .vf-catalog-sort .form-select {width:164px}
 .vf-catalog-scroll {overflow-x:auto;overflow-y:hidden;border-radius:0 0 12px 12px;overscroll-behavior-x:contain}
 .vf-catalog-scroll:focus-visible {outline:2px solid #4ade80;outline-offset:2px}
 .vf-catalog-table {table-layout:fixed;min-width:1060px;width:100%;font-size:12px}
-.vf-catalog-table .vf-col-select {width:44px}
 .vf-catalog-table .vf-col-index {width:52px}
 .vf-catalog-table .vf-col-price {width:15%}
 .vf-catalog-table .vf-col-status {width:15%}
@@ -28,12 +24,10 @@
 .vf-catalog-table > thead > tr > th {font-size:11px;color:#475569;background:#f5f8fa;padding:11px 10px;border-bottom:1px solid #e2e8f0}
 .vf-catalog-table > tbody > .vf-catalog-product-row > td {padding:12px 10px;background:#fff;border-bottom:1px solid #edf2f7;height:86px}
 .vf-catalog-table > tbody > .vf-catalog-product-row:hover > td {background:#f8fcfa}
-.vf-catalog-table > tbody > .vf-catalog-product-row.vf-catalog-selected > td {background:#f0fdf4}
 .vf-catalog-table > thead > tr > th:first-child,
 .vf-catalog-table > tbody > .vf-catalog-product-row > td:first-child {padding-inline:0;text-align:center}
 .vf-catalog-table > thead > tr > th:last-child,
 .vf-catalog-table > tbody > .vf-catalog-product-row > td:last-child {padding-inline-end:24px;text-align:end}
-.vf-catalog-table .form-check-input[type="checkbox"] {margin:0;width:20px;height:20px;border-radius:0;vertical-align:middle;cursor:pointer}
 .vf-catalog-product {display:flex;align-items:center;gap:10px}
 .vf-catalog-image-link {flex:0 0 52px}
 .vf-catalog-image {display:block;object-fit:cover;border-radius:7px;border:1px solid #e2e8f0;background:#f8fafc}
@@ -59,7 +53,7 @@
     .vf-product-catalog .page-heading {gap:10px;margin-bottom:16px}.vf-product-catalog .page-heading h1 {font-size:21px}
     .vf-product-catalog .page-heading p {font-size:12px}.vf-product-catalog .page-heading>.btn {padding:8px;font-size:12px}
     .vf-product-catalog .vf-filter-tabs {padding:6px;gap:3px}.vf-product-catalog .vf-filter-tabs .nav-link {padding:7px 9px;font-size:11px}
-    .vf-catalog-toolbar {flex-wrap:wrap;padding:7px 10px;gap:8px}.vf-catalog-selection {gap:8px;flex-basis:100%}
+    .vf-catalog-toolbar {flex-wrap:wrap;padding:7px 10px;gap:8px}
     .vf-catalog-sort {margin-left:auto}
     .vf-catalog-sort .form-select {width:136px}
     .vf-catalog-pagination {justify-content:center;gap:10px}.vf-catalog-pagination > span {text-align:center}
@@ -72,21 +66,7 @@
 
 .vf-product-catalog .vf-catalog-status-tabs {position:relative;z-index:1014;margin-bottom:8px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;box-shadow:0 2px 5px #0f172a05}
 
-/* Opacity keeps checkbox geometry, keyboard access and the accessibility tree. */
-.vf-selection-enhanced:not(.vf-selection-active) [data-vf-select-product],
-.vf-selection-enhanced:not(.vf-selection-active) [data-vf-select-all] {opacity:0;pointer-events:none}
-.vf-selection-enhanced:not(.vf-selection-active) [data-vf-select-product]:focus-visible,
-.vf-selection-enhanced:not(.vf-selection-active) [data-vf-select-all]:focus-visible {opacity:1;pointer-events:auto}
-@media (hover:hover) and (pointer:fine) {
-    .vf-selection-enhanced:not(.vf-selection-active) .vf-catalog-product-row:hover [data-vf-select-product] {opacity:1;pointer-events:auto}
-}
-.vf-catalog-toolbar [hidden] {display:none!important}
-.vf-catalog-selection-start {font-size:12px;white-space:nowrap}
-.vf-catalog-bulk {flex-wrap:wrap}
-.vf-catalog-selection {min-width:0}
 .vf-catalog-sort {margin-left:auto}
-.vf-bulk-review-list {max-height:220px;overflow-y:auto;overflow-wrap:anywhere;padding-left:22px;font-size:13px}
-.vf-bulk-review-list li+li {margin-top:5px}
 
 @media print {
     .vf-product-catalog .vf-catalog-status-tabs,

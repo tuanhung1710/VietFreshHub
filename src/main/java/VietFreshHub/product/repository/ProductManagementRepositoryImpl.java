@@ -4,7 +4,6 @@ import static VietFreshHub.inventory.repository.InventoryStockSql.VARIANT_STOCK;
 import static VietFreshHub.product.repository.ProductCatalogSql.CLASSIFICATION;
 
 import VietFreshHub.common.BusinessCodes;
-import VietFreshHub.common.VietnamDatabaseTime;
 import VietFreshHub.inventory.dto.InventoryAttentionSummary;
 import VietFreshHub.product.dto.ProductCatalogFilter;
 import VietFreshHub.product.dto.ProductManagementState;
@@ -20,7 +19,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -63,28 +61,27 @@ public class ProductManagementRepositoryImpl implements ProductManagementReposit
     }
 
     /**
-     * Lọc sản phẩm theo trạng thái quản lý và điều kiện nâng cao, dùng cùng điều kiện cho tổng đếm và dữ liệu trang.
+     * Lọc sản phẩm theo từ khóa, danh mục và trạng thái; dùng cùng điều kiện cho tổng đếm và dữ liệu trang.
      */
     @Override
     @SuppressWarnings("unchecked")
     public Page<Product> searchManagement(
             Long shop,
             ProductCatalogFilter filters,
-            LocalDateTime from,
-            LocalDateTime to,
             List<Long> categories,
             LocalDate today,
             Pageable page) {
         String text = filters.getQ();
         Long category = filters.getCategory();
         String tab = filters.getTab();
-        String where = ProductCatalogSql.managementWhere(filters, from, to);
+        String where = ProductCatalogSql.managementWhere(filters);
         // Đếm toàn bộ kết quả khớp trước khi giới hạn số dòng của trang hiện tại.
         Query count = query("SELECT COUNT(*)" + where, shop, categories, today);
-        bindFilters(count, text, category, tab, from, to);
-        bindAdvancedFilters(count, filters);
+
+        bindFilters(count, text, category, tab);
         long total = ((Number) count.getSingleResult()).longValue();
         String direction = "updated_asc".equals(filters.getSort()) ? " ASC" : " DESC";
+
         Query rows =
                 entityManager.createNativeQuery(
                         CLASSIFICATION
@@ -96,52 +93,31 @@ public class ProductManagementRepositoryImpl implements ProductManagementReposit
                                 + direction,
                         Product.class);
         bindBase(rows, shop, categories, today);
-        bindFilters(rows, text, category, tab, from, to);
-        bindAdvancedFilters(rows, filters);
+        bindFilters(rows, text, category, tab);
         // Sắp thêm theo ID để các bản ghi cùng thời điểm không đổi vị trí giữa những lần phân
         // trang.
         rows.setFirstResult(Math.toIntExact(page.getOffset()));
         rows.setMaxResults(page.getPageSize());
-        return new PageImpl<>((List<Product>) rows.getResultList(), page, total);
-    }
 
-    /**
-     * Chỉ gán tham số khoảng giá khi bộ lọc tương ứng được dùng.
-     */
-    private void bindAdvancedFilters(Query query, ProductCatalogFilter filters) {
-        if (filters.getMinPrice() != null) {
-            query.setParameter("minPrice", filters.getMinPrice());
-        }
-        if (filters.getMaxPrice() != null) {
-            query.setParameter("maxPrice", filters.getMaxPrice());
-        }
+        //
+        return new PageImpl<>((List<Product>) rows.getResultList(), page, total);
     }
 
     /**
      * Gán tham số tìm kiếm cơ bản; phân biệt từ khóa thông thường với mã sản phẩm PRD và mã lô LOT.
      */
-    private void bindFilters(
-            Query query,
-            String text,
-            Long category,
-            String tab,
-            LocalDateTime from,
-            LocalDateTime to) {
+    private void bindFilters(Query query, String text, Long category, String tab) {
         if (!tab.isEmpty()) {
             query.setParameter("tab", tab);
         }
         if (category != null) {
             query.setParameter("category", category);
         }
-        if (from != null) {
-            query.setParameter("from", VietnamDatabaseTime.toDatabase(from));
-        }
-        if (to != null) {
-            query.setParameter("to", VietnamDatabaseTime.toDatabase(to));
-        }
         if (!text.isEmpty()) {
             // Từ khóa thường dùng LIKE; mã PRD/LOT được tách ID để tìm chính xác đúng đối tượng.
+            // Local.ROOT chuyển hết thành chữ thường mà không phụ thuộc vào ngôn ngữ mặc định của máy.
             query.setParameter("text", "%" + text.toLowerCase(Locale.ROOT) + "%");
+            // Phân tích từ khóa thành ID hoặc ID lô
             Long productCode = BusinessCodes.parse("PRD", text);
             Long batchCode = BusinessCodes.parse("LOT", text);
             query.setParameter("productCode", productCode == null ? -1L : productCode);

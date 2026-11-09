@@ -17,7 +17,6 @@ import VietFreshHub.inventory.rule.InventoryRules;
 import VietFreshHub.inventory.service.InventoryJournalService;
 import VietFreshHub.inventory.util.InventoryLockHelper;
 import VietFreshHub.product.dto.ActionRequest;
-import VietFreshHub.product.dto.BulkProductActionRequest;
 import VietFreshHub.product.dto.ProductCatalogFilter;
 import VietFreshHub.product.dto.ProductRequest;
 import VietFreshHub.product.dto.ProductResponse;
@@ -63,7 +62,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.text.Normalizer;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -103,9 +101,14 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Page<ProductResponse> searchManagement(
             Authentication authentication, ProductCatalogFilter filters, int page, int size) {
+//        page: trang muốn xem, size số phần tử mỗi trang
+//        Lấy thông tin, danh tính của người đang đăng nhập
         Long shopId = shopService.getManagedShopId(authentication);
+//        Chuẩn hóa và kiểm tra bộ lọc, xem có hợp lý không
         prepareManagementFilters(filters);
+//        Lấy ra danh mục đang hoạt động
         List<Long> activeCategories = productAvailabilityService.activeCategoryIds();
+//        Thực hiện tìm kim và trả kết quả
         return catalogQueries.searchManagement(shopId, filters, activeCategories, page, size);
     }
 
@@ -123,30 +126,6 @@ public class ProductServiceImpl implements ProductService {
         require(
                 List.of("updated_desc", "updated_asc").contains(filters.getSort()),
                 "Cách sắp xếp không hợp lệ.");
-
-        LocalDate createdFrom = filters.getCreatedFrom();
-        LocalDate createdTo = filters.getCreatedTo();
-        require(
-                createdFrom == null || createdTo == null || !createdFrom.isAfter(createdTo),
-                "Ngày bắt đầu không được sau ngày kết thúc.");
-        validateCatalogPriceRange(filters.getMinPrice(), filters.getMaxPrice());
-    }
-
-    /** Giá lọc cho phép 0 đồng, phải nguyên đồng và nằm trong giới hạn 16 chữ số. */
-    private void validateCatalogPriceRange(BigDecimal minimumPrice, BigDecimal maximumPrice) {
-        for (BigDecimal price : new BigDecimal[] {minimumPrice, maximumPrice}) {
-            boolean validPrice =
-                    price == null
-                            || (price.signum() >= 0
-                                    && price.stripTrailingZeros().scale() <= 0
-                                    && (long) price.precision() - price.scale() <= 16);
-            require(validPrice, "Giá lọc phải là số nguyên đồng thời không âm, tối đa 16 chữ số.");
-        }
-        require(
-                minimumPrice == null
-                        || maximumPrice == null
-                        || minimumPrice.compareTo(maximumPrice) <= 0,
-                "Giá từ không được lớn hơn giá đến.");
     }
 
     /** Đếm sản phẩm theo trạng thái quản lý dựa trên điều kiện kinh doanh và tồn kho hiện tại. */
@@ -605,55 +584,6 @@ public class ProductServiceImpl implements ProductService {
     /** Coi chuỗi rỗng như null để so sánh các trường nội dung tùy chọn. */
     private String emptyToNull(String value) {
         return value == null || value.isEmpty() ? null : value;
-    }
-
-    /**
-     * Đổi trạng thái tối đa 50 sản phẩm trong cùng giao dịch.
-     * Khóa theo thứ tự ID và kiểm tra toàn bộ lựa chọn; nếu một sản phẩm không hợp lệ thì hoàn tác tất cả.
-     */
-    @Override
-    @Transactional
-    public void changeStatuses(Authentication authentication, BulkProductActionRequest form) {
-        require(
-                form.getProductIds() != null
-                        && !form.getProductIds().isEmpty()
-                        && form.getProductIds().size() <= 50,
-                "Chọn từ 1 đến 50 sản phẩm trên trang hiện tại.");
-        require(
-                form.getStatus() == ProductStatus.ACTIVE
-                        || form.getStatus() == ProductStatus.INACTIVE
-                        || form.getStatus() == ProductStatus.DELETED,
-                "Chọn Tạm ẩn, Mở bán hoặc Xóa sản phẩm.");
-        reason(form.getReason());
-        require(
-                form.getProductIds().stream().allMatch(id -> id != null && id > 0),
-                "Danh sách sản phẩm không hợp lệ.");
-        List<Long> ids = form.getProductIds().stream().distinct().sorted().toList();
-        require(ids.size() == form.getProductIds().size(), "Danh sách sản phẩm không hợp lệ.");
-        // Khóa theo ID và kiểm tra toàn bộ lựa chọn trước khi đổi trạng thái.
-        // Nếu một sản phẩm bị từ chối, giao dịch hoàn tác cả trạng thái và lịch sử đã ghi.
-        for (Long id : ids) {
-            Product product = getOwnedProductForUpdate(authentication, id);
-            requireWritableProduct(product);
-            require(
-                    form.getStatus() == ProductStatus.DELETED
-                            || product.getStatus()
-                                    == (form.getStatus() == ProductStatus.ACTIVE
-                                            ? ProductStatus.INACTIVE
-                                            : ProductStatus.ACTIVE),
-                    "Trạng thái sản phẩm đã thay đổi. Tải lại danh sách và chọn các sản phẩm cùng điều kiện.");
-            if (form.getStatus() == ProductStatus.DELETED) {
-                for (ProductVariant variant :
-                        productVariantRepository.findByProductIdOrderByVariantId(id)) {
-                    require(
-                            !hasReservedStock(variant.getVariantId()),
-                            "Không thể xóa sản phẩm còn số lượng chờ xuất kho. Chưa có sản phẩm nào được thay đổi.");
-                }
-            }
-        }
-        for (Long id : ids) {
-            changeStatus(authentication, id, form);
-        }
     }
 
     /**
