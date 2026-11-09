@@ -34,6 +34,7 @@
 .vfo-brand-group, .vfo-brand, .vfo-topbar-actions { display: flex; align-items: center; min-width: 0; }
 .vfo-brand-group { gap: 28px; }
 .vfo-brand { gap: 12px; flex-shrink: 0; }
+a.vfo-brand:hover { text-decoration: none; }
 .vfo-brand-mark { display: grid; place-items: center; width: 50px; height: 52px; border-radius: 20px 20px 20px 4px; background: var(--vfo-green); color: #f5f5dc; }
 .vfo-brand-mark .vfo-icon { width: 31px; height: 31px; stroke-width: 1.25; }
 .vfo-brand-name { display: block; color: var(--vfo-green); font: 30px/1.1 var(--vf-font-display); letter-spacing: -1px; }
