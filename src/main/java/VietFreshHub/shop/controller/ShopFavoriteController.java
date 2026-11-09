@@ -5,8 +5,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -23,14 +21,6 @@ public class ShopFavoriteController {
                            Authentication authentication, RedirectAttributes flash) {
         favorites.setFavorite(authentication, shopId, favorite);
         flash.addFlashAttribute("successMessage", favorite ? "Đã yêu thích cửa hàng." : "Đã bỏ yêu thích cửa hàng.");
-        return favorite ? "redirect:/shops/" + shopId : "redirect:/customer/favorite-shops";
-    }
-
-    @GetMapping("/customer/favorite-shops")
-    public String list(@RequestParam(defaultValue = "1") int page, Authentication authentication, Model model) {
-        model.addAttribute("shopsPage", favorites.list(authentication, page));
-        model.addAttribute("keyword", "");
-        model.addAttribute("favoritesOnly", true);
-        return "shop/list";
+        return favorite ? "redirect:/shops/" + shopId : "redirect:/home";
     }
 }
