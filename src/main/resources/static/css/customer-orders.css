@@ -1,5 +1,4 @@
 /* Scoped to customer history/detail; shared storefront and other TV modules stay untouched. */
-.order-history-page .order-filters > div,
 .order-detail-page .checkout-layout > *,
 .order-detail-page .checkout-sections,
 .order-detail-page .checkout-line > div { min-width: 0; }
@@ -10,7 +9,6 @@
 .order-history-page .filter-errors li { margin: 5px 0; }
 .order-history-page .field-error { color: var(--danger); font-size: 12px; display: block; margin-top: 6px; }
 .order-history-page .notice.info { background: #edf5ec; color: var(--green); }
-.order-history-page .history-payment { margin: 7px 0 0; font-size: 13px; }
 .order-detail-page .shop-order-reference { margin: 9px 0 0; font-size: 12px; }
 .order-detail-page .order-shop-heading .order-state { flex-shrink: 0; }
 .order-detail-page .order-item-sku { display: block; font-size: 12px; color: var(--muted); }
@@ -34,75 +32,6 @@
     .order-history-page .pagination .button { font-size: 12px; padding: 10px 12px; }
     .order-history-page .pagination span { flex-basis: 100%; text-align: center; order: 3; }
     .order-detail-page .order-shop-totals .summary-line { gap: 10px; }
-}
-
-/* My Orders only: shared payment history and order detail retain their existing layout. */
-.my-orders-page .orders-heading { display:flex;justify-content:space-between;align-items:center;gap:24px; }
-.my-orders-page .orders-heading p:last-child { margin-bottom:0; }
-.my-orders-page .orders-heading > .button { flex-shrink:0;gap:16px; }
-.my-orders-page .order-filters { padding:20px;gap:16px; }
-.my-orders-page .filter-reset { font-size:13px; }
-.my-orders-page .orders-result-heading { display:flex;align-items:center;justify-content:space-between;margin:28px 0 14px;gap:16px; }
-.my-orders-page .orders-result-heading h2 { font-size:17px;margin:0; }
-.my-orders-page .history-order { padding:0;overflow:hidden; }
-.my-orders-page .history-order-top { padding:20px 24px;border-bottom:1px solid var(--line);background:#fcfdfb; }
-.my-orders-page .order-code { margin:4px 0 0;font-size:16px; }
-.my-orders-page .order-date { font-size:12px; }
-.my-orders-page .order-state { padding:6px 12px;border-radius:30px;font-weight:650;flex-shrink:0; }
-.my-orders-page .order-state:is([data-stage="WAITING_PAYMENT"],[data-stage="WAITING_CONFIRMATION"]) { background:#fff5de;color:#79520c; }
-.my-orders-page .order-state:is([data-stage="PREPARING"],[data-stage="AWAITING_DELIVERY"]) { background:#edf2fd;color:#355a8c; }
-.my-orders-page .order-state[data-stage="SHIPPING"] { background:#eef0fb;color:#52468b; }
-.my-orders-page .order-state[data-stage="CANCELLED"] { background:#f4eeee;color:#874343; }
-.my-orders-page .orders-shop-list { display:flex;flex-direction:column;gap:8px;padding:16px 24px 0; }
-.my-orders-page .orders-shop-status { display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;font-size:13px; }
-.my-orders-page .orders-shop-status .muted { font-size:12px; }
-.my-orders-page .orders-delivery-label { border-left:1px solid var(--line);padding-left:12px;font-size:12px;color:var(--green); }
-.my-orders-page .orders-delivery-label[data-delivery="FAILED"] { color:var(--danger); }
-.my-orders-page .orders-delivery-label[data-delivery="REDELIVERY_SCHEDULED"] { color:#79520c; }
-.my-orders-page .orders-products { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:20px 24px 12px; }
-.my-orders-page .orders-product { display:flex;align-items:flex-start;gap:12px;min-width:0; }
-.my-orders-page .orders-product > div { min-width:0; }
-.my-orders-page .orders-product img,.my-orders-page .orders-product-placeholder { width:64px;height:64px;flex:0 0 64px;border-radius:8px;object-fit:cover;background:var(--bg); }
-.my-orders-page .orders-product-placeholder { display:grid;place-items:center;color:var(--muted);border:1px solid var(--line);font-size:10px;text-align:center; }
-.my-orders-page .orders-product h3 { font-size:14px;line-height:1.5;margin:0 0 3px; }
-.my-orders-page .orders-product p { font-size:12px;margin:0 0 4px; }
-.my-orders-page .orders-quantity { font-size:12px;color:var(--muted); }
-.my-orders-page .orders-product-count { margin:0;padding:0 24px 18px;font-size:12px;display:flex;gap:12px;flex-wrap:wrap; }
-.my-orders-page .orders-payment { margin:0 24px;padding:14px 0;border-top:1px dashed var(--line); }
-.my-orders-page .orders-section-label { display:block;text-transform:uppercase;letter-spacing:1px;font-size:10px;color:var(--muted);font-weight:700;margin-bottom:8px; }
-.my-orders-page .orders-payment-row { display:flex;justify-content:space-between;gap:8px 20px;flex-wrap:wrap;font-size:13px;margin:6px 0; }
-.my-orders-page .orders-payment-row .muted { font-size:12px; }
-.my-orders-page .orders-payment p { margin:4px 0;font-size:12px; }
-.my-orders-page .orders-payment-state { color:var(--green); }
-.my-orders-page .orders-payment-state:is([data-payment="FAILED"],[data-payment="CANCELLED"]) { color:var(--danger); }
-.my-orders-page .history-order-bottom { margin:0;padding:18px 24px; }
-.my-orders-page .orders-total .price { font-size:22px; }
-.my-orders-page .history-actions { align-items:center;flex-wrap:wrap;justify-content:flex-end; }
-.my-orders-page .history-actions form { margin:0; }
-.my-orders-page .history-actions .button { min-height:42px;padding:8px 16px;white-space:nowrap; }
-.my-orders-page .orders-cancel { border-top:1px solid var(--line);padding:12px 24px;font-size:13px; }
-.my-orders-page .orders-cancel summary { color:var(--danger);cursor:pointer;width:fit-content; }
-.my-orders-page .orders-cancel form { padding-top:14px;max-width:560px; }
-.my-orders-page .orders-cancel label { display:block;margin-bottom:6px; }
-.my-orders-page .orders-cancel textarea { width:100%;max-width:100%;font:inherit;border:1px solid var(--line);border-radius:6px;padding:10px;resize:vertical; }
-.my-orders-page .orders-cancel button { margin-top:10px;font-size:13px; }
-.my-orders-page .orders-empty-symbol { font-size:44px;line-height:1;color:var(--green);margin-bottom:16px; }
-.my-orders-page textarea:focus-visible,.my-orders-page select:focus-visible { outline:3px solid #e9ac39;outline-offset:3px; }
-@media(max-width:960px) {
-    .my-orders-page .orders-products { grid-template-columns:1fr;gap:14px; }
-}
-@media(max-width:760px) {
-    .my-orders-page .orders-heading { align-items:flex-start;flex-direction:column;gap:18px; }
-    .my-orders-page .order-filters { padding:16px; }
-    .my-orders-page .history-order-top,.my-orders-page .history-order-bottom { padding:16px; }
-    .my-orders-page .orders-products { padding:16px; }
-    .my-orders-page .orders-shop-list { padding:14px 16px 0; }
-    .my-orders-page .orders-product-count { padding:0 16px 14px; }
-    .my-orders-page .orders-payment { margin:0 16px; }
-    .my-orders-page .orders-cancel { padding:12px 16px; }
-    .my-orders-page .history-actions { justify-content:flex-start;gap:8px; }
-    .my-orders-page .history-actions form { display:flex;flex:1; }
-    .my-orders-page .history-actions .button { flex:1; }
 }
 
 /* Payment History only: one card represents one stored payment record. */

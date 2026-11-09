@@ -23,10 +23,4 @@ public final class OrderCodes {
             return orderId == null ? match.group() : BusinessCodes.format("VFH", orderId);
         });
     }
-
-    /** HQL equivalent of display(), using the order alias o. */
-    public static final String DISPLAY_EXPRESSION = "case when o.orderCode like 'VF-%' or o.orderCode like 'ORD-%' "
-            + "then concat('VFH-', case when length(cast(o.orderId as String)) < 6 "
-            + "then substring(concat('000000', cast(o.orderId as String)), length(cast(o.orderId as String)) + 1, 6) "
-            + "else cast(o.orderId as String) end) else o.orderCode end";
 }

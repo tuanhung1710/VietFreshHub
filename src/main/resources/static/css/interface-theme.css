@@ -188,10 +188,6 @@ body.vfr-app.vfr-customer:not(.vfr-retail) { display:flex; flex-direction:column
 .vfr-public > footer:not(.vfc-footer) { margin-top:auto; border-top:1px solid #e0e7d5; background:#f0f4e7; color:#81936f; }
 .vfr-app .vfr-page .right-rail { min-width:0; }
 .vfr-app .vfr-page .panel-body { border-color:#e5ebdc; }
-.vfr-app .vfr-portal-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px; margin-top:28px; }
-.vfr-app .vfr-portal-grid nav { display:flex; flex-direction:column; gap:12px; padding:26px; border:1px solid #e0e7d6; border-radius:13px; background:#fff; }
-.vfr-app .vfr-portal-grid a { display:block; padding:16px 18px; border:1px solid #e3eada; border-radius:9px; background:#f7faf1; color:#527348; }
-.vfr-app .vfr-portal-grid a:hover { border-color:#a6ba95; background:#f0f5e8; }
 .vfr-app .vfr-demo-tools { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-bottom:25px; padding:18px; border:1px solid #e0e7d6; border-radius:12px; background:#fff; }
 
 /* Existing chat events, connection state and scroll containers remain intact. */
@@ -246,7 +242,6 @@ body.vfr-app.vfr-customer:not(.vfr-retail) { display:flex; flex-direction:column
     .vfr-retail > header :is(.headmain,.headrow) { gap:13px; flex-wrap:wrap; padding-top:16px; padding-bottom:16px; }
     .vfr-retail > header :is(.search,.searchbar) { order:3; flex-basis:100%; }
     .vfr-retail .vfr-page .categories { grid-template-columns:repeat(3,minmax(0,1fr)); }
-    .vfr-app .vfr-portal-grid { grid-template-columns:1fr; gap:16px; }
     .vfr-app .vfr-demo-tools { flex-wrap:wrap; }
     .vfr-app.vfr-chat .chat-app { grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr); width:calc(100% - 28px); margin-top:15px; }
     .vfr-chat .sidebar-header, .vfr-chat .shop-picker { padding:15px; }

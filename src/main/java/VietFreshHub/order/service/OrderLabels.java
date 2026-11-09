@@ -1,5 +1,4 @@
 package VietFreshHub.order.service;
-import VietFreshHub.order.entity.Order;
 import java.time.*;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -7,11 +6,6 @@ import java.util.Map;
 public final class OrderLabels {
     private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private OrderLabels() {}
-    public static String order(Order.Status status) { return switch(status) {
-        case PENDING -> "Chờ cửa hàng xác nhận"; case CONFIRMED -> "Đã xác nhận"; case PROCESSING -> "Đang xử lý";
-        case PARTIALLY_COMPLETED -> "Hoàn thành một phần"; case COMPLETED -> "Hoàn thành"; case CANCELLED -> "Đã hủy";
-    }; }
-
     public static String shop(String status) { return switch(status) {
         case "PENDING" -> "Chờ cửa hàng xác nhận"; case "CONFIRMED" -> "Đã xác nhận"; case "PREPARING" -> "Đang chuẩn bị";
         case "READY_FOR_DELIVERY" -> "Sẵn sàng giao"; case "OUT_FOR_DELIVERY" -> "Đang giao"; case "COMPLETED" -> "Hoàn thành";

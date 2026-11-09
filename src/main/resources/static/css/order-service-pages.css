@@ -49,8 +49,6 @@
 .vfc-app .vfc-delivery-state[data-status="FAILED"] { background: #faebe6; color: #ab6454; }
 .vfc-app .vfc-delivery-state[data-status="ACCEPTED"] { background: #e8f0f2; color: #537e88; }
 .vfc-app .vfc-delivery-state[data-status="PICKED_UP"] { background: #f1eedf; color: #948249; }
-.vfc-shop-order-status { margin: 20px 0 0; padding-top: 17px; border-top: 1px dashed #e2e8d8; color: #9aa58c; font-size: 10px; line-height: 1.9; }
-.vfc-shop-order-status strong { display: block; color: #6b835b; font-size: 12px; font-weight: 500; }
 .vfc-tracking-history { min-width: 0; padding: 26px 32px 12px; }
 .vfc-history-heading { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #edf0e6; color: #8ba17a; }
 .vfc-history-heading .vfo-icon { width: 19px; height: 19px; }
@@ -198,7 +196,6 @@
     .vfc-shop-summary { padding: 23px; border-right: 0; border-bottom: 1px solid var(--vfo-border); }
     .vfc-shop-icon { width: 40px; height: 42px; margin-bottom: 15px; border-radius: 13px; }
     .vfc-shop-summary h2 { margin-bottom: 18px; font-size: 24px; }
-    .vfc-shop-order-status { margin-top: 16px; padding-top: 13px; }
     .vfc-tracking-history { padding: 24px 23px 8px; }
     .vfc-history-heading { margin-bottom: 23px; padding-bottom: 17px; }
     .vfc-refund-layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "summary" "form"; gap: 22px; }

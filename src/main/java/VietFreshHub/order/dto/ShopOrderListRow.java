@@ -3,10 +3,13 @@ import VietFreshHub.common.BusinessCodes;
 import VietFreshHub.order.service.OrderLabels;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 public record ShopOrderListRow(Long shopOrderId,Long orderId,String shopName,String status,
-                           String paymentStatus,BigDecimal totalAmount,LocalDateTime placedAt,String paymentStatusLabel, java.util.List<OrderHistorySummary.Product> products, int productCount) {
+                           String paymentStatus,BigDecimal totalAmount,LocalDateTime placedAt,String paymentStatusLabel, List<Product> products, int productCount) {
+    public record Product(String productName, String variantName, int quantity, String imageUrl) {}
+
     public ShopOrderListRow(Long shopOrderId, Long orderId, String shopName, String status, String paymentStatus, BigDecimal totalAmount, LocalDateTime placedAt, String paymentStatusLabel) {
-        this(shopOrderId, orderId, shopName, status, paymentStatus, totalAmount, placedAt, paymentStatusLabel, java.util.List.of(), 0);
+        this(shopOrderId, orderId, shopName, status, paymentStatus, totalAmount, placedAt, paymentStatusLabel, List.of(), 0);
     }
     public ShopOrderListRow(Long shopOrderId,Long orderId,String shopName,String status,
                         String paymentStatus,BigDecimal totalAmount,LocalDateTime placedAt) {
