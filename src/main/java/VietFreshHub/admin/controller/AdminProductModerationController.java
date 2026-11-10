@@ -2,6 +2,7 @@ package VietFreshHub.admin.controller;
 
 import VietFreshHub.admin.service.AdminProductModerationService;
 import VietFreshHub.auth.service.AuthService;
+import VietFreshHub.common.PageSizes;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,26 +30,17 @@ public class AdminProductModerationController {
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(defaultValue = "ALL") String dateRange,
             @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "" + PageSizes.DEFAULT) int size,
             Model model) {
         String selectedDateRange = normalizeDateRange(dateRange);
-        Page<?> products = moderationService.search(tab, keyword, selectedDateRange, page);
+        Page<?> products = moderationService.search(tab, keyword, selectedDateRange, page, size);
         int pageNumber = products.getNumber() + 1;
-        int pageCount = Math.max(products.getTotalPages(), 1);
-        int firstVisiblePage = Math.max(1, Math.min(pageNumber - 2, pageCount - 4));
-        int lastVisiblePage = Math.min(pageCount, firstVisiblePage + 4);
         model.addAttribute("productsPage", products);
         model.addAttribute("products", products.getContent());
         model.addAttribute("tab", normalizeTab(tab));
         model.addAttribute("keyword", keyword == null ? "" : keyword);
         model.addAttribute("dateRange", selectedDateRange);
         model.addAttribute("pageNumber", pageNumber);
-        model.addAttribute("pageCount", pageCount);
-        model.addAttribute("firstVisiblePage", firstVisiblePage);
-        model.addAttribute("lastVisiblePage", lastVisiblePage);
-        model.addAttribute("pageNumbers", java.util.stream.IntStream
-                .rangeClosed(firstVisiblePage, lastVisiblePage)
-                .boxed()
-                .toList());
         model.addAttribute("pendingCount", moderationService.countPending());
         model.addAttribute("reopenCount", moderationService.countReopen());
         model.addAttribute("lockedCount", moderationService.countLocked());
@@ -83,6 +75,7 @@ public class AdminProductModerationController {
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(defaultValue = "ALL") String dateRange,
             @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "" + PageSizes.DEFAULT) int size,
             Authentication authentication,
             RedirectAttributes redirectAttributes) {
         String selectedTab = normalizeTab(tab);
@@ -97,6 +90,7 @@ public class AdminProductModerationController {
         redirectAttributes.addAttribute("keyword", keyword == null ? "" : keyword);
         redirectAttributes.addAttribute("dateRange", normalizeDateRange(dateRange));
         redirectAttributes.addAttribute("page", Math.max(page, 1));
+        redirectAttributes.addAttribute("size", PageSizes.normalize(size));
         return "redirect:/admin/products";
     }
 
@@ -105,6 +99,7 @@ public class AdminProductModerationController {
             @RequestParam(defaultValue = "PENDING") String tab,
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(defaultValue = "ALL") String dateRange,
+            @RequestParam(defaultValue = "" + PageSizes.DEFAULT) int size,
             Authentication authentication,
             RedirectAttributes redirectAttributes) {
         String selectedTab = normalizeTab(tab);
@@ -128,6 +123,7 @@ public class AdminProductModerationController {
         redirectAttributes.addAttribute("keyword", keyword == null ? "" : keyword);
         redirectAttributes.addAttribute("dateRange", selectedDateRange);
         redirectAttributes.addAttribute("page", 1);
+        redirectAttributes.addAttribute("size", PageSizes.normalize(size));
         return "redirect:/admin/products";
     }
 

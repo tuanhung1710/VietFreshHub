@@ -20,24 +20,25 @@
         }
     </style>
     <th:block th:replace="~{fragments/interface-layout :: styles}"></th:block>
+    <link rel="stylesheet" th:href="@{/css/auth-verify-email.css}">
 </head>
-    <body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col vfo-app vfr-app vfr-utility vfc-app vfr-customer vfr-public" data-vfr-section="account">
+    <body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col vfo-app vfr-app vfr-utility vfc-app vfr-customer vfr-public auth-verify-page" data-vfr-section="account">
 
-    <main class="relative z-10 flex-1 flex items-center justify-center px-4 py-6 sm:py-10 vfr-page" id="customer-content" tabindex="-1">
-        <div class="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-slate-200/70 border border-slate-100 p-6 sm:p-9 transition-all">
+    <main class="relative z-10 flex-1 flex items-center justify-center px-4 py-6 sm:py-10 vfr-page auth-verify-main" id="customer-content" tabindex="-1">
+        <div class="w-full max-w-md bg-white rounded-3xl shadow-xl shadow-slate-200/70 border border-slate-100 p-6 sm:p-9 transition-all auth-verify-card">
 
             <!-- Card Header Icon & Badge -->
-            <div class="text-center mb-6">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-50 text-brand-600 mb-4 border border-emerald-100/80 shadow-inner">
+            <div class="text-center mb-6 auth-verify-header">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-50 text-brand-600 mb-4 border border-emerald-100/80 shadow-inner auth-verify-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                 </div>
-                <h1 class="text-2xl sm:text-[26px] font-bold text-slate-900 tracking-tight">Xác thực tài khoản</h1>
+                <h1 class="text-2xl sm:text-[26px] font-bold text-slate-900 tracking-tight auth-verify-title">Xác thực tài khoản</h1>
                 <p class="mt-2 text-sm text-slate-600 leading-relaxed">
                     Mã xác thực gồm 6 chữ số đã được gửi tới email
                 </p>
-                <div class="mt-1.5 inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-800 text-sm font-semibold rounded-full max-w-full truncate border border-slate-200/60">
+                <div class="mt-1.5 inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-800 text-sm font-semibold rounded-full max-w-full truncate border border-slate-200/60 auth-verify-email">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.206" />
                     </svg>
@@ -47,7 +48,7 @@
 
             <!-- Thymeleaf Alert: Success Message -->
             <div th:if="${successMessage}"
-                 class="mb-6 flex items-start gap-3 p-4 text-sm font-medium rounded-2xl bg-emerald-50 text-emerald-900 border border-emerald-200/80 shadow-sm"
+                 class="mb-6 flex items-start gap-3 p-4 text-sm font-medium rounded-2xl bg-emerald-50 text-emerald-900 border border-emerald-200/80 shadow-sm auth-verify-alert auth-verify-alert-success"
                  role="alert">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-brand-600 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
@@ -59,7 +60,7 @@
 
             <!-- Thymeleaf Alert: Error Message -->
             <div th:if="${errorMessage}"
-                 class="mb-6 flex items-start gap-3 p-4 text-sm font-medium rounded-2xl bg-rose-50 text-rose-900 border border-rose-200/80 shadow-sm"
+                 class="mb-6 flex items-start gap-3 p-4 text-sm font-medium rounded-2xl bg-rose-50 text-rose-900 border border-rose-200/80 shadow-sm auth-verify-alert auth-verify-alert-error"
                  role="alert">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-rose-600 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
@@ -70,16 +71,16 @@
             </div>
 
             <!-- Main OTP Verification Form -->
-            <form th:action="@{/verify-email}" method="post" class="space-y-5">
+            <form th:action="@{/verify-email}" method="post" class="space-y-5 auth-verify-form">
                 <!-- Hidden Email Field (Exact backend binding) -->
                 <input type="hidden" name="email" th:value="${email}" />
 
-                <div>
-                    <div class="flex items-center justify-between mb-2">
+                <div class="auth-verify-field">
+                    <div class="flex items-center justify-between mb-2 auth-verify-label-row">
                         <label for="otp" class="text-xs font-semibold uppercase tracking-wider text-slate-700">
                             Nhập mã xác thực (OTP)
                         </label>
-                        <span class="inline-flex items-center text-xs text-amber-700 font-medium bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/60">
+                        <span class="inline-flex items-center text-xs text-amber-700 font-medium bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/60 auth-verify-expiry">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 mr-1 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
@@ -99,10 +100,10 @@
                                 pattern="[0-9]{6}"
                                 required
                                 placeholder="······"
-                                class="otp-input-field block w-full text-center text-2xl sm:text-3xl font-bold tracking-widest font-mono py-3.5 px-4 rounded-2xl border-2 border-slate-200 bg-slate-50/70 text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-brand-600 focus:ring-4 focus:ring-brand-500/15 focus:outline-none transition-all duration-200 shadow-inner"
+                                class="otp-input-field block w-full text-center text-2xl sm:text-3xl font-bold tracking-widest font-mono py-3.5 px-4 rounded-2xl border-2 border-slate-200 bg-slate-50/70 text-slate-900 placeholder:text-slate-300 focus:bg-white focus:border-brand-600 focus:ring-4 focus:ring-brand-500/15 focus:outline-none transition-all duration-200 shadow-inner auth-verify-input"
                         />
                     </div>
-                    <p class="mt-2 text-xs text-slate-500 text-center">
+                    <p class="mt-2 text-xs text-slate-500 text-center auth-verify-helper">
                         Vui lòng nhập chính xác 6 số được gửi qua email.
                     </p>
                 </div>
@@ -110,7 +111,7 @@
                 <!-- Primary Submit Action -->
                 <button
                         type="submit"
-                        class="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl font-semibold text-white bg-brand-600 hover:bg-brand-700 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-brand-500/25 shadow-lg shadow-emerald-600/25 transition-all duration-200 cursor-pointer text-base">
+                        class="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl font-semibold text-white bg-brand-600 hover:bg-brand-700 active:scale-[0.99] focus:outline-none focus:ring-4 focus:ring-brand-500/25 shadow-lg shadow-emerald-600/25 transition-all duration-200 cursor-pointer text-base auth-verify-submit">
                     <span>Xác thực ngay</span>
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -119,7 +120,7 @@
             </form>
 
             <!-- Resend OTP Action Form (Separate POST form per Thymeleaf requirements) -->
-            <div class="mt-6 pt-6 border-t border-slate-100 text-center">
+            <div class="mt-6 pt-6 border-t border-slate-100 text-center auth-verify-resend">
                 <p class="text-sm text-slate-600 mb-2">Chưa nhận được mã hoặc mã đã hết hạn?</p>
                 <form th:action="@{/verify-email/resend}" method="post" class="inline-block">
                     <!-- Hidden Email Field for Resend -->
@@ -136,7 +137,7 @@
             </div>
 
             <!-- Safe Guarantee / Trust Footnote -->
-            <div class="mt-5 flex items-center justify-center gap-1.5 text-xs text-slate-500">
+            <div class="mt-5 flex items-center justify-center gap-1.5 text-xs text-slate-500 auth-verify-trust">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                 </svg>
