@@ -56,8 +56,10 @@ public class InventoryCatalogService {
     }
 
     private void normalize(InventoryCatalogFilter filters) {
+        // Làm sạch từ khóa và chế độ xem
         filters.setQ(text(filters.getQ()));
         filters.setView(text(filters.getView()));
+        // giữ bộ lọc phù hợp với cac chế do xem.
         filters.setStock(filters.isSkuView() ? text(filters.getStock()) : "");
         filters.setExpiry(filters.isSkuView() ? "" : text(filters.getExpiry()));
         if (filters.isSkuView()) {

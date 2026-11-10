@@ -66,10 +66,20 @@ public class InventoryCatalogRepository {
     /** Dùng chung điều kiện cho tổng đếm và dữ liệu trang; đưa trang vượt giới hạn về trang cuối. */
     public Page<InventoryCatalogRow> search(
             Long shop, InventoryCatalogFilter filters, LocalDate today, int page, int size) {
+
+        // Tạo bo tham so de truyen vao trong cau lệnh SQL
+        // trong day dang gan tham so "shop" cho shop
+        //                            "today" cho today
         var parameters = parameters(shop, today);
+
+        // Xây dung cau lenh truy van SQL dưa vao dieu kien loc ma nguoi dung lua chon
         String scope = scope(filters, parameters);
+
+        // Đếm tổng số kết quả phù hợp
         long total = jdbc.queryForObject(STOCK + "SELECT COUNT(*)" + scope, parameters, Long.class);
+
         PageRequest pageable = Pagination.clamp(page, size, total);
+
         return new PageImpl<>(
                 rows(filters, scope, parameters, pageable.getOffset(), pageable.getPageSize()),
                 pageable,
@@ -243,7 +253,10 @@ public class InventoryCatalogRepository {
             parameters.addValue("batchCode", batchId);
             return;
         }
+        // kieerm tra xem ma lo co khop voi tu khoa tim kiem hay khong
         String matchLot = LOT_CODE + " LIKE :text ESCAPE '!'";
+
+        // Them cac truong tim kiem cho no chang han nhu ten, slug, sku, text
         sql.append(
                 " AND (LOWER(p.name) LIKE :text ESCAPE '!' OR LOWER(p.slug) LIKE :text ESCAPE '!' OR LOWER(v.sku) LIKE :text ESCAPE '!'"
                         + " OR LOWER(v.variant_name) LIKE :text ESCAPE '!' OR ");
@@ -256,7 +269,7 @@ public class InventoryCatalogRepository {
                 .append(")");
         parameters.addValue("text", searchPattern(text));
     }
-
+    // chuan hoa mau tim kiem
     private String searchPattern(String text) {
         return "%"
                 + text.toLowerCase(Locale.ROOT)
