@@ -5,6 +5,7 @@ import VietFreshHub.admin.dto.AdminProductModerationRow;
 import VietFreshHub.admin.repository.AdminProductModerationBulkRepository;
 import VietFreshHub.auth.entity.User;
 import VietFreshHub.auth.repository.UserRepository;
+import VietFreshHub.common.PageSizes;
 import VietFreshHub.inventory.service.InventoryJournalService;
 import VietFreshHub.notification.service.NotificationService;
 import VietFreshHub.product.entity.ProductImage;
@@ -39,7 +40,6 @@ import java.util.Set;
 @Transactional(readOnly = true)
 public class AdminProductModerationService {
 
-    private static final int PAGE_SIZE = 25;
     private static final int MAX_PAGE = 10000;
     private static final Set<String> TABS = Set.of("PENDING", "REOPEN", "LOCKED", "REVIEWED");
     private static final Set<String> DATE_RANGES = Set.of("ALL", "TODAY", "LAST_3_DAYS", "LAST_7_DAYS", "LAST_30_DAYS");
@@ -55,13 +55,13 @@ public class AdminProductModerationService {
     private final NotificationService notificationService;
 
     public Page<AdminProductModerationRow> search(
-            String tab, String keyword, String dateRange, int requestedPage) {
+            String tab, String keyword, String dateRange, int requestedPage, int requestedSize) {
         String selectedTab = normalizeTab(tab);
         String normalizedKeyword = normalizeKeyword(keyword);
         DateWindow window = dateWindow(dateRange);
         int page = Math.max(0, Math.min(requestedPage - 1, MAX_PAGE - 1));
         return moderationRepository.search(selectedTab, normalizedKeyword, window.from(), window.until(),
-                PageRequest.of(page, PAGE_SIZE));
+                PageRequest.of(page, PageSizes.normalize(requestedSize)));
     }
 
     @Transactional
