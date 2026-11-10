@@ -16,7 +16,7 @@
             <h1>
                 Danh sách gian hàng
             </h1>
-            <div class="shopgrid" id="shoplist">
+            <div class="shop-card-grid" id="shoplist">
                 <th:block th:each="shop : ${shops}">
                     <a th:replace="~{fragments/storefront-catalog :: shopCard(${shop})}">
                     </a>

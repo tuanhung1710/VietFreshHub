@@ -41,7 +41,7 @@ public class StorefrontShopRepository {
     public List<StorefrontShopOption> list() {
         return jdbc.query(
                 """
-                SELECT s.shop_id,s.shop_name,s.description,location.province
+                SELECT s.shop_id,s.shop_name,s.description,s.banner_url,location.province
                 FROM dbo.shops s LEFT JOIN dbo.shop_locations location ON location.shop_id=s.shop_id
                 WHERE s.status='ACTIVE' AND s.availability_status='OPEN' ORDER BY s.shop_id
                 """,
@@ -50,6 +50,7 @@ public class StorefrontShopRepository {
                                 row.getLong("shop_id"),
                                 row.getString("shop_name"),
                                 row.getString("province"),
-                                row.getString("description")));
+                                row.getString("description"),
+                                row.getString("banner_url")));
     }
 }

@@ -59,6 +59,10 @@
             </div>
         </a>
         <a th:fragment="shopCard(shop)" class="shop" th:href="@{/shops/{id}(id=${shop.id})}">
+            <div class="shop-card-cover">
+                <img th:if="${!#strings.isEmpty(#strings.trim(shop.bannerUrl))}"
+                     th:src="${shop.bannerUrl}" alt="" loading="lazy" decoding="async" data-shop-background>
+            </div>
             <h3 th:text="${shop.name}">
             </h3>
             <p th:text="${shop.description}">
