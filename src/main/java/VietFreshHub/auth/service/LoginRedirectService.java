@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.net.URI;
 
-/** Shares the shopping destination across password login, email verification and Google login. */
+
 @Service
 @RequiredArgsConstructor
 public class LoginRedirectService implements AuthenticationSuccessHandler {

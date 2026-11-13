@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/** Enforces account status and current database roles for sessions already logged in. */
+
 public class AccountSessionGuardFilter extends OncePerRequestFilter {
 
     private final UserRepository userRepository;

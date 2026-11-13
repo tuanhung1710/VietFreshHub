@@ -96,12 +96,17 @@
                                 appId=${detail.applicationId},
                                 docId=${document.documentId}
                             )}"
-                  class="flex flex-wrap items-center gap-2">
+                  class="flex flex-wrap items-center gap-2 js-document-replacement-form">
               <input type="file"
                      name="file"
                      accept=".pdf,.jpg,.jpeg,.png"
                      required
                      class="max-w-xs rounded-lg border border-slate-300 p-2 text-sm">
+              <span class="text-xs text-slate-500">PDF, JPG hoặc PNG · tối đa 5 MB/tài liệu</span>
+              <p data-file-size-error
+                 class="w-full text-sm text-rose-700"
+                 role="alert"
+                 hidden>Giấy tờ không được vượt quá 5 MB.</p>
               <button type="submit"
                       class="rounded-lg bg-rose-700 px-3 py-2 text-sm
                              font-semibold text-white hover:bg-rose-800">
@@ -235,6 +240,25 @@
 </main>
 <script>
   (() => {
+    const MAX_DOCUMENT_SIZE = 5 * 1024 * 1024;
+    document.querySelectorAll(".js-document-replacement-form").forEach((form) => {
+      const fileInput = form.querySelector('input[type="file"]');
+      const sizeError = form.querySelector("[data-file-size-error]");
+      const validateFileSize = () => {
+        const oversized = fileInput.files?.[0]?.size > MAX_DOCUMENT_SIZE;
+        sizeError.hidden = !oversized;
+        return !oversized;
+      };
+
+      fileInput.addEventListener("change", validateFileSize);
+      form.addEventListener("submit", (event) => {
+        if (!validateFileSize()) {
+          event.preventDefault();
+          fileInput.focus();
+        }
+      });
+    });
+
     const modal = document.getElementById("documentImageModal");
     const modalContent = document.getElementById("documentImageModalContent");
     const closeButton = document.getElementById("closeDocumentImageModal");

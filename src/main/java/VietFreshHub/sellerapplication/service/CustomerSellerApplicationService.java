@@ -26,7 +26,7 @@ import java.util.Map;
 @Service
 public class CustomerSellerApplicationService {
 
-    private static final long MAX_FILE_SIZE = 10L * 1024 * 1024;
+    private static final long MAX_FILE_SIZE = 5L * 1024 * 1024;
     private static final DateTimeFormatter DATE_FORMAT =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -313,7 +313,7 @@ public class CustomerSellerApplicationService {
 
         if (file.getSize() > MAX_FILE_SIZE) {
             throw new IllegalArgumentException(
-                    "Tài liệu không được lớn hơn 10 MB."
+                    "Tài liệu không được vượt quá 5 MB."
             );
         }
 
