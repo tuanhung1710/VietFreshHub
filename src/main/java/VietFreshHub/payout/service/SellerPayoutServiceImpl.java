@@ -307,10 +307,13 @@ public class SellerPayoutServiceImpl implements SellerPayoutService {
         if (shopId == null) throw badRequest("Vui lòng chọn cửa hàng.");
         String normalizedCode = required(bankCode, 30, "Mã ngân hàng").toUpperCase(Locale.ROOT);
         String normalizedBankName = required(bankName, 100, "Tên ngân hàng");
-        String normalizedNumber = required(accountNumber, 50, "Số tài khoản").replaceAll("\\s+", "");
+        if (accountNumber == null || !accountNumber.matches("[0-9]{6,20}")) {
+            throw badRequest("Số tài khoản phải gồm từ 6 đến 20 chữ số.");
+        }
+        String normalizedNumber = required(accountNumber, 20, "Số tài khoản");
         String normalizedHolder = required(accountHolder, 150, "Tên chủ tài khoản").toUpperCase(Locale.ROOT);
-        if (!normalizedCode.matches("[A-Z0-9._-]+") || !normalizedNumber.matches("[A-Za-z0-9-]+")) {
-            throw badRequest("Mã ngân hàng hoặc số tài khoản không hợp lệ.");
+        if (!normalizedCode.matches("[A-Z0-9._-]+")) {
+            throw badRequest("Mã ngân hàng không hợp lệ.");
         }
         shops.findByShopIdForUpdate(shopId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy cửa hàng."));

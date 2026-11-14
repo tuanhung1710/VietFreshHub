@@ -46,8 +46,10 @@
             <input id="bankName" name="bankName" type="hidden" th:value="${payoutAccount.bankName}">
 
             <label for="accountNumber">Số tài khoản</label>
-            <input id="accountNumber" name="accountNumber" maxlength="50" required autocomplete="off"
-                   inputmode="numeric" placeholder="Số tài khoản nhận tiền" th:value="${payoutAccount.accountNumber}" class="form-control">
+            <input id="accountNumber" name="accountNumber" maxlength="20" required autocomplete="off"
+                   inputmode="numeric" pattern="[0-9]{6,20}"
+                   title="Số tài khoản phải gồm từ 6 đến 20 chữ số."
+                   placeholder="Số tài khoản nhận tiền" th:value="${payoutAccount.accountNumber}" class="form-control">
 
             <label for="accountHolder">Tên chủ tài khoản</label>
             <input id="accountHolder" name="accountHolder" maxlength="150" required autocomplete="name"

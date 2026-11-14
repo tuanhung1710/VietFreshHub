@@ -69,7 +69,9 @@
                 </div>
                 <div class="customer-profile-field">
                     <label for="phone" class="form-label">Số điện thoại</label>
-                    <input id="phone" type="tel" th:field="*{phone}" maxlength="30" autocomplete="tel"
+                    <input id="phone" type="tel" th:field="*{phone}" maxlength="10" inputmode="numeric"
+                           pattern="[0-9]{10}" title="Nếu nhập số điện thoại, vui lòng nhập đúng 10 chữ số."
+                           autocomplete="tel"
                            class="form-control" aria-describedby="phoneError"
                            th:attr="aria-invalid=${#fields.hasErrors('phone')}">
                     <p id="phoneError" th:if="${#fields.hasErrors('phone')}" th:errors="*{phone}"

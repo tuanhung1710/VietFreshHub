@@ -118,10 +118,13 @@ public class AdminAccountService {
         if (normalizedName.isEmpty() || normalizedName.length() > 150) {
             throw new IllegalArgumentException("Họ tên không được để trống và tối đa 150 ký tự.");
         }
+        if (normalizedName.codePoints().anyMatch(Character::isDigit)) {
+            throw new IllegalArgumentException("Họ và tên không được chứa chữ số.");
+        }
 
         String normalizedPhone = phone == null || phone.isBlank() ? null : phone.trim();
-        if (normalizedPhone != null && normalizedPhone.length() > 30) {
-            throw new IllegalArgumentException("Số điện thoại tối đa 30 ký tự.");
+        if (normalizedPhone != null && !normalizedPhone.matches("[0-9]{10}")) {
+            throw new IllegalArgumentException("Số điện thoại phải có đúng 10 chữ số.");
         }
         if (normalizedPhone != null
                 && userRepository.existsByPhoneAndUserIdNot(normalizedPhone, userId)) {

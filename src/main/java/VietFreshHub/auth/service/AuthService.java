@@ -147,7 +147,7 @@ public class AuthService {
         user.setStatus("ACTIVE");
         user.setEmailVerifiedAt(now);
 
-        // Tài khoản được tạo để theo dõi hồ sơ; role chỉ được cấp khi admin duyệt.
+
         userRepository.save(user);
     }
 
@@ -174,7 +174,6 @@ public class AuthService {
         return createAuthentication(user);
     }
 
-    /** Creates an authentication after a verified registration flow has saved the user. */
     @Transactional(readOnly = true)
     public Authentication loginAfterEmailVerification(String email) {
         if (email == null || email.isBlank()) {

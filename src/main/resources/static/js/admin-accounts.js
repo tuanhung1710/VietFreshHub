@@ -115,10 +115,19 @@
         const content = `
             <form id="account-action-form" method="post">
                 <div class="field"><label for="full-name">Họ và tên</label><input id="full-name" name="fullName" maxlength="150" required value="${escapeHtml(account.name)}"></div>
-                <div class="field"><label for="phone">Số điện thoại</label><input id="phone" name="phone" maxlength="30" value="${escapeHtml(account.phone)}"></div>
+                <div class="field"><label for="phone">Số điện thoại</label><input id="phone" name="phone" type="tel" maxlength="10" inputmode="numeric" pattern="[0-9]{10}" title="Nếu nhập số điện thoại, vui lòng nhập đúng 10 chữ số." value="${escapeHtml(account.phone)}"></div>
                 <p class="muted">Email đăng nhập được giữ nguyên.</p>
             </form>`;
         openModal(account, `MÃ TÀI KHOẢN #${account.id}`, 'Chỉnh sửa hồ sơ', content, account.profileUrl, ['Lưu hồ sơ']);
+
+        const fullNameInput = modalContent.querySelector('#full-name');
+        const validateFullName = () => {
+            fullNameInput.setCustomValidity(/\p{Nd}/u.test(fullNameInput.value)
+                ? 'Họ và tên không được chứa chữ số.'
+                : '');
+        };
+        fullNameInput.addEventListener('input', validateFullName);
+        validateFullName();
     }
 
     function openRoles(account) {

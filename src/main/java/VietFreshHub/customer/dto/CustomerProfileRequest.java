@@ -1,6 +1,7 @@
 package VietFreshHub.customer.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public class CustomerProfileRequest {
@@ -14,6 +15,7 @@ public class CustomerProfileRequest {
     private String fullName;
 
     @Size(max = 30, message = "Số điện thoại tối đa 30 ký tự.")
+    @Pattern(regexp = "^(?:[0-9]{10})?$", message = "Số điện thoại phải có đúng 10 chữ số.")
     private String phone;
 
     public String getEmail() {
