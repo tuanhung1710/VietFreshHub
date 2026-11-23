@@ -1,0 +1,19 @@
+name: Docker CI
+
+on:
+  push:
+    branches: [Hoang-Van-Son]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Build Docker image
+        run: docker build --progress=plain -t vietfreshhub:ci .
