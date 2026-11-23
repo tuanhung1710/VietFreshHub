@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   build:
@@ -15,5 +16,22 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v6
 
-      - name: Build Docker image
-        run: docker build --progress=plain -t vietfreshhub:ci .
+      - name: Login to GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$GHCR_TOKEN" | docker login ghcr.io \
+            --username "$GITHUB_ACTOR" \
+            --password-stdin
+
+      - name: Build and push Docker image
+        run: |
+          IMAGE_NAME="ghcr.io/${GITHUB_REPOSITORY,,}"
+
+          docker build --progress=plain \
+            --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+            -t "$IMAGE_NAME:son-latest" \
+            -t "$IMAGE_NAME:$GITHUB_SHA" .
+
+          docker push "$IMAGE_NAME:son-latest"
+          docker push "$IMAGE_NAME:$GITHUB_SHA"
