@@ -95,6 +95,15 @@ internal static class VietFreshVmLifecycle
             return process.ExitCode == 0;
         }
     }
+    internal static bool StartWithRetry(Func<bool> attempt, Action waitBeforeRetry)
+    {
+        for (int attemptNumber = 0; attemptNumber < 3; attemptNumber++)
+        {
+            if (attempt()) return true;
+            if (attemptNumber < 2) waitBeforeRetry();
+        }
+        return false;
+    }
     private static void ServiceMain(uint count, IntPtr args)
     {
         statusHandle = RegisterServiceCtrlHandlerEx(Name, HandlerCallback, IntPtr.Zero);
@@ -102,7 +111,19 @@ internal static class VietFreshVmLifecycle
         Report(2, false);
         ThreadPool.QueueUserWorkItem(delegate(object unused)
         {
-            try { Log("Starting existing Ubuntu VM."); if (!Run("start", "nogui", 90000, 2)) throw new InvalidOperationException("VM startup failed."); Report(4, false); }
+            try
+            {
+                Log("Starting existing Ubuntu VM.");
+                bool started = StartWithRetry(
+                    delegate { return Run("start", "nogui", 60000, 2); },
+                    delegate
+                    {
+                        Log("VMware startup did not complete; waiting 10 seconds before retrying without changing locks.");
+                        for (int second = 0; second < 10; second++) { Thread.Sleep(1000); Report(2, false); }
+                    });
+                if (!started) throw new InvalidOperationException("VM startup failed after three attempts. Inspect VMware logs.");
+                Report(4, false);
+            }
             catch (Exception error) { Log(error.ToString()); Report(1, true); Finished.Set(); }
         });
         Finished.WaitOne();

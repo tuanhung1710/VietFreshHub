@@ -14,7 +14,14 @@ $installed = Get-CimInstance Win32_Service -Filter "Name='$serviceName'"
 if ($installed.PathName -ne $expectedBinaryPath) { throw 'Existing service points to an unexpected binary; no VM action was taken.' }
 $installedBinary = Join-Path $stateDirectory 'VietFreshVmLifecycle.exe'
 if ((Get-FileHash -LiteralPath $sourceBinary).Hash -ne (Get-FileHash -LiteralPath $installedBinary).Hash) {
-    throw 'Installed service differs from this build. Review the upgrade before testing.'
+    if ((Get-Service -Name $serviceName).Status -ne 'Stopped') {
+        throw 'The existing service must be stopped before replacing its binary.'
+    }
+    Write-Host 'Updating the stopped VietFresh VM lifecycle service...'
+    Copy-Item -LiteralPath $sourceBinary -Destination $installedBinary -Force
+    if ((Get-FileHash -LiteralPath $sourceBinary).Hash -ne (Get-FileHash -LiteralPath $installedBinary).Hash) {
+        throw 'Service binary verification failed after the update.'
+    }
 }
 $VmxPath = [System.IO.Path]::GetFullPath($VmxPath)
 if ((Get-Content -LiteralPath (Join-Path $stateDirectory 'vmx-path.txt') -Raw).Trim() -ne $VmxPath) {

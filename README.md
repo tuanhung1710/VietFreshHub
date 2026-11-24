@@ -162,6 +162,10 @@ The VM runs in the background before Windows sign-in; manage Ubuntu through SSH.
 `Install-And-Test-VmLifecycle.ps1` performs the installation and a VM stop/start
 test from an administrator PowerShell. It waits for `/healthz` before and after the
 cycle, and saves its result under ProgramData. Windows itself is not restarted.
+Startup retries up to three times, with a ten-second wait between failed VMware
+requests. The retry tests and service compilation also run in Windows CI before
+publishing the application image. A stopped installation can be updated by the
+same installer; a running service is never replaced during an update.
 
 The initial local address is `http://192.168.250.130:8088`. For a public domain,
 complete inbound routing and a valid TLS certificate before switching `PUBLIC_URL`
