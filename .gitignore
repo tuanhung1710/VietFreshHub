@@ -49,3 +49,6 @@ uploads/product/
 
 .env
 .env.*
+
+# Compiled local Windows service; commit its auditable source instead.
+/deploy/windows/*.exe

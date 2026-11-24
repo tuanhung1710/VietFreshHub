@@ -100,3 +100,70 @@ VietFreshHub/
 ---
 
 *VietFresh Hub — connecting fresh products, independent sellers, and the people who deliver them.*
+
+## Ubuntu deployment and CI/CD
+
+The deployment sources are in `deploy/`. They target the existing Ubuntu VM and
+preserve its database. Secrets belong in the root-owned `/opt/vietfresh/.env` and
+`.env.app`, outside Git and Docker build context.
+
+The workflow on `Hoang-Van-Son` builds Java 21, creates an isolated SQL Server,
+installs the schema, verifies a backup restored into Express, and starts the app
+using a database login limited to application read/write/execute permissions.
+It checks readiness, public pages, and anonymous admin access. Only a successful
+image is published to GHCR with its commit SHA and then the `son-latest` channel.
+Pull-request verification has no package-publishing permission.
+
+The Ubuntu update timer runs while the VM is on. It resolves the release channel
+to an immutable digest, takes a checksummed SQL backup, and replaces only the app.
+Failed readiness restores the previous application image. This does not roll back
+database migrations: application startup validates the schema; schema upgrades
+must be reviewed and run separately with their own backup/rollback procedure.
+
+`bootstrap.sh` is a one-time installer that must be reviewed and run with sudo.
+It requires the old `/home/sonhg84/vietfresh-deploy` stack, the tested image, and a
+private `.env.integrations` file in its staging directory. It stops application
+writes before its final backup. If the old edition is Developer, the database must
+fit Express limits and have no persisted edition-only features. The installer then
+restores into a newly created Express volume, retaining the original volume and
+configuration for recovery. On initial migration failure, it restores the old stack.
+It never loads `database/data.sql` into the existing database.
+
+The runtime stack is Nginx -> Spring Boot -> SQL Server. Database and management
+ports are not published. `/healthz` returns a readiness status without diagnostics;
+Nginx blocks `/actuator`. The app runs without root, has a 1.5 GiB container limit,
+and shuts down gracefully. SQL Server has a 3 GiB container limit and a 2 GiB engine
+memory limit. Docker logs are rotated. Access logs have a 14-day history.
+
+Operational commands on Ubuntu:
+
+```bash
+sudo /usr/local/sbin/vietfresh-ops status
+sudo /usr/local/sbin/vietfresh-ops logs
+sudo /usr/local/sbin/vietfresh-ops backup
+sudo /usr/local/sbin/vietfresh-ops update
+sudo /usr/local/sbin/vietfresh-ops rollback
+```
+
+Daily backups also run after a missed schedule when the PC starts again. Each backup
+passes `RESTORE VERIFYONLY` and has a SHA-256 checksum. Rolling backups are retained
+for 14 days and copied to the private `~/vietfresh-backups` directory for collection
+by the Windows owner. Keep an additional copy on independent storage for protection
+against physical PC/disk failure. The pre-migration backup is retained separately.
+
+`deploy/windows` contains the source and installers for the Windows VM lifecycle
+service. Build it with `Build-VmLifecycle.ps1`, then run `Install-VmLifecycle.ps1` in
+an administrator PowerShell. It starts the existing VM on Windows boot and handles
+Windows preshutdown by requesting a VMware Tools soft shutdown, with a five-minute
+budget. Its fallback is a safe suspend; it never hard-powers-off the VM. Source and
+configuration are installed under an administrator-protected ProgramData directory.
+Test service stop/start and VM application recovery before relying on a host reboot.
+The VM runs in the background before Windows sign-in; manage Ubuntu through SSH.
+
+The initial local address is `http://192.168.250.130:8088`. For a public domain,
+complete inbound routing and a valid TLS certificate before switching `PUBLIC_URL`
+to HTTPS and enabling secure cookies. Configure Google OAuth's allowed callback
+to `https://sonhg84.ap.vn/login/oauth2/code/google`. VNPay stays disabled until live
+merchant configuration and its return/IPN URLs are verified. Changing Wi-Fi does
+not preserve inbound routing by itself; arbitrary-network public access requires
+an outbound tunnel or a fixed external relay.

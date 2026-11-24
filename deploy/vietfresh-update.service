@@ -1,0 +1,9 @@
+[Unit]
+Description=Check and deploy a tested VietFreshHub release
+Requires=docker.service
+After=vietfresh.service network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/vietfresh-ops update
+TimeoutStartSec=600

@@ -1,0 +1,17 @@
+[Unit]
+Description=VietFreshHub application stack
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/vietfresh
+ExecStart=/usr/local/sbin/vietfresh-ops start
+ExecStop=/usr/local/sbin/vietfresh-ops stop
+TimeoutStartSec=300
+TimeoutStopSec=180
+
+[Install]
+WantedBy=multi-user.target

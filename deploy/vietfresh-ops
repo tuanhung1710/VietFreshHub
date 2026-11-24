@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+umask 077
+cd /opt/vietfresh
+dc() { docker compose --env-file .env -f compose.yaml "$@"; }
+valid_image() { [[ "$1" =~ ^ghcr\.io/tuanhung1710/vietfreshhub(@sha256:[a-f0-9]{64}|:[a-f0-9]{40})$ ]]; }
+lock() { exec 9>/run/lock/vietfresh-deploy.lock; flock -w 5 9; }
+sql() {
+    dc exec -T sqlserver bash -c 'export SQLCMDPASSWORD="$MSSQL_SA_PASSWORD"; exec /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b -r1'
+}
+backup() {
+    local filename="VietFresh_Hub-$(date -u +%Y%m%dT%H%M%SZ).bak"
+    printf "BACKUP DATABASE [VietFresh_Hub] TO DISK=N'/var/opt/mssql/backup/%s' WITH INIT,CHECKSUM;\nRESTORE VERIFYONLY FROM DISK=N'/var/opt/mssql/backup/%s' WITH CHECKSUM;\nGO\n" "$filename" "$filename" | sql
+    sha256sum "backups/$filename" > "backups/$filename.sha256"
+    install -d -o sonhg84 -g sonhg84 -m 700 /home/sonhg84/vietfresh-backups
+    install -o sonhg84 -g sonhg84 -m 600 "backups/$filename" "backups/$filename.sha256" /home/sonhg84/vietfresh-backups/
+    find /opt/vietfresh/backups /home/sonhg84/vietfresh-backups -maxdepth 1 -type f -name 'VietFresh_Hub-*.bak*' -mtime +14 -delete
+    echo "Verified backup: $filename"
+}
+wait_healthy() {
+    local cid status
+    cid=$(dc ps -a -q app)
+    for ((i=0; i<60; i++)); do
+        status=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$cid")
+        [[ "$status" == healthy ]] && return 0
+        [[ "$status" == unhealthy || "$status" == exited || "$status" == dead ]] && return 1
+        sleep 3
+    done
+    return 1
+}
+apply() {
+    local candidate="$1" previous contract
+    valid_image "$candidate" || { echo 'Refusing an unapproved image reference.' >&2; return 1; }
+    previous=$(cat current-image)
+    [[ "$candidate" != "$previous" ]] || { echo 'Already running this release.'; return 0; }
+    docker image inspect "$candidate" >/dev/null 2>&1 || docker pull "$candidate"
+    contract=$(docker image inspect --format '{{index .Config.Labels "io.vietfresh.deployment"}}' "$candidate")
+    [[ "$contract" == 1 ]] || { echo 'Skipping an image without the verified deployment health contract.'; return 0; }
+    backup
+    if APP_IMAGE="$candidate" dc up -d --no-deps app && wait_healthy; then
+        printf '%s\n' "$previous" > previous-image
+        printf '%s\n' "$candidate" > current-image
+        sed -i "s|^APP_IMAGE=.*|APP_IMAGE=$candidate|" .env
+        dc restart nginx
+        echo "Deployed $candidate"
+    else
+        echo 'New release failed readiness; restoring the previous application image.' >&2
+        APP_IMAGE="$previous" dc up -d --no-deps app
+        wait_healthy || { echo 'Previous release also failed readiness; inspect application/database logs.' >&2; return 2; }
+        return 1
+    fi
+}
+case "${1:-}" in
+    status) dc ps; systemctl is-active vietfresh.service; df -h /; docker stats --no-stream --format 'table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}' ;;
+    start) lock; dc config -q; dc up -d --wait --wait-timeout 240 --pull never ;;
+    stop) lock; dc stop -t 90 ;;
+    backup) lock; backup ;;
+    apply) lock; [[ $# == 2 ]] || exit 64; apply "$2" ;;
+    rollback) lock; [[ -s previous-image ]] || { echo 'No previous release is recorded.'; exit 1; }; apply "$(cat previous-image)" ;;
+    update)
+        lock
+        channel=ghcr.io/tuanhung1710/vietfreshhub:son-latest
+        docker pull --quiet "$channel" >/dev/null
+        candidate=$(docker image inspect --format '{{index .RepoDigests 0}}' "$channel")
+        apply "$candidate"
+        ;;
+    logs) dc logs --tail 100 app nginx ;;
+    *) echo 'Usage: vietfresh-ops {status|start|stop|backup|apply IMAGE|rollback|update|logs}' >&2; exit 64 ;;
+esac

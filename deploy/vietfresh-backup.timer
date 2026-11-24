@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily VietFreshHub backup, including missed runs while the PC is off
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target

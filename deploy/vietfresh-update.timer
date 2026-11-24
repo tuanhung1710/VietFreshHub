@@ -1,0 +1,11 @@
+[Unit]
+Description=Check for a VietFreshHub release while this VM is running
+
+[Timer]
+OnBootSec=4min
+OnUnitActiveSec=2min
+RandomizedDelaySec=20
+Unit=vietfresh-update.service
+
+[Install]
+WantedBy=timers.target

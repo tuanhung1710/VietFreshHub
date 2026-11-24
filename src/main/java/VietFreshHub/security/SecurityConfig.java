@@ -63,6 +63,8 @@ public class SecurityConfig {
 
         http.authorizeHttpRequests(authorize -> {
             authorize.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll();
+            authorize.requestMatchers(org.springframework.http.HttpMethod.GET,
+                    "/actuator/health", "/actuator/health/**").permitAll();
             authorize.requestMatchers(org.springframework.http.HttpMethod.GET, "/home", "/customer/home")
                     .access((authentication, context) -> new AuthorizationDecision(
                             authentication.get().getAuthorities().stream()
