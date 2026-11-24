@@ -34,20 +34,37 @@ if [[ -f "$source_dir/image.tar" ]]; then docker load -i "$source_dir/image.tar"
 docker image inspect "$image" >/dev/null
 docker pull nginx:stable-alpine
 docker exec "$old_db" mkdir -p /var/opt/mssql/backup
-grep -vF '/usr/local/bin/vietfresh-deploy' "$target/migration-backup/root.crontab" > "$target/migration-backup/root.crontab.filtered" || [[ $? == 1 ]]
-crontab "$target/migration-backup/root.crontab.filtered"
-docker compose --project-directory "$legacy" -f "$legacy/compose.yaml" stop -t 60 app
+has_uploads=0
+if docker exec "$old_app" test -d /app/uploads/product; then
+    has_uploads=1
+    if docker volume inspect vietfresh_product_uploads >/dev/null 2>&1; then
+        echo 'An upload volume already exists; inspect it before migrating files.' >&2
+        exit 1
+    fi
+fi
 restore_legacy() {
     local result=$?
     trap - EXIT
     [[ "$result" == 0 ]] && return
     echo 'Migration failed. Restoring the existing application stack and original database volume.' >&2
-    docker compose --project-directory "$target" -f "$target/compose.yaml" stop app nginx 2>/dev/null || true
+    systemctl disable --now vietfresh-update.timer vietfresh-backup.timer vietfresh.service 2>/dev/null || true
+    docker compose --project-directory "$target" -f "$target/compose.yaml" stop 2>/dev/null || true
     docker compose --project-directory "$legacy" -f "$legacy/compose.yaml" up -d --pull never
     crontab "$target/migration-backup/root.crontab"
     exit "$result"
 }
 trap restore_legacy EXIT
+grep -vF '/usr/local/bin/vietfresh-deploy' "$target/migration-backup/root.crontab" > "$target/migration-backup/root.crontab.filtered" || [[ $? == 1 ]]
+crontab "$target/migration-backup/root.crontab.filtered"
+docker compose --project-directory "$legacy" -f "$legacy/compose.yaml" stop -t 60 app
+if [[ "$has_uploads" == 1 ]]; then
+    docker cp "$old_app:/app/uploads/product" "$target/migration-backup/product-uploads"
+    docker volume create vietfresh_product_uploads >/dev/null
+    docker run --rm --user 0 --entrypoint sh \
+        -v "$target/migration-backup/product-uploads:/source:ro" \
+        -v vietfresh_product_uploads:/destination "$image" \
+        -c 'cp -a /source/. /destination/ && chown -R 10001:10001 /destination'
+fi
 backup_name="pre-devops-$(date -u +%Y%m%dT%H%M%SZ).bak"
 printf "BACKUP DATABASE [VietFresh_Hub] TO DISK=N'/var/opt/mssql/backup/%s' WITH INIT,CHECKSUM;\nRESTORE VERIFYONLY FROM DISK=N'/var/opt/mssql/backup/%s' WITH CHECKSUM;\nSELECT CAST(SERVERPROPERTY('Edition') AS nvarchar(128)) AS edition;\nGO\n" "$backup_name" "$backup_name" |
     docker exec -i "$old_db" bash -c 'export SQLCMDPASSWORD="$MSSQL_SA_PASSWORD"; exec /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b -r1'
@@ -128,12 +145,12 @@ systemctl daemon-reload
 systemctl enable docker.service vietfresh.service
 systemctl start vietfresh.service
 curl --fail --silent http://127.0.0.1:8088/healthz
-touch "$target/.installed"
-trap - EXIT
 systemctl enable --now vietfresh-backup.timer vietfresh-update.timer
 printf 'sonhg84 ALL=(root) NOPASSWD: /usr/local/sbin/vietfresh-ops\n' > /etc/sudoers.d/vietfresh-ops
 chmod 440 /etc/sudoers.d/vietfresh-ops
 visudo -cf /etc/sudoers.d/vietfresh-ops
 if docker inspect vietfresh-tunnel >/dev/null 2>&1; then docker stop vietfresh-tunnel; fi
+touch "$target/.installed"
+trap - EXIT
 echo 'Installed successfully. Application URL: http://192.168.250.130:8088'
 echo 'SQL Server edition and application readiness were checked during installation.'

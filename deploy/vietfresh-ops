@@ -48,6 +48,7 @@ apply() {
         echo 'New release failed readiness; restoring the previous application image.' >&2
         APP_IMAGE="$previous" dc up -d --no-deps app
         wait_healthy || { echo 'Previous release also failed readiness; inspect application/database logs.' >&2; return 2; }
+        dc restart nginx
         return 1
     fi
 }

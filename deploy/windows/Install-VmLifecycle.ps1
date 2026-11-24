@@ -1,6 +1,7 @@
+#requires -RunAsAdministrator
 param([string]$VmxPath = 'E:\VMs\VietFresh-Server\VietFresh-Server.vmx')
 $ErrorActionPreference = 'Stop'
-if (-not [System.IO.Path]::IsPathFullyQualified($VmxPath) -or -not (Test-Path -LiteralPath $VmxPath)) { throw 'An existing absolute VMX path is required.' }
+if ($VmxPath -notmatch '^[A-Za-z]:\\' -or [System.IO.Path]::GetExtension($VmxPath) -ne '.vmx' -or -not (Test-Path -LiteralPath $VmxPath -PathType Leaf)) { throw 'An existing absolute VMX path is required.' }
 $serviceName='VietFreshVmLifecycle'
 $installDirectory=Join-Path $env:ProgramData $serviceName
 $sourceBinary=Join-Path $PSScriptRoot 'VietFreshVmLifecycle.exe'
