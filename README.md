@@ -159,6 +159,9 @@ budget. Its fallback is a safe suspend; it never hard-powers-off the VM. Source 
 configuration are installed under an administrator-protected ProgramData directory.
 Test service stop/start and VM application recovery before relying on a host reboot.
 The VM runs in the background before Windows sign-in; manage Ubuntu through SSH.
+`Install-And-Test-VmLifecycle.ps1` performs the installation and a VM stop/start
+test from an administrator PowerShell. It waits for `/healthz` before and after the
+cycle, and saves its result under ProgramData. Windows itself is not restarted.
 
 The initial local address is `http://192.168.250.130:8088`. For a public domain,
 complete inbound routing and a valid TLS certificate before switching `PUBLIC_URL`
