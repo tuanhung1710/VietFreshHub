@@ -42,7 +42,9 @@ function Wait-Application {
             if ($LASTEXITCODE -eq 0 -and [System.Net.IPAddress]::TryParse($ip,[ref]$address) -and $address.AddressFamily -eq [System.Net.Sockets.AddressFamily]::InterNetwork) {
                 $url = 'http://' + $ip + ':8088'
                 $response = Invoke-WebRequest -Uri ($url + '/healthz') -UseBasicParsing -TimeoutSec 5
-                if (($response.Content | ConvertFrom-Json).status -eq 'UP') { return $url }
+                $content = $response.Content
+                if ($content -is [byte[]]) { $content = [System.Text.Encoding]::UTF8.GetString($content) }
+                if (($content | ConvertFrom-Json).status -eq 'UP') { return $url }
             }
         } catch { }
         Start-Sleep -Seconds 3

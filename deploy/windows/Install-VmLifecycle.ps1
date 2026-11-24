@@ -18,4 +18,5 @@ New-Service -Name $serviceName -BinaryPathName $binaryPath -DisplayName 'VietFre
 & (Join-Path $installDirectory 'VietFreshVmLifecycle.exe') --configure-preshutdown
 if ($LASTEXITCODE -ne 0) { throw 'Could not configure safe Windows preshutdown handling.' }
 & sc.exe failure $serviceName reset= 86400 actions= restart/30000/restart/60000
+if ($LASTEXITCODE -ne 0) { throw 'Could not configure service recovery.' }
 Write-Output 'Installed. Start and stop this service to validate the VM lifecycle before rebooting Windows.'
