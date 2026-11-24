@@ -24,8 +24,12 @@ old_app=$(docker compose --project-directory "$legacy" -f "$legacy/compose.yaml"
 old_pid=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["services"]["sqlserver"]["environment"]["MSSQL_PID"])' "$target/migration-backup/legacy-compose.json")
 convert_express=0
 if [[ "$old_pid" == Developer ]]; then
-    eligible=$(docker exec "$old_db" bash -c 'export SQLCMDPASSWORD="$MSSQL_SA_PASSWORD"; exec /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b -h -1 -W -Q "SET NOCOUNT ON; USE [VietFresh_Hub]; SELECT CASE WHEN (SELECT SUM(CONVERT(bigint,size))*8/1024 FROM sys.database_files WHERE type=0)<10240 AND NOT EXISTS(SELECT 1 FROM sys.dm_db_persisted_sku_features) THEN 1 ELSE 0 END"' | tr -d '[:space:]')
-    [[ "$eligible" == 1 ]] || { echo 'Database requires a paid production edition. No migration was performed.' >&2; exit 1; }
+    eligible=$(docker exec "$old_db" bash -c 'export SQLCMDPASSWORD="$MSSQL_SA_PASSWORD"; exec /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b -d VietFresh_Hub -h -1 -W -Q "SET NOCOUNT ON; SELECT CASE WHEN (SELECT SUM(CONVERT(bigint,size))*8/1024 FROM sys.database_files WHERE type=0)<10240 AND NOT EXISTS(SELECT 1 FROM sys.dm_db_persisted_sku_features) THEN 1 ELSE 0 END"' | tr -d '[:space:]')
+    if [[ "$eligible" != 1 ]]; then
+        echo 'Express preflight did not pass. No runtime migration was performed.' >&2
+        docker exec "$old_db" bash -c 'export SQLCMDPASSWORD="$MSSQL_SA_PASSWORD"; exec /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b -d VietFresh_Hub -Q "SET NOCOUNT ON; SELECT SUM(CONVERT(bigint,size))*8/1024 AS allocated_data_mb FROM sys.database_files WHERE type=0; SELECT feature_name FROM sys.dm_db_persisted_sku_features;"'
+        exit 1
+    fi
     convert_express=1
 fi
 docker inspect --format '{{.Image}}' "$old_db" > "$target/migration-backup/sql-image-id"
@@ -73,7 +77,7 @@ chown 10001:10001 "$target/backups/$backup_name"
 chmod 640 "$target/backups/$backup_name"
 sha256sum "$target/backups/$backup_name" > "$target/backups/$backup_name.sha256"
 echo 'Existing database backup has passed RESTORE VERIFYONLY.'
-docker exec "$old_db" bash -c 'export SQLCMDPASSWORD="$MSSQL_SA_PASSWORD"; exec /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b -h -1 -W -s "|" -Q "SET NOCOUNT ON; USE [VietFresh_Hub]; SELECT name,type,file_id FROM sys.database_files ORDER BY file_id"' > "$target/migration-backup/database-files.txt"
+docker exec "$old_db" bash -c 'export SQLCMDPASSWORD="$MSSQL_SA_PASSWORD"; exec /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b -d VietFresh_Hub -h -1 -W -s "|" -Q "SET NOCOUNT ON; SELECT name,type,file_id FROM sys.database_files ORDER BY file_id"' > "$target/migration-backup/database-files.txt"
 export VF_TARGET="$target" VF_IMAGE="$image" VF_SOURCE="$source_dir" VF_CONVERT_EXPRESS="$convert_express" VF_BACKUP_NAME="$backup_name"
 python3 <<'PY'
 import json, os, pathlib, secrets

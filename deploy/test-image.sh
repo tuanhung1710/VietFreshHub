@@ -29,6 +29,14 @@ $ready || { echo 'Test SQL Server did not become ready.' >&2; exit 1; }
 sed '1s/^\xEF\xBB\xBF//' database/vietfresh_hub_script.sql |
     docker exec -i -e SQLCMDPASSWORD="$password" "$db" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b -f 65001
 docker exec "$db" mkdir -p /var/opt/mssql/backup
+legacy_probe=$(docker exec -e SQLCMDPASSWORD="$password" "$db" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b -h -1 -W -Q 'SET NOCOUNT ON; USE [VietFresh_Hub]; SELECT 1' | tr -d '[:space:]')
+[[ "$legacy_probe" != 1 ]] && echo 'Confirmed: USE emits a context message into parsed sqlcmd output.'
+eligible=$(docker exec -e SQLCMDPASSWORD="$password" "$db" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b -d VietFresh_Hub -h -1 -W -Q 'SET NOCOUNT ON; SELECT CASE WHEN (SELECT SUM(CONVERT(bigint,size))*8/1024 FROM sys.database_files WHERE type=0)<10240 AND NOT EXISTS(SELECT 1 FROM sys.dm_db_persisted_sku_features) THEN 1 ELSE 0 END' | tr -d '[:space:]')
+[[ "$eligible" == 1 ]] || { echo 'Express preflight output was not the exact expected scalar.' >&2; exit 1; }
+metadata=$(docker exec -e SQLCMDPASSWORD="$password" "$db" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b -d VietFresh_Hub -h -1 -W -s '|' -Q 'SET NOCOUNT ON; SELECT name,type,file_id FROM sys.database_files ORDER BY file_id')
+while IFS='|' read -r logical kind file_id; do
+    [[ -n "$logical" && "$kind" =~ ^[01]$ && "$file_id" =~ ^[0-9]+$ ]] || { echo 'Unexpected database file metadata output.' >&2; exit 1; }
+done <<< "$metadata"
 printf "USE [VietFresh_Hub]; CREATE TABLE dbo.devops_restore_probe(id int NOT NULL); INSERT dbo.devops_restore_probe VALUES(42); BACKUP DATABASE [VietFresh_Hub] TO DISK=N'/var/opt/mssql/backup/ci.bak' WITH INIT,CHECKSUM; RESTORE VERIFYONLY FROM DISK=N'/var/opt/mssql/backup/ci.bak' WITH CHECKSUM;\nGO\n" |
     docker exec -i -e SQLCMDPASSWORD="$password" "$db" /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -b
 docker run -d --name "$express" --network "$network" --network-alias sqlserver-express --memory 3g \
