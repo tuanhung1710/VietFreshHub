@@ -152,8 +152,9 @@ by the Windows owner. Keep an additional copy on independent storage for protect
 against physical PC/disk failure. The pre-migration backup is retained separately.
 
 `deploy/windows` contains the source and installers for the Windows VM lifecycle
-service. Build it with `Build-VmLifecycle.ps1`, then run `Install-VmLifecycle.ps1` in
-an administrator PowerShell. It starts the existing VM on Windows boot and handles
+service. Build it with `Build-VmLifecycle.ps1`, then run
+`Install-And-Test-VmLifecycle.ps1` in an administrator PowerShell. It starts the
+existing VM on Windows boot and handles
 Windows preshutdown by requesting a VMware Tools soft shutdown, with a five-minute
 budget. Its fallback is a safe suspend; it never hard-powers-off the VM. Source and
 configuration are installed under an administrator-protected ProgramData directory.
@@ -162,8 +163,15 @@ The VM runs in the background before Windows sign-in; manage Ubuntu through SSH.
 `Install-And-Test-VmLifecycle.ps1` performs the installation and a VM stop/start
 test from an administrator PowerShell. It waits for `/healthz` before and after the
 cycle, and saves its result under ProgramData. Windows itself is not restarted.
-Startup retries up to three times, with a ten-second wait between failed VMware
-requests. The retry tests and service compilation also run in Windows CI before
+Cold startup runs through the demand-only `VietFreshVmStart` scheduled task under
+the Windows owner account, using S4U without a stored password. The SYSTEM service
+requests that task after VMware and Task Scheduler are available, then waits for
+its successful result. It keeps responsibility for preshutdown. The installation
+test checks the exact VM path and application readiness from the owner context.
+The installer tests task execution before starting any shutdown test. VM files
+must be local and accessible without EFS; network shares are not supported by S4U.
+Startup retries up to three times, with a ten-second wait between failed task
+requests. The retry tests and service compilation run in Windows CI before
 publishing the application image. A stopped installation can be updated by the
 same installer; a running service is never replaced during an update.
 

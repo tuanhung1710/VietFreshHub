@@ -76,7 +76,11 @@ internal static class VietFreshVmLifecycle
     }
     private static bool Run(string action, string ending, int timeout, uint pendingState)
     {
-        ProcessStartInfo info = new ProcessStartInfo(Vmrun, "-T ws " + action + " \"" + Vmx() + "\" " + ending);
+        return RunProcess(Vmrun, "-T ws " + action + " \"" + Vmx() + "\" " + ending, timeout, pendingState, "vmrun " + action);
+    }
+    private static bool RunProcess(string executable, string arguments, int timeout, uint pendingState, string description)
+    {
+        ProcessStartInfo info = new ProcessStartInfo(executable, arguments);
         info.UseShellExecute = false; info.CreateNoWindow = true; info.RedirectStandardError = true; info.RedirectStandardOutput = true;
         using (Process process = new Process())
         {
@@ -88,10 +92,10 @@ internal static class VietFreshVmLifecycle
             while (!process.WaitForExit(5000))
             {
                 Report(pendingState, false);
-                if (watch.ElapsedMilliseconds > timeout) { process.Kill(); Log("vmrun timed out: " + action); return false; }
+                if (watch.ElapsedMilliseconds > timeout) { process.Kill(); Log(description + " timed out."); return false; }
             }
             process.WaitForExit();
-            Log("vmrun " + action + " exited " + process.ExitCode);
+            Log(description + " exited " + process.ExitCode);
             return process.ExitCode == 0;
         }
     }
@@ -104,6 +108,13 @@ internal static class VietFreshVmLifecycle
         }
         return false;
     }
+    private static bool StartViaUserTask()
+    {
+        string script = Path.Combine(Root, "Invoke-OwnerTask.ps1");
+        if (!File.Exists(script)) throw new InvalidOperationException("The owner-account startup task runner is not installed.");
+        string powershell = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), @"WindowsPowerShell\v1.0\powershell.exe");
+        return RunProcess(powershell, "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy RemoteSigned -File \"" + script + "\"", 150000, 2, "owner-account VM startup task");
+    }
     private static void ServiceMain(uint count, IntPtr args)
     {
         statusHandle = RegisterServiceCtrlHandlerEx(Name, HandlerCallback, IntPtr.Zero);
@@ -113,9 +124,9 @@ internal static class VietFreshVmLifecycle
         {
             try
             {
-                Log("Starting existing Ubuntu VM.");
+                Log("Checking the existing Ubuntu VM; cold startup is delegated to its Windows owner account.");
                 bool started = StartWithRetry(
-                    delegate { return Run("start", "nogui", 60000, 2); },
+                    StartViaUserTask,
                     delegate
                     {
                         Log("VMware startup did not complete; waiting 10 seconds before retrying without changing locks.");
